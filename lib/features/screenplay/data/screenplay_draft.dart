@@ -1,0 +1,211 @@
+
+import '../../upload/domain/upload_image_file.dart';
+import '../../../../core/domain/screenplay/screenplay.dart';
+import '../../../../core/domain/screenplay/script_act.dart';
+import '../../../../core/domain/screenplay/script_frame.dart';
+import '../../../../core/domain/screenplay/script_scene.dart';
+
+class FrameDraft {
+  FrameDraft({
+    required this.image,
+    this.caption = '',
+    this.actionNote = '',
+  });
+
+  final UploadImageFile image;
+  String caption;
+  String actionNote;
+}
+
+class SceneDraft {
+  SceneDraft({
+    this.title = '第一场',
+    this.location = '',
+    this.timeOfDay = '',
+    this.description = '',
+    List<FrameDraft>? frames,
+  }) : frames = frames ?? [];
+
+  String title;
+  String location;
+  String timeOfDay;
+  String description;
+  final List<FrameDraft> frames;
+}
+
+class ActDraft {
+  ActDraft({
+    this.title = '第一幕',
+    this.synopsis = '',
+    List<SceneDraft>? scenes,
+  }) : scenes = scenes ?? [SceneDraft()];
+
+  String title;
+  String synopsis;
+  final List<SceneDraft> scenes;
+}
+
+class ScreenplayDraft {
+  ScreenplayDraft({
+    this.title = '',
+    this.synopsis = '',
+    Set<String>? tags,
+    List<ActDraft>? acts,
+  })  : tags = Set<String>.from(tags ?? {'站姿'}),
+        acts = acts ?? [ActDraft()];
+
+  factory ScreenplayDraft.fromScreenplay(Screenplay screenplay) {
+    final acts = <ActDraft>[];
+    for (final act in screenplay.acts) {
+      final scenes = <SceneDraft>[];
+      for (final scene in act.scenes) {
+        final frames = scene.frames
+            .map(
+              (frame) => FrameDraft(
+                image: UploadImageFile(
+                  path: frame.imagePath,
+                  name: _basename(frame.imagePath),
+                ),
+                caption: frame.caption,
+                actionNote: frame.actionNote,
+              ),
+            )
+            .toList();
+        scenes.add(
+          SceneDraft(
+            title: scene.title,
+            location: scene.location,
+            timeOfDay: scene.timeOfDay,
+            description: scene.description,
+            frames: frames,
+          ),
+        );
+      }
+      acts.add(
+        ActDraft(
+          title: act.title,
+          synopsis: act.synopsis,
+          scenes: scenes.isEmpty ? [SceneDraft()] : scenes,
+        ),
+      );
+    }
+
+    return ScreenplayDraft(
+      title: screenplay.title,
+      synopsis: screenplay.synopsis,
+      tags: screenplay.tags.isNotEmpty
+          ? Set<String>.from(screenplay.tags)
+          : {'站姿'},
+      acts: acts.isEmpty ? [ActDraft()] : acts,
+    );
+  }
+
+  String title;
+  String synopsis;
+  Set<String> tags;
+  final List<ActDraft> acts;
+
+  bool get hasFrames =>
+      acts.any((act) => act.scenes.any((scene) => scene.frames.isNotEmpty));
+}
+
+String _newId(String prefix) =>
+    '$prefix-${DateTime.now().microsecondsSinceEpoch}';
+
+String _basename(String path) {
+  final normalized = path.replaceAll('\\', '/');
+  final index = normalized.lastIndexOf('/');
+  return index >= 0 ? normalized.substring(index + 1) : normalized;
+}
+
+Screenplay buildScreenplayFromDraft(
+  ScreenplayDraft draft, {
+  required Map<UploadImageFile, String> persistedPaths,
+  String? scriptId,
+  DateTime? createdAt,
+}) {
+  final resolvedId = scriptId ?? _newId('script');
+  final acts = <ScriptAct>[];
+
+  for (var actIndex = 0; actIndex < draft.acts.length; actIndex++) {
+    final actDraft = draft.acts[actIndex];
+    final actId = '$resolvedId-act-$actIndex';
+    final scenes = <ScriptScene>[];
+
+    for (var sceneIndex = 0; sceneIndex < actDraft.scenes.length; sceneIndex++) {
+      final sceneDraft = actDraft.scenes[sceneIndex];
+      final sceneId = '$actId-scene-$sceneIndex';
+      final frames = <ScriptFrame>[];
+
+      for (var frameIndex = 0; frameIndex < sceneDraft.frames.length; frameIndex++) {
+        final frameDraft = sceneDraft.frames[frameIndex];
+        final path = persistedPaths[frameDraft.image];
+        if (path == null || path.isEmpty) continue;
+
+        frames.add(
+          ScriptFrame(
+            id: '$sceneId-frame-$frameIndex',
+            orderIndex: frameIndex,
+            imagePath: path,
+            caption: frameDraft.caption,
+            actionNote: frameDraft.actionNote,
+            tags: draft.tags.toList(),
+          ),
+        );
+      }
+
+      scenes.add(
+        ScriptScene(
+          id: sceneId,
+          orderIndex: sceneIndex,
+          title: sceneDraft.title.trim().isEmpty
+              ? '第${sceneIndex + 1}场'
+              : sceneDraft.title.trim(),
+          location: sceneDraft.location.trim(),
+          timeOfDay: sceneDraft.timeOfDay.trim(),
+          description: sceneDraft.description.trim(),
+          frames: frames,
+        ),
+      );
+    }
+
+    acts.add(
+      ScriptAct(
+        id: actId,
+        orderIndex: actIndex,
+        title: actDraft.title.trim().isEmpty
+            ? '第${actIndex + 1}幕'
+            : actDraft.title.trim(),
+        synopsis: actDraft.synopsis.trim(),
+        scenes: scenes,
+      ),
+    );
+  }
+
+  return Screenplay(
+    id: resolvedId,
+    title: draft.title.trim().isEmpty ? '未命名剧本' : draft.title.trim(),
+    synopsis: draft.synopsis.trim(),
+    tags: draft.tags.toList(),
+    author: '我',
+    authorBio: '本地发布',
+    likes: 0,
+    views: 0,
+    favorites: 0,
+    acts: acts,
+    isLocal: true,
+    createdAt: createdAt ?? DateTime.now(),
+  );
+}
+
+List<UploadImageFile> collectDraftImages(ScreenplayDraft draft) {
+  final images = <UploadImageFile>[];
+  for (final act in draft.acts) {
+    for (final scene in act.scenes) {
+      for (final frame in scene.frames) {
+        images.add(frame.image);
+      }
+    }
+  }
+  return images;
+}

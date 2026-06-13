@@ -1,0 +1,140 @@
+import 'dart:io';
+
+import 'package:flutter/material.dart';
+
+import '../../app/theme/app_colors.dart';
+import '../../app/theme/app_dimensions.dart';
+import 'image_preview.dart';
+import 'rc0_widgets.dart';
+
+class PoseCoverImage extends StatelessWidget {
+  const PoseCoverImage({
+    super.key,
+    this.imagePath,
+    this.aspectRatio = 0.85,
+    this.borderRadius = AppDimensions.radiusMd,
+    this.iconSize = 32,
+    this.expand = false,
+    this.enablePreview = false,
+    this.previewGallery,
+    this.previewIndex = 0,
+    this.previewCaptions,
+  });
+
+  final String? imagePath;
+  final double aspectRatio;
+  final double borderRadius;
+  final double iconSize;
+  /// When true, fills the parent [Expanded] instead of using [AspectRatio].
+  final bool expand;
+  final bool enablePreview;
+  final List<String>? previewGallery;
+  final int previewIndex;
+  final List<String>? previewCaptions;
+
+  bool _hasImage(String? path) =>
+      path != null && path.isNotEmpty && File(path).existsSync();
+
+  void _openPreview(BuildContext context) {
+    final path = imagePath;
+    if (!enablePreview || !_hasImage(path)) return;
+
+    final gallery = previewGallery ?? [path!];
+    final captions = previewCaptions;
+    var index = previewIndex;
+    if (previewGallery == null) {
+      index = 0;
+    } else if (path != null) {
+      final found = gallery.indexOf(path);
+      if (found >= 0) index = found;
+    }
+
+    showImagePreview(
+      context,
+      imagePaths: gallery,
+      initialIndex: index,
+      captions: captions,
+    );
+  }
+
+  Widget _wrapPreview(BuildContext context, Widget child) {
+    if (!enablePreview || !_hasImage(imagePath)) return child;
+    return GestureDetector(
+      onTap: () => _openPreview(context),
+      child: child,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final path = imagePath;
+    final hasImage = _hasImage(path);
+
+    if (expand) {
+      return _wrapPreview(
+        context,
+        ClipRRect(
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(borderRadius),
+          ),
+          child: hasImage
+              ? Image.file(
+                  File(path!),
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
+                  errorBuilder: (_, _, _) => _placeholder(fill: true),
+                )
+              : _placeholder(fill: true),
+        ),
+      );
+    }
+
+    if (!hasImage) {
+      return PlaceholderImage(
+        aspectRatio: aspectRatio,
+        borderRadius: borderRadius,
+        iconSize: iconSize,
+      );
+    }
+
+    return _wrapPreview(
+      context,
+      AspectRatio(
+        aspectRatio: aspectRatio,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(borderRadius),
+          child: Image.file(
+            File(path!),
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => PlaceholderImage(
+              aspectRatio: aspectRatio,
+              borderRadius: borderRadius,
+              iconSize: iconSize,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _placeholder({required bool fill}) {
+    if (fill) {
+      return ColoredBox(
+        color: AppColors.placeholder,
+        child: Center(
+          child: Icon(
+            Icons.image_outlined,
+            size: iconSize,
+            color: AppColors.textTertiary,
+          ),
+        ),
+      );
+    }
+    return PlaceholderImage(
+      aspectRatio: aspectRatio,
+      borderRadius: borderRadius,
+      iconSize: iconSize,
+    );
+  }
+}
