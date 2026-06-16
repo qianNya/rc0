@@ -1,0 +1,74 @@
+# auth-api（auth.api）
+# 公开：POST /login、POST /register；需 JWT：GET/PUT /profile
+@gateway = http://192.168.110.167:8888/
+@adminUsername = admin
+@adminPassword = admin123
+@demoUsername = demo_user
+@demoPassword = demo_pass_123
+
+### @name register
+POST {{gateway}}/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "{{demoUsername}}",
+  "password": "{{demoPassword}}",
+  "nickname": "Demo User",
+  "email": "demo@example.com",
+  "phone": "13800000000"
+}
+
+### @name register
+POST {{gateway}}/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "{{adminUsername}}",
+  "password": "{{adminPassword}}",
+  "nickname": "admin",
+  "email": "2502203399@qq,com",
+  "phone": "13097378972"
+}
+
+### @name login
+POST {{gateway}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "{{adminUsername}}",
+  "password": "{{adminPassword}}"
+}
+
+> {%
+  client.global.set("accessToken", response.body.data.access_token);
+%}
+
+### @name loginDemo
+POST {{gateway}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "{{demoUsername}}",
+  "password": "{{demoPassword}}"
+}
+
+> {%
+  client.global.set("accessToken", response.body.data.access_token);
+%}
+
+### @name getProfile
+GET {{gateway}}/api/auth/profile
+Accept: application/json
+Authorization: Bearer {{accessToken}}
+
+### @name updateProfile
+PUT {{gateway}}/api/auth/profile
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "nickname": "Demo User Updated",
+  "email": "demo.updated@example.com",
+  "phone": "13800000001",
+  "avatar": "https://example.com/avatar.png"
+}

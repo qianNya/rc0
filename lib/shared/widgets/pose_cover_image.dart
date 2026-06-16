@@ -32,12 +32,24 @@ class PoseCoverImage extends StatelessWidget {
   final int previewIndex;
   final List<String>? previewCaptions;
 
-  bool _hasImage(String? path) =>
+  static bool isNetworkUrl(String path) =>
+      path.startsWith('http://') || path.startsWith('https://');
+
+  bool _hasLocalImage(String? path) =>
       path != null && path.isNotEmpty && File(path).existsSync();
+
+  bool _hasImage(String? path) {
+    if (path == null || path.isEmpty) return false;
+    if (isNetworkUrl(path)) return true;
+    return _hasLocalImage(path);
+  }
+
+  bool _canPreview(String? path) =>
+      enablePreview && path != null && isPreviewableImagePath(path);
 
   void _openPreview(BuildContext context) {
     final path = imagePath;
-    if (!enablePreview || !_hasImage(path)) return;
+    if (!_canPreview(path)) return;
 
     final gallery = previewGallery ?? [path!];
     final captions = previewCaptions;
@@ -58,10 +70,29 @@ class PoseCoverImage extends StatelessWidget {
   }
 
   Widget _wrapPreview(BuildContext context, Widget child) {
-    if (!enablePreview || !_hasImage(imagePath)) return child;
+    if (!_canPreview(imagePath)) return child;
     return GestureDetector(
       onTap: () => _openPreview(context),
       child: child,
+    );
+  }
+
+  Widget _imageWidget(String path, {required bool fill}) {
+    if (isNetworkUrl(path)) {
+      return Image.network(
+        path,
+        fit: BoxFit.cover,
+        width: fill ? double.infinity : null,
+        height: fill ? double.infinity : null,
+        errorBuilder: (_, _, _) => _placeholder(fill: fill),
+      );
+    }
+    return Image.file(
+      File(path),
+      fit: BoxFit.cover,
+      width: fill ? double.infinity : null,
+      height: fill ? double.infinity : null,
+      errorBuilder: (_, _, _) => _placeholder(fill: fill),
     );
   }
 
@@ -78,13 +109,7 @@ class PoseCoverImage extends StatelessWidget {
             top: Radius.circular(borderRadius),
           ),
           child: hasImage
-              ? Image.file(
-                  File(path!),
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: double.infinity,
-                  errorBuilder: (_, _, _) => _placeholder(fill: true),
-                )
+              ? _imageWidget(path!, fill: true)
               : _placeholder(fill: true),
         ),
       );
@@ -104,15 +129,7 @@ class PoseCoverImage extends StatelessWidget {
         aspectRatio: aspectRatio,
         child: ClipRRect(
           borderRadius: BorderRadius.circular(borderRadius),
-          child: Image.file(
-            File(path!),
-            fit: BoxFit.cover,
-            errorBuilder: (_, _, _) => PlaceholderImage(
-              aspectRatio: aspectRatio,
-              borderRadius: borderRadius,
-              iconSize: iconSize,
-            ),
-          ),
+          child: _imageWidget(path!, fill: false),
         ),
       ),
     );

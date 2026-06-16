@@ -54,9 +54,9 @@ abstract final class AppTheme {
       cardTheme: CardThemeData(
         color: AppColors.surface,
         elevation: 0,
+        shadowColor: const Color(0x0F000000),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-          side: const BorderSide(color: AppColors.border),
         ),
       ),
       dividerTheme: const DividerThemeData(
@@ -94,27 +94,27 @@ abstract final class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.background,
+        fillColor: AppColors.surfaceSecondary,
         hintStyle: AppTextStyles.bodySecondary,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppDimensions.spacingMd,
           vertical: 14,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusXl),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusXl),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusXl),
           borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
         ),
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: AppColors.background,
+        backgroundColor: AppColors.surface,
         selectedColor: AppColors.accent,
         labelStyle: AppTextStyles.bodySecondary.copyWith(fontSize: 13),
         secondaryLabelStyle: const TextStyle(color: Colors.white, fontSize: 13),

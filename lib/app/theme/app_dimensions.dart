@@ -8,7 +8,9 @@ abstract final class AppDimensions {
   static const double radiusSm = 8;
   static const double radiusMd = 12;
   static const double radiusLg = 16;
+  static const double radiusXl = 20;
 
   static const double pagePadding = 20;
-  static const double bottomNavHeight = 80;
+  static const double bottomNavHeight = 72;
+  static const double primaryButtonHeight = 48;
 }

@@ -23,7 +23,7 @@ class ShellNavItem {
   final bool mobileOnly;
 }
 
-/// Mobile bottom-nav items (探索 / 社区 / 发布 / 我的).
+/// Mobile bottom-nav items (探索 / 社区 / 创作 / 收藏 / 我的).
 const List<ShellNavItem> mobileNavItems = [
   ShellNavItem(
     branchIndex: 0,
@@ -39,10 +39,16 @@ const List<ShellNavItem> mobileNavItems = [
   ),
   ShellNavItem(
     branchIndex: 2,
-    label: '发布',
-    icon: Icons.add_circle_outline,
-    selectedIcon: Icons.add_circle,
+    label: '创作',
+    icon: Icons.add,
+    selectedIcon: Icons.add,
     mobileOnly: true,
+  ),
+  ShellNavItem(
+    branchIndex: 5,
+    label: '收藏',
+    icon: Icons.favorite_border,
+    selectedIcon: Icons.favorite,
   ),
   ShellNavItem(
     branchIndex: 3,
@@ -108,6 +114,18 @@ class DesktopSidebar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 20, 16, 8),
+            child: Rc0Logo(),
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              'Pose Reference & Script',
+              style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+            ),
+          ),
+          const SizedBox(height: 16),
           ...desktopNavItems.map((item) {
             final active = currentBranch == item.branchIndex;
             return _SidebarTile(
@@ -120,10 +138,10 @@ class DesktopSidebar extends StatelessWidget {
           const Spacer(),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: OutlinedButton.icon(
+            child: ElevatedButton.icon(
               onPressed: onUploadTap,
               icon: const Icon(Icons.add, size: 18),
-              label: const Text('上传参考图'),
+              label: const Text('创作'),
             ),
           ),
           const SizedBox(height: 12),

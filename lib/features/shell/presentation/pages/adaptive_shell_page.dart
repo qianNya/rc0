@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/responsive/breakpoints.dart';
+import '../../../../shared/widgets/app_bottom_nav_bar.dart';
 import '../widgets/desktop_sidebar.dart';
 
 class AdaptiveShellPage extends StatelessWidget {
@@ -47,18 +48,16 @@ class AdaptiveShellPage extends StatelessWidget {
 
     return Scaffold(
       body: navigationShell,
-      bottomNavigationBar: NavigationBar(
+      bottomNavigationBar: AppBottomNavBar(
         selectedIndex: _mobileSelectedIndex(),
-        onDestinationSelected: (index) =>
-            _goToBranch(mobileNavItems[index].branchIndex),
-        destinations: [
-          for (final item in mobileNavItems)
-            NavigationDestination(
-              icon: Icon(item.icon),
-              selectedIcon: Icon(item.selectedIcon),
-              label: item.label,
-            ),
-        ],
+        onItemSelected: (index) {
+          if (index == AppBottomNavBar.createNavIndex) {
+            _goToBranch(mobileNavItems[index].branchIndex);
+          } else {
+            _goToBranch(mobileNavItems[index].branchIndex);
+          }
+        },
+        onCreateTap: () => _goToBranch(2),
       ),
     );
   }

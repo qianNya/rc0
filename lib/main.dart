@@ -3,6 +3,8 @@ import 'package:window_manager/window_manager.dart';
 
 import 'app/app.dart';
 import 'core/platform/platform_features.dart';
+import 'features/auth/data/auth_repository.dart';
+import 'features/favorites/data/image_favorite_repository.dart';
 import 'features/screenplay/data/screenplay_local_repository.dart';
 
 Future<void> main() async {
@@ -24,5 +26,7 @@ Future<void> main() async {
   }
 
   await ScreenplayLocalRepository.instance.initialize();
+  await ImageFavoriteRepository.instance.initialize();
+  await AuthRepository.instance.initialize();
   runApp(const Rc0App());
 }

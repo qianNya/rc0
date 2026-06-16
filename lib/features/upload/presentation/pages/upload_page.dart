@@ -5,8 +5,10 @@ import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/data/app_catalog.dart';
+import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/responsive/responsive_builder.dart';
 import '../../../../shared/widgets/primary_button.dart';
+import '../../../../shared/widgets/profile_widgets.dart';
 import '../../../../shared/widgets/tag_editor.dart';
 import '../../../screenplay/data/screenplay_draft.dart';
 import '../../../screenplay/data/screenplay_local_repository.dart';
@@ -27,11 +29,14 @@ class _UploadPageState extends State<UploadPage> {
   late final ScreenplayDraft _draft;
   late final TextEditingController _titleController;
   late final TextEditingController _synopsisController;
+  Screenplay? _editingScript;
   bool _isPicking = false;
   bool _isPublishing = false;
 
   bool get _isEditing =>
       widget.editScriptId != null && widget.editScriptId!.isNotEmpty;
+
+  bool get _isPublished => _editingScript?.isPublished ?? false;
 
   int get _frameCount => countDraftFrames(_draft);
 
@@ -39,10 +44,11 @@ class _UploadPageState extends State<UploadPage> {
   void initState() {
     super.initState();
     if (_isEditing) {
-      final script =
+      _editingScript =
           ScreenplayLocalRepository.instance.findById(widget.editScriptId!);
-      _draft =
-          script != null ? ScreenplayDraft.fromScreenplay(script) : ScreenplayDraft();
+      _draft = _editingScript != null
+          ? ScreenplayDraft.fromScreenplay(_editingScript!)
+          : ScreenplayDraft();
     } else {
       _draft = ScreenplayDraft();
     }
@@ -58,6 +64,28 @@ class _UploadPageState extends State<UploadPage> {
   }
 
   void _refresh() => setState(() {});
+
+  void _resetDraft() {
+    _draft.title = '';
+    _draft.synopsis = '';
+    _draft.tags
+      ..clear()
+      ..add('站姿');
+    _draft.acts
+      ..clear()
+      ..add(ActDraft());
+    _titleController.text = '';
+    _synopsisController.text = '';
+  }
+
+  void _onCancel() {
+    if (_isEditing) {
+      context.go(AppRoutes.script(widget.editScriptId!));
+    } else {
+      _resetDraft();
+      context.go(AppRoutes.explore);
+    }
+  }
 
   Future<void> _pickImages(FramePickTarget target) async {
     if (_isPicking) return;
@@ -122,8 +150,42 @@ class _UploadPageState extends State<UploadPage> {
     _refresh();
   }
 
-  void _removeAct(int index) {
+  void _reloadDraftFromLocal() {
+    final script =
+        ScreenplayLocalRepository.instance.findById(widget.editScriptId!);
+    if (script == null) return;
+    _editingScript = script;
+    final draft = ScreenplayDraft.fromScreenplay(script);
+    _draft.title = draft.title;
+    _draft.synopsis = draft.synopsis;
+    _draft.tags
+      ..clear()
+      ..addAll(draft.tags);
+    _draft.acts
+      ..clear()
+      ..addAll(draft.acts);
+    _titleController.text = _draft.title;
+    _synopsisController.text = _draft.synopsis;
+    _refresh();
+  }
+
+  Future<void> _removeAct(int index) async {
     if (_draft.acts.length <= 1) return;
+
+    if (_isEditing && _isPublished) {
+      final result = await ScreenplayLocalRepository.instance.deleteAct(
+        widget.editScriptId!,
+        index,
+      );
+      if (!mounted) return;
+      if (result.error != null) {
+        _showSnackBar(result.error!);
+        return;
+      }
+      _reloadDraftFromLocal();
+      return;
+    }
+
     _draft.acts.removeAt(index);
     _refresh();
   }
@@ -133,9 +195,53 @@ class _UploadPageState extends State<UploadPage> {
     _refresh();
   }
 
-  void _removeScene(int actIndex, int sceneIndex) {
+  Future<void> _removeScene(int actIndex, int sceneIndex) async {
     if (_draft.acts[actIndex].scenes.length <= 1) return;
+
+    if (_isEditing && _isPublished) {
+      final result = await ScreenplayLocalRepository.instance.deleteScene(
+        widget.editScriptId!,
+        actIndex,
+        sceneIndex,
+      );
+      if (!mounted) return;
+      if (result.error != null) {
+        _showSnackBar(result.error!);
+        return;
+      }
+      _reloadDraftFromLocal();
+      return;
+    }
+
     _draft.acts[actIndex].scenes.removeAt(sceneIndex);
+    _refresh();
+  }
+
+  Future<void> _removeFrame(
+    int actIndex,
+    int sceneIndex,
+    int frameIndex,
+  ) async {
+    final scene = _draft.acts[actIndex].scenes[sceneIndex];
+    if (scene.frames.length <= 1 && _isPublished) return;
+
+    if (_isEditing && _isPublished) {
+      final result = await ScreenplayLocalRepository.instance.deleteFrame(
+        widget.editScriptId!,
+        actIndex,
+        sceneIndex,
+        frameIndex,
+      );
+      if (!mounted) return;
+      if (result.error != null) {
+        _showSnackBar(result.error!);
+        return;
+      }
+      _reloadDraftFromLocal();
+      return;
+    }
+
+    scene.frames.removeAt(frameIndex);
     _refresh();
   }
 
@@ -211,8 +317,7 @@ class _UploadPageState extends State<UploadPage> {
                   ),
                 ),
                 onRemoveFrame: (frameIndex) {
-                  scene.frames.removeAt(frameIndex);
-                  _refresh();
+                  _removeFrame(actIndex, sceneIndex, frameIndex);
                 },
                 onCaptionChanged: (frameIndex, value) {
                   scene.frames[frameIndex].caption = value;
@@ -244,13 +349,7 @@ class _UploadPageState extends State<UploadPage> {
         appBar: AppBar(
           title: Text(pageTitle),
           leading: TextButton(
-            onPressed: () {
-              if (_isEditing) {
-                context.go(AppRoutes.script(widget.editScriptId!));
-              } else {
-                Navigator.maybePop(context);
-              }
-            },
+            onPressed: _onCancel,
             child: const Text('取消'),
           ),
           leadingWidth: 72,
@@ -265,6 +364,11 @@ class _UploadPageState extends State<UploadPage> {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
+              WizardStepIndicator(
+                steps: AppCatalog.wizardSteps,
+                currentStep: 1,
+              ),
+              const SizedBox(height: 20),
               form,
               if (_isPicking || _isPublishing)
                 const Padding(
@@ -273,7 +377,7 @@ class _UploadPageState extends State<UploadPage> {
                 ),
               const SizedBox(height: 24),
               PrimaryButton(
-                label: _isEditing ? '保存修改' : '发布到动作库',
+                label: _isEditing ? '保存修改' : '下一步',
                 onPressed: () => _onPublish(),
                 isLoading: _isPublishing,
               ),
@@ -285,46 +389,56 @@ class _UploadPageState extends State<UploadPage> {
         backgroundColor: AppColors.background,
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(32),
-          child: Row(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(flex: 3, child: form),
-              const SizedBox(width: 32),
-              Expanded(
-                flex: 2,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(pageTitle, style: AppTextStyles.title),
-                    const SizedBox(height: 16),
-                    const Text(
-                      '按「剧本 → 幕 → 场 → 画」组织参考图。每张图片对应一个分镜画面。',
-                      style: AppTextStyles.bodySecondary,
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
+              WizardStepIndicator(
+                steps: AppCatalog.wizardSteps,
+                currentStep: 1,
+              ),
+              const SizedBox(height: 24),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(flex: 3, child: form),
+                  const SizedBox(width: 32),
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (!_isEditing)
-                          Expanded(
-                            child: SecondaryButton(
-                              label: '保存草稿',
-                              onPressed: _draft.hasFrames && !_isPublishing
-                                  ? () => _onPublish(goHome: false)
-                                  : null,
+                        Text(pageTitle, style: AppTextStyles.title),
+                        const SizedBox(height: 16),
+                        const Text(
+                          '按「剧本 → 幕 → 场 → 画」组织参考图。每张图片对应一个分镜画面。',
+                          style: AppTextStyles.bodySecondary,
+                        ),
+                        const SizedBox(height: 24),
+                        Row(
+                          children: [
+                            if (!_isEditing)
+                              Expanded(
+                                child: SecondaryButton(
+                                  label: '保存草稿',
+                                  onPressed: _draft.hasFrames && !_isPublishing
+                                      ? () => _onPublish(goHome: false)
+                                      : null,
+                                ),
+                              ),
+                            if (!_isEditing) const SizedBox(width: 12),
+                            Expanded(
+                              child: PrimaryButton(
+                                label: _isEditing ? '保存修改' : '下一步',
+                                onPressed: () => _onPublish(),
+                                isLoading: _isPublishing,
+                              ),
                             ),
-                          ),
-                        if (!_isEditing) const SizedBox(width: 12),
-                        Expanded(
-                          child: PrimaryButton(
-                            label: _isEditing ? '保存修改' : '发布剧本',
-                            onPressed: () => _onPublish(),
-                            isLoading: _isPublishing,
-                          ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ],
           ),

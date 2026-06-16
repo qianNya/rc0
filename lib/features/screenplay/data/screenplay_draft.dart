@@ -63,8 +63,8 @@ class ScreenplayDraft {
             .map(
               (frame) => FrameDraft(
                 image: UploadImageFile(
-                  path: frame.imagePath,
-                  name: _basename(frame.imagePath),
+                  path: frame.displayImagePath,
+                  name: _basename(frame.displayImagePath),
                 ),
                 caption: frame.caption,
                 actionNote: frame.actionNote,
@@ -147,6 +147,7 @@ Screenplay buildScreenplayFromDraft(
             id: '$sceneId-frame-$frameIndex',
             orderIndex: frameIndex,
             imagePath: path,
+            localImagePath: path,
             caption: frameDraft.caption,
             actionNote: frameDraft.actionNote,
             tags: draft.tags.toList(),

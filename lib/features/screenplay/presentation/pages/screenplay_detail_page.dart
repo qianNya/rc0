@@ -4,17 +4,26 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
-import '../../../../core/domain/screenplay/script_act.dart';
-import '../../../../core/domain/screenplay/script_scene.dart';
 import '../../../../core/responsive/responsive_builder.dart';
+import '../../../auth/data/auth_repository.dart';
+import '../../../social/data/social_repository.dart';
+import '../../../screenplay/data/screenplay_bundle_service.dart';
 import '../../../screenplay/data/screenplay_local_repository.dart';
+import '../../../screenplay/data/screenplay_publish_service.dart';
+import '../../../screenplay/data/screenplay_remote_repository.dart';
+import '../../../screenplay/data/script_frame_display.dart';
+import '../widgets/frame_thumbnail_grid.dart';
+import '../widgets/publish_visibility_dialog.dart';
+import '../widgets/screenplay_delete_actions.dart';
+import '../widgets/screenplay_detail_hero.dart';
 import '../widgets/screenplay_info_header.dart';
+import '../widgets/screenplay_structure_tree.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/pose_cover_image.dart';
 import '../../../../shared/widgets/primary_button.dart';
+import '../../../../shared/widgets/profile_widgets.dart';
 
 class ScreenplayDetailPage extends StatefulWidget {
   const ScreenplayDetailPage({super.key, required this.scriptId});
@@ -26,32 +35,414 @@ class ScreenplayDetailPage extends StatefulWidget {
 }
 
 class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
-  final _repository = ScreenplayLocalRepository.instance;
+  final _localRepository = ScreenplayLocalRepository.instance;
+  final _remoteRepository = ScreenplayRemoteRepository.instance;
+
+  Screenplay? _remoteScreenplay;
+  bool _loadingRemote = false;
+  String? _remoteError;
 
   @override
   void initState() {
     super.initState();
-    _repository.addListener(_onDataChanged);
+    _localRepository.addListener(_onDataChanged);
+    _loadScreenplay();
   }
 
   @override
   void dispose() {
-    _repository.removeListener(_onDataChanged);
+    _localRepository.removeListener(_onDataChanged);
     super.dispose();
   }
 
   void _onDataChanged() => setState(() {});
 
-  Screenplay? get _screenplay => _repository.findById(widget.scriptId);
+  Screenplay? _resolveLocalScreenplay() {
+    final direct = _localRepository.findById(widget.scriptId);
+    if (direct != null) return direct;
+
+    final remoteId = int.tryParse(widget.scriptId);
+    if (remoteId != null) {
+      return _localRepository.findByRemoteId(remoteId);
+    }
+    return null;
+  }
+
+  Future<void> _loadScreenplay() async {
+    if (_resolveLocalScreenplay() != null) return;
+
+    final id = int.tryParse(widget.scriptId);
+    if (id == null) return;
+
+    setState(() {
+      _loadingRemote = true;
+      _remoteError = null;
+    });
+
+    final result = await _remoteRepository.fetchScreenplayTree(id);
+    if (!mounted) return;
+
+    setState(() {
+      _loadingRemote = false;
+      _remoteScreenplay = result.screenplay;
+      _remoteError = result.error;
+    });
+  }
+
+  Screenplay? get _screenplay => _resolveLocalScreenplay() ?? _remoteScreenplay;
+
+  bool _forking = false;
+  bool _likeBusy = false;
+  bool _followBusy = false;
+  bool _downloading = false;
+  bool _publishing = false;
+  bool _exporting = false;
+  bool _importing = false;
 
   void _onEdit(BuildContext context, Screenplay script) {
     context.go(AppRoutes.uploadEdit(script.id));
   }
 
+  Future<void> _onLike(Screenplay script) async {
+    if (_likeBusy || script.isLocal) return;
+    setState(() => _likeBusy = true);
+    final updated = await SocialRepository.instance.toggleLikeScreenplay(script);
+    if (!mounted) return;
+    setState(() {
+      _likeBusy = false;
+      if (updated != null) _remoteScreenplay = updated;
+    });
+  }
+
+  Future<void> _onFollow(Screenplay script) async {
+    final ownerId = script.ownerUserId;
+    if (_followBusy || ownerId == null || ownerId <= 0) return;
+    setState(() => _followBusy = true);
+    final err = await SocialRepository.instance.followUser(ownerId);
+    if (!mounted) return;
+    setState(() => _followBusy = false);
+    if (err != null) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(err)));
+    }
+  }
+
+  Future<void> _onFork(Screenplay script) async {
+    if (_forking) return;
+    setState(() => _forking = true);
+
+    final result = await _localRepository.fork(script);
+    if (!mounted) return;
+    setState(() => _forking = false);
+
+    if (result.error != null) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(result.error!)));
+      return;
+    }
+
+    final forked = result.screenplay!;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(const SnackBar(content: Text('已保存副本到本地')));
+    context.go(AppRoutes.script(forked.id));
+  }
+
+  Future<void> _onDownloadCopy(Screenplay script) async {
+    if (_downloading) return;
+    setState(() => _downloading = true);
+
+    final result = await _localRepository.downloadLocalCopy(script.id);
+    if (!mounted) return;
+    setState(() => _downloading = false);
+
+    if (result.error != null) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(result.error!)));
+      return;
+    }
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(const SnackBar(content: Text('图片已下载到本地')));
+    setState(() {});
+  }
+
+  Future<void> _onPublish(Screenplay script) async {
+    if (_publishing) return;
+
+    if (!AuthRepository.instance.isLoggedIn) {
+      context.go(
+        AppRoutes.loginWithRedirect(AppRoutes.script(widget.scriptId)),
+      );
+      return;
+    }
+
+    final doc = _localRepository.documentById(script.id);
+    if (doc == null) return;
+
+    if (doc.meta.remoteScreenplayId != null) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('该剧本已发布')));
+      return;
+    }
+
+    final visibility = await PublishVisibilityDialog.show(context);
+    if (visibility == null || !mounted) return;
+
+    final progress = ValueNotifier<(String, int, int)>(('准备', 0, 1));
+    if (!mounted) return;
+    showModalBottomSheet<void>(
+      context: context,
+      isDismissible: false,
+      enableDrag: false,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => ValueListenableBuilder(
+        valueListenable: progress,
+        builder: (_, value, __) => PublishProgressSheet(
+          stage: value.$1,
+          done: value.$2,
+          total: value.$3,
+        ),
+      ),
+    );
+
+    setState(() => _publishing = true);
+
+    final result = await ScreenplayPublishService.instance.publish(
+      document: doc,
+      visibility: visibility,
+      onProgress: (stage, done, total) {
+        progress.value = (stage, done, total);
+      },
+    );
+
+    if (!mounted) return;
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+    setState(() => _publishing = false);
+
+    if (result.error != null) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(result.error!)));
+      return;
+    }
+
+    await _localRepository.updateDocument(result.result!.document);
+    if (!mounted) return;
+
+    final visibilityLabel = visibility == 1 ? '公开' : '非公开';
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text('发布成功（$visibilityLabel）')),
+      );
+    setState(() {});
+  }
+
+  Future<void> _onExport(Screenplay script) async {
+    if (_exporting) return;
+    final doc = _localRepository.documentById(script.id);
+    if (doc == null) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('仅本地剧本可导出')));
+      return;
+    }
+
+    setState(() => _exporting = true);
+    final result = await ScreenplayBundleService.instance.exportToFile(doc);
+    if (!mounted) return;
+    setState(() => _exporting = false);
+
+    if (result.error != null) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(result.error!)));
+      return;
+    }
+    if (result.path != null) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text('已导出: ${result.path}')));
+    }
+  }
+
+  Future<void> _onImport() async {
+    if (_importing) return;
+    setState(() => _importing = true);
+    final result = await ScreenplayBundleService.instance.importFromFile();
+    if (!mounted) return;
+    setState(() => _importing = false);
+
+    if (result.error != null) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(result.error!)));
+      return;
+    }
+    if (result.document != null) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('导入成功')));
+      context.go(AppRoutes.script(result.document!.meta.localId));
+    }
+  }
+
+  void _showMoreMenu(
+    BuildContext context,
+    Screenplay script, {
+    required bool isOwner,
+    VoidCallback? onPublish,
+    VoidCallback? onExport,
+    VoidCallback? onDownloadCopy,
+    bool publishing = false,
+    bool exporting = false,
+    bool downloading = false,
+  }) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (onPublish != null)
+              ListTile(
+                leading: const Icon(Icons.publish_outlined),
+                title: const Text('发布'),
+                enabled: !publishing,
+                onTap: () {
+                  Navigator.pop(ctx);
+                  onPublish();
+                },
+              ),
+            if (onDownloadCopy != null)
+              ListTile(
+                leading: const Icon(Icons.download_outlined),
+                title: const Text('下载副本'),
+                enabled: !downloading,
+                onTap: () {
+                  Navigator.pop(ctx);
+                  onDownloadCopy();
+                },
+              ),
+            if (onExport != null)
+              ListTile(
+                leading: const Icon(Icons.upload_outlined),
+                title: const Text('导出 JSON'),
+                enabled: !exporting,
+                onTap: () {
+                  Navigator.pop(ctx);
+                  onExport();
+                },
+              ),
+            ListTile(
+              leading: const Icon(Icons.download_outlined),
+              title: const Text('导入剧本 JSON'),
+              enabled: !_importing,
+              onTap: () {
+                Navigator.pop(ctx);
+                _onImport();
+              },
+            ),
+            if (isOwner)
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: Colors.red),
+                title: const Text('删除剧本', style: TextStyle(color: Colors.red)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  deleteScreenplayAndPop(
+                    context,
+                    id: script.id,
+                    title: script.title,
+                  );
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteMessage(String? error, {String success = '已删除'}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text(error ?? success)),
+      );
+  }
+
+  Future<void> _onDeleteAct(Screenplay script, int actIndex) async {
+    final act = script.acts[actIndex];
+    final confirmed = await confirmDeleteNode(
+      context,
+      title: '删除幕',
+      message: '确定删除「${act.title}」？关联的场与画格将一并删除。',
+    );
+    if (!confirmed || !mounted) return;
+
+    final result = await _localRepository.deleteAct(script.id, actIndex);
+    _showDeleteMessage(result.error);
+  }
+
+  Future<void> _onDeleteScene(
+    Screenplay script,
+    int actIndex,
+    int sceneIndex,
+  ) async {
+    final scene = script.acts[actIndex].scenes[sceneIndex];
+    final confirmed = await confirmDeleteNode(
+      context,
+      title: '删除场',
+      message: '确定删除「${scene.title}」？关联的画格将一并删除。',
+    );
+    if (!confirmed || !mounted) return;
+
+    final result = await _localRepository.deleteScene(
+      script.id,
+      actIndex,
+      sceneIndex,
+    );
+    _showDeleteMessage(result.error);
+  }
+
+  Future<void> _onDeleteFrame(
+    Screenplay script,
+    int actIndex,
+    int sceneIndex,
+    int frameIndex,
+  ) async {
+    final confirmed = await confirmDeleteNode(
+      context,
+      title: '删除画格',
+      message: '确定删除该画格？',
+    );
+    if (!confirmed || !mounted) return;
+
+    final result = await _localRepository.deleteFrame(
+      script.id,
+      actIndex,
+      sceneIndex,
+      frameIndex,
+    );
+    _showDeleteMessage(result.error);
+  }
+
   @override
   Widget build(BuildContext context) {
     final script = _screenplay;
-    if (script == null) {
+
+    if (script == null && _loadingRemote) {
       return Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
@@ -61,98 +452,251 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
           ),
           title: const Text('剧本详情'),
         ),
-        body: const EmptyStateView(
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (script == null) {
+      final needsLogin = _remoteError != null &&
+          !AuthRepository.instance.isLoggedIn;
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => popOrGoExplore(context),
+          ),
+          title: const Text('剧本详情'),
+        ),
+        body: EmptyStateView(
           icon: Icons.search_off_outlined,
-          title: '剧本不存在',
-          subtitle: '可能已被删除，或链接无效',
+          title: needsLogin ? '请先登录' : '剧本不存在',
+          subtitle: needsLogin
+              ? '登录后查看远程剧本详情'
+              : (_remoteError ?? '可能已被删除，或链接无效'),
+          actionLabel: needsLogin ? '去登录' : '重试',
+          onAction: needsLogin
+              ? () => context.go(
+                    AppRoutes.loginWithRedirect(
+                      AppRoutes.script(widget.scriptId),
+                    ),
+                  )
+              : _loadScreenplay,
         ),
       );
     }
 
+    final isOwner = SocialRepository.instance.isCurrentUserOwner(script);
+
     return ResponsiveBuilder(
       mobile: (_) => _ScreenplayDetailMobile(
         screenplay: script,
-        onEdit: () => _onEdit(context, script),
+        isOwner: isOwner,
+        onEdit: isOwner ? () => _onEdit(context, script) : null,
+        onFork: () => _onFork(script),
+        onDownloadCopy: script.needsImageDownload
+            ? () => _onDownloadCopy(script)
+            : null,
+        onPublish: isOwner && !script.isPublished
+            ? () => _onPublish(script)
+            : null,
+        onExport: isOwner && script.isPublished
+            ? () => _onExport(script)
+            : null,
+        onMore: () => _showMoreMenu(
+          context,
+          script,
+          isOwner: isOwner,
+          onPublish: isOwner && !script.isPublished
+              ? () => _onPublish(script)
+              : null,
+          onExport: isOwner && script.isPublished
+              ? () => _onExport(script)
+              : null,
+          onDownloadCopy: script.needsImageDownload
+              ? () => _onDownloadCopy(script)
+              : null,
+          publishing: _publishing,
+          exporting: _exporting,
+          downloading: _downloading,
+        ),
+        onDeleteAct: isOwner ? (i) => _onDeleteAct(script, i) : null,
+        onDeleteScene: isOwner
+            ? (actIndex, sceneIndex) =>
+                _onDeleteScene(script, actIndex, sceneIndex)
+            : null,
+        onDeleteFrame: isOwner
+            ? (actIndex, sceneIndex, frameIndex) => _onDeleteFrame(
+                  script,
+                  actIndex,
+                  sceneIndex,
+                  frameIndex,
+                )
+            : null,
+        onLike: () => _onLike(script),
+        onFollow: () => _onFollow(script),
+        likeBusy: _likeBusy,
+        followBusy: _followBusy,
+        forking: _forking,
+        downloading: _downloading,
+        publishing: _publishing,
+        exporting: _exporting,
       ),
       desktop: (_) => _ScreenplayDetailDesktop(
         screenplay: script,
-        onEdit: () => _onEdit(context, script),
+        isOwner: isOwner,
+        onEdit: isOwner ? () => _onEdit(context, script) : null,
+        onFork: () => _onFork(script),
+        onDownloadCopy: script.needsImageDownload
+            ? () => _onDownloadCopy(script)
+            : null,
+        onPublish: isOwner && !script.isPublished
+            ? () => _onPublish(script)
+            : null,
+        onExport: isOwner && script.isPublished
+            ? () => _onExport(script)
+            : null,
+        onImport: _onImport,
+        onDeleteAct: isOwner ? (i) => _onDeleteAct(script, i) : null,
+        onDeleteScene: isOwner
+            ? (actIndex, sceneIndex) =>
+                _onDeleteScene(script, actIndex, sceneIndex)
+            : null,
+        onDeleteFrame: isOwner
+            ? (actIndex, sceneIndex, frameIndex) => _onDeleteFrame(
+                  script,
+                  actIndex,
+                  sceneIndex,
+                  frameIndex,
+                )
+            : null,
+        onLike: () => _onLike(script),
+        onFollow: () => _onFollow(script),
+        likeBusy: _likeBusy,
+        followBusy: _followBusy,
+        forking: _forking,
+        downloading: _downloading,
+        publishing: _publishing,
+        exporting: _exporting,
+        importing: _importing,
       ),
     );
   }
 }
 
-class _ScreenplayDetailMobile extends StatelessWidget {
+class _ScreenplayDetailMobile extends StatefulWidget {
   const _ScreenplayDetailMobile({
     required this.screenplay,
-    required this.onEdit,
+    required this.isOwner,
+    this.onEdit,
+    this.onFork,
+    this.onDownloadCopy,
+    this.onPublish,
+    this.onExport,
+    this.onMore,
+    this.onDeleteAct,
+    this.onDeleteScene,
+    this.onDeleteFrame,
+    this.onLike,
+    this.onFollow,
+    this.forking = false,
+    this.likeBusy = false,
+    this.followBusy = false,
+    this.downloading = false,
+    this.publishing = false,
+    this.exporting = false,
   });
 
   final Screenplay screenplay;
-  final VoidCallback onEdit;
+  final bool isOwner;
+  final VoidCallback? onEdit;
+  final VoidCallback? onFork;
+  final VoidCallback? onDownloadCopy;
+  final VoidCallback? onPublish;
+  final VoidCallback? onExport;
+  final VoidCallback? onMore;
+  final Future<void> Function(int actIndex)? onDeleteAct;
+  final Future<void> Function(int actIndex, int sceneIndex)? onDeleteScene;
+  final Future<void> Function(int actIndex, int sceneIndex, int frameIndex)?
+      onDeleteFrame;
+  final VoidCallback? onLike;
+  final VoidCallback? onFollow;
+  final bool forking;
+  final bool likeBusy;
+  final bool followBusy;
+  final bool downloading;
+  final bool publishing;
+  final bool exporting;
+
+  @override
+  State<_ScreenplayDetailMobile> createState() =>
+      _ScreenplayDetailMobileState();
+}
+
+class _ScreenplayDetailMobileState extends State<_ScreenplayDetailMobile> {
+  int _tabIndex = 0;
+
+  static const _detailTabs = ['结构预览', '模板介绍', '相关模板'];
 
   @override
   Widget build(BuildContext context) {
+    final screenplay = widget.screenplay;
     final frames = screenplay.allFrames;
-    final framePaths = frames.map((f) => f.imagePath).toList();
+    final framePaths = frames.map((f) => f.effectiveDisplayPath).toList();
     final frameCaptions = frames.map((f) => f.caption).toList();
+    final showFork = !widget.isOwner || screenplay.isForkCopy;
+
+    String primaryLabel;
+    VoidCallback? primaryAction;
+    bool primaryLoading = false;
+
+    if (widget.isOwner && widget.onEdit != null) {
+      primaryLabel = '编辑剧本';
+      primaryAction = widget.onEdit;
+    } else if (showFork) {
+      primaryLabel = widget.forking ? 'Fork 中…' : 'Fork 这个模板';
+      primaryAction = widget.forking ? null : widget.onFork;
+      primaryLoading = widget.forking;
+    } else {
+      primaryLabel = '编辑剧本';
+      primaryAction = widget.onEdit;
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('剧本详情'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => popOrGoExplore(context),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit_outlined),
-            tooltip: '编辑剧本',
-            onPressed: onEdit,
-          ),
-        ],
-      ),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (frames.isNotEmpty)
-              SizedBox(
-                height: 240,
-                child: PageView.builder(
-                  itemCount: frames.length,
-                  itemBuilder: (_, index) => PoseCoverImage(
-                    imagePath: frames[index].imagePath,
-                    expand: true,
-                    borderRadius: 0,
-                    enablePreview: true,
-                    previewGallery: framePaths,
-                    previewIndex: index,
-                    previewCaptions: frameCaptions,
-                  ),
-                ),
-              )
-            else
-              const SizedBox(
-                height: 200,
-                child: PoseCoverImage(expand: true, borderRadius: 0),
-              ),
+            ScreenplayDetailHero(
+              screenplay: screenplay,
+              isOwner: widget.isOwner,
+              onBack: () => popOrGoExplore(context),
+              onMore: widget.onMore,
+              onFork: widget.onFork,
+              onEdit: widget.onEdit,
+              onLike: widget.onLike,
+              onFollow: widget.onFollow,
+              forking: widget.forking,
+              likeBusy: widget.likeBusy,
+              followBusy: widget.followBusy,
+            ),
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ScreenplayInfoHeader(screenplay: screenplay),
-                  const SizedBox(height: 20),
-                  const Text('结构', style: AppTextStyles.label),
-                  const SizedBox(height: 8),
-                  for (final act in screenplay.acts)
-                    _ActExpansion(
-                      act: act,
-                      framePaths: framePaths,
-                      frameCaptions: frameCaptions,
-                    ),
+                  DetailTabBar(
+                    tabs: _detailTabs,
+                    selectedIndex: _tabIndex,
+                    onChanged: (i) => setState(() => _tabIndex = i),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTabContent(
+                    screenplay,
+                    framePaths,
+                    frameCaptions,
+                  ),
                 ],
               ),
             ),
@@ -163,29 +707,95 @@ class _ScreenplayDetailMobile extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: PrimaryButton(
-            label: '编辑剧本',
-            onPressed: onEdit,
+            label: primaryLabel,
+            isLoading: primaryLoading,
+            onPressed: primaryAction,
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildTabContent(
+    Screenplay screenplay,
+    List<String> framePaths,
+    List<String> frameCaptions,
+  ) {
+    switch (_tabIndex) {
+      case 0:
+        return ScreenplayStructureTree(
+          screenplay: screenplay,
+          galleryPaths: framePaths,
+          galleryCaptions: frameCaptions,
+          onDeleteAct: widget.onDeleteAct,
+          onDeleteScene: widget.onDeleteScene,
+          onDeleteFrame: widget.onDeleteFrame,
+        );
+      case 1:
+        return ScreenplayInfoHeader(screenplay: screenplay);
+      default:
+        return const EmptyStateView(
+          icon: Icons.construction_outlined,
+          title: '即将上线',
+          subtitle: '相关模板推荐正在建设中',
+        );
+    }
   }
 }
 
 class _ScreenplayDetailDesktop extends StatelessWidget {
   const _ScreenplayDetailDesktop({
     required this.screenplay,
-    required this.onEdit,
+    required this.isOwner,
+    this.onEdit,
+    this.onFork,
+    this.onDownloadCopy,
+    this.onPublish,
+    this.onExport,
+    this.onImport,
+    this.onDeleteAct,
+    this.onDeleteScene,
+    this.onDeleteFrame,
+    this.onLike,
+    this.onFollow,
+    this.forking = false,
+    this.likeBusy = false,
+    this.followBusy = false,
+    this.downloading = false,
+    this.publishing = false,
+    this.exporting = false,
+    this.importing = false,
   });
 
   final Screenplay screenplay;
-  final VoidCallback onEdit;
+  final bool isOwner;
+  final VoidCallback? onEdit;
+  final VoidCallback? onFork;
+  final VoidCallback? onDownloadCopy;
+  final VoidCallback? onPublish;
+  final VoidCallback? onExport;
+  final VoidCallback? onImport;
+  final Future<void> Function(int actIndex)? onDeleteAct;
+  final Future<void> Function(int actIndex, int sceneIndex)? onDeleteScene;
+  final Future<void> Function(int actIndex, int sceneIndex, int frameIndex)?
+      onDeleteFrame;
+  final VoidCallback? onLike;
+  final VoidCallback? onFollow;
+  final bool forking;
+  final bool likeBusy;
+  final bool followBusy;
+  final bool downloading;
+  final bool publishing;
+  final bool exporting;
+  final bool importing;
 
   @override
   Widget build(BuildContext context) {
     final frames = screenplay.allFrames;
-    final framePaths = frames.map((f) => f.imagePath).toList();
+    final framePaths = frames.map((f) => f.effectiveDisplayPath).toList();
     final frameCaptions = frames.map((f) => f.caption).toList();
+    final ctaLabel = isOwner ? '编辑剧本' : 'Fork 此剧本';
+    final showFork = !isOwner || screenplay.isForkCopy;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -196,11 +806,24 @@ class _ScreenplayDetailDesktop extends StatelessWidget {
         ),
         title: Text(screenplay.title),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.edit_outlined),
-            tooltip: '编辑剧本',
-            onPressed: onEdit,
-          ),
+          if (onEdit != null)
+            IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: '编辑剧本',
+              onPressed: onEdit,
+            ),
+          if (onExport != null)
+            IconButton(
+              icon: const Icon(Icons.upload_outlined),
+              tooltip: '导出 JSON',
+              onPressed: exporting ? null : onExport,
+            ),
+          if (onImport != null)
+            IconButton(
+              icon: const Icon(Icons.download_outlined),
+              tooltip: '导入剧本 JSON',
+              onPressed: importing ? null : onImport,
+            ),
         ],
       ),
       body: SingleChildScrollView(
@@ -215,7 +838,7 @@ class _ScreenplayDetailDesktop extends StatelessWidget {
                 children: [
                   if (frames.isNotEmpty)
                     PoseCoverImage(
-                      imagePath: frames.first.imagePath,
+                      imagePath: frames.first.effectiveDisplayPath,
                       aspectRatio: 1.1,
                       iconSize: 64,
                       enablePreview: true,
@@ -225,27 +848,13 @@ class _ScreenplayDetailDesktop extends StatelessWidget {
                   else
                     const PoseCoverImage(aspectRatio: 1.1, iconSize: 64),
                   const SizedBox(height: 16),
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 4,
-                      mainAxisSpacing: 8,
-                      crossAxisSpacing: 8,
-                      childAspectRatio: 1,
-                    ),
-                    itemCount: frames.length,
-                    itemBuilder: (_, index) => PoseCoverImage(
-                      imagePath: frames[index].imagePath,
-                      aspectRatio: 1,
-                      iconSize: 24,
-                      borderRadius: AppDimensions.radiusSm,
-                      enablePreview: true,
-                      previewGallery: framePaths,
-                      previewIndex: index,
-                      previewCaptions: frameCaptions,
-                    ),
+                  FrameThumbnailGrid(
+                    frames: frames,
+                    galleryPaths: framePaths,
+                    galleryCaptions: frameCaptions,
+                    crossAxisCount: 4,
+                    showCaptions: false,
+                    iconSize: 24,
                   ),
                 ],
               ),
@@ -258,161 +867,59 @@ class _ScreenplayDetailDesktop extends StatelessWidget {
                 children: [
                   ScreenplayInfoHeader(screenplay: screenplay),
                   const SizedBox(height: 20),
-                  const Text('结构', style: AppTextStyles.label),
+                  const Text('结构预览', style: AppTextStyles.label),
                   const SizedBox(height: 8),
-                  for (final act in screenplay.acts)
-                    _ActExpansion(
-                      act: act,
-                      framePaths: framePaths,
-                      frameCaptions: frameCaptions,
-                    ),
-                  const SizedBox(height: 24),
-                  PrimaryButton(label: '编辑剧本', onPressed: onEdit),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ActExpansion extends StatelessWidget {
-  const _ActExpansion({
-    required this.act,
-    required this.framePaths,
-    required this.frameCaptions,
-  });
-
-  final ScriptAct act;
-  final List<String> framePaths;
-  final List<String> frameCaptions;
-
-  @override
-  Widget build(BuildContext context) {
-    final radius = BorderRadius.circular(AppDimensions.radiusMd);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: radius,
-        border: Border.all(color: AppColors.border),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-          childrenPadding: EdgeInsets.zero,
-          backgroundColor: AppColors.surface,
-          collapsedBackgroundColor: AppColors.surface,
-          shape: RoundedRectangleBorder(borderRadius: radius),
-          collapsedShape: RoundedRectangleBorder(borderRadius: radius),
-          title: Text(act.title, style: AppTextStyles.label),
-          subtitle: Text(
-            '${act.sceneCount}场 · ${act.frameCount}画',
-            style: AppTextStyles.bodySecondary,
-          ),
-          children: [
-            if (act.synopsis.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(act.synopsis, style: AppTextStyles.bodySecondary),
-                ),
-              ),
-            for (final scene in act.scenes)
-              _SceneSection(
-                scene: scene,
-                framePaths: framePaths,
-                frameCaptions: frameCaptions,
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SceneSection extends StatelessWidget {
-  const _SceneSection({
-    required this.scene,
-    required this.framePaths,
-    required this.frameCaptions,
-  });
-
-  final ScriptScene scene;
-  final List<String> framePaths;
-  final List<String> frameCaptions;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(scene.title, style: AppTextStyles.label),
-          if (scene.location.isNotEmpty || scene.timeOfDay.isNotEmpty)
-            Text(
-              [scene.location, scene.timeOfDay]
-                  .where((e) => e.isNotEmpty)
-                  .join(' · '),
-              style: AppTextStyles.bodySecondary.copyWith(fontSize: 12),
-            ),
-          if (scene.description.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(scene.description, style: AppTextStyles.bodySecondary),
-          ],
-          const SizedBox(height: 8),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
-              childAspectRatio: 1,
-            ),
-            itemCount: scene.frames.length,
-            itemBuilder: (_, index) {
-              final frame = scene.frames[index];
-              final globalIndex = framePaths.indexOf(frame.imagePath);
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    child: PoseCoverImage(
-                      imagePath: frame.imagePath,
-                      expand: true,
-                      borderRadius: AppDimensions.radiusSm,
-                      iconSize: 20,
-                      enablePreview: true,
-                      previewGallery: framePaths,
-                      previewIndex: globalIndex >= 0 ? globalIndex : index,
-                      previewCaptions: frameCaptions,
-                    ),
+                  ScreenplayStructureTree(
+                    screenplay: screenplay,
+                    galleryPaths: framePaths,
+                    galleryCaptions: frameCaptions,
+                    onDeleteAct: onDeleteAct,
+                    onDeleteScene: onDeleteScene,
+                    onDeleteFrame: onDeleteFrame,
                   ),
-                  if (frame.caption.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        frame.caption,
-                        style: AppTextStyles.bodySecondary.copyWith(
-                          fontSize: 10,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                  const SizedBox(height: 24),
+                  if (onDownloadCopy != null)
+                    PrimaryButton(
+                      label: downloading ? '下载中…' : '下载副本',
+                      isLoading: downloading,
+                      onPressed: downloading ? null : onDownloadCopy,
                     ),
+                  if (onDownloadCopy != null) const SizedBox(height: 8),
+                  if (onPublish != null) ...[
+                    PrimaryButton(
+                      label: publishing ? '发布中…' : '发布',
+                      isLoading: publishing,
+                      onPressed: publishing ? null : onPublish,
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                  if (isOwner && onEdit != null)
+                    PrimaryButton(label: ctaLabel, onPressed: onEdit)
+                  else if (showFork)
+                    PrimaryButton(
+                      label: forking ? 'Fork 中…' : 'Fork 此剧本',
+                      isLoading: forking,
+                      onPressed: forking ? null : onFork,
+                    ),
+                  if (screenplay.isPublished && onExport != null) ...[
+                    const SizedBox(height: 8),
+                    SecondaryButton(
+                      label: exporting ? '导出中…' : '导出 JSON',
+                      onPressed: exporting ? null : onExport,
+                    ),
+                  ],
+                  if (isOwner && showFork && onFork != null) ...[
+                    const SizedBox(height: 8),
+                    SecondaryButton(
+                      label: forking ? 'Fork 中…' : 'Fork 此剧本',
+                      onPressed: forking ? null : onFork,
+                    ),
+                  ],
                 ],
-              );
-            },
-          ),
-        ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

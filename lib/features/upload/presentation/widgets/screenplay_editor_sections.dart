@@ -9,6 +9,55 @@ import '../../../screenplay/data/screenplay_draft.dart';
 import '../../../../shared/widgets/image_preview.dart';
 import '../../domain/upload_image_file.dart';
 
+class _FrameThumbnail extends StatelessWidget {
+  const _FrameThumbnail({required this.path, required this.size});
+
+  final String path;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    if (isNetworkImagePath(path)) {
+      return Image.network(
+        path,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, progress) {
+          if (progress == null) return child;
+          return _placeholder();
+        },
+        errorBuilder: (_, _, _) => _placeholder(),
+      );
+    }
+
+    return Image.file(
+      File(path),
+      width: size,
+      height: size,
+      fit: BoxFit.cover,
+      errorBuilder: (_, _, _) => _placeholder(),
+    );
+  }
+
+  Widget _placeholder() {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: ColoredBox(
+        color: AppColors.placeholder,
+        child: Center(
+          child: Icon(
+            Icons.broken_image_outlined,
+            size: size * 0.35,
+            color: AppColors.textTertiary,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class FrameListEditor extends StatelessWidget {
   const FrameListEditor({
     super.key,
@@ -39,6 +88,9 @@ class FrameListEditor extends StatelessWidget {
         ...List.generate(frames.length, (index) {
           final frame = frames[index];
           final paths = frames.map((f) => f.image.path).toList();
+          final thumbSize = compact ? 72.0 : 88.0;
+          final canPreview = isPreviewableImagePath(frame.image.path);
+
           return Container(
             margin: const EdgeInsets.only(bottom: 12),
             padding: const EdgeInsets.all(10),
@@ -51,19 +103,23 @@ class FrameListEditor extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 GestureDetector(
-                  onTap: () => showImagePreview(
-                    context,
-                    imagePaths: paths,
-                    initialIndex: index,
-                    captions: frames.map((f) => f.caption).toList(),
-                  ),
+                  onTap: canPreview
+                      ? () => showImagePreview(
+                            context,
+                            imagePaths: paths,
+                            initialIndex: index,
+                            captions: frames.map((f) => f.caption).toList(),
+                          )
+                      : null,
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-                    child: Image.file(
-                      File(frame.image.path),
-                      width: compact ? 72 : 88,
-                      height: compact ? 72 : 88,
-                      fit: BoxFit.cover,
+                    child: SizedBox(
+                      width: thumbSize,
+                      height: thumbSize,
+                      child: _FrameThumbnail(
+                        path: frame.image.path,
+                        size: thumbSize,
+                      ),
                     ),
                   ),
                 ),
