@@ -1,0 +1,78 @@
+# 冒烟流程：auth → admin（RBAC）→ gallery，从上到下 Run All
+@gateway = http://192.168.110.167:8888
+@adminUsername = admin
+@adminPassword = admin123
+
+### @name authPing
+GET {{gateway}}/api/auth/ping
+Accept: application/json
+
+### @name adminPing
+GET {{gateway}}/api/admin/ping
+Accept: application/json
+
+### @name galleryPing
+GET {{gateway}}/api/gallery/ping
+Accept: application/json
+
+### @name monitorHealth
+GET {{gateway}}/api/monitor/health
+Accept: application/json
+
+### @name adminLogin
+POST {{gateway}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "{{adminUsername}}",
+  "password": "{{adminPassword}}"
+}
+
+> {%
+  client.global.set("accessToken", response.body.data.access_token);
+%}
+
+### @name getProfile
+GET {{gateway}}/api/admin/profile
+Accept: application/json
+Authorization: Bearer {{accessToken}}
+
+### @name listUsers
+GET {{gateway}}/api/admin/users?page=1&page_size=5
+Accept: application/json
+Authorization: Bearer {{accessToken}}
+
+### @name listRoles
+GET {{gateway}}/api/admin/roles?page=1&page_size=5
+Accept: application/json
+Authorization: Bearer {{accessToken}}
+
+### @name listMenus
+GET {{gateway}}/api/admin/menus?page=1&page_size=5
+Accept: application/json
+Authorization: Bearer {{accessToken}}
+
+### @name listLogs
+GET {{gateway}}/api/admin/logs?page=1&page_size=5
+Accept: application/json
+Authorization: Bearer {{accessToken}}
+
+### @name listMonitorServices
+GET {{gateway}}/api/monitor/services
+Accept: application/json
+Authorization: Bearer {{accessToken}}
+
+### @name listGalleryWorks
+GET {{gateway}}/api/gallery/works?page=1&page_size=5
+Accept: application/json
+Authorization: Bearer {{accessToken}}
+
+### @name listGalleryImages
+GET {{gateway}}/api/gallery/images?page=1&page_size=5
+Accept: application/json
+Authorization: Bearer {{accessToken}}
+
+### @name listGalleryTags
+GET {{gateway}}/api/gallery/tags?page=1&page_size=5
+Accept: application/json
+Authorization: Bearer {{accessToken}}

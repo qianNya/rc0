@@ -21,30 +21,49 @@ class AppBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        border: Border(top: BorderSide(color: AppColors.border)),
-        boxShadow: AppShadows.bottomNav,
-      ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: AppDimensions.bottomNavHeight,
-          child: Row(
-            children: [
-              for (var i = 0; i < mobileNavItems.length; i++)
-                if (i == createNavIndex)
-                  Expanded(child: _CreateNavButton(onTap: onCreateTap))
-                else
-                  Expanded(
-                    child: _NavItem(
-                      item: mobileNavItems[i],
-                      selected: selectedIndex == i,
-                      onTap: () => onItemSelected(i),
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final background = isDark
+        ? theme.scaffoldBackgroundColor
+        : theme.colorScheme.surface;
+    final topBorderColor = isDark
+        ? Colors.white.withValues(alpha: 0.06)
+        : theme.dividerColor;
+
+    return Material(
+      color: background,
+      elevation: 0,
+      surfaceTintColor: Colors.transparent,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: background,
+          border: Border(
+            top: BorderSide(
+              color: topBorderColor,
+              width: isDark ? 0 : 1,
+            ),
+          ),
+          boxShadow: isDark ? null : AppShadows.bottomNav,
+        ),
+        child: SafeArea(
+          top: false,
+          child: SizedBox(
+            height: AppDimensions.bottomNavHeight,
+            child: Row(
+              children: [
+                for (var i = 0; i < mobileNavItems.length; i++)
+                  if (i == createNavIndex)
+                    Expanded(child: _CreateNavButton(onTap: onCreateTap))
+                  else
+                    Expanded(
+                      child: _NavItem(
+                        item: mobileNavItems[i],
+                        selected: selectedIndex == i,
+                        onTap: () => onItemSelected(i),
+                      ),
                     ),
-                  ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -65,6 +84,11 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = selected
+        ? AppColors.accent
+        : theme.textTheme.bodyMedium?.color ?? AppColors.textSecondary;
+
     return InkWell(
       onTap: onTap,
       child: Column(
@@ -73,7 +97,7 @@ class _NavItem extends StatelessWidget {
           Icon(
             selected ? item.selectedIcon : item.icon,
             size: 22,
-            color: selected ? AppColors.accent : AppColors.textSecondary,
+            color: color,
           ),
           const SizedBox(height: 4),
           Text(
@@ -81,7 +105,7 @@ class _NavItem extends StatelessWidget {
             style: TextStyle(
               fontSize: 11,
               fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-              color: selected ? AppColors.accent : AppColors.textSecondary,
+              color: color,
             ),
           ),
         ],

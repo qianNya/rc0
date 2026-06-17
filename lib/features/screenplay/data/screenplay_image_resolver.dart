@@ -1,9 +1,15 @@
 import 'dart:io';
 
+import '../../../core/utils/image_url_utils.dart';
+
 /// Resolves local vs remote image paths for screenplay tree frames and covers.
 abstract final class ScreenplayImageResolver {
-  static bool isNetworkUrl(String path) =>
-      path.startsWith('http://') || path.startsWith('https://');
+  static bool isNetworkUrl(String path) => isNetworkImagePath(path);
+
+  static String? _safeRemoteUrl(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    return resolveNetworkImageUrl(raw);
+  }
 
   /// UI / edit preview: prefer local file when available.
   static String? displayPath({
@@ -14,7 +20,8 @@ abstract final class ScreenplayImageResolver {
     if (localPath != null && localPath.isNotEmpty && !isNetworkUrl(localPath)) {
       return localPath;
     }
-    if (remoteUrl != null && remoteUrl.isNotEmpty) return remoteUrl;
+    final remote = _safeRemoteUrl(remoteUrl);
+    if (remote != null) return remote;
     if (legacyPath != null && legacyPath.isNotEmpty) return legacyPath;
     return null;
   }
@@ -28,10 +35,14 @@ abstract final class ScreenplayImageResolver {
     if (localPath != null && localPath.isNotEmpty && !isNetworkUrl(localPath)) {
       if (File(localPath).existsSync()) return localPath;
     }
-    if (remoteUrl != null && remoteUrl.isNotEmpty) return remoteUrl;
+    final remote = _safeRemoteUrl(remoteUrl);
+    if (remote != null) return remote;
     if (legacyPath != null && legacyPath.isNotEmpty) {
-      if (isNetworkUrl(legacyPath)) return legacyPath;
-      if (File(legacyPath).existsSync()) return legacyPath;
+      final legacyRemote = _safeRemoteUrl(legacyPath);
+      if (legacyRemote != null && isNetworkUrl(legacyRemote)) return legacyRemote;
+      if (!isNetworkUrl(legacyPath) && File(legacyPath).existsSync()) {
+        return legacyPath;
+      }
     }
     return null;
   }
@@ -68,10 +79,11 @@ abstract final class ScreenplayImageResolver {
       );
 
   static String? frameRemoteUrl(Map<String, dynamic> frame) {
-    final imageUrl = frame['image_url'] as String? ?? '';
-    if (imageUrl.isNotEmpty && isNetworkUrl(imageUrl)) return imageUrl;
-    final thumb = frame['thumbnail_url'] as String? ?? '';
-    if (thumb.isNotEmpty && isNetworkUrl(thumb)) return thumb;
+    for (final key in ['image_url', 'thumbnail_url']) {
+      final raw = frame[key] as String? ?? '';
+      final url = _safeRemoteUrl(raw);
+      if (url != null) return url;
+    }
     return null;
   }
 
@@ -98,8 +110,7 @@ abstract final class ScreenplayImageResolver {
 
   static String? coverRemoteUrl(Map<String, dynamic> screenplayMap) {
     final cover = screenplayMap['cover_url'] as String? ?? '';
-    if (cover.isNotEmpty && isNetworkUrl(cover)) return cover;
-    return null;
+    return _safeRemoteUrl(cover);
   }
 
   static String? legacyCoverPath(Map<String, dynamic> screenplayMap) {

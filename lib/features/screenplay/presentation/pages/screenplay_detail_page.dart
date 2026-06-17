@@ -7,6 +7,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/responsive/responsive_builder.dart';
+import '../../../../core/utils/state_listeners.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../social/data/social_repository.dart';
 import '../../../screenplay/data/screenplay_bundle_service.dart';
@@ -55,7 +56,7 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
     super.dispose();
   }
 
-  void _onDataChanged() => setState(() {});
+  void _onDataChanged() => scheduleSetState(this);
 
   Screenplay? _resolveLocalScreenplay() {
     final direct = _localRepository.findById(widget.scriptId);
@@ -311,7 +312,9 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
   }) {
     showModalBottomSheet<void>(
       context: context,
-      builder: (ctx) => SafeArea(
+      builder: (ctx) => Material(
+        color: Theme.of(ctx).canvasColor,
+        child: SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -368,6 +371,7 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
                 },
               ),
           ],
+        ),
         ),
       ),
     );
@@ -444,7 +448,7 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
 
     if (script == null && _loadingRemote) {
       return Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
@@ -460,7 +464,7 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
       final needsLogin = _remoteError != null &&
           !AuthRepository.instance.isLoggedIn;
       return Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
@@ -663,7 +667,7 @@ class _ScreenplayDetailMobileState extends State<_ScreenplayDetailMobile> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -798,7 +802,7 @@ class _ScreenplayDetailDesktop extends StatelessWidget {
     final showFork = !isOwner || screenplay.isForkCopy;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),

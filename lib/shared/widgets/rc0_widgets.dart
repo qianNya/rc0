@@ -17,17 +17,25 @@ class PlaceholderImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final placeholder = theme.brightness == Brightness.dark
+        ? AppColors.placeholderDark
+        : AppColors.placeholder;
+    final tertiary = theme.brightness == Brightness.dark
+        ? AppColors.textTertiaryDark
+        : AppColors.textTertiary;
+
     return AspectRatio(
       aspectRatio: aspectRatio,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: AppColors.placeholder,
+          color: placeholder,
           borderRadius: BorderRadius.circular(borderRadius),
         ),
         child: Icon(
           Icons.image_outlined,
           size: iconSize,
-          color: AppColors.textTertiary,
+          color: tertiary,
         ),
       ),
     );
@@ -96,6 +104,9 @@ class TagChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final secondary = theme.textTheme.bodyMedium?.color ?? AppColors.textSecondary;
+
     return FilterChip(
       label: Text(label),
       selected: selected,
@@ -103,7 +114,7 @@ class TagChip extends StatelessWidget {
       showCheckmark: false,
       labelStyle: TextStyle(
         fontSize: 13,
-        color: selected ? Colors.white : AppColors.textSecondary,
+        color: selected ? Colors.white : secondary,
         fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
       ),
     );

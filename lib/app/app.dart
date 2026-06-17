@@ -2,13 +2,35 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../core/platform/platform_features.dart';
+import '../core/theme/theme_mode_notifier.dart';
 import '../features/shell/presentation/widgets/desktop_title_bar.dart';
 import 'router/app_router.dart';
 import 'theme/app_theme.dart';
 import 'theme/system_ui_style.dart';
 
-class Rc0App extends StatelessWidget {
+class Rc0App extends StatefulWidget {
   const Rc0App({super.key});
+
+  @override
+  State<Rc0App> createState() => _Rc0AppState();
+}
+
+class _Rc0AppState extends State<Rc0App> {
+  final _themeNotifier = ThemeModeNotifier.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    _themeNotifier.addListener(_onThemeChanged);
+  }
+
+  @override
+  void dispose() {
+    _themeNotifier.removeListener(_onThemeChanged);
+    super.dispose();
+  }
+
+  void _onThemeChanged() => setState(() {});
 
   @override
   Widget build(BuildContext context) {
@@ -16,10 +38,15 @@ class Rc0App extends StatelessWidget {
       title: 'rc0',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: _themeNotifier.themeMode,
       routerConfig: AppRouter.router,
       builder: (context, child) {
+        final brightness = Theme.of(context).brightness;
+        AppSystemUi.applyFor(brightness);
+
         final content = AnnotatedRegion<SystemUiOverlayStyle>(
-          value: AppSystemUi.style,
+          value: AppSystemUi.styleFor(brightness),
           child: child ?? const SizedBox.shrink(),
         );
 

@@ -1,0 +1,61 @@
+# admin-api 用户资料与社交（profile.api → user.rpc/Identity + screenplay.rpc）
+@gateway = http://192.168.110.167:8888/
+@adminUsername = admin
+@adminPassword = admin123
+
+
+### BEGIN GENERATED
+
+### @name login
+POST {{gateway}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "{{adminUsername}}",
+  "password": "{{adminPassword}}"
+}
+
+> {%
+  client.global.set("accessToken", response.body.data.access_token);
+%}
+
+### @name getProfile
+GET {{gateway}}/api/admin/profile
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name updateProfile
+PUT {{gateway}}/api/admin/profile
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "nickname": "示例用户",
+  "email": "user@example.com",
+  "phone": "13800000000",
+  "avatar": "example"
+}
+### @name getPublicUserProfile
+GET {{gateway}}/api/admin/social/users/{{id}}/public
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name followUser
+POST {{gateway}}/api/admin/social/users/{{id}}/follow
+Authorization: Bearer {{accessToken}}
+
+
+### @name unfollowUser
+DELETE {{gateway}}/api/admin/social/users/{{id}}/follow
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name listUserScreenplays
+GET {{gateway}}/api/admin/social/users/{{id}}/screenplays?page=1&page_size=20
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### END GENERATED
+
+
+

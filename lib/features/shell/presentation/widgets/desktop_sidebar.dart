@@ -105,10 +105,11 @@ class DesktopSidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return Material(
+      color: AppColors.surface,
+      child: Container(
       width: 200,
       decoration: const BoxDecoration(
-        color: AppColors.surface,
         border: Border(right: BorderSide(color: AppColors.border)),
       ),
       child: Column(
@@ -161,6 +162,7 @@ class DesktopSidebar extends StatelessWidget {
           ),
           const SizedBox(height: 16),
         ],
+      ),
       ),
     );
   }

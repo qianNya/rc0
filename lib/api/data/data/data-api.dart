@@ -138,6 +138,8 @@ class UploadResp {
   final num size;
 
   final bool deduplicated;
+
+  final String url;
   UploadResp({
     required this.md5,
     required this.filename,
@@ -146,6 +148,7 @@ class UploadResp {
     required this.storage,
     required this.size,
     required this.deduplicated,
+    required this.url,
   });
   factory UploadResp.fromJson(Map<String, dynamic> m) {
     return UploadResp(
@@ -156,6 +159,7 @@ class UploadResp {
       storage: m['storage'] ?? "",
       size: m['size'] ?? 0,
       deduplicated: m['deduplicated'] ?? false,
+      url: m['url'] ?? "",
     );
   }
   Map<String, dynamic> toJson() {
@@ -167,6 +171,7 @@ class UploadResp {
       'storage': storage,
       'size': size,
       'deduplicated': deduplicated,
+      'url': url,
     };
   }
 }

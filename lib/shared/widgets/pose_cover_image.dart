@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_dimensions.dart';
+import '../../core/utils/image_url_utils.dart';
 import 'image_preview.dart';
 import 'rc0_widgets.dart';
 
@@ -32,17 +33,24 @@ class PoseCoverImage extends StatelessWidget {
   final int previewIndex;
   final List<String>? previewCaptions;
 
-  static bool isNetworkUrl(String path) =>
-      path.startsWith('http://') || path.startsWith('https://');
+  static bool isNetworkUrl(String path) => isNetworkImagePath(path);
 
-  bool _hasLocalImage(String? path) =>
-      path != null && path.isNotEmpty && File(path).existsSync();
+  String? _resolvedPath(String? path) {
+    if (path == null || path.isEmpty) return null;
+    return resolveNetworkImageUrl(path) ?? path;
+  }
 
   bool _hasImage(String? path) {
-    if (path == null || path.isEmpty) return false;
-    if (isNetworkUrl(path)) return true;
-    return _hasLocalImage(path);
+    final resolved = _resolvedPath(path);
+    if (resolved == null || resolved.isEmpty) return false;
+    if (isNetworkImagePath(resolved)) {
+      return isValidNetworkImageUrl(resolved);
+    }
+    return _hasLocalImage(resolved);
   }
+
+  bool _hasLocalImage(String path) =>
+      path.isNotEmpty && File(path).existsSync();
 
   bool _canPreview(String? path) =>
       enablePreview && path != null && isPreviewableImagePath(path);
@@ -78,9 +86,13 @@ class PoseCoverImage extends StatelessWidget {
   }
 
   Widget _imageWidget(String path, {required bool fill}) {
-    if (isNetworkUrl(path)) {
+    final resolved = _resolvedPath(path) ?? path;
+    if (isNetworkImagePath(resolved)) {
+      if (!isValidNetworkImageUrl(resolved)) {
+        return _placeholder(fill: fill);
+      }
       return Image.network(
-        path,
+        resolved,
         fit: BoxFit.cover,
         width: fill ? double.infinity : null,
         height: fill ? double.infinity : null,
@@ -88,7 +100,7 @@ class PoseCoverImage extends StatelessWidget {
       );
     }
     return Image.file(
-      File(path),
+      File(resolved),
       fit: BoxFit.cover,
       width: fill ? double.infinity : null,
       height: fill ? double.infinity : null,

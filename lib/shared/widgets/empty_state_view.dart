@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../app/theme/app_colors.dart';
-import '../../app/theme/app_text_styles.dart';
 import 'primary_button.dart';
 
 class EmptyStateView extends StatelessWidget {
@@ -22,20 +21,29 @@ class EmptyStateView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tertiary = theme.brightness == Brightness.dark
+        ? AppColors.textTertiaryDark
+        : AppColors.textTertiary;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 48, color: AppColors.textTertiary),
+            Icon(icon, size: 48, color: tertiary),
             const SizedBox(height: 16),
-            Text(title, style: AppTextStyles.title, textAlign: TextAlign.center),
+            Text(
+              title,
+              style: theme.textTheme.titleMedium,
+              textAlign: TextAlign.center,
+            ),
             if (subtitle != null) ...[
               const SizedBox(height: 8),
               Text(
                 subtitle!,
-                style: AppTextStyles.bodySecondary,
+                style: theme.textTheme.bodyMedium,
                 textAlign: TextAlign.center,
               ),
             ],

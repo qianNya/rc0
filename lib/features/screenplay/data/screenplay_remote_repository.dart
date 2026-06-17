@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
-import '../../../api/screenplay/api/screenplay-api.dart' as screenplay_api;
+import '../../../api/screenplay/api/screenplay-api.dart' as screenplay_gen;
+import '../../../api/screenplay/api/screenplay_api_ext.dart' as screenplay_api;
 import '../../../core/domain/screenplay/screenplay.dart';
 import 'screenplay_api_mapper.dart';
 import 'screenplay_tree_document.dart';
@@ -73,7 +73,7 @@ class ScreenplayRemoteRepository extends ChangeNotifier {
 
     final completer = Completer<({Screenplay? screenplay, String? error})>();
 
-    await screenplay_api.getScreenplayTree(
+    await screenplay_gen.getScreenplayTree(
       id,
       ok: (tree) {
         final raw = ScreenplayApiMapper.treeToJsonMap(tree);

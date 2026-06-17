@@ -6,6 +6,16 @@ abstract final class AppCatalog {
 
   static const communityTabs = ['热门', '最新', '关注'];
 
+  static const communityCategoryChips = [
+    '全部',
+    '人像摄影',
+    '构图模板',
+    '光影人像',
+    '场景',
+  ];
+
+  static const communitySortTabs = ['热门', '最新', '最多使用', '精选'];
+
   static const feedTabs = ['推荐', '关注', '最新', '人像', '光影', '情绪'];
 
   static const marketTabs = ['推荐', '人像姿势', '构图', '光影', '场景模板'];

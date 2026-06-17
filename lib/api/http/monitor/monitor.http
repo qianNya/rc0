@@ -1,0 +1,58 @@
+# monitor-api 系统监控（monitor.api → user.rpc/Log + pkg/monitor 探活）
+# 接口：/api/monitor/health|services|infra|metrics|traces|logs
+# 权限：monitor:view（admin 角色旁路）；/health 免 JWT
+@gateway = http://192.168.110.167:8888
+@adminUsername = admin
+@adminPassword = admin123
+@traceId =
+
+
+### BEGIN GENERATED
+
+### @name login
+POST {{gateway}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "{{adminUsername}}",
+  "password": "{{adminPassword}}"
+}
+
+> {%
+  client.global.set("accessToken", response.body.data.access_token);
+%}
+
+### @name getHealth
+GET {{gateway}}/api/monitor/health
+Accept: application/json
+
+### @name listServices
+GET {{gateway}}/api/monitor/services
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name listInfra
+GET {{gateway}}/api/monitor/infra
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name getMetrics
+GET {{gateway}}/api/monitor/metrics
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name getTraceChain
+GET {{gateway}}/api/monitor/traces/{{trace_id}}
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name listLogs
+GET {{gateway}}/api/monitor/logs?page=1&page_size=20&user_id=1&http_status=1
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### END GENERATED
+
+
+
+

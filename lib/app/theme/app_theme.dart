@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'app_colors.dart';
 import 'app_dimensions.dart';
@@ -6,61 +7,115 @@ import 'app_text_styles.dart';
 import 'system_ui_style.dart';
 
 abstract final class AppTheme {
-  static ThemeData get light {
-    AppSystemUi.apply();
+  static ThemeData get light => _buildTheme(
+        brightness: Brightness.light,
+        background: AppColors.background,
+        surface: AppColors.surface,
+        surfaceSecondary: AppColors.surfaceSecondary,
+        textPrimary: AppColors.textPrimary,
+        textSecondary: AppColors.textSecondary,
+        border: AppColors.border,
+        accentLight: AppColors.accentLight,
+        systemUi: AppSystemUi.lightStyle,
+      );
 
-    const colorScheme = ColorScheme.light(
+  static ThemeData get dark => _buildTheme(
+        brightness: Brightness.dark,
+        background: AppColors.backgroundDark,
+        surface: AppColors.surfaceDark,
+        surfaceSecondary: AppColors.surfaceSecondaryDark,
+        textPrimary: AppColors.textPrimaryDark,
+        textSecondary: AppColors.textSecondaryDark,
+        border: AppColors.borderDark,
+        accentLight: AppColors.accentLightDark,
+        systemUi: AppSystemUi.darkStyle,
+      );
+
+  static ThemeData _buildTheme({
+    required Brightness brightness,
+    required Color background,
+    required Color surface,
+    required Color surfaceSecondary,
+    required Color textPrimary,
+    required Color textSecondary,
+    required Color border,
+    required Color accentLight,
+    required SystemUiOverlayStyle systemUi,
+  }) {
+    if (brightness == Brightness.light) {
+      AppSystemUi.apply();
+    }
+
+    final colorScheme = ColorScheme(
+      brightness: brightness,
       primary: AppColors.accent,
       onPrimary: Colors.white,
-      surface: AppColors.surface,
-      onSurface: AppColors.textPrimary,
+      secondary: AppColors.accent,
+      onSecondary: Colors.white,
       error: AppColors.error,
+      onError: Colors.white,
+      surface: surface,
+      onSurface: textPrimary,
+      surfaceTint: Colors.transparent,
+    );
+
+    final textTheme = TextTheme(
+      displaySmall: AppTextStyles.display.copyWith(color: textPrimary),
+      titleMedium: AppTextStyles.title.copyWith(color: textPrimary),
+      bodyLarge: AppTextStyles.body.copyWith(color: textPrimary),
+      bodyMedium: AppTextStyles.bodySecondary.copyWith(color: textSecondary),
+      labelLarge: AppTextStyles.label.copyWith(color: textPrimary),
     );
 
     return ThemeData(
       useMaterial3: true,
+      brightness: brightness,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: AppColors.background,
-      appBarTheme: const AppBarTheme(
+      scaffoldBackgroundColor: background,
+      canvasColor: background,
+      dividerColor: border,
+      appBarTheme: AppBarTheme(
         elevation: 0,
         scrolledUnderElevation: 0,
-        backgroundColor: AppColors.background,
-        foregroundColor: AppColors.textPrimary,
+        backgroundColor: background,
+        foregroundColor: textPrimary,
         centerTitle: false,
-        systemOverlayStyle: AppSystemUi.style,
-        titleTextStyle: AppTextStyles.title,
+        systemOverlayStyle: systemUi,
+        titleTextStyle: AppTextStyles.title.copyWith(color: textPrimary),
       ),
       navigationBarTheme: NavigationBarThemeData(
         height: AppDimensions.bottomNavHeight,
         labelPadding: const EdgeInsets.only(top: 2),
-        backgroundColor: AppColors.surface,
-        indicatorColor: AppColors.accentLight,
+        backgroundColor: surface,
+        indicatorColor: accentLight,
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
           return TextStyle(
             fontSize: 12,
             fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-            color: selected ? AppColors.accent : AppColors.textSecondary,
+            color: selected ? AppColors.accent : textSecondary,
           );
         }),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
           return IconThemeData(
-            color: selected ? AppColors.accent : AppColors.textSecondary,
+            color: selected ? AppColors.accent : textSecondary,
             size: 22,
           );
         }),
       ),
       cardTheme: CardThemeData(
-        color: AppColors.surface,
+        color: surface,
         elevation: 0,
-        shadowColor: const Color(0x0F000000),
+        shadowColor: brightness == Brightness.dark
+            ? Colors.black54
+            : const Color(0x0F000000),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
         ),
       ),
-      dividerTheme: const DividerThemeData(
-        color: AppColors.border,
+      dividerTheme: DividerThemeData(
+        color: border,
         thickness: 1,
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -94,8 +149,8 @@ abstract final class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surfaceSecondary,
-        hintStyle: AppTextStyles.bodySecondary,
+        fillColor: surfaceSecondary,
+        hintStyle: AppTextStyles.bodySecondary.copyWith(color: textSecondary),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppDimensions.spacingMd,
           vertical: 14,
@@ -114,23 +169,23 @@ abstract final class AppTheme {
         ),
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: AppColors.surface,
+        backgroundColor: surfaceSecondary,
         selectedColor: AppColors.accent,
-        labelStyle: AppTextStyles.bodySecondary.copyWith(fontSize: 13),
+        labelStyle: AppTextStyles.bodySecondary.copyWith(
+          fontSize: 13,
+          color: textSecondary,
+        ),
         secondaryLabelStyle: const TextStyle(color: Colors.white, fontSize: 13),
         padding: const EdgeInsets.symmetric(horizontal: 4),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
-        side: const BorderSide(color: AppColors.border),
+        side: brightness == Brightness.dark
+            ? BorderSide.none
+            : BorderSide(color: border),
       ),
-      textTheme: const TextTheme(
-        displaySmall: AppTextStyles.display,
-        titleMedium: AppTextStyles.title,
-        bodyLarge: AppTextStyles.body,
-        bodyMedium: AppTextStyles.bodySecondary,
-        labelLarge: AppTextStyles.label,
-      ),
+      iconTheme: IconThemeData(color: textSecondary),
+      textTheme: textTheme,
     );
   }
 }

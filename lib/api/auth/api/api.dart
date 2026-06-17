@@ -1,8 +1,9 @@
 import 'dart:io';
 import 'dart:convert';
-import '../../http/network_error.dart';
 import '../vars/kv.dart';
 import '../vars/vars.dart';
+import '../../http/api_headers.dart';
+import '../../http/network_error.dart';
 
 /// send request with post method
 ///
@@ -52,25 +53,6 @@ Future apiGet(
   );
 }
 
-Future apiDelete(
-  String path,
-  dynamic data, {
-  Map<String, String>? header,
-  Function(Map<String, dynamic>)? ok,
-  Function(String)? fail,
-  Function? eventually,
-}) async {
-  await _apiRequest(
-    'DELETE',
-    path,
-    data,
-    header: header,
-    ok: ok,
-    fail: fail,
-    eventually: eventually,
-  );
-}
-
 Future _apiRequest(
   String method,
   String path,
@@ -86,26 +68,20 @@ Future _apiRequest(
     HttpClientRequest r;
     if (method == 'POST') {
       r = await client.postUrl(Uri.parse(serverHost + path));
-    } else if (method == 'DELETE') {
-      r = await client.deleteUrl(Uri.parse(serverHost + path));
     } else {
       r = await client.getUrl(Uri.parse(serverHost + path));
     }
 
     var strData = '';
     if (data != null) {
-      if (data is Map && data.isEmpty) {
-        strData = '';
-      } else {
-        strData = jsonEncode(data is Map ? data : (data as dynamic).toJson());
-      }
+      strData = jsonEncode(data);
     }
-    if (method != 'GET' && strData.isNotEmpty) {
+    if (method == 'POST') {
       r.headers.set('Content-Type', 'application/json; charset=utf-8');
       r.headers.set('Content-Length', utf8.encode(strData).length);
     }
-    if (tokens != null) {
-      r.headers.set('Authorization', 'Bearer ${tokens.accessToken}');
+    if (tokens != null && tokens.accessToken.trim().isNotEmpty) {
+      r.headers.set('Authorization', authorizationHeader(tokens.accessToken));
     }
     if (header != null) {
       header.forEach((k, v) {
@@ -127,12 +103,12 @@ Future _apiRequest(
       Map<String, dynamic> base = jsonDecode(body);
       if (rp.statusCode == 200) {
         if (base['code'] != 0) {
-          if (fail != null) fail(base['desc']);
+          if (fail != null) fail(apiErrorMessage(base));
         } else {
           if (ok != null) ok(base['data']);
         }
       } else if (base['code'] != 0) {
-        if (fail != null) fail(base['desc']);
+        if (fail != null) fail(apiErrorMessage(base));
       }
     }
   } catch (e) {

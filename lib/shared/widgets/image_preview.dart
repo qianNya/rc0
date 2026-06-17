@@ -7,17 +7,20 @@ import 'package:share_plus/share_plus.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_dimensions.dart';
 import '../../app/theme/app_text_styles.dart';
+import '../../core/utils/image_url_utils.dart';
+
+export '../../core/utils/image_url_utils.dart' show isNetworkImagePath;
 import '../../features/favorites/data/image_favorite_repository.dart';
 import '../services/image_save_service.dart';
-
-bool isNetworkImagePath(String path) =>
-    path.startsWith('http://') || path.startsWith('https://');
 
 /// Whether [path] can be shown in full-screen preview (local file or network URL).
 bool isPreviewableImagePath(String path) {
   if (path.isEmpty) return false;
-  if (isNetworkImagePath(path)) return true;
-  return File(path).existsSync();
+  final resolved = resolveNetworkImageUrl(path) ?? path;
+  if (isNetworkImagePath(resolved)) {
+    return isValidNetworkImageUrl(resolved);
+  }
+  return File(resolved).existsSync();
 }
 
 List<String> filterPreviewablePaths(List<String> paths) {
@@ -331,7 +334,9 @@ class _ImagePreviewPageState extends State<_ImagePreviewPage> {
         ),
       ),
       builder: (context) {
-        return SafeArea(
+        return Material(
+          color: AppColors.surface,
+          child: SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -393,6 +398,7 @@ class _ImagePreviewPageState extends State<_ImagePreviewPage> {
                 ),
             ],
           ),
+        ),
         );
       },
     );
@@ -704,9 +710,16 @@ class _ThumbImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (isNetworkImagePath(path)) {
+    final resolved = resolveNetworkImageUrl(path) ?? path;
+    if (isNetworkImagePath(resolved)) {
+      if (!isValidNetworkImageUrl(resolved)) {
+        return const ColoredBox(
+          color: AppColors.placeholder,
+          child: Icon(Icons.broken_image_outlined, size: 20),
+        );
+      }
       return Image.network(
-        path,
+        resolved,
         fit: BoxFit.cover,
         width: double.infinity,
         height: double.infinity,
@@ -718,7 +731,7 @@ class _ThumbImage extends StatelessWidget {
     }
 
     return Image.file(
-      File(path),
+      File(resolved),
       fit: BoxFit.cover,
       width: double.infinity,
       height: double.infinity,
@@ -954,9 +967,17 @@ class _ZoomableImageState extends State<_ZoomableImage> {
   }
 
   Widget _buildImage() {
-    if (isNetworkImagePath(widget.path)) {
+    final resolved = resolveNetworkImageUrl(widget.path) ?? widget.path;
+    if (isNetworkImagePath(resolved)) {
+      if (!isValidNetworkImageUrl(resolved)) {
+        return const Icon(
+          Icons.broken_image_outlined,
+          color: Colors.white54,
+          size: 48,
+        );
+      }
       return Image.network(
-        widget.path,
+        resolved,
         fit: BoxFit.contain,
         loadingBuilder: (context, child, progress) {
           if (progress == null) return child;

@@ -1,8 +1,9 @@
 import 'dart:io';
 import 'dart:convert';
-import '../../http/network_error.dart';
 import '../vars/kv.dart';
 import '../vars/vars.dart';
+import '../../http/api_headers.dart';
+import '../../http/network_error.dart';
 
 /// send request with post method
 ///
@@ -79,8 +80,8 @@ Future _apiRequest(
       r.headers.set('Content-Type', 'application/json; charset=utf-8');
       r.headers.set('Content-Length', utf8.encode(strData).length);
     }
-    if (tokens != null) {
-      r.headers.set('Authorization', 'Bearer ${tokens.accessToken}');
+    if (tokens != null && tokens.accessToken.trim().isNotEmpty) {
+      r.headers.set('Authorization', authorizationHeader(tokens.accessToken));
     }
     if (header != null) {
       header.forEach((k, v) {
@@ -102,12 +103,12 @@ Future _apiRequest(
       Map<String, dynamic> base = jsonDecode(body);
       if (rp.statusCode == 200) {
         if (base['code'] != 0) {
-          if (fail != null) fail(base['desc']);
+          if (fail != null) fail(apiErrorMessage(base));
         } else {
           if (ok != null) ok(base['data']);
         }
       } else if (base['code'] != 0) {
-        if (fail != null) fail(base['desc']);
+        if (fail != null) fail(apiErrorMessage(base));
       }
     }
   } catch (e) {

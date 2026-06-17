@@ -341,7 +341,9 @@ Future<void> showFeedMoreSheet(
       ),
     ),
     builder: (ctx) {
-      return SafeArea(
+      return Material(
+        color: AppColors.surface,
+        child: SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -372,6 +374,7 @@ Future<void> showFeedMoreSheet(
                 },
               ),
           ],
+        ),
         ),
       );
     },

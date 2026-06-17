@@ -6,6 +6,7 @@ import '../../../api/data/api/data-api.dart' as data_api;
 import '../../../api/data/api/upload.dart' as upload_api;
 import '../../../api/data/data/data-api.dart';
 import '../../../core/config/app_update_config.dart';
+import '../../../core/utils/image_url_utils.dart';
 
 class UploadedObject {
   const UploadedObject({
@@ -49,6 +50,18 @@ class DataUploadRepository {
   Future<({UploadedObject? object, String? error})> _presignUploaded(
     UploadResp upload,
   ) async {
+    final directUrl = resolveNetworkImageUrl(upload.url);
+    if (directUrl != null && isValidNetworkImageUrl(directUrl)) {
+      return (
+        object: UploadedObject(
+          objectKey: upload.objectKey,
+          bucket: upload.bucket,
+          downloadUrl: directUrl,
+        ),
+        error: null,
+      );
+    }
+
     final completer = Completer<({UploadedObject? object, String? error})>();
 
     await data_api.presignDownload(
@@ -58,11 +71,19 @@ class DataUploadRepository {
         expireSec: _presignExpireSec,
       ),
       ok: (resp) {
+        final presigned = resolveNetworkImageUrl(resp.downloadUrl);
+        if (presigned == null || !isValidNetworkImageUrl(presigned)) {
+          completer.complete((
+            object: null,
+            error: '无法获取有效的下载链接',
+          ));
+          return;
+        }
         completer.complete((
           object: UploadedObject(
             objectKey: upload.objectKey,
             bucket: upload.bucket,
-            downloadUrl: resp.downloadUrl,
+            downloadUrl: presigned,
           ),
           error: null,
         ));

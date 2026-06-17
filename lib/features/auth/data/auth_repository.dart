@@ -4,6 +4,9 @@ import 'package:flutter/foundation.dart';
 
 import '../../../api/auth/api/auth-api.dart' as auth_api;
 import '../../../api/auth/data/auth-api.dart';
+import '../../../api/http/api_headers.dart';
+import '../../../api/admin/api/admin_api_ext.dart' as admin_api;
+import '../../../api/admin/data/admin-api.dart';
 import '../../../api/auth/data/tokens.dart';
 import '../../../api/auth/vars/kv.dart';
 
@@ -45,7 +48,7 @@ class AuthRepository extends ChangeNotifier {
         final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
         await setTokens(
           Tokens(
-            accessToken: resp.accessToken,
+            accessToken: authorizationHeader(resp.accessToken),
             accessExpire: now + resp.expiresIn.toInt(),
             refreshToken: '',
             refreshExpire: 0,
@@ -108,7 +111,7 @@ class AuthRepository extends ChangeNotifier {
   Future<void> _fetchProfile() async {
     final completer = Completer<void>();
 
-    await auth_api.getProfile(
+    await admin_api.getProfile(
       ok: (p) {
         _profile = p;
         completer.complete();

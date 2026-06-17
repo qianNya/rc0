@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
-import '../../../api/auth/api/auth-api.dart' as auth_api;
-import '../../../api/screenplay/api/screenplay-api.dart' as screenplay_api;
+import '../../../api/admin/api/admin_api_ext.dart' as admin_api;
+import '../../../api/screenplay/api/screenplay_api_ext.dart' as screenplay_api;
 import '../../../core/domain/screenplay/screenplay.dart';
 import '../../auth/data/auth_repository.dart';
 import '../../user/data/user_profile_repository.dart';
@@ -15,7 +15,7 @@ class SocialRepository extends ChangeNotifier {
 
   Future<String?> followUser(int userId) async {
     final completer = Completer<String?>();
-    await auth_api.followUser(
+    await admin_api.followUser(
       userId,
       ok: () {
         UserProfileRepository.instance.updateCachedFollow(userId, isFollowing: true, followerDelta: 1);
@@ -30,7 +30,7 @@ class SocialRepository extends ChangeNotifier {
 
   Future<String?> unfollowUser(int userId) async {
     final completer = Completer<String?>();
-    await auth_api.unfollowUser(
+    await admin_api.unfollowUser(
       userId,
       ok: () {
         UserProfileRepository.instance.updateCachedFollow(userId, isFollowing: false, followerDelta: -1);

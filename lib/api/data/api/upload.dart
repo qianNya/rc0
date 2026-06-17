@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import '../../http/api_headers.dart';
 import '../../http/network_error.dart';
 import '../data/data-api.dart';
 import '../vars/kv.dart';
@@ -29,14 +30,17 @@ Future<({UploadResp? resp, String? error})> uploadBytes(
 
   try {
     final request = await client.postUrl(
-      Uri.parse('${serverHost}/api/data/upload'),
+      Uri.parse('$serverHost/api/data/upload'),
     );
     request.headers.set(
       'Content-Type',
       'multipart/form-data; boundary=$boundary',
     );
-    if (tokens != null) {
-      request.headers.set('Authorization', 'Bearer ${tokens.accessToken}');
+    if (tokens != null && tokens.accessToken.trim().isNotEmpty) {
+      request.headers.set(
+        'Authorization',
+        authorizationHeader(tokens.accessToken),
+      );
     }
 
     final contentType = _mimeType(filename);
@@ -66,7 +70,7 @@ Future<({UploadResp? resp, String? error})> uploadBytes(
 
     final base = jsonDecode(body) as Map<String, dynamic>;
     if (base['code'] != 0) {
-      return (resp: null, error: base['desc'] as String? ?? '上传失败');
+      return (resp: null, error: apiErrorMessage(base, fallback: '上传失败'));
     }
 
     final data = base['data'] as Map<String, dynamic>;

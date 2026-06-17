@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../../../api/auth/api/auth-api.dart' as auth_api;
-import '../../../../api/auth/data/auth-api.dart';
+import '../../../../api/admin/api/admin_api_ext.dart' as admin_api;
+import '../../../../api/admin/data/admin-api.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../social/data/social_repository.dart';
 import '../../../user/data/user_profile_repository.dart';
@@ -59,9 +59,10 @@ class _UserProfilePageState extends State<UserProfilePage> {
     int userId,
   ) async {
     final completer = Completer<({List<Screenplay> items, String? error})>();
-    await auth_api.listUserScreenplays(
+    await admin_api.listUserScreenplays(
       userId,
-      ok: (list, _) {
+      ok: (resp) {
+        final list = resp.list;
         final items = list
             .map(
               (b) => Screenplay(

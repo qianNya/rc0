@@ -1,0 +1,63 @@
+# admin-api OAuth 客户端（oauth.api → oauth.rpc）
+# 接口：POST/GET/PUT/DELETE /api/admin/oauth/clients[/:id]
+# 权限：oauth:manage 或 admin 角色
+@gateway = http://127.0.0.1:8888
+@adminUsername = admin
+@adminPassword = admin123
+@oauthClientDetailsId = 1
+
+
+### BEGIN GENERATED
+
+### @name login
+POST {{gateway}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "{{adminUsername}}",
+  "password": "{{adminPassword}}"
+}
+
+> {%
+  client.global.set("accessToken", response.body.data.access_token);
+%}
+
+### @name createOauthClientDetails
+POST {{gateway}}/api/admin/oauth/clients
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "client_id": "example",
+  "client_name": "example"
+}
+### @name listOauthClientDetails
+GET {{gateway}}/api/admin/oauth/clients?page=1&page_size=20&status=1&deleted=1
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name getOauthClientDetails
+GET {{gateway}}/api/admin/oauth/clients/{{id}}
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name updateOauthClientDetails
+PUT {{gateway}}/api/admin/oauth/clients/{{id}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "client_id": "example",
+  "client_secret": "example",
+  "client_name": "example",
+  "resource_ids": "example"
+}
+### @name deleteOauthClientDetails
+DELETE {{gateway}}/api/admin/oauth/clients/{{id}}
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### END GENERATED
+
+
+

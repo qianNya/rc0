@@ -82,3 +82,23 @@ Future presignDownload(
     eventually: eventually,
   );
 }
+
+/// --/api/data/upload--
+///
+/// request:
+/// response: UploadResp
+Future upload({
+  Function(UploadResp)? ok,
+  Function(String)? fail,
+  Function? eventually,
+}) async {
+  await apiPost(
+    "/api/data/upload",
+    request,
+    ok: (data) {
+      if (ok != null) ok(UploadResp.fromJson(data));
+    },
+    fail: fail,
+    eventually: eventually,
+  );
+}

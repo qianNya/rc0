@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
-import '../../../api/auth/api/auth-api.dart' as auth_api;
-import '../../../api/auth/data/auth-api.dart';
+import '../../../api/admin/api/admin_api_ext.dart' as admin_api;
+import '../../../api/admin/data/admin-api.dart';
 import '../../auth/data/auth_repository.dart';
 
 class UserProfileRepository extends ChangeNotifier {
@@ -22,7 +22,7 @@ class UserProfileRepository extends ChangeNotifier {
 
   Future<PublicUserProfile?> fetchPublicProfile(int userId) async {
     final completer = Completer<PublicUserProfile?>();
-    await auth_api.getPublicUserProfile(
+    await admin_api.getPublicUserProfile(
       userId,
       ok: (profile) {
         _cache[userId] = profile;

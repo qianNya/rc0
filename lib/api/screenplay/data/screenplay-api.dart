@@ -20,6 +20,10 @@ class Act {
   final String createAt;
 
   final String updateAt;
+
+  final num creator;
+
+  final num updater;
   Act({
     required this.id,
     required this.screenplayId,
@@ -31,6 +35,8 @@ class Act {
     required this.status,
     required this.createAt,
     required this.updateAt,
+    required this.creator,
+    required this.updater,
   });
   factory Act.fromJson(Map<String, dynamic> m) {
     return Act(
@@ -44,6 +50,8 @@ class Act {
       status: m['status'] ?? 0,
       createAt: m['create_at'] ?? "",
       updateAt: m['update_at'] ?? "",
+      creator: m['creator'] ?? 0,
+      updater: m['updater'] ?? 0,
     );
   }
   Map<String, dynamic> toJson() {
@@ -58,6 +66,8 @@ class Act {
       'status': status,
       'create_at': createAt,
       'update_at': updateAt,
+      'creator': creator,
+      'updater': updater,
     };
   }
 }
@@ -76,7 +86,7 @@ class ActNode {
     );
   }
   Map<String, dynamic> toJson() {
-    return {'act': act.toJson(), 'scenes': scenes.map((i) => i.toJson()).toList()};
+    return {'act': act.toJson(), 'scenes': scenes.map((i) => i.toJson())};
   }
 }
 
@@ -407,6 +417,10 @@ class Frame {
   final String createAt;
 
   final String updateAt;
+
+  final num creator;
+
+  final num updater;
   Frame({
     required this.id,
     required this.screenplayId,
@@ -423,6 +437,8 @@ class Frame {
     required this.status,
     required this.createAt,
     required this.updateAt,
+    required this.creator,
+    required this.updater,
   });
   factory Frame.fromJson(Map<String, dynamic> m) {
     return Frame(
@@ -441,6 +457,8 @@ class Frame {
       status: m['status'] ?? 0,
       createAt: m['create_at'] ?? "",
       updateAt: m['update_at'] ?? "",
+      creator: m['creator'] ?? 0,
+      updater: m['updater'] ?? 0,
     );
   }
   Map<String, dynamic> toJson() {
@@ -460,6 +478,8 @@ class Frame {
       'status': status,
       'create_at': createAt,
       'update_at': updateAt,
+      'creator': creator,
+      'updater': updater,
     };
   }
 }
@@ -581,7 +601,7 @@ class GetScreenplayTreeResp {
   Map<String, dynamic> toJson() {
     return {
       'screenplay': screenplay.toJson(),
-      'acts': acts.map((i) => i.toJson()).toList(),
+      'acts': acts.map((i) => i.toJson()),
     };
   }
 }
@@ -744,6 +764,8 @@ class ListScreenplaysReq {
   final num visibility;
 
   final String title;
+
+  final num creator;
   ListScreenplaysReq({
     required this.page,
     required this.pageSize,
@@ -751,6 +773,7 @@ class ListScreenplaysReq {
     required this.publishStatus,
     required this.visibility,
     required this.title,
+    required this.creator,
   });
   factory ListScreenplaysReq.fromJson(Map<String, dynamic> m) {
     return ListScreenplaysReq(
@@ -760,6 +783,7 @@ class ListScreenplaysReq {
       publishStatus: m['publish_status'] ?? 0,
       visibility: m['visibility'] ?? 0,
       title: m['title'] ?? "",
+      creator: m['creator'] ?? 0,
     );
   }
   Map<String, dynamic> toJson() {
@@ -770,6 +794,7 @@ class ListScreenplaysReq {
       'publish_status': publishStatus,
       'visibility': visibility,
       'title': title,
+      'creator': creator,
     };
   }
 }
@@ -908,6 +933,10 @@ class Scene {
   final String createAt;
 
   final String updateAt;
+
+  final num creator;
+
+  final num updater;
   Scene({
     required this.id,
     required this.screenplayId,
@@ -921,6 +950,8 @@ class Scene {
     required this.status,
     required this.createAt,
     required this.updateAt,
+    required this.creator,
+    required this.updater,
   });
   factory Scene.fromJson(Map<String, dynamic> m) {
     return Scene(
@@ -936,6 +967,8 @@ class Scene {
       status: m['status'] ?? 0,
       createAt: m['create_at'] ?? "",
       updateAt: m['update_at'] ?? "",
+      creator: m['creator'] ?? 0,
+      updater: m['updater'] ?? 0,
     );
   }
   Map<String, dynamic> toJson() {
@@ -952,6 +985,8 @@ class Scene {
       'status': status,
       'create_at': createAt,
       'update_at': updateAt,
+      'creator': creator,
+      'updater': updater,
     };
   }
 }
@@ -970,10 +1005,7 @@ class SceneNode {
     );
   }
   Map<String, dynamic> toJson() {
-    return {
-      'scene': scene.toJson(),
-      'frames': frames.map((i) => i.toJson()).toList(),
-    };
+    return {'scene': scene.toJson(), 'frames': frames.map((i) => i.toJson())};
   }
 }
 
@@ -1010,7 +1042,9 @@ class Screenplay {
 
   final String updateAt;
 
-  final num creatorId;
+  final num creator;
+
+  final num updater;
 
   final num viewCount;
 
@@ -1021,10 +1055,6 @@ class Screenplay {
   final num commentCount;
 
   final num forkCount;
-
-  final String creatorNickname;
-
-  final String creatorAvatar;
 
   final bool isLiked;
 
@@ -1046,16 +1076,15 @@ class Screenplay {
     required this.status,
     required this.createAt,
     required this.updateAt,
-    this.creatorId = 0,
-    this.viewCount = 0,
-    this.likeCount = 0,
-    this.favoriteCount = 0,
-    this.commentCount = 0,
-    this.forkCount = 0,
-    this.creatorNickname = '',
-    this.creatorAvatar = '',
-    this.isLiked = false,
-    this.isFavorited = false,
+    required this.creator,
+    required this.updater,
+    required this.viewCount,
+    required this.likeCount,
+    required this.favoriteCount,
+    required this.commentCount,
+    required this.forkCount,
+    required this.isLiked,
+    required this.isFavorited,
   });
   factory Screenplay.fromJson(Map<String, dynamic> m) {
     return Screenplay(
@@ -1075,16 +1104,15 @@ class Screenplay {
       status: m['status'] ?? 0,
       createAt: m['create_at'] ?? "",
       updateAt: m['update_at'] ?? "",
-      creatorId: m['creator_id'] ?? 0,
+      creator: m['creator'] ?? 0,
+      updater: m['updater'] ?? 0,
       viewCount: m['view_count'] ?? 0,
       likeCount: m['like_count'] ?? 0,
       favoriteCount: m['favorite_count'] ?? 0,
       commentCount: m['comment_count'] ?? 0,
       forkCount: m['fork_count'] ?? 0,
-      creatorNickname: m['creator_nickname'] ?? '',
-      creatorAvatar: m['creator_avatar'] ?? '',
-      isLiked: m['is_liked'] == true,
-      isFavorited: m['is_favorited'] == true,
+      isLiked: m['is_liked'] ?? false,
+      isFavorited: m['is_favorited'] ?? false,
     );
   }
   Map<String, dynamic> toJson() {
@@ -1105,17 +1133,27 @@ class Screenplay {
       'status': status,
       'create_at': createAt,
       'update_at': updateAt,
-      'creator_id': creatorId,
+      'creator': creator,
+      'updater': updater,
       'view_count': viewCount,
       'like_count': likeCount,
       'favorite_count': favoriteCount,
       'comment_count': commentCount,
       'fork_count': forkCount,
-      'creator_nickname': creatorNickname,
-      'creator_avatar': creatorAvatar,
       'is_liked': isLiked,
       'is_favorited': isFavorited,
     };
+  }
+}
+
+class ScreenplayEngagementReq {
+  final num id;
+  ScreenplayEngagementReq({required this.id});
+  factory ScreenplayEngagementReq.fromJson(Map<String, dynamic> m) {
+    return ScreenplayEngagementReq(id: m['id'] ?? 0);
+  }
+  Map<String, dynamic> toJson() {
+    return {'id': id};
   }
 }
 

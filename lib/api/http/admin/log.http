@@ -1,0 +1,37 @@
+# admin-api 操作日志（log.api → user.rpc/Log）
+# 接口：GET /api/admin/logs、GET /api/admin/logs/:id
+@gateway = http://127.0.0.1:8888
+@adminUsername = admin
+@adminPassword = admin123
+@logId = 1
+
+
+### BEGIN GENERATED
+
+### @name login
+POST {{gateway}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "{{adminUsername}}",
+  "password": "{{adminPassword}}"
+}
+
+> {%
+  client.global.set("accessToken", response.body.data.access_token);
+%}
+
+### @name listSysLogs
+GET {{gateway}}/api/admin/logs?page=1&page_size=20&user_id=1&deleted=1
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name getSysLog
+GET {{gateway}}/api/admin/logs/{{id}}
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### END GENERATED
+
+
+

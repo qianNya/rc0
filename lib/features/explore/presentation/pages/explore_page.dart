@@ -10,6 +10,7 @@ import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/domain/screenplay/screenplay_adapter.dart';
 import '../../../../core/responsive/breakpoints.dart';
 import '../../../../core/responsive/responsive_builder.dart';
+import '../../../../core/utils/state_listeners.dart';
 import '../../../screenplay/data/screenplay_local_repository.dart';
 import '../../../screenplay/data/screenplay_remote_repository.dart';
 import '../../../screenplay/data/screenplay_display.dart';
@@ -41,7 +42,9 @@ class _ExplorePageState extends State<ExplorePage> {
     super.initState();
     _localRepository.addListener(_onDataChanged);
     _remoteRepository.addListener(_onDataChanged);
-    _remoteRepository.loadFirstPage();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _remoteRepository.loadFirstPage();
+    });
   }
 
   @override
@@ -51,26 +54,22 @@ class _ExplorePageState extends State<ExplorePage> {
     super.dispose();
   }
 
-  void _onDataChanged() => setState(() {});
+  void _onDataChanged() => scheduleSetState(this);
+
+  String get _effectiveTag =>
+      _tagFilters.contains(_selectedTag) ? _selectedTag : '全部';
 
   List<Screenplay> get _allScripts => _localRepository.localScreenplays;
 
   List<Screenplay> get _remoteTemplates => _remoteRepository.screenplays;
 
   List<Screenplay> get _feedItems {
-    final local = filterScreenplaysByTag(_allScripts, _selectedTag);
+    final local = filterScreenplaysByTag(_allScripts, _effectiveTag);
     final remote = _remoteTemplates;
     return [...local, ...remote];
   }
 
   List<String> get _tagFilters => buildTagFilters(_allScripts);
-
-  List<Screenplay> get _displayScripts {
-    if (!_tagFilters.contains(_selectedTag)) {
-      _selectedTag = '全部';
-    }
-    return _feedItems;
-  }
 
   Future<void> _forkTemplate(Screenplay script) async {
     if (_forking) return;
@@ -124,7 +123,7 @@ class _ExplorePageState extends State<ExplorePage> {
   Widget build(BuildContext context) {
     return ResponsiveBuilder(
       mobile: (_) => _ExploreMobileView(
-        feedItems: _displayScripts,
+        feedItems: _feedItems,
         suggestions: _allScripts.take(8).toList(),
         feedTabIndex: _feedTabIndex,
         remoteLoading: _remoteRepository.loading,
@@ -137,7 +136,7 @@ class _ExplorePageState extends State<ExplorePage> {
         onRefreshRemote: () => _remoteRepository.loadFirstPage(),
       ),
       desktop: (_) => _ExploreDesktopView(
-        scripts: _displayScripts,
+        scripts: _feedItems,
         tagFilters: _tagFilters,
         selectedTag: _selectedTag,
         feedTabIndex: _feedTabIndex,

@@ -1,0 +1,56 @@
+# monitor-api（monitor.api）
+@gateway = http://127.0.0.1:8888
+@adminUsername = admin
+@adminPassword = admin123
+@accessToken =
+@id = 1
+@screenplayId = 1
+@actId = 1
+@sceneId = 1
+@frameId = 1
+
+### BEGIN GENERATED
+
+### @name login
+POST {{gateway}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "{{adminUsername}}",
+  "password": "{{adminPassword}}"
+}
+
+> {%
+  client.global.set("accessToken", response.body.data.access_token);
+%}
+
+### @name getHealth
+GET {{gateway}}/api/monitor/health
+Accept: application/json
+
+### @name listServices
+GET {{gateway}}/api/monitor/services
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name listInfra
+GET {{gateway}}/api/monitor/infra
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name getMetrics
+GET {{gateway}}/api/monitor/metrics
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name getTraceChain
+GET {{gateway}}/api/monitor/traces/{{trace_id}}
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name listLogs
+GET {{gateway}}/api/monitor/logs?page=1&page_size=20&user_id=1&http_status=1
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### END GENERATED

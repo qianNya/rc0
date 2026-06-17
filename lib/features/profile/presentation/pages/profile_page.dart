@@ -9,6 +9,7 @@ import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/responsive/breakpoints.dart';
 import '../../../../core/responsive/responsive_builder.dart';
 import '../../../../core/services/app_update_service.dart';
+import '../../../../core/utils/state_listeners.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../user/data/user_profile_repository.dart';
 import '../../../screenplay/data/screenplay_local_repository.dart';
@@ -16,6 +17,8 @@ import '../../../screenplay/presentation/widgets/screenplay_delete_actions.dart'
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/feed_tab_bar.dart';
 import '../../../../shared/widgets/profile_widgets.dart';
+import '../../../../core/theme/theme_mode_notifier.dart';
+import '../../../../shared/widgets/theme_mode_selector.dart';
 import '../../../../shared/widgets/screenplay_card.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -38,9 +41,11 @@ class _ProfilePageState extends State<ProfilePage> {
     _repository.addListener(_onDataChanged);
     _auth.addListener(_onDataChanged);
     _userProfile.addListener(_onDataChanged);
-    if (_auth.isLoggedIn) {
-      _userProfile.refreshMyStats();
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _auth.isLoggedIn) {
+        _userProfile.refreshMyStats();
+      }
+    });
     _loadVersion();
   }
 
@@ -128,6 +133,11 @@ class _ProfilePageState extends State<ProfilePage> {
           primaryFooter,
           const SizedBox(height: 12),
         ],
+        ListenableBuilder(
+          listenable: ThemeModeNotifier.instance,
+          builder: (context, _) => ThemeModeSelector(compact: true),
+        ),
+        const SizedBox(height: 8),
         TextButton.icon(
           onPressed: _manualUpdate,
           style: TextButton.styleFrom(foregroundColor: Colors.white70),
@@ -148,7 +158,7 @@ class _ProfilePageState extends State<ProfilePage> {
     super.dispose();
   }
 
-  void _onDataChanged() => setState(() {});
+  void _onDataChanged() => scheduleSetState(this);
 
   Future<void> _logout() async {
     await _auth.logout();
@@ -329,6 +339,15 @@ class _ProfileMobileView extends StatelessWidget {
                 following: header.following,
                 followers: header.followers,
                 likes: header.totalLikes,
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: ListenableBuilder(
+                listenable: ThemeModeNotifier.instance,
+                builder: (context, _) => const ThemeModeSelector(),
               ),
             ),
           ),

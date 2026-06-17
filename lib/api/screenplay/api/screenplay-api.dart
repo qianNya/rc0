@@ -62,48 +62,6 @@ Future listScreenplays({
   );
 }
 
-/// Hand-written: paginated list (generated listScreenplays omits query params).
-Future listScreenplaysPage({
-  int page = 1,
-  int pageSize = 20,
-  Function(ListScreenplaysResp)? ok,
-  Function(String)? fail,
-  Function? eventually,
-}) async {
-  await apiGet(
-    '/api/screenplay/screenplays?page=$page&page_size=$pageSize',
-    ok: (data) {
-      if (ok != null) ok(ListScreenplaysResp.fromJson(data));
-    },
-    fail: fail,
-    eventually: eventually,
-  );
-}
-
-/// Public community browse: published + public visibility.
-Future listPublicScreenplaysPage({
-  int page = 1,
-  int pageSize = 20,
-  int? creatorId,
-  Function(ListScreenplaysResp)? ok,
-  Function(String)? fail,
-  Function? eventually,
-}) async {
-  var url =
-      '/api/screenplay/screenplays?page=$page&page_size=$pageSize&publish_status=1&visibility=1';
-  if (creatorId != null && creatorId > 0) {
-    url += '&creator=$creatorId';
-  }
-  await apiGet(
-    url,
-    ok: (data) {
-      if (ok != null) ok(ListScreenplaysResp.fromJson(data));
-    },
-    fail: fail,
-    eventually: eventually,
-  );
-}
-
 /// --/api/screenplay/screenplays/:id--
 ///
 /// request: GetScreenplayReq
@@ -135,7 +93,7 @@ Future updateScreenplay(
   Function(String)? fail,
   Function? eventually,
 }) async {
-  await apiPut(
+  await apiPost(
     "/api/screenplay/screenplays/${id}",
     request,
     ok: (data) {
@@ -157,7 +115,7 @@ Future deleteScreenplay(
   Function(String)? fail,
   Function? eventually,
 }) async {
-  await apiDelete(
+  await apiPost(
     "/api/screenplay/screenplays/${id}",
     request,
     ok: (data) {
@@ -243,7 +201,7 @@ Future updateAct(
   Function(String)? fail,
   Function? eventually,
 }) async {
-  await apiPut(
+  await apiPost(
     "/api/screenplay/screenplays/${id}/acts/${actId}",
     request,
     ok: (data) {
@@ -266,7 +224,7 @@ Future deleteAct(
   Function(String)? fail,
   Function? eventually,
 }) async {
-  await apiDelete(
+  await apiPost(
     "/api/screenplay/screenplays/${id}/acts/${actId}",
     request,
     ok: (data) {
@@ -356,7 +314,7 @@ Future updateScene(
   Function(String)? fail,
   Function? eventually,
 }) async {
-  await apiPut(
+  await apiPost(
     "/api/screenplay/screenplays/${id}/acts/${actId}/scenes/${sceneId}",
     request,
     ok: (data) {
@@ -380,7 +338,7 @@ Future deleteScene(
   Function(String)? fail,
   Function? eventually,
 }) async {
-  await apiDelete(
+  await apiPost(
     "/api/screenplay/screenplays/${id}/acts/${actId}/scenes/${sceneId}",
     request,
     ok: (data) {
@@ -474,7 +432,7 @@ Future updateFrame(
   Function(String)? fail,
   Function? eventually,
 }) async {
-  await apiPut(
+  await apiPost(
     "/api/screenplay/screenplays/${id}/acts/${actId}/scenes/${sceneId}/frames/${frameId}",
     request,
     ok: (data) {
@@ -499,7 +457,7 @@ Future deleteFrame(
   Function(String)? fail,
   Function? eventually,
 }) async {
-  await apiDelete(
+  await apiPost(
     "/api/screenplay/screenplays/${id}/acts/${actId}/scenes/${sceneId}/frames/${frameId}",
     request,
     ok: (data) {
@@ -523,7 +481,7 @@ Future reorderFrames(
   Function(String)? fail,
   Function? eventually,
 }) async {
-  await apiPut(
+  await apiPost(
     "/api/screenplay/screenplays/${id}/acts/${actId}/scenes/${sceneId}/frames/reorder",
     request,
     ok: (data) {
@@ -546,7 +504,7 @@ Future reorderScenes(
   Function(String)? fail,
   Function? eventually,
 }) async {
-  await apiPut(
+  await apiPost(
     "/api/screenplay/screenplays/${id}/acts/${actId}/scenes/reorder",
     request,
     ok: (data) {
@@ -568,8 +526,96 @@ Future reorderActs(
   Function(String)? fail,
   Function? eventually,
 }) async {
-  await apiPut(
+  await apiPost(
     "/api/screenplay/screenplays/${id}/acts/reorder",
+    request,
+    ok: (data) {
+      if (ok != null) ok();
+    },
+    fail: fail,
+    eventually: eventually,
+  );
+}
+
+/// --/api/screenplay/screenplays/:id/favorite--
+///
+/// request: ScreenplayEngagementReq
+/// response:
+Future favoriteScreenplay(
+  int id,
+  ScreenplayEngagementReq request, {
+  Function()? ok,
+  Function(String)? fail,
+  Function? eventually,
+}) async {
+  await apiPost(
+    "/api/screenplay/screenplays/${id}/favorite",
+    request,
+    ok: (data) {
+      if (ok != null) ok();
+    },
+    fail: fail,
+    eventually: eventually,
+  );
+}
+
+/// --/api/screenplay/screenplays/:id/favorite--
+///
+/// request: ScreenplayEngagementReq
+/// response:
+Future unfavoriteScreenplay(
+  int id,
+  ScreenplayEngagementReq request, {
+  Function()? ok,
+  Function(String)? fail,
+  Function? eventually,
+}) async {
+  await apiPost(
+    "/api/screenplay/screenplays/${id}/favorite",
+    request,
+    ok: (data) {
+      if (ok != null) ok();
+    },
+    fail: fail,
+    eventually: eventually,
+  );
+}
+
+/// --/api/screenplay/screenplays/:id/like--
+///
+/// request: ScreenplayEngagementReq
+/// response:
+Future likeScreenplay(
+  int id,
+  ScreenplayEngagementReq request, {
+  Function()? ok,
+  Function(String)? fail,
+  Function? eventually,
+}) async {
+  await apiPost(
+    "/api/screenplay/screenplays/${id}/like",
+    request,
+    ok: (data) {
+      if (ok != null) ok();
+    },
+    fail: fail,
+    eventually: eventually,
+  );
+}
+
+/// --/api/screenplay/screenplays/:id/like--
+///
+/// request: ScreenplayEngagementReq
+/// response:
+Future unlikeScreenplay(
+  int id,
+  ScreenplayEngagementReq request, {
+  Function()? ok,
+  Function(String)? fail,
+  Function? eventually,
+}) async {
+  await apiPost(
+    "/api/screenplay/screenplays/${id}/like",
     request,
     ok: (data) {
       if (ok != null) ok();
@@ -593,74 +639,6 @@ Future getScreenplayTree(
     "/api/screenplay/screenplays/${id}/tree",
     ok: (data) {
       if (ok != null) ok(GetScreenplayTreeResp.fromJson(data));
-    },
-    fail: fail,
-    eventually: eventually,
-  );
-}
-
-Future likeScreenplay(
-  int id, {
-  Function()? ok,
-  Function(String)? fail,
-  Function? eventually,
-}) async {
-  await apiPost(
-    '/api/screenplay/screenplays/$id/like',
-    const {},
-    ok: (_) {
-      if (ok != null) ok();
-    },
-    fail: fail,
-    eventually: eventually,
-  );
-}
-
-Future unlikeScreenplay(
-  int id, {
-  Function()? ok,
-  Function(String)? fail,
-  Function? eventually,
-}) async {
-  await apiDelete(
-    '/api/screenplay/screenplays/$id/like',
-    const {},
-    ok: (_) {
-      if (ok != null) ok();
-    },
-    fail: fail,
-    eventually: eventually,
-  );
-}
-
-Future favoriteScreenplay(
-  int id, {
-  Function()? ok,
-  Function(String)? fail,
-  Function? eventually,
-}) async {
-  await apiPost(
-    '/api/screenplay/screenplays/$id/favorite',
-    const {},
-    ok: (_) {
-      if (ok != null) ok();
-    },
-    fail: fail,
-    eventually: eventually,
-  );
-}
-
-Future unfavoriteScreenplay(
-  int id, {
-  Function()? ok,
-  Function(String)? fail,
-  Function? eventually,
-}) async {
-  await apiDelete(
-    '/api/screenplay/screenplays/$id/favorite',
-    const {},
-    ok: (_) {
-      if (ok != null) ok();
     },
     fail: fail,
     eventually: eventually,

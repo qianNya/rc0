@@ -20,64 +20,87 @@ class FeedTabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 40,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spacingMd),
-        itemCount: tabs.length,
-        separatorBuilder: (_, _) => const SizedBox(width: AppDimensions.spacingSm),
-        itemBuilder: (context, index) {
-          final selected = selectedIndex == index;
-          if (underlineStyle) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final secondary =
+        theme.textTheme.bodyMedium?.color ?? AppColors.textSecondary;
+    final surfaceSecondary = isDark
+        ? AppColors.surfaceSecondaryDark
+        : AppColors.surfaceSecondary;
+    final border = isDark
+        ? Colors.transparent
+        : theme.dividerColor;
+
+    return Material(
+      color: theme.scaffoldBackgroundColor,
+      elevation: 0,
+      surfaceTintColor: Colors.transparent,
+      child: SizedBox(
+        height: underlineStyle ? 44 : 40,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          clipBehavior: Clip.hardEdge,
+          padding:
+              const EdgeInsets.symmetric(horizontal: AppDimensions.spacingMd),
+          itemCount: tabs.length,
+          separatorBuilder: (_, _) =>
+              const SizedBox(width: AppDimensions.spacingSm),
+          itemBuilder: (context, index) {
+            final selected = selectedIndex == index;
+            if (underlineStyle) {
+              return GestureDetector(
+                onTap: () => onChanged(index),
+                behavior: HitTestBehavior.opaque,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      tabs[index],
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight:
+                            selected ? FontWeight.w600 : FontWeight.w400,
+                        color: selected ? AppColors.accent : secondary,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      height: 2,
+                      width: selected ? 24 : 0,
+                      decoration: BoxDecoration(
+                        color: selected ? AppColors.accent : Colors.transparent,
+                        borderRadius: BorderRadius.circular(1),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
             return GestureDetector(
               onTap: () => onChanged(index),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    tabs[index],
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                      color: selected ? AppColors.accent : AppColors.textSecondary,
-                    ),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: selected ? AppColors.accent : surfaceSecondary,
+                  borderRadius: BorderRadius.circular(20),
+                  border: selected
+                      ? Border.all(color: AppColors.accent)
+                      : Border.all(color: border),
+                ),
+                child: Text(
+                  tabs[index],
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                    color: selected ? Colors.white : secondary,
                   ),
-                  const SizedBox(height: 6),
-                  Container(
-                    height: 2,
-                    width: 24,
-                    decoration: BoxDecoration(
-                      color: selected ? AppColors.accent : Colors.transparent,
-                      borderRadius: BorderRadius.circular(1),
-                    ),
-                  ),
-                ],
+                ),
               ),
             );
-          }
-          return GestureDetector(
-            onTap: () => onChanged(index),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: selected ? AppColors.accent : AppColors.surface,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: selected ? AppColors.accent : AppColors.border,
-                ),
-              ),
-              child: Text(
-                tabs[index],
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                  color: selected ? Colors.white : AppColors.textSecondary,
-                ),
-              ),
-            ),
-          );
-        },
+          },
+        ),
       ),
     );
   }

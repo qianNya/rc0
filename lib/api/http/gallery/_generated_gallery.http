@@ -1,0 +1,307 @@
+# gallery-api（gallery.api）
+@gateway = http://127.0.0.1:8888
+@adminUsername = admin
+@adminPassword = admin123
+@accessToken =
+@id = 1
+@screenplayId = 1
+@actId = 1
+@sceneId = 1
+@frameId = 1
+
+### BEGIN GENERATED
+
+### @name login
+POST {{gateway}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "{{adminUsername}}",
+  "password": "{{adminPassword}}"
+}
+
+> {%
+  client.global.set("accessToken", response.body.data.access_token);
+%}
+
+### @name createAcgnWork
+POST {{gateway}}/api/gallery/works
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "title": "示例标题"
+}
+### @name listAcgnWorks
+GET {{gateway}}/api/gallery/works?page=1&page_size=20&work_type=1&status=1&deleted=1
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name getAcgnWork
+GET {{gateway}}/api/gallery/works/{{id}}
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name updateAcgnWork
+PUT {{gateway}}/api/gallery/works/{{id}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "title": "示例标题",
+  "title_orig": "example",
+  "work_type": 1,
+  "release_year": 1
+}
+### @name deleteAcgnWork
+DELETE {{gateway}}/api/gallery/works/{{id}}
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name createAcgnImage
+POST {{gateway}}/api/gallery/images
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "title": "示例标题"
+}
+### @name listAcgnImages
+GET {{gateway}}/api/gallery/images?page=1&page_size=20&image_type=1&content_rating=1&visibility=1&status=1&deleted=1
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name getAcgnImage
+GET {{gateway}}/api/gallery/images/{{id}}
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name updateAcgnImage
+PUT {{gateway}}/api/gallery/images/{{id}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "title": "示例标题",
+  "description": "example",
+  "image_type": 1,
+  "content_rating": 1
+}
+### @name deleteAcgnImage
+DELETE {{gateway}}/api/gallery/images/{{id}}
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name createAcgnTag
+POST {{gateway}}/api/gallery/tags
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "namespace": "example",
+  "name": "示例名称",
+  "slug": "example"
+}
+### @name listAcgnTags
+GET {{gateway}}/api/gallery/tags?page=1&page_size=20&parent_id=1&status=1&deleted=1
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name getAcgnTag
+GET {{gateway}}/api/gallery/tags/{{id}}
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name updateAcgnTag
+PUT {{gateway}}/api/gallery/tags/{{id}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "namespace": "example",
+  "name": "示例名称",
+  "slug": "example",
+  "parent_id": 1
+}
+### @name deleteAcgnTag
+DELETE {{gateway}}/api/gallery/tags/{{id}}
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name createAcgnImageFile
+POST {{gateway}}/api/gallery/image-files
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "image_id": 1
+}
+### @name listAcgnImageFiles
+GET {{gateway}}/api/gallery/image-files?page=1&page_size=20&image_id=1&file_role=1&status=1&deleted=1
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name getAcgnImageFile
+GET {{gateway}}/api/gallery/image-files/{{id}}
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name updateAcgnImageFile
+PUT {{gateway}}/api/gallery/image-files/{{id}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "image_id": 1,
+  "file_role": 1,
+  "storage": "example",
+  "bucket": "example"
+}
+### @name deleteAcgnImageFile
+DELETE {{gateway}}/api/gallery/image-files/{{id}}
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name createAcgnImageTag
+POST {{gateway}}/api/gallery/image-tags
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "image_id": 1,
+  "tag_id": 1
+}
+### @name listAcgnImageTags
+GET {{gateway}}/api/gallery/image-tags?page=1&page_size=20&image_id=1&tag_id=1&source=1&status=1&deleted=1
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name getAcgnImageTag
+GET {{gateway}}/api/gallery/image-tags/{{id}}
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name updateAcgnImageTag
+PUT {{gateway}}/api/gallery/image-tags/{{id}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "image_id": 1,
+  "tag_id": 1,
+  "source": 1,
+  "confidence": 1
+}
+### @name deleteAcgnImageTag
+DELETE {{gateway}}/api/gallery/image-tags/{{id}}
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name createAcgnImageWork
+POST {{gateway}}/api/gallery/image-works
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "image_id": 1,
+  "work_id": 1
+}
+### @name listAcgnImageWorks
+GET {{gateway}}/api/gallery/image-works?page=1&page_size=20&image_id=1&work_id=1&relation_type=1&status=1&deleted=1
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name getAcgnImageWork
+GET {{gateway}}/api/gallery/image-works/{{id}}
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name updateAcgnImageWork
+PUT {{gateway}}/api/gallery/image-works/{{id}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "image_id": 1,
+  "work_id": 1,
+  "relation_type": 1,
+  "status": 1
+}
+### @name deleteAcgnImageWork
+DELETE {{gateway}}/api/gallery/image-works/{{id}}
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name createAcgnImageAnalysis
+POST {{gateway}}/api/gallery/image-analyses
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "image_id": 1
+}
+### @name listAcgnImageAnalyses
+GET {{gateway}}/api/gallery/image-analyses?page=1&page_size=20&image_id=1&status=1&deleted=1
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name getAcgnImageAnalysis
+GET {{gateway}}/api/gallery/image-analyses/{{id}}
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name updateAcgnImageAnalysis
+PUT {{gateway}}/api/gallery/image-analyses/{{id}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "image_id": 1,
+  "pipeline_ver": "example",
+  "analyzer": "example",
+  "status": 1
+}
+### @name deleteAcgnImageAnalysis
+DELETE {{gateway}}/api/gallery/image-analyses/{{id}}
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name createAcgnImageMetrics
+POST {{gateway}}/api/gallery/image-metrics
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "image_id": 1
+}
+### @name listAcgnImageMetrics
+GET {{gateway}}/api/gallery/image-metrics?page=1&page_size=20&image_id=1
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name getAcgnImageMetrics
+GET {{gateway}}/api/gallery/image-metrics/{{image_id}}
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name updateAcgnImageMetrics
+PUT {{gateway}}/api/gallery/image-metrics/{{image_id}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "analysis_id": 1,
+  "centroid_x": 1,
+  "centroid_y": 1,
+  "balance_score": 1
+}
+### @name deleteAcgnImageMetrics
+DELETE {{gateway}}/api/gallery/image-metrics/{{image_id}}
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### @name ping
+GET {{gateway}}/api/gallery/ping
+Accept: application/json
+
+### END GENERATED

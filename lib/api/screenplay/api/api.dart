@@ -1,12 +1,16 @@
 import 'dart:io';
 import 'dart:convert';
-import '../../http/api_auth_error.dart';
-import '../../http/network_error.dart';
-import '../../../features/auth/data/auth_repository.dart';
 import '../vars/kv.dart';
 import '../vars/vars.dart';
+import '../../http/api_headers.dart';
+import '../../http/network_error.dart';
 
 /// send request with post method
+///
+/// data: any request class that will be converted to json automatically
+/// ok: is called when request succeeds
+/// fail: is called when request fails
+/// eventually: is always called after the nearby function returns
 Future apiPost(
   String path,
   dynamic data, {
@@ -27,6 +31,10 @@ Future apiPost(
 }
 
 /// send request with get method
+///
+/// ok: is called when request succeeds
+/// fail: is called when request fails
+/// eventually: is always called after the nearby function returns
 Future apiGet(
   String path, {
   Map<String, String>? header,
@@ -45,52 +53,6 @@ Future apiGet(
   );
 }
 
-/// send request with put method
-Future apiPut(
-  String path,
-  dynamic data, {
-  Map<String, String>? header,
-  Function(Map<String, dynamic>)? ok,
-  Function(String)? fail,
-  Function? eventually,
-}) async {
-  await _apiRequest(
-    'PUT',
-    path,
-    data,
-    header: header,
-    ok: ok,
-    fail: fail,
-    eventually: eventually,
-  );
-}
-
-/// send request with delete method
-Future apiDelete(
-  String path,
-  dynamic data, {
-  Map<String, String>? header,
-  Function(Map<String, dynamic>)? ok,
-  Function(String)? fail,
-  Function? eventually,
-}) async {
-  await _apiRequest(
-    'DELETE',
-    path,
-    data,
-    header: header,
-    ok: ok,
-    fail: fail,
-    eventually: eventually,
-  );
-}
-
-String _encodeBody(dynamic data) {
-  if (data == null) return '';
-  if (data is Map) return jsonEncode(data);
-  return jsonEncode((data as dynamic).toJson());
-}
-
 Future _apiRequest(
   String method,
   String path,
@@ -102,30 +64,24 @@ Future _apiRequest(
 }) async {
   var tokens = await getTokens();
   try {
-    final client = HttpClient();
-    final uri = Uri.parse(serverHost + path);
-    final HttpClientRequest r;
-    switch (method) {
-      case 'POST':
-        r = await client.postUrl(uri);
-        break;
-      case 'PUT':
-        r = await client.putUrl(uri);
-        break;
-      case 'DELETE':
-        r = await client.deleteUrl(uri);
-        break;
-      default:
-        r = await client.getUrl(uri);
+    var client = HttpClient();
+    HttpClientRequest r;
+    if (method == 'POST') {
+      r = await client.postUrl(Uri.parse(serverHost + path));
+    } else {
+      r = await client.getUrl(Uri.parse(serverHost + path));
     }
 
-    final strData = _encodeBody(data);
-    if (method != 'GET' && strData.isNotEmpty) {
+    var strData = '';
+    if (data != null) {
+      strData = jsonEncode(data);
+    }
+    if (method == 'POST') {
       r.headers.set('Content-Type', 'application/json; charset=utf-8');
       r.headers.set('Content-Length', utf8.encode(strData).length);
     }
-    if (tokens != null) {
-      r.headers.set('Authorization', 'Bearer ${tokens.accessToken}');
+    if (tokens != null && tokens.accessToken.trim().isNotEmpty) {
+      r.headers.set('Authorization', authorizationHeader(tokens.accessToken));
     }
     if (header != null) {
       header.forEach((k, v) {
@@ -133,55 +89,30 @@ Future _apiRequest(
       });
     }
 
-    if (strData.isNotEmpty) {
-      r.write(strData);
-    }
-    final rp = await r.close();
-    final body = await rp.transform(utf8.decoder).join();
+    r.write(strData);
+    var rp = await r.close();
+    var body = await rp.transform(utf8.decoder).join();
     print('${rp.statusCode} - $path');
     print('-- request --');
     print(strData);
     print('-- response --');
     print('$body \n');
-
     if (rp.statusCode == 404) {
       if (fail != null) fail('404 not found');
-      return;
-    }
-
-    if (body.trim().isEmpty) {
-      if (rp.statusCode >= 200 && rp.statusCode < 300) {
-        if (ok != null) ok({});
-      } else {
-        if (rp.statusCode == 401) {
-          await AuthRepository.instance.handleUnauthorized();
-        }
-        if (fail != null) fail('HTTP ${rp.statusCode}');
-      }
-      return;
-    }
-
-    final base = jsonDecode(body) as Map<String, dynamic>;
-    if (rp.statusCode == 200) {
-      if (base['code'] != 0) {
-        final message = apiErrorMessage(base, rp.statusCode);
-        if (isUnauthorizedResponse(base, rp.statusCode)) {
-          await AuthRepository.instance.handleUnauthorized();
-        }
-        if (fail != null) fail(message);
-      } else {
-        if (ok != null) ok(base['data'] as Map<String, dynamic>? ?? {});
-      }
     } else {
-      final message = apiErrorMessage(base, rp.statusCode);
-      if (isUnauthorizedResponse(base, rp.statusCode)) {
-        await AuthRepository.instance.handleUnauthorized();
+      Map<String, dynamic> base = jsonDecode(body);
+      if (rp.statusCode == 200) {
+        if (base['code'] != 0) {
+          if (fail != null) fail(apiErrorMessage(base));
+        } else {
+          if (ok != null) ok(base['data']);
+        }
+      } else if (base['code'] != 0) {
+        if (fail != null) fail(apiErrorMessage(base));
       }
-      if (fail != null) fail(message);
     }
   } catch (e) {
     if (fail != null) fail(friendlyNetworkError(e));
-  } finally {
-    if (eventually != null) eventually();
   }
+  if (eventually != null) eventually();
 }
