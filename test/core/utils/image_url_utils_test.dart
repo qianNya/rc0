@@ -22,4 +22,14 @@ void main() {
       isFalse,
     );
   });
+
+  test('isValidNetworkImageUrl accepts webp minio url', () {
+    const url =
+        'http://112.74.176.124:9090/rc0/5a18f9113dfe79a10b0901dd46574e36.webp';
+    expect(isValidNetworkImageUrl(url), isTrue);
+    expect(resolveNetworkImageUrl(url), url);
+    expect(isWebpImagePath(url), isTrue);
+    expect(isSupportedImageExtension(url), isTrue);
+    expect(imageFileExtensionFromPath(url), '.webp');
+  });
 }

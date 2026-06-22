@@ -101,18 +101,26 @@ class Screenplay {
         !_isNetworkUrl(localCoverPath!)) {
       return localCoverPath;
     }
-    if (coverUrl != null && coverUrl!.isNotEmpty) {
-      return coverUrl;
-    }
     for (final act in acts) {
       for (final scene in act.scenes) {
         for (final frame in scene.frames) {
-          final path = frame.displayImagePath;
-          if (path.isNotEmpty) {
+          final local = frame.localImagePath;
+          if (local != null &&
+              local.isNotEmpty &&
+              !_isNetworkUrl(local)) {
+            return local;
+          }
+          final path = frame.imagePath;
+          if (path.isNotEmpty && !_isNetworkUrl(path)) {
             return path;
           }
         }
       }
+    }
+    if (coverUrl != null &&
+        coverUrl!.isNotEmpty &&
+        _isNetworkUrl(coverUrl!)) {
+      return coverUrl;
     }
     return null;
   }

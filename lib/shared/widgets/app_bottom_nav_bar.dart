@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_dimensions.dart';
 import '../../app/theme/app_shadows.dart';
-import '../../features/shell/presentation/widgets/desktop_sidebar.dart';
+import 'shell_nav_items.dart';
 
 class AppBottomNavBar extends StatelessWidget {
   const AppBottomNavBar({

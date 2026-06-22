@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 
 import '../../../../app/theme/app_colors.dart';
@@ -7,6 +5,7 @@ import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../screenplay/data/screenplay_draft.dart';
 import '../../../../shared/widgets/image_preview.dart';
+import '../../../../shared/widgets/rc0_image.dart';
 import '../../domain/upload_image_file.dart';
 
 class _FrameThumbnail extends StatelessWidget {
@@ -18,8 +17,8 @@ class _FrameThumbnail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isNetworkImagePath(path)) {
-      return Image.network(
-        path,
+      return Rc0Image(
+        path: path,
         width: size,
         height: size,
         fit: BoxFit.cover,
@@ -27,16 +26,16 @@ class _FrameThumbnail extends StatelessWidget {
           if (progress == null) return child;
           return _placeholder();
         },
-        errorBuilder: (_, _, _) => _placeholder(),
+        errorWidget: _placeholder(),
       );
     }
 
-    return Image.file(
-      File(path),
+    return Rc0Image(
+      path: path,
       width: size,
       height: size,
       fit: BoxFit.cover,
-      errorBuilder: (_, _, _) => _placeholder(),
+      errorWidget: _placeholder(),
     );
   }
 

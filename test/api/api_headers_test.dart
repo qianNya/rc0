@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rc0/api/http/api_auth_error.dart';
-import 'package:rc0/api/http/api_headers.dart';
+import 'package:rc0/core/network/api_auth.dart';
+import 'package:rc0/core/network/api_headers.dart';
 
 void main() {
   group('apiErrorMessage', () {

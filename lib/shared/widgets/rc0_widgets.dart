@@ -127,31 +127,57 @@ class SectionHeader extends StatelessWidget {
     required this.title,
     this.action,
     this.onActionTap,
+    this.showChevron = false,
+    this.padding = EdgeInsets.zero,
+    this.titleStyle,
+    this.actionStyle,
   });
 
   final String title;
   final String? action;
   final VoidCallback? onActionTap;
+  final bool showChevron;
+  final EdgeInsetsGeometry padding;
+  final TextStyle? titleStyle;
+  final TextStyle? actionStyle;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final content = Row(
       children: [
-        Text(title, style: Theme.of(context).textTheme.titleMedium),
+        Text(title, style: titleStyle ?? Theme.of(context).textTheme.titleMedium),
         const Spacer(),
-        if (action != null)
+        if (action != null && onActionTap != null)
           GestureDetector(
             onTap: onActionTap,
-            child: Text(
-              action!,
-              style: const TextStyle(
-                color: AppColors.accent,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  action!,
+                  style: actionStyle ??
+                      const TextStyle(
+                        color: AppColors.accent,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                ),
+                if (showChevron)
+                  const Icon(
+                    Icons.chevron_right,
+                    size: 18,
+                    color: AppColors.textSecondary,
+                  ),
+              ],
             ),
           ),
       ],
+    );
+
+    if (padding == EdgeInsets.zero) return content;
+    return Padding(
+      padding: padding,
+      child: content,
     );
   }
 }

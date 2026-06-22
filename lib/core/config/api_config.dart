@@ -1,3 +1,3 @@
 abstract final class ApiConfig {
-  static const serverHost = 'http://flight.zjhlife.com:8888';
+  static const serverHost = 'http://192.168.110.167:8080';
 }

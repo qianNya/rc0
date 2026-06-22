@@ -8,8 +8,6 @@ import '../../core/data/app_catalog.dart';
 import '../../core/domain/screenplay/screenplay.dart';
 import 'profile_widgets.dart';
 
-const _templateBadgeColor = Color(0xFF4A90D9);
-
 enum FeedTypeBadgeKind { script, template }
 
 class FeedTypeBadge extends StatelessWidget {
@@ -23,7 +21,7 @@ class FeedTypeBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: isScript ? AppColors.accent : _templateBadgeColor,
+        color: isScript ? AppColors.accent : AppColors.badgeTemplate,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(

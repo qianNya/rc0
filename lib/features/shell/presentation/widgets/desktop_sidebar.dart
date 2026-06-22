@@ -4,90 +4,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../shared/widgets/rc0_widgets.dart';
-
-class ShellNavItem {
-  const ShellNavItem({
-    required this.branchIndex,
-    required this.label,
-    required this.icon,
-    required this.selectedIcon,
-    this.desktopOnly = false,
-    this.mobileOnly = false,
-  });
-
-  final int branchIndex;
-  final String label;
-  final IconData icon;
-  final IconData selectedIcon;
-  final bool desktopOnly;
-  final bool mobileOnly;
-}
-
-/// Mobile bottom-nav items (探索 / 社区 / 创作 / 收藏 / 我的).
-const List<ShellNavItem> mobileNavItems = [
-  ShellNavItem(
-    branchIndex: 0,
-    label: '探索',
-    icon: Icons.explore_outlined,
-    selectedIcon: Icons.explore,
-  ),
-  ShellNavItem(
-    branchIndex: 1,
-    label: '社区',
-    icon: Icons.forum_outlined,
-    selectedIcon: Icons.forum,
-  ),
-  ShellNavItem(
-    branchIndex: 2,
-    label: '创作',
-    icon: Icons.add,
-    selectedIcon: Icons.add,
-    mobileOnly: true,
-  ),
-  ShellNavItem(
-    branchIndex: 5,
-    label: '收藏',
-    icon: Icons.favorite_border,
-    selectedIcon: Icons.favorite,
-  ),
-  ShellNavItem(
-    branchIndex: 3,
-    label: '我的',
-    icon: Icons.person_outline,
-    selectedIcon: Icons.person,
-  ),
-];
-
-/// Desktop sidebar items.
-const List<ShellNavItem> desktopNavItems = [
-  ShellNavItem(
-    branchIndex: 0,
-    label: '首页',
-    icon: Icons.home_outlined,
-    selectedIcon: Icons.home,
-    desktopOnly: true,
-  ),
-  ShellNavItem(
-    branchIndex: 1,
-    label: '社区',
-    icon: Icons.forum_outlined,
-    selectedIcon: Icons.forum,
-  ),
-  ShellNavItem(
-    branchIndex: 4,
-    label: '任务',
-    icon: Icons.task_alt_outlined,
-    selectedIcon: Icons.task_alt,
-    desktopOnly: true,
-  ),
-  ShellNavItem(
-    branchIndex: 5,
-    label: '收藏',
-    icon: Icons.bookmark_outline,
-    selectedIcon: Icons.bookmark,
-    desktopOnly: true,
-  ),
-];
+import '../../../../shared/widgets/shell_nav_items.dart';
 
 class DesktopSidebar extends StatelessWidget {
   const DesktopSidebar({
@@ -108,61 +25,61 @@ class DesktopSidebar extends StatelessWidget {
     return Material(
       color: AppColors.surface,
       child: Container(
-      width: 200,
-      decoration: const BoxDecoration(
-        border: Border(right: BorderSide(color: AppColors.border)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 20, 16, 8),
-            child: Rc0Logo(),
-          ),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              'Pose Reference & Script',
-              style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+        width: 200,
+        decoration: const BoxDecoration(
+          border: Border(right: BorderSide(color: AppColors.border)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 20, 16, 8),
+              child: Rc0Logo(),
             ),
-          ),
-          const SizedBox(height: 16),
-          ...desktopNavItems.map((item) {
-            final active = currentBranch == item.branchIndex;
-            return _SidebarTile(
-              label: item.label,
-              icon: active ? item.selectedIcon : item.icon,
-              selected: active,
-              onTap: () => onSelect(item.branchIndex),
-            );
-          }),
-          const Spacer(),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: ElevatedButton.icon(
-              onPressed: onUploadTap,
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('创作'),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'Pose Reference & Script',
+                style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          ListTile(
-            leading: const CircleAvatar(
-              radius: 16,
-              backgroundColor: AppColors.placeholder,
-              child: Icon(Icons.person, size: 18),
+            const SizedBox(height: 16),
+            ...desktopNavItems.map((item) {
+              final active = currentBranch == item.branchIndex;
+              return _SidebarTile(
+                label: item.label,
+                icon: active ? item.selectedIcon : item.icon,
+                selected: active,
+                onTap: () => onSelect(item.branchIndex),
+              );
+            }),
+            const Spacer(),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: ElevatedButton.icon(
+                onPressed: onUploadTap,
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('创作'),
+              ),
             ),
-            title: const Text('我的', style: AppTextStyles.label),
-            selected: currentBranch == 3,
-            selectedTileColor: AppColors.sidebarActive,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+            const SizedBox(height: 12),
+            ListTile(
+              leading: const CircleAvatar(
+                radius: 16,
+                backgroundColor: AppColors.placeholder,
+                child: Icon(Icons.person, size: 18),
+              ),
+              title: const Text('我的', style: AppTextStyles.label),
+              selected: currentBranch == 3,
+              selectedTileColor: AppColors.sidebarActive,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+              ),
+              onTap: onProfileTap,
             ),
-            onTap: onProfileTap,
-          ),
-          const SizedBox(height: 16),
-        ],
-      ),
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
     );
   }

@@ -18,6 +18,7 @@ class ScreenplayStructureTree extends StatefulWidget {
     this.onDeleteAct,
     this.onDeleteScene,
     this.onDeleteFrame,
+    this.onUploadFrame,
   });
 
   final Screenplay screenplay;
@@ -27,6 +28,8 @@ class ScreenplayStructureTree extends StatefulWidget {
   final Future<void> Function(int actIndex, int sceneIndex)? onDeleteScene;
   final Future<void> Function(int actIndex, int sceneIndex, int frameIndex)?
       onDeleteFrame;
+  final Future<void> Function(int actIndex, int sceneIndex, int frameIndex)?
+      onUploadFrame;
 
   @override
   State<ScreenplayStructureTree> createState() =>
@@ -82,6 +85,7 @@ class _ScreenplayStructureTreeState extends State<ScreenplayStructureTree> {
             onDeleteAct: widget.onDeleteAct,
             onDeleteScene: widget.onDeleteScene,
             onDeleteFrame: widget.onDeleteFrame,
+            onUploadFrame: widget.onUploadFrame,
           ),
       ],
     );
@@ -100,6 +104,7 @@ class _ActTreeSection extends StatelessWidget {
     this.onDeleteAct,
     this.onDeleteScene,
     this.onDeleteFrame,
+    this.onUploadFrame,
   });
 
   final ScriptAct act;
@@ -113,6 +118,8 @@ class _ActTreeSection extends StatelessWidget {
   final Future<void> Function(int actIndex, int sceneIndex)? onDeleteScene;
   final Future<void> Function(int actIndex, int sceneIndex, int frameIndex)?
       onDeleteFrame;
+  final Future<void> Function(int actIndex, int sceneIndex, int frameIndex)?
+      onUploadFrame;
 
   @override
   Widget build(BuildContext context) {
@@ -174,6 +181,7 @@ class _ActTreeSection extends StatelessWidget {
                               galleryCaptions: galleryCaptions,
                               onDeleteScene: onDeleteScene,
                               onDeleteFrame: onDeleteFrame,
+                              onUploadFrame: onUploadFrame,
                             ),
                           ),
                       ],
@@ -198,6 +206,7 @@ class _SceneTreeRow extends StatefulWidget {
     required this.galleryCaptions,
     this.onDeleteScene,
     this.onDeleteFrame,
+    this.onUploadFrame,
   });
 
   final ScriptScene scene;
@@ -209,6 +218,8 @@ class _SceneTreeRow extends StatefulWidget {
   final Future<void> Function(int actIndex, int sceneIndex)? onDeleteScene;
   final Future<void> Function(int actIndex, int sceneIndex, int frameIndex)?
       onDeleteFrame;
+  final Future<void> Function(int actIndex, int sceneIndex, int frameIndex)?
+      onUploadFrame;
 
   @override
   State<_SceneTreeRow> createState() => _SceneTreeRowState();
@@ -226,9 +237,68 @@ class _SceneTreeRowState extends State<_SceneTreeRow> {
         widget.onDeleteScene != null && widget.sceneCount > 1;
     final canDeleteFrame =
         widget.onDeleteFrame != null && scene.frames.length > 1;
+    final canUploadFrame = widget.onUploadFrame != null;
+    final canFrameLongPress = canDeleteFrame || canUploadFrame;
 
-    void onFrameLongPress(int frameIndex, _) {
-      widget.onDeleteFrame!(widget.actIndex, widget.sceneIndex, frameIndex);
+    Future<void> onFrameLongPress(int frameIndex, _) async {
+      if (!canFrameLongPress) return;
+
+      if (canUploadFrame && !canDeleteFrame) {
+        await widget.onUploadFrame!(
+          widget.actIndex,
+          widget.sceneIndex,
+          frameIndex,
+        );
+        return;
+      }
+
+      if (!canUploadFrame && canDeleteFrame) {
+        await widget.onDeleteFrame!(
+          widget.actIndex,
+          widget.sceneIndex,
+          frameIndex,
+        );
+        return;
+      }
+
+      await showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: AppColors.surface,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        builder: (ctx) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.cloud_upload_outlined),
+                title: const Text('上传此图'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  widget.onUploadFrame!(
+                    widget.actIndex,
+                    widget.sceneIndex,
+                    frameIndex,
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete_outline),
+                title: const Text('删除画格'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  widget.onDeleteFrame!(
+                    widget.actIndex,
+                    widget.sceneIndex,
+                    frameIndex,
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     return Container(
@@ -288,7 +358,7 @@ class _SceneTreeRowState extends State<_SceneTreeRow> {
                       maxVisible: 3,
                       onExpandTap: _toggleExpanded,
                       onFrameLongPress:
-                          canDeleteFrame ? onFrameLongPress : null,
+                          canFrameLongPress ? onFrameLongPress : null,
                     ),
                   ),
                   IconButton(
@@ -347,7 +417,7 @@ class _SceneTreeRowState extends State<_SceneTreeRow> {
                           galleryPaths: widget.galleryPaths,
                           galleryCaptions: widget.galleryCaptions,
                           onFrameLongPress:
-                              canDeleteFrame ? onFrameLongPress : null,
+                              canFrameLongPress ? onFrameLongPress : null,
                         ),
                       ],
                     ),

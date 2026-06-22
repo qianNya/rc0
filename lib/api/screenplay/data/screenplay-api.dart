@@ -76,17 +76,109 @@ class ActNode {
   final Act act;
 
   final List<SceneNode> scenes;
-  ActNode({required this.act, required this.scenes});
+
+  final TreePage scenePage;
+  ActNode({required this.act, required this.scenes, required this.scenePage});
   factory ActNode.fromJson(Map<String, dynamic> m) {
     return ActNode(
-      act: Act.fromJson(m['act']),
+      act: Act.fromJson(m['act'] as Map<String, dynamic>),
       scenes: ((m['scenes'] ?? []) as List<dynamic>)
-          .map((i) => SceneNode.fromJson(i))
+          .map((i) => SceneNode.fromJson(i as Map<String, dynamic>))
+          .toList(),
+      scenePage: m['scene_page'] == null
+          ? TreePage(page: 1, pageSize: 100, total: 0)
+          : TreePage.fromJson(m['scene_page'] as Map<String, dynamic>),
+    );
+  }
+  Map<String, dynamic> toJson() {
+    return {
+      'act': act.toJson(),
+      'scenes': scenes.map((i) => i.toJson()),
+      'scene_page': scenePage.toJson(),
+    };
+  }
+}
+
+class BatchUploadItem {
+  final String ref;
+
+  final String md5;
+
+  final String filename;
+
+  final String objectKey;
+
+  final String bucket;
+
+  final String storage;
+
+  final num size;
+
+  final bool deduplicated;
+
+  final String url;
+  BatchUploadItem({
+    required this.ref,
+    required this.md5,
+    required this.filename,
+    required this.objectKey,
+    required this.bucket,
+    required this.storage,
+    required this.size,
+    required this.deduplicated,
+    required this.url,
+  });
+  factory BatchUploadItem.fromJson(Map<String, dynamic> m) {
+    return BatchUploadItem(
+      ref: m['ref'] ?? "",
+      md5: m['md5'] ?? "",
+      filename: m['filename'] ?? "",
+      objectKey: m['object_key'] ?? "",
+      bucket: m['bucket'] ?? "",
+      storage: m['storage'] ?? "",
+      size: m['size'] ?? 0,
+      deduplicated: m['deduplicated'] ?? false,
+      url: m['url'] ?? "",
+    );
+  }
+  Map<String, dynamic> toJson() {
+    return {
+      'ref': ref,
+      'md5': md5,
+      'filename': filename,
+      'object_key': objectKey,
+      'bucket': bucket,
+      'storage': storage,
+      'size': size,
+      'deduplicated': deduplicated,
+      'url': url,
+    };
+  }
+}
+
+class BatchUploadTreeAssetsReq {
+  final num id;
+  BatchUploadTreeAssetsReq({required this.id});
+  factory BatchUploadTreeAssetsReq.fromJson(Map<String, dynamic> m) {
+    return BatchUploadTreeAssetsReq(id: m['id'] ?? 0);
+  }
+  Map<String, dynamic> toJson() {
+    return {'id': id};
+  }
+}
+
+class BatchUploadTreeAssetsResp {
+  final List<BatchUploadItem> items;
+  BatchUploadTreeAssetsResp({required this.items});
+  factory BatchUploadTreeAssetsResp.fromJson(Map<String, dynamic> m) {
+    return BatchUploadTreeAssetsResp(
+      items: ((m['items'] ?? []) as List<dynamic>)
+          .map((i) => BatchUploadItem.fromJson(i))
           .toList(),
     );
   }
   Map<String, dynamic> toJson() {
-    return {'act': act.toJson(), 'scenes': scenes.map((i) => i.toJson())};
+    return {'items': items.map((i) => i.toJson())};
   }
 }
 
@@ -148,8 +240,6 @@ class CreateFrameReq {
 
   final String imageUrl;
 
-  final num dataObjectId;
-
   final num status;
   CreateFrameReq({
     required this.screenplayId,
@@ -162,7 +252,6 @@ class CreateFrameReq {
     required this.sort,
     required this.thumbnailUrl,
     required this.imageUrl,
-    required this.dataObjectId,
     required this.status,
   });
   factory CreateFrameReq.fromJson(Map<String, dynamic> m) {
@@ -177,7 +266,6 @@ class CreateFrameReq {
       sort: m['sort'] ?? 0,
       thumbnailUrl: m['thumbnail_url'] ?? "",
       imageUrl: m['image_url'] ?? "",
-      dataObjectId: m['data_object_id'] ?? 0,
       status: m['status'] ?? 0,
     );
   }
@@ -193,7 +281,6 @@ class CreateFrameReq {
       'sort': sort,
       'thumbnail_url': thumbnailUrl,
       'image_url': imageUrl,
-      'data_object_id': dataObjectId,
       'status': status,
     };
   }
@@ -262,8 +349,6 @@ class CreateScreenplayReq {
 
   final String coverUrl;
 
-  final num coverObjectId;
-
   final num publishStatus;
 
   final num visibility;
@@ -275,7 +360,6 @@ class CreateScreenplayReq {
     required this.subtitle,
     required this.summary,
     required this.coverUrl,
-    required this.coverObjectId,
     required this.publishStatus,
     required this.visibility,
     required this.status,
@@ -287,7 +371,6 @@ class CreateScreenplayReq {
       subtitle: m['subtitle'] ?? "",
       summary: m['summary'] ?? "",
       coverUrl: m['cover_url'] ?? "",
-      coverObjectId: m['cover_object_id'] ?? 0,
       publishStatus: m['publish_status'] ?? 0,
       visibility: m['visibility'] ?? 0,
       status: m['status'] ?? 0,
@@ -295,16 +378,56 @@ class CreateScreenplayReq {
   }
   Map<String, dynamic> toJson() {
     return {
-      'kind': kind,
       'title': title,
-      'subtitle': subtitle,
       'summary': summary,
-      'cover_url': coverUrl,
-      'cover_object_id': coverObjectId,
-      'publish_status': publishStatus,
-      'visibility': visibility,
-      'status': status,
+      'kind': kind,
     };
+  }
+}
+
+class CreateSpFavoriteReq {
+  final num screenplayId;
+
+  final num userId;
+
+  final num status;
+  CreateSpFavoriteReq({
+    required this.screenplayId,
+    required this.userId,
+    required this.status,
+  });
+  factory CreateSpFavoriteReq.fromJson(Map<String, dynamic> m) {
+    return CreateSpFavoriteReq(
+      screenplayId: m['screenplay_id'] ?? 0,
+      userId: m['user_id'] ?? 0,
+      status: m['status'] ?? 0,
+    );
+  }
+  Map<String, dynamic> toJson() {
+    return {'screenplay_id': screenplayId, 'user_id': userId, 'status': status};
+  }
+}
+
+class CreateSpLikeReq {
+  final num screenplayId;
+
+  final num userId;
+
+  final num status;
+  CreateSpLikeReq({
+    required this.screenplayId,
+    required this.userId,
+    required this.status,
+  });
+  factory CreateSpLikeReq.fromJson(Map<String, dynamic> m) {
+    return CreateSpLikeReq(
+      screenplayId: m['screenplay_id'] ?? 0,
+      userId: m['user_id'] ?? 0,
+      status: m['status'] ?? 0,
+    );
+  }
+  Map<String, dynamic> toJson() {
+    return {'screenplay_id': screenplayId, 'user_id': userId, 'status': status};
   }
 }
 
@@ -387,6 +510,39 @@ class DeleteScreenplayReq {
   }
 }
 
+class DeleteScreenplayTreeReq {
+  final num id;
+  DeleteScreenplayTreeReq({required this.id});
+  factory DeleteScreenplayTreeReq.fromJson(Map<String, dynamic> m) {
+    return DeleteScreenplayTreeReq(id: m['id'] ?? 0);
+  }
+  Map<String, dynamic> toJson() {
+    return {'id': id};
+  }
+}
+
+class DeleteSpFavoriteReq {
+  final num id;
+  DeleteSpFavoriteReq({required this.id});
+  factory DeleteSpFavoriteReq.fromJson(Map<String, dynamic> m) {
+    return DeleteSpFavoriteReq(id: m['id'] ?? 0);
+  }
+  Map<String, dynamic> toJson() {
+    return {'id': id};
+  }
+}
+
+class DeleteSpLikeReq {
+  final num id;
+  DeleteSpLikeReq({required this.id});
+  factory DeleteSpLikeReq.fromJson(Map<String, dynamic> m) {
+    return DeleteSpLikeReq(id: m['id'] ?? 0);
+  }
+  Map<String, dynamic> toJson() {
+    return {'id': id};
+  }
+}
+
 class Frame {
   final num id;
 
@@ -410,7 +566,9 @@ class Frame {
 
   final String imageUrl;
 
-  final num dataObjectId;
+  final String imageRef;
+
+  final String thumbnailRef;
 
   final num status;
 
@@ -433,7 +591,8 @@ class Frame {
     required this.sort,
     required this.thumbnailUrl,
     required this.imageUrl,
-    required this.dataObjectId,
+    required this.imageRef,
+    required this.thumbnailRef,
     required this.status,
     required this.createAt,
     required this.updateAt,
@@ -453,7 +612,8 @@ class Frame {
       sort: m['sort'] ?? 0,
       thumbnailUrl: m['thumbnail_url'] ?? "",
       imageUrl: m['image_url'] ?? "",
-      dataObjectId: m['data_object_id'] ?? 0,
+      imageRef: m['image_ref'] ?? "",
+      thumbnailRef: m['thumbnail_ref'] ?? "",
       status: m['status'] ?? 0,
       createAt: m['create_at'] ?? "",
       updateAt: m['update_at'] ?? "",
@@ -474,7 +634,8 @@ class Frame {
       'sort': sort,
       'thumbnail_url': thumbnailUrl,
       'image_url': imageUrl,
-      'data_object_id': dataObjectId,
+      'image_ref': imageRef,
+      'thumbnail_ref': thumbnailRef,
       'status': status,
       'create_at': createAt,
       'update_at': updateAt,
@@ -576,12 +737,53 @@ class GetScreenplayReq {
 
 class GetScreenplayTreeReq {
   final num id;
-  GetScreenplayTreeReq({required this.id});
+
+  final num depth;
+
+  final num actPage;
+
+  final num actPageSize;
+
+  final num scenePage;
+
+  final num scenePageSize;
+
+  final num framePage;
+
+  final num framePageSize;
+  GetScreenplayTreeReq({
+    required this.id,
+    required this.depth,
+    required this.actPage,
+    required this.actPageSize,
+    required this.scenePage,
+    required this.scenePageSize,
+    required this.framePage,
+    required this.framePageSize,
+  });
   factory GetScreenplayTreeReq.fromJson(Map<String, dynamic> m) {
-    return GetScreenplayTreeReq(id: m['id'] ?? 0);
+    return GetScreenplayTreeReq(
+      id: m['id'] ?? 0,
+      depth: m['depth'] ?? 0,
+      actPage: m['act_page'] ?? 0,
+      actPageSize: m['act_page_size'] ?? 0,
+      scenePage: m['scene_page'] ?? 0,
+      scenePageSize: m['scene_page_size'] ?? 0,
+      framePage: m['frame_page'] ?? 0,
+      framePageSize: m['frame_page_size'] ?? 0,
+    );
   }
   Map<String, dynamic> toJson() {
-    return {'id': id};
+    return {
+      'id': id,
+      'depth': depth,
+      'act_page': actPage,
+      'act_page_size': actPageSize,
+      'scene_page': scenePage,
+      'scene_page_size': scenePageSize,
+      'frame_page': framePage,
+      'frame_page_size': framePageSize,
+    };
   }
 }
 
@@ -589,20 +791,52 @@ class GetScreenplayTreeResp {
   final Screenplay screenplay;
 
   final List<ActNode> acts;
-  GetScreenplayTreeResp({required this.screenplay, required this.acts});
+
+  final TreePage actPage;
+  GetScreenplayTreeResp({
+    required this.screenplay,
+    required this.acts,
+    required this.actPage,
+  });
   factory GetScreenplayTreeResp.fromJson(Map<String, dynamic> m) {
     return GetScreenplayTreeResp(
-      screenplay: Screenplay.fromJson(m['screenplay']),
+      screenplay: Screenplay.fromJson(m['screenplay'] as Map<String, dynamic>),
       acts: ((m['acts'] ?? []) as List<dynamic>)
-          .map((i) => ActNode.fromJson(i))
+          .map((i) => ActNode.fromJson(i as Map<String, dynamic>))
           .toList(),
+      actPage: m['act_page'] == null
+          ? TreePage(page: 1, pageSize: 100, total: 0)
+          : TreePage.fromJson(m['act_page'] as Map<String, dynamic>),
     );
   }
   Map<String, dynamic> toJson() {
     return {
       'screenplay': screenplay.toJson(),
       'acts': acts.map((i) => i.toJson()),
+      'act_page': actPage.toJson(),
     };
+  }
+}
+
+class GetSpFavoriteReq {
+  final num id;
+  GetSpFavoriteReq({required this.id});
+  factory GetSpFavoriteReq.fromJson(Map<String, dynamic> m) {
+    return GetSpFavoriteReq(id: m['id'] ?? 0);
+  }
+  Map<String, dynamic> toJson() {
+    return {'id': id};
+  }
+}
+
+class GetSpLikeReq {
+  final num id;
+  GetSpLikeReq({required this.id});
+  factory GetSpLikeReq.fromJson(Map<String, dynamic> m) {
+    return GetSpLikeReq(id: m['id'] ?? 0);
+  }
+  Map<String, dynamic> toJson() {
+    return {'id': id};
   }
 }
 
@@ -817,6 +1051,126 @@ class ListScreenplaysResp {
   }
 }
 
+class ListSpFavoritesReq {
+  final num page;
+
+  final num pageSize;
+
+  final num screenplayId;
+
+  final num userId;
+
+  final num status;
+
+  final num deleted;
+  ListSpFavoritesReq({
+    required this.page,
+    required this.pageSize,
+    required this.screenplayId,
+    required this.userId,
+    required this.status,
+    required this.deleted,
+  });
+  factory ListSpFavoritesReq.fromJson(Map<String, dynamic> m) {
+    return ListSpFavoritesReq(
+      page: m['page'] ?? 0,
+      pageSize: m['page_size'] ?? 0,
+      screenplayId: m['screenplay_id'] ?? 0,
+      userId: m['user_id'] ?? 0,
+      status: m['status'] ?? 0,
+      deleted: m['deleted'] ?? 0,
+    );
+  }
+  Map<String, dynamic> toJson() {
+    return {
+      'page': page,
+      'page_size': pageSize,
+      'screenplay_id': screenplayId,
+      'user_id': userId,
+      'status': status,
+      'deleted': deleted,
+    };
+  }
+}
+
+class ListSpFavoritesResp {
+  final List<SpFavorite> list;
+
+  final num total;
+  ListSpFavoritesResp({required this.list, required this.total});
+  factory ListSpFavoritesResp.fromJson(Map<String, dynamic> m) {
+    return ListSpFavoritesResp(
+      list: ((m['list'] ?? []) as List<dynamic>)
+          .map((i) => SpFavorite.fromJson(i))
+          .toList(),
+      total: m['total'] ?? 0,
+    );
+  }
+  Map<String, dynamic> toJson() {
+    return {'list': list.map((i) => i.toJson()), 'total': total};
+  }
+}
+
+class ListSpLikesReq {
+  final num page;
+
+  final num pageSize;
+
+  final num screenplayId;
+
+  final num userId;
+
+  final num status;
+
+  final num deleted;
+  ListSpLikesReq({
+    required this.page,
+    required this.pageSize,
+    required this.screenplayId,
+    required this.userId,
+    required this.status,
+    required this.deleted,
+  });
+  factory ListSpLikesReq.fromJson(Map<String, dynamic> m) {
+    return ListSpLikesReq(
+      page: m['page'] ?? 0,
+      pageSize: m['page_size'] ?? 0,
+      screenplayId: m['screenplay_id'] ?? 0,
+      userId: m['user_id'] ?? 0,
+      status: m['status'] ?? 0,
+      deleted: m['deleted'] ?? 0,
+    );
+  }
+  Map<String, dynamic> toJson() {
+    return {
+      'page': page,
+      'page_size': pageSize,
+      'screenplay_id': screenplayId,
+      'user_id': userId,
+      'status': status,
+      'deleted': deleted,
+    };
+  }
+}
+
+class ListSpLikesResp {
+  final List<SpLike> list;
+
+  final num total;
+  ListSpLikesResp({required this.list, required this.total});
+  factory ListSpLikesResp.fromJson(Map<String, dynamic> m) {
+    return ListSpLikesResp(
+      list: ((m['list'] ?? []) as List<dynamic>)
+          .map((i) => SpLike.fromJson(i))
+          .toList(),
+      total: m['total'] ?? 0,
+    );
+  }
+  Map<String, dynamic> toJson() {
+    return {'list': list.map((i) => i.toJson()), 'total': total};
+  }
+}
+
 class PingResp {
   final String pong;
   PingResp({required this.pong});
@@ -909,6 +1263,45 @@ class ReorderScenesReq {
   }
 }
 
+class SaveScreenplayTreeReq {
+  final num id;
+
+  final Map<String, String> assetMap;
+
+  final Screenplay screenplay;
+
+  final List<ActNode> acts;
+
+  final num version;
+  SaveScreenplayTreeReq({
+    required this.id,
+    required this.assetMap,
+    required this.screenplay,
+    required this.acts,
+    required this.version,
+  });
+  factory SaveScreenplayTreeReq.fromJson(Map<String, dynamic> m) {
+    return SaveScreenplayTreeReq(
+      id: m['id'] ?? 0,
+      assetMap: Map<String, String>.from(m['asset_map'] ?? {}),
+      screenplay: Screenplay.fromJson(m['screenplay']),
+      acts: ((m['acts'] ?? []) as List<dynamic>)
+          .map((i) => ActNode.fromJson(i))
+          .toList(),
+      version: m['version'] ?? 0,
+    );
+  }
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'asset_map': assetMap,
+      'screenplay': screenplay.toJson(),
+      'acts': acts.map((i) => i.toJson()),
+      'version': version,
+    };
+  }
+}
+
 class Scene {
   final num id;
 
@@ -995,17 +1388,30 @@ class SceneNode {
   final Scene scene;
 
   final List<Frame> frames;
-  SceneNode({required this.scene, required this.frames});
+
+  final TreePage framePage;
+  SceneNode({
+    required this.scene,
+    required this.frames,
+    required this.framePage,
+  });
   factory SceneNode.fromJson(Map<String, dynamic> m) {
     return SceneNode(
-      scene: Scene.fromJson(m['scene']),
+      scene: Scene.fromJson(m['scene'] as Map<String, dynamic>),
       frames: ((m['frames'] ?? []) as List<dynamic>)
-          .map((i) => Frame.fromJson(i))
+          .map((i) => Frame.fromJson(i as Map<String, dynamic>))
           .toList(),
+      framePage: m['frame_page'] == null
+          ? TreePage(page: 1, pageSize: 100, total: 0)
+          : TreePage.fromJson(m['frame_page'] as Map<String, dynamic>),
     );
   }
   Map<String, dynamic> toJson() {
-    return {'scene': scene.toJson(), 'frames': frames.map((i) => i.toJson())};
+    return {
+      'scene': scene.toJson(),
+      'frames': frames.map((i) => i.toJson()),
+      'frame_page': framePage.toJson(),
+    };
   }
 }
 
@@ -1022,7 +1428,7 @@ class Screenplay {
 
   final String coverUrl;
 
-  final num coverObjectId;
+  final String coverRef;
 
   final num publishStatus;
 
@@ -1066,7 +1472,7 @@ class Screenplay {
     required this.subtitle,
     required this.summary,
     required this.coverUrl,
-    required this.coverObjectId,
+    required this.coverRef,
     required this.publishStatus,
     required this.visibility,
     required this.publishedAt,
@@ -1094,7 +1500,7 @@ class Screenplay {
       subtitle: m['subtitle'] ?? "",
       summary: m['summary'] ?? "",
       coverUrl: m['cover_url'] ?? "",
-      coverObjectId: m['cover_object_id'] ?? 0,
+      coverRef: m['cover_ref'] ?? "",
       publishStatus: m['publish_status'] ?? 0,
       visibility: m['visibility'] ?? 0,
       publishedAt: m['published_at'] ?? "",
@@ -1123,7 +1529,7 @@ class Screenplay {
       'subtitle': subtitle,
       'summary': summary,
       'cover_url': coverUrl,
-      'cover_object_id': coverObjectId,
+      'cover_ref': coverRef,
       'publish_status': publishStatus,
       'visibility': visibility,
       'published_at': publishedAt,
@@ -1167,6 +1573,109 @@ class SortItem {
   }
   Map<String, dynamic> toJson() {
     return {'id': id, 'sort': sort};
+  }
+}
+
+class SpFavorite {
+  final num id;
+
+  final num screenplayId;
+
+  final num userId;
+
+  final num status;
+
+  final String createAt;
+
+  final String updateAt;
+  SpFavorite({
+    required this.id,
+    required this.screenplayId,
+    required this.userId,
+    required this.status,
+    required this.createAt,
+    required this.updateAt,
+  });
+  factory SpFavorite.fromJson(Map<String, dynamic> m) {
+    return SpFavorite(
+      id: m['id'] ?? 0,
+      screenplayId: m['screenplay_id'] ?? 0,
+      userId: m['user_id'] ?? 0,
+      status: m['status'] ?? 0,
+      createAt: m['create_at'] ?? "",
+      updateAt: m['update_at'] ?? "",
+    );
+  }
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'screenplay_id': screenplayId,
+      'user_id': userId,
+      'status': status,
+      'create_at': createAt,
+      'update_at': updateAt,
+    };
+  }
+}
+
+class SpLike {
+  final num id;
+
+  final num screenplayId;
+
+  final num userId;
+
+  final num status;
+
+  final String createAt;
+
+  final String updateAt;
+  SpLike({
+    required this.id,
+    required this.screenplayId,
+    required this.userId,
+    required this.status,
+    required this.createAt,
+    required this.updateAt,
+  });
+  factory SpLike.fromJson(Map<String, dynamic> m) {
+    return SpLike(
+      id: m['id'] ?? 0,
+      screenplayId: m['screenplay_id'] ?? 0,
+      userId: m['user_id'] ?? 0,
+      status: m['status'] ?? 0,
+      createAt: m['create_at'] ?? "",
+      updateAt: m['update_at'] ?? "",
+    );
+  }
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'screenplay_id': screenplayId,
+      'user_id': userId,
+      'status': status,
+      'create_at': createAt,
+      'update_at': updateAt,
+    };
+  }
+}
+
+class TreePage {
+  final num page;
+
+  final num pageSize;
+
+  final num total;
+  TreePage({required this.page, required this.pageSize, required this.total});
+  factory TreePage.fromJson(Map<String, dynamic> m) {
+    return TreePage(
+      page: m['page'] ?? 0,
+      pageSize: m['page_size'] ?? 0,
+      total: m['total'] ?? 0,
+    );
+  }
+  Map<String, dynamic> toJson() {
+    return {'page': page, 'page_size': pageSize, 'total': total};
   }
 }
 
@@ -1235,8 +1744,6 @@ class UpdateFrameReq {
 
   final String imageUrl;
 
-  final num dataObjectId;
-
   final num status;
   UpdateFrameReq({
     required this.screenplayId,
@@ -1250,7 +1757,6 @@ class UpdateFrameReq {
     required this.sort,
     required this.thumbnailUrl,
     required this.imageUrl,
-    required this.dataObjectId,
     required this.status,
   });
   factory UpdateFrameReq.fromJson(Map<String, dynamic> m) {
@@ -1266,7 +1772,6 @@ class UpdateFrameReq {
       sort: m['sort'] ?? 0,
       thumbnailUrl: m['thumbnail_url'] ?? "",
       imageUrl: m['image_url'] ?? "",
-      dataObjectId: m['data_object_id'] ?? 0,
       status: m['status'] ?? 0,
     );
   }
@@ -1283,7 +1788,6 @@ class UpdateFrameReq {
       'sort': sort,
       'thumbnail_url': thumbnailUrl,
       'image_url': imageUrl,
-      'data_object_id': dataObjectId,
       'status': status,
     };
   }
@@ -1359,8 +1863,6 @@ class UpdateScreenplayReq {
 
   final String coverUrl;
 
-  final num coverObjectId;
-
   final num publishStatus;
 
   final num visibility;
@@ -1373,7 +1875,6 @@ class UpdateScreenplayReq {
     required this.subtitle,
     required this.summary,
     required this.coverUrl,
-    required this.coverObjectId,
     required this.publishStatus,
     required this.visibility,
     required this.status,
@@ -1386,7 +1887,6 @@ class UpdateScreenplayReq {
       subtitle: m['subtitle'] ?? "",
       summary: m['summary'] ?? "",
       coverUrl: m['cover_url'] ?? "",
-      coverObjectId: m['cover_object_id'] ?? 0,
       publishStatus: m['publish_status'] ?? 0,
       visibility: m['visibility'] ?? 0,
       status: m['status'] ?? 0,
@@ -1400,9 +1900,72 @@ class UpdateScreenplayReq {
       'subtitle': subtitle,
       'summary': summary,
       'cover_url': coverUrl,
-      'cover_object_id': coverObjectId,
       'publish_status': publishStatus,
       'visibility': visibility,
+      'status': status,
+    };
+  }
+}
+
+class UpdateSpFavoriteReq {
+  final num id;
+
+  final num screenplayId;
+
+  final num userId;
+
+  final num status;
+  UpdateSpFavoriteReq({
+    required this.id,
+    required this.screenplayId,
+    required this.userId,
+    required this.status,
+  });
+  factory UpdateSpFavoriteReq.fromJson(Map<String, dynamic> m) {
+    return UpdateSpFavoriteReq(
+      id: m['id'] ?? 0,
+      screenplayId: m['screenplay_id'] ?? 0,
+      userId: m['user_id'] ?? 0,
+      status: m['status'] ?? 0,
+    );
+  }
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'screenplay_id': screenplayId,
+      'user_id': userId,
+      'status': status,
+    };
+  }
+}
+
+class UpdateSpLikeReq {
+  final num id;
+
+  final num screenplayId;
+
+  final num userId;
+
+  final num status;
+  UpdateSpLikeReq({
+    required this.id,
+    required this.screenplayId,
+    required this.userId,
+    required this.status,
+  });
+  factory UpdateSpLikeReq.fromJson(Map<String, dynamic> m) {
+    return UpdateSpLikeReq(
+      id: m['id'] ?? 0,
+      screenplayId: m['screenplay_id'] ?? 0,
+      userId: m['user_id'] ?? 0,
+      status: m['status'] ?? 0,
+    );
+  }
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'screenplay_id': screenplayId,
+      'user_id': userId,
       'status': status,
     };
   }

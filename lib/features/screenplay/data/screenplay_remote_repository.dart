@@ -1,10 +1,9 @@
-import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 
-import '../../../api/screenplay/api/screenplay-api.dart' as screenplay_gen;
-import '../../../api/screenplay/api/screenplay_api_ext.dart' as screenplay_api;
+import '../../../api/screenplay/api/screenplay-api.dart' as screenplay_api;
+import '../../../api/screenplay/data/screenplay-api.dart' as sp_dto;
 import '../../../core/domain/screenplay/screenplay.dart';
+import '../../../core/network/api_callback.dart';
 import 'screenplay_api_mapper.dart';
 import 'screenplay_tree_document.dart';
 
@@ -47,20 +46,30 @@ class ScreenplayRemoteRepository extends ChangeNotifier {
     int page = 1,
     int pageSize = 20,
   }) async {
-    final completer = Completer<({List<Screenplay> items, String? error})>();
-
-    await screenplay_api.listPublicScreenplaysPage(
-      page: page,
-      pageSize: pageSize,
-      ok: (resp) {
-        final items =
-            resp.list.map(ScreenplayApiMapper.fromListItem).toList();
-        completer.complete((items: items, error: null));
-      },
-      fail: (msg) => completer.complete((items: <Screenplay>[], error: msg)),
+    final (resp, error) = await apiCallback<sp_dto.ListScreenplaysResp>(
+      ({ok, fail, eventually}) => screenplay_api.listScreenplays(
+        page: page,
+        pageSize: pageSize,
+        publishStatus: 1,
+        ok: ok,
+        fail: fail,
+        eventually: eventually,
+      ),
     );
 
-    return completer.future;
+    if (error != null) {
+      return (items: <Screenplay>[], error: error);
+    }
+
+    final items = (resp?.list ?? [])
+        .where(
+          (item) =>
+              item.publishStatus.toInt() == 1 && item.visibility.toInt() == 1,
+        )
+        .map(ScreenplayApiMapper.fromListItem)
+        .toList();
+
+    return (items: items, error: null);
   }
 
   Future<({Screenplay? screenplay, String? error})> fetchScreenplayTree(
@@ -71,21 +80,27 @@ class ScreenplayRemoteRepository extends ChangeNotifier {
       return (screenplay: _treeCache[id], error: null);
     }
 
-    final completer = Completer<({Screenplay? screenplay, String? error})>();
-
-    await screenplay_gen.getScreenplayTree(
-      id,
-      ok: (tree) {
-        final raw = ScreenplayApiMapper.treeToJsonMap(tree);
-        _rawTreeCache[id] = raw;
-        final screenplay = ScreenplayApiMapper.fromTree(tree);
-        _treeCache[id] = screenplay;
-        completer.complete((screenplay: screenplay, error: null));
-      },
-      fail: (msg) => completer.complete((screenplay: null, error: msg)),
+    final (tree, error) = await apiCallback<sp_dto.GetScreenplayTreeResp>(
+      ({ok, fail, eventually}) => screenplay_api.getScreenplayTree(
+        id,
+        ok: ok,
+        fail: fail,
+        eventually: eventually,
+      ),
     );
 
-    return completer.future;
+    if (error != null) {
+      return (screenplay: null, error: error);
+    }
+    if (tree == null) {
+      return (screenplay: null, error: 'tree not found');
+    }
+
+    final raw = ScreenplayApiMapper.treeToJsonMap(tree);
+    _rawTreeCache[id] = raw;
+    final screenplay = ScreenplayApiMapper.fromTree(tree);
+    _treeCache[id] = screenplay;
+    return (screenplay: screenplay, error: null);
   }
 
   Future<({Map<String, dynamic>? tree, String? error})> fetchRawTree(
@@ -105,6 +120,27 @@ class ScreenplayRemoteRepository extends ChangeNotifier {
       return (tree: null, error: 'tree not found');
     }
     return (tree: deepCopyJson(raw), error: null);
+  }
+
+  Future<({sp_dto.GetScreenplayTreeResp? tree, String? error})>
+      refreshTreeAfterPublish(int id) async {
+    clearTreeCache(id);
+    final (tree, error) = await apiCallback<sp_dto.GetScreenplayTreeResp>(
+      ({ok, fail, eventually}) => screenplay_api.getScreenplayTree(
+        id,
+        ok: ok,
+        fail: fail,
+        eventually: eventually,
+      ),
+    );
+    if (error != null || tree == null) {
+      return (tree: null, error: error ?? 'tree not found');
+    }
+
+    final raw = ScreenplayApiMapper.treeToJsonMap(tree);
+    _rawTreeCache[id] = raw;
+    _treeCache[id] = ScreenplayApiMapper.fromTree(tree);
+    return (tree: tree, error: null);
   }
 
   void clearTreeCache([int? id]) {

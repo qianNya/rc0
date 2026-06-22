@@ -1,9 +1,11 @@
+import 'dart:io';
+
 import '../../../../api/screenplay/data/screenplay-api.dart' as api;
 import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/domain/screenplay/script_act.dart';
 import '../../../../core/domain/screenplay/script_frame.dart';
 import '../../../../core/domain/screenplay/script_scene.dart';
-import 'screenplay_image_resolver.dart';
+import '../../../../core/domain/screenplay/screenplay_image_resolver.dart';
 import 'screenplay_tree_document.dart';
 
 abstract final class ScreenplayApiMapper {
@@ -52,11 +54,9 @@ abstract final class ScreenplayApiMapper {
   }
 
   static Screenplay _applySocial(Screenplay base, api.Screenplay sp) {
-    final author = sp.creatorNickname.isNotEmpty ? sp.creatorNickname : '创作者';
     return base.copyWith(
-      author: author,
-      authorAvatar: sp.creatorAvatar.isNotEmpty ? sp.creatorAvatar : null,
-      ownerUserId: sp.creatorId.toInt(),
+      author: '创作者',
+      ownerUserId: sp.creator.toInt(),
       likes: sp.likeCount.toInt(),
       views: sp.viewCount.toInt(),
       favorites: sp.favoriteCount.toInt(),
@@ -87,7 +87,6 @@ abstract final class ScreenplayApiMapper {
     final screenplayMap = tree['screenplay'] as Map<String, dynamic>;
     final coverRemote = ScreenplayImageResolver.coverRemoteUrl(screenplayMap);
     final coverLocal = screenplayMap['local_cover_path'] as String?;
-    final coverDisplay = ScreenplayImageResolver.coverDisplayPath(screenplayMap);
 
     final acts = <ScriptAct>[];
     final actNodes = tree['acts'] as List<dynamic>? ?? [];
@@ -130,8 +129,8 @@ abstract final class ScreenplayApiMapper {
       id: screenplayMap['id'].toString(),
       title: screenplayMap['title'] as String? ?? '',
       synopsis: screenplayMap['summary'] as String? ?? '',
-      coverUrl: coverRemote ?? coverDisplay,
-      localCoverPath: coverLocal,
+      coverUrl: coverRemote,
+      localCoverPath: coverLocal ?? ScreenplayImageResolver.legacyCoverPath(screenplayMap),
       acts: acts,
       isLocal: false,
       apiActCount: (screenplayMap['act_count'] as num?)?.toInt(),
@@ -228,15 +227,14 @@ abstract final class ScreenplayApiMapper {
 
     final coverRemote = sp.coverUrl;
     final coverLocal = sp.localCoverPath;
-    final coverDisplay = ScreenplayImageResolver.displayPath(
-          localPath: coverLocal,
-          remoteUrl: coverRemote != null && isNetworkUrl(coverRemote)
-              ? coverRemote
-              : null,
-          legacyPath: coverRemote,
-        ) ??
-        sp.coverImagePath ??
-        '';
+    final coverRemoteUrl = coverRemote != null && isNetworkUrl(coverRemote)
+        ? coverRemote
+        : null;
+    final coverLocalPath = _resolveCoverLocalPath(
+      coverLocal: coverLocal,
+      coverRemote: coverRemote,
+      fallbackPath: sp.coverImagePath,
+    );
 
     final screenplayMap = <String, dynamic>{
       'id': screenplayNumericId,
@@ -244,9 +242,7 @@ abstract final class ScreenplayApiMapper {
       'title': sp.title,
       'subtitle': '',
       'summary': sp.synopsis,
-      'cover_url': coverRemote != null && isNetworkUrl(coverRemote)
-          ? coverRemote
-          : coverDisplay,
+      'cover_url': coverRemoteUrl ?? '',
       'cover_object_id': 0,
       'publish_status': 0,
       'visibility': 0,
@@ -258,8 +254,8 @@ abstract final class ScreenplayApiMapper {
       'create_at': '',
       'update_at': '',
     };
-    if (coverLocal != null && coverLocal.isNotEmpty) {
-      screenplayMap['local_cover_path'] = coverLocal;
+    if (coverLocalPath != null && coverLocalPath.isNotEmpty) {
+      screenplayMap['local_cover_path'] = coverLocalPath;
     }
 
     return {
@@ -275,33 +271,8 @@ abstract final class ScreenplayApiMapper {
     required int sceneId,
   }) {
     final frameId = _parseNumericId(frame.id, frame.orderIndex);
-    final localPath = frame.localImagePath;
-    final remoteUrl = frame.remoteImageUrl;
-    final legacyPath = frame.imagePath;
-
-    String imageUrl;
-    String? localImagePath;
-    String? localThumbnailPath;
-
-    if (remoteUrl != null && remoteUrl.isNotEmpty) {
-      imageUrl = remoteUrl;
-      if (localPath != null && localPath.isNotEmpty) {
-        localImagePath = localPath;
-        localThumbnailPath = localPath;
-      }
-    } else if (localPath != null && localPath.isNotEmpty) {
-      imageUrl = localPath;
-      localImagePath = localPath;
-      localThumbnailPath = localPath;
-    } else if (legacyPath.isNotEmpty && isNetworkUrl(legacyPath)) {
-      imageUrl = legacyPath;
-    } else {
-      imageUrl = legacyPath;
-      if (legacyPath.isNotEmpty) {
-        localImagePath = legacyPath;
-        localThumbnailPath = legacyPath;
-      }
-    }
+    final localImagePath = _resolveFrameLocalPath(frame);
+    final remoteUrl = _resolveFrameRemoteUrl(frame);
 
     final json = <String, dynamic>{
       'id': frameId,
@@ -313,18 +284,63 @@ abstract final class ScreenplayApiMapper {
       'action_note': frame.actionNote,
       'duration_sec': 0,
       'sort': frame.orderIndex,
-      'thumbnail_url': imageUrl,
-      'image_url': imageUrl,
+      'thumbnail_url': remoteUrl ?? '',
+      'image_url': remoteUrl ?? '',
       'data_object_id': 0,
       'status': 0,
       'create_at': '',
       'update_at': '',
     };
-    if (localImagePath != null) json['local_image_path'] = localImagePath;
-    if (localThumbnailPath != null) {
-      json['local_thumbnail_path'] = localThumbnailPath;
+    if (localImagePath != null) {
+      json['local_image_path'] = localImagePath;
+      json['local_thumbnail_path'] = localImagePath;
     }
     return json;
+  }
+
+  static String? _resolveCoverLocalPath({
+    String? coverLocal,
+    String? coverRemote,
+    String? fallbackPath,
+  }) {
+    if (coverLocal != null &&
+        coverLocal.isNotEmpty &&
+        !isNetworkUrl(coverLocal)) {
+      return coverLocal;
+    }
+    if (coverRemote != null &&
+        coverRemote.isNotEmpty &&
+        !isNetworkUrl(coverRemote)) {
+      return coverRemote;
+    }
+    if (fallbackPath != null &&
+        fallbackPath.isNotEmpty &&
+        !isNetworkUrl(fallbackPath)) {
+      return fallbackPath;
+    }
+    return null;
+  }
+
+  static String? _resolveFrameLocalPath(ScriptFrame frame) {
+    final local = frame.localImagePath;
+    if (local != null && local.isNotEmpty && !isNetworkUrl(local)) {
+      return local;
+    }
+    if (frame.imagePath.isNotEmpty && !isNetworkUrl(frame.imagePath)) {
+      return frame.imagePath;
+    }
+    return null;
+  }
+
+  static String? _resolveFrameRemoteUrl(ScriptFrame frame) {
+    final remote = frame.remoteImageUrl;
+    if (remote != null && remote.isNotEmpty && isNetworkUrl(remote)) {
+      return remote;
+    }
+    if (frame.imagePath.isNotEmpty && isNetworkUrl(frame.imagePath)) {
+      return frame.imagePath;
+    }
+    return null;
   }
 
   static int _parseNumericId(String id, int fallback) {
@@ -380,4 +396,309 @@ abstract final class ScreenplayApiMapper {
 
   static bool isNetworkUrl(String path) =>
       ScreenplayImageResolver.isNetworkUrl(path);
+
+  static const coverRef = 'cover-ref';
+
+  /// Picks cover URL for createScreenplay shell from batch upload results.
+  static String coverUrlForShell(Map<String, String> assetMap) {
+    final cover = assetMap[coverRef];
+    if (cover != null && cover.isNotEmpty) return cover;
+    for (final url in assetMap.values) {
+      if (url.isNotEmpty) return url;
+    }
+    return '';
+  }
+
+  static String frameRef(int actIdx, int sceneIdx, int frameIdx) =>
+      'frame-$actIdx-$sceneIdx-$frameIdx';
+
+  /// Collects local files that need batch upload with stable refs.
+  static Map<String, File> collectLocalAssets(Map<String, dynamic> tree) {
+    final refToFile = <String, File>{};
+    final screenplayMap = tree['screenplay'] as Map<String, dynamic>?;
+    if (screenplayMap != null &&
+        ScreenplayImageResolver.coverRemoteUrl(screenplayMap) == null) {
+      final coverSrc = ScreenplayImageResolver.localUploadPath(
+        screenplayMap['local_cover_path'] as String?,
+      );
+      if (coverSrc != null) {
+        refToFile[coverRef] = File(coverSrc);
+      }
+    }
+
+    final acts = tree['acts'] as List<dynamic>? ?? [];
+    for (var actIdx = 0; actIdx < acts.length; actIdx++) {
+      final scenes =
+          (acts[actIdx] as Map<String, dynamic>)['scenes'] as List<dynamic>? ??
+              [];
+      for (var sceneIdx = 0; sceneIdx < scenes.length; sceneIdx++) {
+        final frames = (scenes[sceneIdx] as Map<String, dynamic>)['frames']
+                as List<dynamic>? ??
+            [];
+        for (var frameIdx = 0; frameIdx < frames.length; frameIdx++) {
+          final frameMap = frames[frameIdx] as Map<String, dynamic>;
+          if (ScreenplayImageResolver.frameRemoteUrl(frameMap) != null) {
+            continue;
+          }
+          final uploadSrc = ScreenplayImageResolver.localUploadPath(
+            ScreenplayImageResolver.frameLocalPath(frameMap),
+          );
+          if (uploadSrc == null) continue;
+          refToFile[frameRef(actIdx, sceneIdx, frameIdx)] = File(uploadSrc);
+        }
+      }
+    }
+
+    return refToFile;
+  }
+
+  /// Dedupes refs that point to the same local file (e.g. cover-ref + frame-0-0-0).
+  static ({Map<String, File> unique, Map<String, String> refToPrimaryRef})
+      dedupeRefsByFile(Map<String, File> refToFile) {
+    final pathToPrimaryRef = <String, String>{};
+    final refToPrimaryRef = <String, String>{};
+    final unique = <String, File>{};
+
+    for (final entry in refToFile.entries) {
+      final canonical = _canonicalFilePath(entry.value);
+      final primaryRef = pathToPrimaryRef[canonical];
+      if (primaryRef == null) {
+        pathToPrimaryRef[canonical] = entry.key;
+        refToPrimaryRef[entry.key] = entry.key;
+        unique[entry.key] = entry.value;
+      } else {
+        refToPrimaryRef[entry.key] = primaryRef;
+      }
+    }
+
+    return (unique: unique, refToPrimaryRef: refToPrimaryRef);
+  }
+
+  /// Expands uploaded URLs from primary refs to all aliased refs.
+  static Map<String, String> expandRefUrls({
+    required Map<String, File> refToFile,
+    required Map<String, String> uploaded,
+    required Map<String, String> refToPrimaryRef,
+  }) {
+    final expanded = <String, String>{};
+    for (final entry in refToFile.entries) {
+      final primaryRef = refToPrimaryRef[entry.key] ?? entry.key;
+      final url = uploaded[primaryRef];
+      if (url != null && url.isNotEmpty) {
+        expanded[entry.key] = url;
+      }
+    }
+    return expanded;
+  }
+
+  static String _canonicalFilePath(File file) {
+    try {
+      return file.absolute.resolveSymbolicLinksSync().toLowerCase();
+    } catch (_) {
+      return file.absolute.path.toLowerCase();
+    }
+  }
+
+  /// Builds PUT `/tree` JSON body (Mode A) aligned with `screenplay.http` `saveScreenplayTreeJson`.
+  static Map<String, dynamic> buildSaveTreePayload({
+    required Map<String, dynamic> tree,
+    required int visibility,
+    required Map<String, String> assetMap,
+    required bool isRepublish,
+    int version = 0,
+    DateTime? publishedAt,
+  }) {
+    final screenplayMap =
+        Map<String, dynamic>.from(tree['screenplay'] as Map<String, dynamic>);
+    final title = screenplayMap['title'] as String? ?? '';
+    final summary = screenplayMap['summary'] as String? ?? '';
+
+    final screenplayPayload = <String, dynamic>{
+      'title': title,
+    };
+    if (summary.isNotEmpty) {
+      screenplayPayload['summary'] = summary;
+    }
+
+    final coverRemote = ScreenplayImageResolver.coverRemoteUrl(screenplayMap);
+
+    if (assetMap.containsKey(coverRef)) {
+      screenplayPayload['cover_ref'] = coverRef;
+    } else if (coverRemote != null) {
+      screenplayPayload['cover_url'] = coverRemote;
+    }
+
+    if (isRepublish) {
+      screenplayPayload['visibility'] = visibility;
+      final publishTime = publishedAt ?? DateTime.now();
+      screenplayPayload['publish_status'] = 1;
+      screenplayPayload['published_at'] = publishTime.toIso8601String();
+    }
+
+    final actPayloads = <Map<String, dynamic>>[];
+    final acts = tree['acts'] as List<dynamic>? ?? [];
+    for (var actIdx = 0; actIdx < acts.length; actIdx++) {
+      final actNode = acts[actIdx] as Map<String, dynamic>;
+      final actMap = actNode['act'] as Map<String, dynamic>;
+      final actId = _saveNodeId(
+        (actMap['id'] as num?)?.toInt() ?? 0,
+        isRepublish,
+      );
+
+      final scenePayloads = <Map<String, dynamic>>[];
+      final scenes = actNode['scenes'] as List<dynamic>? ?? [];
+      for (var sceneIdx = 0; sceneIdx < scenes.length; sceneIdx++) {
+        final sceneNode = scenes[sceneIdx] as Map<String, dynamic>;
+        final sceneMap = sceneNode['scene'] as Map<String, dynamic>;
+        final sceneId = _saveNodeId(
+          (sceneMap['id'] as num?)?.toInt() ?? 0,
+          isRepublish,
+        );
+
+        final framePayloads = <Map<String, dynamic>>[];
+        final frames = sceneNode['frames'] as List<dynamic>? ?? [];
+        for (var frameIdx = 0; frameIdx < frames.length; frameIdx++) {
+          final frameMap = frames[frameIdx] as Map<String, dynamic>;
+          final ref = frameRef(actIdx, sceneIdx, frameIdx);
+          final frameId = _saveNodeId(
+            (frameMap['id'] as num?)?.toInt() ?? 0,
+            isRepublish,
+          );
+
+          final framePayload = <String, dynamic>{
+            'title': frameMap['title'] as String? ?? '',
+            'dialogue': frameMap['dialogue'] as String? ?? '',
+            'action_note': frameMap['action_note'] as String? ?? '',
+            'sort': (frameMap['sort'] as num?)?.toInt() ?? frameIdx + 1,
+          };
+          if (frameId > 0) framePayload['id'] = frameId;
+
+          final remoteUrl = ScreenplayImageResolver.frameRemoteUrl(frameMap);
+
+          if (assetMap.containsKey(ref)) {
+            framePayload['image_ref'] = ref;
+            framePayload['thumbnail_ref'] = ref;
+          } else if (remoteUrl != null) {
+            framePayload['image_url'] = remoteUrl;
+            framePayload['thumbnail_url'] = remoteUrl;
+          }
+
+          framePayloads.add(framePayload);
+        }
+
+        final scenePayload = <String, dynamic>{
+          'scene': {
+            if (sceneId > 0) 'id': sceneId,
+            'title': sceneMap['title'] as String? ?? '',
+            'summary': sceneMap['summary'] as String? ?? '',
+            'location': sceneMap['location'] as String? ?? '',
+            'time_of_day': sceneMap['time_of_day'] as String? ?? '',
+            'sort': (sceneMap['sort'] as num?)?.toInt() ?? sceneIdx + 1,
+          },
+          'frames': framePayloads,
+        };
+        scenePayloads.add(scenePayload);
+      }
+
+      actPayloads.add({
+        'act': {
+          if (actId > 0) 'id': actId,
+          'title': actMap['title'] as String? ?? '',
+          'summary': actMap['summary'] as String? ?? '',
+          'sort': (actMap['sort'] as num?)?.toInt() ?? actIdx + 1,
+        },
+        'scenes': scenePayloads,
+      });
+    }
+
+    final payload = <String, dynamic>{
+      'asset_map': assetMap,
+      'screenplay': screenplayPayload,
+      'acts': actPayloads,
+    };
+    if (version > 0) {
+      payload['version'] = version;
+    }
+    return payload;
+  }
+
+  static int _saveNodeId(int existingId, bool isRepublish) {
+    if (!isRepublish) return 0;
+    return existingId > 0 ? existingId : 0;
+  }
+
+  /// Merges save-tree response into a local document, preserving local paths.
+  static ScreenplayTreeDocument applySaveTreeResponse({
+    required api.GetScreenplayTreeResp response,
+    required ScreenplayLocalMeta meta,
+    Map<String, dynamic>? previousTree,
+  }) {
+    final tree = treeToJsonMap(response);
+    if (previousTree != null) {
+      _preserveLocalPaths(tree, previousTree);
+    }
+
+    final sp = response.screenplay;
+    final publishedAt = sp.publishedAt.isNotEmpty
+        ? DateTime.tryParse(sp.publishedAt)
+        : meta.publishedAt;
+
+    return ScreenplayTreeDocument(
+      tree: tree,
+      meta: meta.copyWith(
+        remoteScreenplayId: sp.id.toInt(),
+        visibility: sp.visibility.toInt(),
+        publishedAt: publishedAt ?? DateTime.now(),
+      ),
+    );
+  }
+
+  static void _preserveLocalPaths(
+    Map<String, dynamic> tree,
+    Map<String, dynamic> previousTree,
+  ) {
+    final prevScreenplay = previousTree['screenplay'] as Map<String, dynamic>?;
+    final screenplay = tree['screenplay'] as Map<String, dynamic>;
+    final localCover = prevScreenplay?['local_cover_path'] as String?;
+    if (localCover != null && localCover.isNotEmpty) {
+      screenplay['local_cover_path'] = localCover;
+    }
+
+    final prevActs = previousTree['acts'] as List<dynamic>? ?? [];
+    final acts = tree['acts'] as List<dynamic>? ?? [];
+    for (var actIdx = 0;
+        actIdx < acts.length && actIdx < prevActs.length;
+        actIdx++) {
+      final prevScenes =
+          (prevActs[actIdx] as Map<String, dynamic>)['scenes'] as List<dynamic>? ??
+              [];
+      final scenes =
+          (acts[actIdx] as Map<String, dynamic>)['scenes'] as List<dynamic>? ??
+              [];
+      for (var sceneIdx = 0;
+          sceneIdx < scenes.length && sceneIdx < prevScenes.length;
+          sceneIdx++) {
+        final prevFrames = (prevScenes[sceneIdx] as Map<String, dynamic>)['frames']
+                as List<dynamic>? ??
+            [];
+        final frames = (scenes[sceneIdx] as Map<String, dynamic>)['frames']
+                as List<dynamic>? ??
+            [];
+        for (var frameIdx = 0;
+            frameIdx < frames.length && frameIdx < prevFrames.length;
+            frameIdx++) {
+          final prevFrame = prevFrames[frameIdx] as Map<String, dynamic>;
+          final frame = frames[frameIdx] as Map<String, dynamic>;
+          final localImage = prevFrame['local_image_path'] as String?;
+          final localThumb = prevFrame['local_thumbnail_path'] as String?;
+          if (localImage != null && localImage.isNotEmpty) {
+            frame['local_image_path'] = localImage;
+          }
+          if (localThumb != null && localThumb.isNotEmpty) {
+            frame['local_thumbnail_path'] = localThumb;
+          }
+        }
+      }
+    }
+  }
 }

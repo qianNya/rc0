@@ -1,3 +1,1 @@
-import '../../../../core/config/api_config.dart';
-
-const serverHost = ApiConfig.serverHost;
+export '../../http/api_client.dart' show serverHost;

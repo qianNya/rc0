@@ -17,6 +17,8 @@ abstract final class AppColors {
   static const Color error = Color(0xFFDC2626);
   static const Color badgeHot = Color(0xFFFF8C42);
   static const Color badgeNew = Color(0xFF34C759);
+  static const Color badgeTemplate = Color(0xFF4A90D9);
+  static const Color scrim = Color(0x8C000000);
   static const Color profileGradientStart = Color(0xFF3B9EFF);
   static const Color profileGradientEnd = Color(0xFF7B4FFF);
 

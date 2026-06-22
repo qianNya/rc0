@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import '../../../api/screenplay/api/screenplay-api.dart' as screenplay_api;
-import '../../../api/screenplay/data/screenplay-api.dart' as api;
 
 class ScreenplayRemoteDeleteService {
   ScreenplayRemoteDeleteService._();
@@ -14,7 +13,6 @@ class ScreenplayRemoteDeleteService {
 
     await screenplay_api.deleteScreenplay(
       remoteId,
-      api.DeleteScreenplayReq(id: remoteId),
       ok: () => completer.complete(null),
       fail: completer.complete,
     );
@@ -28,7 +26,6 @@ class ScreenplayRemoteDeleteService {
     await screenplay_api.deleteAct(
       remoteId,
       actId,
-      api.DeleteActReq(screenplayId: remoteId, actId: actId),
       ok: () => completer.complete(null),
       fail: completer.complete,
     );
@@ -47,11 +44,6 @@ class ScreenplayRemoteDeleteService {
       remoteId,
       actId,
       sceneId,
-      api.DeleteSceneReq(
-        screenplayId: remoteId,
-        actId: actId,
-        sceneId: sceneId,
-      ),
       ok: () => completer.complete(null),
       fail: completer.complete,
     );
@@ -72,12 +64,6 @@ class ScreenplayRemoteDeleteService {
       actId,
       sceneId,
       frameId,
-      api.DeleteFrameReq(
-        screenplayId: remoteId,
-        actId: actId,
-        sceneId: sceneId,
-        frameId: frameId,
-      ),
       ok: () => completer.complete(null),
       fail: completer.complete,
     );

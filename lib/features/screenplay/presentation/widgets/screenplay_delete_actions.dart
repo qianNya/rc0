@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../app/router/navigation_utils.dart';
+import '../../../../app/theme/app_colors.dart';
 import '../../data/screenplay_local_repository.dart';
 
 Future<bool> confirmDeleteScreenplay(
@@ -31,7 +32,7 @@ Future<bool> confirmDeleteNode(
         ),
         TextButton(
           onPressed: () => Navigator.pop(context, true),
-          child: const Text('删除', style: TextStyle(color: Colors.red)),
+          child: const Text('删除', style: TextStyle(color: AppColors.error)),
         ),
       ],
     ),

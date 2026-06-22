@@ -6,7 +6,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../core/data/app_catalog.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
-import '../../../screenplay/data/screenplay_display.dart';
+import '../../../../core/domain/screenplay/screenplay_display.dart';
 import '../../../../shared/widgets/content_card_shared.dart';
 import '../../../../shared/widgets/pose_cover_image.dart';
 import '../../../../shared/widgets/profile_widgets.dart';
@@ -77,7 +77,7 @@ class CommunityTemplateCard extends StatelessWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.55),
+                        color: AppColors.scrim,
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(

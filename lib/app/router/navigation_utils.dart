@@ -11,3 +11,6 @@ void popOrGoExplore(BuildContext context) {
     context.go(AppRoutes.explore);
   }
 }
+
+/// Auth pages share the same fallback: return to previous page or explore.
+void popOrGoHome(BuildContext context) => popOrGoExplore(context);

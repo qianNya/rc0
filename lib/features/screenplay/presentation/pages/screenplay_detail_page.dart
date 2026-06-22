@@ -6,15 +6,16 @@ import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
+import '../../../../core/domain/screenplay/script_frame_display.dart';
 import '../../../../core/responsive/responsive_builder.dart';
 import '../../../../core/utils/state_listeners.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../social/data/social_repository.dart';
 import '../../../screenplay/data/screenplay_bundle_service.dart';
+import '../../../screenplay/data/screenplay_image_upload_service.dart';
 import '../../../screenplay/data/screenplay_local_repository.dart';
 import '../../../screenplay/data/screenplay_publish_service.dart';
 import '../../../screenplay/data/screenplay_remote_repository.dart';
-import '../../../screenplay/data/script_frame_display.dart';
 import '../widgets/frame_thumbnail_grid.dart';
 import '../widgets/publish_visibility_dialog.dart';
 import '../widgets/screenplay_delete_actions.dart';
@@ -97,6 +98,7 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
   bool _followBusy = false;
   bool _downloading = false;
   bool _publishing = false;
+  bool _uploadingFrame = false;
   bool _exporting = false;
   bool _importing = false;
 
@@ -185,15 +187,16 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
     final doc = _localRepository.documentById(script.id);
     if (doc == null) return;
 
-    if (doc.meta.remoteScreenplayId != null) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(content: Text('该剧本已发布')));
-      return;
-    }
+    final isSync = doc.meta.remoteScreenplayId != null;
 
-    final visibility = await PublishVisibilityDialog.show(context);
-    if (visibility == null || !mounted) return;
+    int visibility;
+    if (isSync) {
+      visibility = doc.meta.visibility ?? 0;
+    } else {
+      final picked = await PublishVisibilityDialog.show(context);
+      if (picked == null || !mounted) return;
+      visibility = picked;
+    }
 
     final progress = ValueNotifier<(String, int, int)>(('准备', 0, 1));
     if (!mounted) return;
@@ -217,13 +220,21 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
 
     setState(() => _publishing = true);
 
-    final result = await ScreenplayPublishService.instance.publish(
-      document: doc,
-      visibility: visibility,
-      onProgress: (stage, done, total) {
-        progress.value = (stage, done, total);
-      },
-    );
+    final result = isSync
+        ? await ScreenplayPublishService.instance.syncToServer(
+            document: doc,
+            visibility: visibility,
+            onProgress: (stage, done, total) {
+              progress.value = (stage, done, total);
+            },
+          )
+        : await ScreenplayPublishService.instance.publish(
+            document: doc,
+            visibility: visibility,
+            onProgress: (stage, done, total) {
+              progress.value = (stage, done, total);
+            },
+          );
 
     if (!mounted) return;
     if (Navigator.of(context).canPop()) {
@@ -241,12 +252,18 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
     await _localRepository.updateDocument(result.result!.document);
     if (!mounted) return;
 
-    final visibilityLabel = visibility == 1 ? '公开' : '非公开';
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(content: Text('发布成功（$visibilityLabel）')),
-      );
+    if (isSync) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('同步成功')));
+    } else {
+      final visibilityLabel = visibility == 1 ? '公开' : '非公开';
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(content: Text('发布成功（$visibilityLabel）')),
+        );
+    }
     setState(() {});
   }
 
@@ -304,6 +321,7 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
     Screenplay script, {
     required bool isOwner,
     VoidCallback? onPublish,
+    VoidCallback? onSync,
     VoidCallback? onExport,
     VoidCallback? onDownloadCopy,
     bool publishing = false,
@@ -326,6 +344,16 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
                 onTap: () {
                   Navigator.pop(ctx);
                   onPublish();
+                },
+              ),
+            if (onSync != null)
+              ListTile(
+                leading: const Icon(Icons.cloud_upload_outlined),
+                title: const Text('同步到服务器'),
+                enabled: !publishing,
+                onTap: () {
+                  Navigator.pop(ctx);
+                  onSync();
                 },
               ),
             if (onDownloadCopy != null)
@@ -359,8 +387,8 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
             ),
             if (isOwner)
               ListTile(
-                leading: const Icon(Icons.delete_outline, color: Colors.red),
-                title: const Text('删除剧本', style: TextStyle(color: Colors.red)),
+                leading: const Icon(Icons.delete_outline, color: AppColors.error),
+                title: const Text('删除剧本', style: TextStyle(color: AppColors.error)),
                 onTap: () {
                   Navigator.pop(ctx);
                   deleteScreenplayAndPop(
@@ -442,6 +470,39 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
     _showDeleteMessage(result.error);
   }
 
+  Future<void> _onUploadFrame(
+    Screenplay script,
+    int actIndex,
+    int sceneIndex,
+    int frameIndex,
+  ) async {
+    if (_uploadingFrame) return;
+    final doc = _localRepository.documentById(script.id);
+    if (doc == null) {
+      _showDeleteMessage('本地剧本不存在');
+      return;
+    }
+
+    setState(() => _uploadingFrame = true);
+    try {
+      final result =
+          await ScreenplayImageUploadService.instance.uploadFrameImage(
+        document: doc,
+        actIdx: actIndex,
+        sceneIdx: sceneIndex,
+        frameIdx: frameIndex,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(content: Text(result.error ?? '图片已上传')),
+        );
+    } finally {
+      if (mounted) setState(() => _uploadingFrame = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final script = _screenplay;
@@ -504,6 +565,9 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
         onPublish: isOwner && !script.isPublished
             ? () => _onPublish(script)
             : null,
+        onSync: isOwner && script.isPublished
+            ? () => _onPublish(script)
+            : null,
         onExport: isOwner && script.isPublished
             ? () => _onExport(script)
             : null,
@@ -512,6 +576,9 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
           script,
           isOwner: isOwner,
           onPublish: isOwner && !script.isPublished
+              ? () => _onPublish(script)
+              : null,
+          onSync: isOwner && script.isPublished
               ? () => _onPublish(script)
               : null,
           onExport: isOwner && script.isPublished
@@ -531,6 +598,14 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
             : null,
         onDeleteFrame: isOwner
             ? (actIndex, sceneIndex, frameIndex) => _onDeleteFrame(
+                  script,
+                  actIndex,
+                  sceneIndex,
+                  frameIndex,
+                )
+            : null,
+        onUploadFrame: isOwner
+            ? (actIndex, sceneIndex, frameIndex) => _onUploadFrame(
                   script,
                   actIndex,
                   sceneIndex,
@@ -557,6 +632,9 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
         onPublish: isOwner && !script.isPublished
             ? () => _onPublish(script)
             : null,
+        onSync: isOwner && script.isPublished
+            ? () => _onPublish(script)
+            : null,
         onExport: isOwner && script.isPublished
             ? () => _onExport(script)
             : null,
@@ -568,6 +646,14 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
             : null,
         onDeleteFrame: isOwner
             ? (actIndex, sceneIndex, frameIndex) => _onDeleteFrame(
+                  script,
+                  actIndex,
+                  sceneIndex,
+                  frameIndex,
+                )
+            : null,
+        onUploadFrame: isOwner
+            ? (actIndex, sceneIndex, frameIndex) => _onUploadFrame(
                   script,
                   actIndex,
                   sceneIndex,
@@ -596,11 +682,13 @@ class _ScreenplayDetailMobile extends StatefulWidget {
     this.onFork,
     this.onDownloadCopy,
     this.onPublish,
+    this.onSync,
     this.onExport,
     this.onMore,
     this.onDeleteAct,
     this.onDeleteScene,
     this.onDeleteFrame,
+    this.onUploadFrame,
     this.onLike,
     this.onFollow,
     this.forking = false,
@@ -617,12 +705,15 @@ class _ScreenplayDetailMobile extends StatefulWidget {
   final VoidCallback? onFork;
   final VoidCallback? onDownloadCopy;
   final VoidCallback? onPublish;
+  final VoidCallback? onSync;
   final VoidCallback? onExport;
   final VoidCallback? onMore;
   final Future<void> Function(int actIndex)? onDeleteAct;
   final Future<void> Function(int actIndex, int sceneIndex)? onDeleteScene;
   final Future<void> Function(int actIndex, int sceneIndex, int frameIndex)?
       onDeleteFrame;
+  final Future<void> Function(int actIndex, int sceneIndex, int frameIndex)?
+      onUploadFrame;
   final VoidCallback? onLike;
   final VoidCallback? onFollow;
   final bool forking;
@@ -734,6 +825,7 @@ class _ScreenplayDetailMobileState extends State<_ScreenplayDetailMobile> {
           onDeleteAct: widget.onDeleteAct,
           onDeleteScene: widget.onDeleteScene,
           onDeleteFrame: widget.onDeleteFrame,
+          onUploadFrame: widget.onUploadFrame,
         );
       case 1:
         return ScreenplayInfoHeader(screenplay: screenplay);
@@ -755,11 +847,13 @@ class _ScreenplayDetailDesktop extends StatelessWidget {
     this.onFork,
     this.onDownloadCopy,
     this.onPublish,
+    this.onSync,
     this.onExport,
     this.onImport,
     this.onDeleteAct,
     this.onDeleteScene,
     this.onDeleteFrame,
+    this.onUploadFrame,
     this.onLike,
     this.onFollow,
     this.forking = false,
@@ -777,12 +871,15 @@ class _ScreenplayDetailDesktop extends StatelessWidget {
   final VoidCallback? onFork;
   final VoidCallback? onDownloadCopy;
   final VoidCallback? onPublish;
+  final VoidCallback? onSync;
   final VoidCallback? onExport;
   final VoidCallback? onImport;
   final Future<void> Function(int actIndex)? onDeleteAct;
   final Future<void> Function(int actIndex, int sceneIndex)? onDeleteScene;
   final Future<void> Function(int actIndex, int sceneIndex, int frameIndex)?
       onDeleteFrame;
+  final Future<void> Function(int actIndex, int sceneIndex, int frameIndex)?
+      onUploadFrame;
   final VoidCallback? onLike;
   final VoidCallback? onFollow;
   final bool forking;
@@ -848,6 +945,7 @@ class _ScreenplayDetailDesktop extends StatelessWidget {
                       enablePreview: true,
                       previewGallery: framePaths,
                       previewCaptions: frameCaptions,
+                      isUploaded: frames.first.isRemoteUploaded,
                     )
                   else
                     const PoseCoverImage(aspectRatio: 1.1, iconSize: 64),
@@ -880,6 +978,7 @@ class _ScreenplayDetailDesktop extends StatelessWidget {
                     onDeleteAct: onDeleteAct,
                     onDeleteScene: onDeleteScene,
                     onDeleteFrame: onDeleteFrame,
+                    onUploadFrame: onUploadFrame,
                   ),
                   const SizedBox(height: 24),
                   if (onDownloadCopy != null)
@@ -894,6 +993,14 @@ class _ScreenplayDetailDesktop extends StatelessWidget {
                       label: publishing ? '发布中…' : '发布',
                       isLoading: publishing,
                       onPressed: publishing ? null : onPublish,
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                  if (onSync != null) ...[
+                    PrimaryButton(
+                      label: publishing ? '同步中…' : '同步到服务器',
+                      isLoading: publishing,
+                      onPressed: publishing ? null : onSync,
                     ),
                     const SizedBox(height: 8),
                   ],

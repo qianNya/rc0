@@ -7,11 +7,12 @@ import 'package:share_plus/share_plus.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_dimensions.dart';
 import '../../app/theme/app_text_styles.dart';
+import '../../core/services/image_favorite_store.dart';
 import '../../core/utils/image_url_utils.dart';
 
 export '../../core/utils/image_url_utils.dart' show isNetworkImagePath;
-import '../../features/favorites/data/image_favorite_repository.dart';
 import '../services/image_save_service.dart';
+import 'rc0_image.dart';
 
 /// Whether [path] can be shown in full-screen preview (local file or network URL).
 bool isPreviewableImagePath(String path) {
@@ -155,7 +156,6 @@ class _ImagePreviewPageState extends State<_ImagePreviewPage> {
   _ViewMode _viewMode = _ViewMode.single;
   bool _actionLoading = false;
 
-  final _favoriteRepo = ImageFavoriteRepository.instance;
   final _saveService = ImageSaveService.instance;
 
   bool get _hasMultiple => widget.imagePaths.length > 1;
@@ -198,7 +198,10 @@ class _ImagePreviewPageState extends State<_ImagePreviewPage> {
     return text.isEmpty ? null : text;
   }
 
-  bool get _isFavorited => _favoriteRepo.isFavorite(_currentFavoriteKey);
+  ImageFavoriteStore? get _favoriteStore => ImageFavoriteStore.instance;
+
+  bool get _isFavorited =>
+      _favoriteStore?.isFavorite(_currentFavoriteKey) ?? false;
 
   void _onZoomScaleChanged(double scale) {
     final enablePageScroll = scale <= 1.05;
@@ -309,7 +312,13 @@ class _ImagePreviewPageState extends State<_ImagePreviewPage> {
   }
 
   Future<void> _onToggleFavorite() async {
-    final added = await _favoriteRepo.toggle(
+    final store = _favoriteStore;
+    if (store == null) {
+      _showSnack('收藏服务不可用');
+      return;
+    }
+
+    final added = await store.toggle(
       id: _currentFavoriteKey,
       imagePath: _currentPath,
       caption: _currentCaption,
@@ -337,68 +346,70 @@ class _ImagePreviewPageState extends State<_ImagePreviewPage> {
         return Material(
           color: AppColors.surface,
           child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (caption != null)
-                ListTile(
-                  leading: const Icon(Icons.notes_outlined),
-                  title: const Text('查看说明'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    showDialog<void>(
-                      context: this.context,
-                      builder: (ctx) => AlertDialog(
-                        title: const Text('画格说明'),
-                        content: Text(caption),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx),
-                            child: const Text('关闭'),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              if (isNetwork)
-                ListTile(
-                  leading: const Icon(Icons.link),
-                  title: const Text('复制链接'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Clipboard.setData(ClipboardData(text: _currentPath));
-                    _showSnack('链接已复制');
-                  },
-                ),
-              if (!isNetwork)
-                ListTile(
-                  leading: const Icon(Icons.folder_outlined),
-                  title: const Text('复制本地路径'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Clipboard.setData(ClipboardData(text: _currentPath));
-                    _showSnack('路径已复制');
-                  },
-                ),
-              if (isFav)
-                ListTile(
-                  leading: const Icon(
-                    Icons.favorite,
-                    color: AppColors.accent,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (caption != null)
+                  ListTile(
+                    leading: const Icon(Icons.notes_outlined),
+                    title: const Text('查看说明'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      showDialog<void>(
+                        context: this.context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('画格说明'),
+                          content: Text(caption),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx),
+                              child: const Text('关闭'),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
-                  title: const Text('取消收藏'),
-                  onTap: () async {
-                    Navigator.pop(context);
-                    await _favoriteRepo.remove(_currentFavoriteKey);
-                    if (!mounted) return;
-                    setState(() {});
-                    _showSnack('已取消收藏');
-                  },
-                ),
-            ],
+                if (isNetwork)
+                  ListTile(
+                    leading: const Icon(Icons.link),
+                    title: const Text('复制链接'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Clipboard.setData(ClipboardData(text: _currentPath));
+                      _showSnack('链接已复制');
+                    },
+                  ),
+                if (!isNetwork)
+                  ListTile(
+                    leading: const Icon(Icons.folder_outlined),
+                    title: const Text('复制本地路径'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Clipboard.setData(ClipboardData(text: _currentPath));
+                      _showSnack('路径已复制');
+                    },
+                  ),
+                if (isFav)
+                  ListTile(
+                    leading: const Icon(
+                      Icons.favorite,
+                      color: AppColors.accent,
+                    ),
+                    title: const Text('取消收藏'),
+                    onTap: () async {
+                      final store = _favoriteStore;
+                      if (store == null) return;
+                      Navigator.pop(context);
+                      await store.remove(_currentFavoriteKey);
+                      if (!mounted) return;
+                      setState(() {});
+                      _showSnack('已取消收藏');
+                    },
+                  ),
+              ],
+            ),
           ),
-        ),
         );
       },
     );
@@ -711,31 +722,19 @@ class _ThumbImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final resolved = resolveNetworkImageUrl(path) ?? path;
-    if (isNetworkImagePath(resolved)) {
-      if (!isValidNetworkImageUrl(resolved)) {
-        return const ColoredBox(
-          color: AppColors.placeholder,
-          child: Icon(Icons.broken_image_outlined, size: 20),
-        );
-      }
-      return Image.network(
-        resolved,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-        errorBuilder: (_, _, _) => const ColoredBox(
-          color: AppColors.placeholder,
-          child: Icon(Icons.broken_image_outlined, size: 20),
-        ),
+    if (isNetworkImagePath(resolved) && !isValidNetworkImageUrl(resolved)) {
+      return const ColoredBox(
+        color: AppColors.placeholder,
+        child: Icon(Icons.broken_image_outlined, size: 20),
       );
     }
 
-    return Image.file(
-      File(resolved),
+    return Rc0Image(
+      path: resolved,
       fit: BoxFit.cover,
       width: double.infinity,
       height: double.infinity,
-      errorBuilder: (_, _, _) => const ColoredBox(
+      errorWidget: const ColoredBox(
         color: AppColors.placeholder,
         child: Icon(Icons.broken_image_outlined, size: 20),
       ),
@@ -968,35 +967,24 @@ class _ZoomableImageState extends State<_ZoomableImage> {
 
   Widget _buildImage() {
     final resolved = resolveNetworkImageUrl(widget.path) ?? widget.path;
-    if (isNetworkImagePath(resolved)) {
-      if (!isValidNetworkImageUrl(resolved)) {
-        return const Icon(
-          Icons.broken_image_outlined,
-          color: Colors.white54,
-          size: 48,
-        );
-      }
-      return Image.network(
-        resolved,
-        fit: BoxFit.contain,
-        loadingBuilder: (context, child, progress) {
-          if (progress == null) return child;
-          return const Center(
-            child: CircularProgressIndicator(color: Colors.white),
-          );
-        },
-        errorBuilder: (_, _, _) => const Icon(
-          Icons.broken_image_outlined,
-          color: Colors.white54,
-          size: 48,
-        ),
+    if (isNetworkImagePath(resolved) && !isValidNetworkImageUrl(resolved)) {
+      return const Icon(
+        Icons.broken_image_outlined,
+        color: Colors.white54,
+        size: 48,
       );
     }
 
-    return Image.file(
-      File(widget.path),
+    return Rc0Image(
+      path: resolved,
       fit: BoxFit.contain,
-      errorBuilder: (_, _, _) => const Icon(
+      loadingBuilder: (context, child, progress) {
+        if (progress == null) return child;
+        return const Center(
+          child: CircularProgressIndicator(color: Colors.white),
+        );
+      },
+      errorWidget: const Icon(
         Icons.broken_image_outlined,
         color: Colors.white54,
         size: 48,

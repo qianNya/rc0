@@ -4,7 +4,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/domain/screenplay/script_frame.dart';
-import '../../data/script_frame_display.dart';
+import '../../../../core/domain/screenplay/script_frame_display.dart';
 import '../../../../shared/widgets/pose_cover_image.dart';
 
 typedef FrameStripLongPress = void Function(int frameIndex, ScriptFrame frame);
@@ -105,6 +105,7 @@ class FrameThumbnailStrip extends StatelessWidget {
         previewGallery: galleryPaths,
         previewIndex: globalIndex >= 0 ? globalIndex : index,
         previewCaptions: galleryCaptions,
+        isUploaded: frame.isRemoteUploaded,
       ),
     );
 

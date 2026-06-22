@@ -3,9 +3,10 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../core/services/image_favorite_store.dart';
 import 'favorite_image_item.dart';
 
-class ImageFavoriteRepository extends ChangeNotifier {
+class ImageFavoriteRepository extends ChangeNotifier implements ImageFavoriteStore {
   ImageFavoriteRepository._();
 
   static final ImageFavoriteRepository instance = ImageFavoriteRepository._();
@@ -43,8 +44,10 @@ class ImageFavoriteRepository extends ChangeNotifier {
     }
   }
 
+  @override
   bool isFavorite(String id) => _items.any((item) => item.id == id);
 
+  @override
   Future<bool> toggle({
     required String id,
     required String imagePath,
@@ -71,6 +74,7 @@ class ImageFavoriteRepository extends ChangeNotifier {
     return true;
   }
 
+  @override
   Future<void> remove(String id) async {
     _items.removeWhere((item) => item.id == id);
     await _persist();

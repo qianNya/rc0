@@ -2,6 +2,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/utils/image_url_utils.dart';
 import '../domain/upload_image_file.dart';
 
 class ImagePickResult {
@@ -18,7 +19,7 @@ class ImagePickService {
 
   final ImagePicker _imagePicker;
 
-  static const _imageExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+  static final _imageExtensions = kSupportedImageExtensions;
 
   bool get _useGalleryPicker =>
       !kIsWeb &&

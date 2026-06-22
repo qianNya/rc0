@@ -5,7 +5,7 @@ import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
-import '../../../screenplay/data/script_frame_display.dart';
+import '../../../../core/domain/screenplay/script_frame_display.dart';
 import '../../../../shared/widgets/pose_cover_image.dart';
 import '../../../../shared/widgets/primary_button.dart';
 import '../../../../shared/widgets/profile_widgets.dart';
@@ -73,6 +73,7 @@ class _ScreenplayDetailHeroState extends State<ScreenplayDetailHero> {
                     previewGallery: framePaths,
                     previewIndex: index,
                     previewCaptions: frameCaptions,
+                    isUploaded: frames[index].isRemoteUploaded,
                   ),
                 )
               else
