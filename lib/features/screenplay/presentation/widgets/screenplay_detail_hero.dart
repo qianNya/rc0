@@ -5,7 +5,9 @@ import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
+import '../../../../core/domain/screenplay/screenplay_display.dart';
 import '../../../../core/domain/screenplay/script_frame_display.dart';
+import '../../../../shared/widgets/image_preview.dart';
 import '../../../../shared/widgets/pose_cover_image.dart';
 import '../../../../shared/widgets/primary_button.dart';
 import '../../../../shared/widgets/profile_widgets.dart';
@@ -14,6 +16,7 @@ class ScreenplayDetailHero extends StatefulWidget {
   const ScreenplayDetailHero({
     super.key,
     required this.screenplay,
+    required this.previewOptions,
     required this.isOwner,
     required this.onBack,
     this.onMore,
@@ -27,6 +30,7 @@ class ScreenplayDetailHero extends StatefulWidget {
   });
 
   final Screenplay screenplay;
+  final ImagePreviewOptions previewOptions;
   final bool isOwner;
   final VoidCallback onBack;
   final VoidCallback? onMore;
@@ -51,6 +55,10 @@ class _ScreenplayDetailHeroState extends State<ScreenplayDetailHero> {
     final frames = screenplay.allFrames;
     final framePaths = frames.map((f) => f.effectiveDisplayPath).toList();
     final frameCaptions = frames.map((f) => f.caption).toList();
+    final hasExplicitCover = (screenplay.localCoverPath != null &&
+            screenplay.localCoverPath!.isNotEmpty) ||
+        (screenplay.coverUrl != null && screenplay.coverUrl!.isNotEmpty);
+    final coverPath = screenplay.effectiveCoverImagePath;
     const heroHeight = 300.0;
     const cardOverlap = 28.0;
 
@@ -61,7 +69,16 @@ class _ScreenplayDetailHeroState extends State<ScreenplayDetailHero> {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              if (frames.isNotEmpty)
+              if (hasExplicitCover && coverPath != null && coverPath.isNotEmpty)
+                PoseCoverImage(
+                  imagePath: coverPath,
+                  expand: true,
+                  borderRadius: 0,
+                  enablePreview: true,
+                  previewOptions: widget.previewOptions,
+                  isUploaded: screenplay.coverIsRemoteUploaded,
+                )
+              else if (frames.isNotEmpty)
                 PageView.builder(
                   itemCount: frames.length,
                   onPageChanged: (i) => setState(() => _carouselIndex = i),
@@ -73,6 +90,7 @@ class _ScreenplayDetailHeroState extends State<ScreenplayDetailHero> {
                     previewGallery: framePaths,
                     previewIndex: index,
                     previewCaptions: frameCaptions,
+                    previewOptions: widget.previewOptions,
                     isUploaded: frames[index].isRemoteUploaded,
                   ),
                 )
@@ -103,7 +121,7 @@ class _ScreenplayDetailHeroState extends State<ScreenplayDetailHero> {
                   ),
                 ),
               ),
-              if (frames.isNotEmpty)
+              if (!hasExplicitCover && frames.isNotEmpty)
                 Positioned(
                   right: 12,
                   bottom: cardOverlap + 12,

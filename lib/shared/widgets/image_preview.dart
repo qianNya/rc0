@@ -11,7 +11,9 @@ import '../../core/services/image_favorite_store.dart';
 import '../../core/utils/image_url_utils.dart';
 
 export '../../core/utils/image_url_utils.dart' show isNetworkImagePath;
+export 'image_preview_sync.dart';
 import '../services/image_save_service.dart';
+import 'image_preview_sync.dart';
 import 'rc0_image.dart';
 
 /// Whether [path] can be shown in full-screen preview (local file or network URL).
@@ -51,21 +53,33 @@ class ImagePreviewOptions {
   const ImagePreviewOptions({
     this.sourceLabel,
     this.favoriteKeys,
+    this.syncInfos,
+    this.onUpload,
+    this.onDownloadToLocal,
   });
 
   final String? sourceLabel;
   final List<String>? favoriteKeys;
+  final List<ImagePreviewSyncInfo>? syncInfos;
+  final Future<bool> Function(int index)? onUpload;
+  final Future<bool> Function(int index)? onDownloadToLocal;
 }
 
-({List<String> paths, List<String>? captions, List<String>? favoriteKeys})
-    _filterPreviewGallery(
+({
+  List<String> paths,
+  List<String>? captions,
+  List<String>? favoriteKeys,
+  List<ImagePreviewSyncInfo>? syncInfos,
+}) _filterPreviewGallery(
   List<String> imagePaths,
   List<String>? captions,
   List<String>? favoriteKeys,
+  List<ImagePreviewSyncInfo>? syncInfos,
 ) {
   final paths = <String>[];
   final filteredCaptions = captions != null ? <String>[] : null;
   final filteredKeys = favoriteKeys != null ? <String>[] : null;
+  final filteredSync = syncInfos != null ? <ImagePreviewSyncInfo>[] : null;
 
   for (var i = 0; i < imagePaths.length; i++) {
     final path = imagePaths[i];
@@ -79,12 +93,22 @@ class ImagePreviewOptions {
     } else if (filteredKeys != null) {
       filteredKeys.add(path);
     }
+    if (filteredSync != null) {
+      if (syncInfos != null && i < syncInfos.length) {
+        filteredSync.add(syncInfos[i]);
+      } else {
+        filteredSync.add(const ImagePreviewSyncInfo(
+          status: ImageSyncStatus.localOnly,
+        ));
+      }
+    }
   }
 
   return (
     paths: paths,
     captions: filteredCaptions,
     favoriteKeys: filteredKeys,
+    syncInfos: filteredSync,
   );
 }
 
@@ -100,6 +124,7 @@ Future<void> showImagePreview(
     imagePaths,
     captions,
     options?.favoriteKeys,
+    options?.syncInfos,
   );
   if (filtered.paths.isEmpty) return Future.value();
 
@@ -119,6 +144,9 @@ Future<void> showImagePreview(
             captions: filtered.captions,
             sourceLabel: options?.sourceLabel,
             favoriteKeys: filtered.favoriteKeys,
+            syncInfos: filtered.syncInfos,
+            onUpload: options?.onUpload,
+            onDownloadToLocal: options?.onDownloadToLocal,
           ),
         );
       },
@@ -135,6 +163,9 @@ class _ImagePreviewPage extends StatefulWidget {
     this.captions,
     this.sourceLabel,
     this.favoriteKeys,
+    this.syncInfos,
+    this.onUpload,
+    this.onDownloadToLocal,
   });
 
   final List<String> imagePaths;
@@ -142,6 +173,9 @@ class _ImagePreviewPage extends StatefulWidget {
   final List<String>? captions;
   final String? sourceLabel;
   final List<String>? favoriteKeys;
+  final List<ImagePreviewSyncInfo>? syncInfos;
+  final Future<bool> Function(int index)? onUpload;
+  final Future<bool> Function(int index)? onDownloadToLocal;
 
   @override
   State<_ImagePreviewPage> createState() => _ImagePreviewPageState();
@@ -155,6 +189,7 @@ class _ImagePreviewPageState extends State<_ImagePreviewPage> {
   bool _pageScrollEnabled = true;
   _ViewMode _viewMode = _ViewMode.single;
   bool _actionLoading = false;
+  List<ImagePreviewSyncInfo>? _syncInfos;
 
   final _saveService = ImageSaveService.instance;
 
@@ -163,6 +198,9 @@ class _ImagePreviewPageState extends State<_ImagePreviewPage> {
   @override
   void initState() {
     super.initState();
+    _syncInfos = widget.syncInfos == null
+        ? null
+        : List<ImagePreviewSyncInfo>.from(widget.syncInfos!);
     _currentIndex = widget.initialIndex;
     _pageController = PageController(initialPage: widget.initialIndex);
     _thumbController = ScrollController();
@@ -202,6 +240,27 @@ class _ImagePreviewPageState extends State<_ImagePreviewPage> {
 
   bool get _isFavorited =>
       _favoriteStore?.isFavorite(_currentFavoriteKey) ?? false;
+
+  ImagePreviewSyncInfo? get _currentSyncInfo {
+    final infos = _syncInfos;
+    if (infos == null || _currentIndex >= infos.length) return null;
+    return infos[_currentIndex];
+  }
+
+  bool get _canUpload {
+    final sync = _currentSyncInfo;
+    if (sync == null || widget.onUpload == null) return false;
+    return sync.canUpload;
+  }
+
+  String get _downloadLabel {
+    final sync = _currentSyncInfo;
+    if (sync?.status == ImageSyncStatus.remoteOnly &&
+        widget.onDownloadToLocal != null) {
+      return '下载到本地';
+    }
+    return '下载';
+  }
 
   void _onZoomScaleChanged(double scale) {
     final enablePageScroll = scale <= 1.05;
@@ -278,6 +337,27 @@ class _ImagePreviewPageState extends State<_ImagePreviewPage> {
     if (_actionLoading) return;
     setState(() => _actionLoading = true);
 
+    final sync = _currentSyncInfo;
+    if (sync?.status == ImageSyncStatus.remoteOnly &&
+        widget.onDownloadToLocal != null) {
+      final ok = await widget.onDownloadToLocal!(_currentIndex);
+      if (!mounted) return;
+      setState(() => _actionLoading = false);
+      if (ok) {
+        _updateSyncInfo(
+          _currentIndex,
+          ImagePreviewSyncInfo(
+            status: ImageSyncStatus.localAndRemote,
+            serverImageId: sync?.serverImageId,
+          ),
+        );
+        _showSnack('已下载到本地');
+      } else {
+        _showSnack('下载失败');
+      }
+      return;
+    }
+
     final result = await _saveService.saveImageToDownloads(_currentPath);
 
     if (!mounted) return;
@@ -287,6 +367,52 @@ class _ImagePreviewPageState extends State<_ImagePreviewPage> {
       _showSnack('已保存至 ${result.path}');
     } else {
       _showSnack(result.error ?? '保存失败');
+    }
+  }
+
+  void _updateSyncInfo(int index, ImagePreviewSyncInfo info) {
+    if (_syncInfos == null || index >= _syncInfos!.length) return;
+    _syncInfos![index] = info;
+    setState(() {});
+  }
+
+  Future<void> _onUpload() async {
+    final handler = widget.onUpload;
+    if (_actionLoading || handler == null || !_canUpload) return;
+
+    final previous = _currentSyncInfo ??
+        const ImagePreviewSyncInfo(status: ImageSyncStatus.localOnly);
+
+    setState(() {
+      _actionLoading = true;
+      if (_syncInfos != null && _currentIndex < _syncInfos!.length) {
+        _syncInfos![_currentIndex] =
+            previous.copyWith(status: ImageSyncStatus.uploading);
+      }
+    });
+
+    final ok = await handler(_currentIndex);
+
+    if (!mounted) return;
+    setState(() => _actionLoading = false);
+
+    if (ok) {
+      _updateSyncInfo(
+        _currentIndex,
+        ImagePreviewSyncInfo.uploaded(
+          serverImageId: previous.serverImageId,
+        ),
+      );
+      _showSnack('图片已上传');
+    } else {
+      _updateSyncInfo(
+        _currentIndex,
+        previous.copyWith(
+          status: ImageSyncStatus.failed,
+          statusMessage: '上传失败',
+        ),
+      );
+      _showSnack('上传失败');
     }
   }
 
@@ -466,6 +592,8 @@ class _ImagePreviewPageState extends State<_ImagePreviewPage> {
                   onClose: () => Navigator.of(context).pop(),
                   onToggleGrid: _hasMultiple ? _toggleViewMode : null,
                 ),
+                if (_viewMode == _ViewMode.single && _currentSyncInfo != null)
+                  _PreviewStatusBar(info: _currentSyncInfo!),
                 Expanded(
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 200),
@@ -507,7 +635,10 @@ class _ImagePreviewPageState extends State<_ImagePreviewPage> {
                   _PreviewBottomBar(
                     isFavorited: _isFavorited,
                     loading: _actionLoading,
+                    downloadLabel: _downloadLabel,
+                    showUpload: _canUpload,
                     onDownload: _onDownload,
+                    onUpload: _canUpload ? _onUpload : null,
                     onFavorite: _onToggleFavorite,
                     onShare: _onShare,
                     onMore: _onMore,
@@ -804,11 +935,72 @@ class _PreviewGridOverlay extends StatelessWidget {
   }
 }
 
+class _PreviewStatusBar extends StatelessWidget {
+  const _PreviewStatusBar({required this.info});
+
+  final ImagePreviewSyncInfo info;
+
+  @override
+  Widget build(BuildContext context) {
+    final (background, foreground) = switch (info.status) {
+      ImageSyncStatus.uploaded ||
+      ImageSyncStatus.localAndRemote =>
+        (AppColors.accent.withValues(alpha: 0.25), Colors.white),
+      ImageSyncStatus.uploading =>
+        (Colors.white24, Colors.white70),
+      ImageSyncStatus.failed =>
+        (Colors.red.withValues(alpha: 0.35), Colors.white),
+      ImageSyncStatus.remoteOnly =>
+        (Colors.orange.withValues(alpha: 0.35), Colors.white),
+      ImageSyncStatus.localOnly =>
+        (Colors.white24, Colors.white70),
+    };
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: background,
+            borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (info.status == ImageSyncStatus.uploading)
+                const Padding(
+                  padding: EdgeInsets.only(right: 8),
+                  child: SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              Text(
+                info.label,
+                style: TextStyle(color: foreground, fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _PreviewBottomBar extends StatelessWidget {
   const _PreviewBottomBar({
     required this.isFavorited,
     required this.loading,
+    required this.downloadLabel,
+    required this.showUpload,
     required this.onDownload,
+    required this.onUpload,
     required this.onFavorite,
     required this.onShare,
     required this.onMore,
@@ -816,7 +1008,10 @@ class _PreviewBottomBar extends StatelessWidget {
 
   final bool isFavorited;
   final bool loading;
+  final String downloadLabel;
+  final bool showUpload;
   final VoidCallback onDownload;
+  final VoidCallback? onUpload;
   final VoidCallback onFavorite;
   final VoidCallback onShare;
   final VoidCallback onMore;
@@ -827,9 +1022,15 @@ class _PreviewBottomBar extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
       child: Row(
         children: [
+          if (showUpload)
+            _BottomAction(
+              icon: Icons.cloud_upload_outlined,
+              label: '上传',
+              onTap: loading ? null : onUpload,
+            ),
           _BottomAction(
             icon: Icons.download_outlined,
-            label: '下载',
+            label: downloadLabel,
             onTap: loading ? null : onDownload,
           ),
           _BottomAction(

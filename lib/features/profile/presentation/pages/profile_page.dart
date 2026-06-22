@@ -165,7 +165,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _logout() async {
     await _auth.logout();
     if (!mounted) return;
-    context.go(AppRoutes.explore);
+    context.go(AppRoutes.discovery);
   }
 
   @override
@@ -274,7 +274,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   icon: Icons.dashboard_outlined,
                   iconColor: const Color(0xFF2196F3),
                   iconBackground: const Color(0xFFE3F2FD),
-                  onTap: () => context.go(AppRoutes.community),
+                  onTap: () => context.push(AppRoutes.community),
                 ),
                 ProfileGridTile(
                   title: 'LUT 调色',
@@ -295,7 +295,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   icon: Icons.add_circle_outline,
                   iconColor: const Color(0xFF7C4DFF),
                   iconBackground: const Color(0xFFEDE7F6),
-                  onTap: () => context.go(AppRoutes.upload),
+                  onTap: () => context.go(AppRoutes.create),
                 ),
                 ProfileGridTile(
                   title: '使用模板',
@@ -303,7 +303,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   icon: Icons.auto_awesome_mosaic_outlined,
                   iconColor: const Color(0xFF9C27B0),
                   iconBackground: const Color(0xFFF3E5F5),
-                  onTap: () => context.go(AppRoutes.community),
+                  onTap: () => context.push(AppRoutes.community),
                 ),
                 ProfileGridTile(
                   title: '导入素材',
@@ -311,7 +311,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   icon: Icons.upload_file_outlined,
                   iconColor: const Color(0xFF2196F3),
                   iconBackground: const Color(0xFFE3F2FD),
-                  onTap: () => context.go(AppRoutes.upload),
+                  onTap: () => context.go(AppRoutes.create),
                 ),
                 ProfileGridTile(
                   title: 'AI 工具',
@@ -352,7 +352,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   icon: Icons.people_outline,
                   iconColor: const Color(0xFF2196F3),
                   iconBackground: const Color(0xFFE3F2FD),
-                  onTap: () => context.go(AppRoutes.community),
+                  onTap: () => context.push(AppRoutes.community),
                 ),
                 ProfileGridTile(
                   title: '帮助与反馈',

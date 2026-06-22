@@ -7,6 +7,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/domain/screenplay/script_frame_display.dart';
+import '../../../../core/network/api_auth.dart';
 import '../../../../core/responsive/responsive_builder.dart';
 import '../../../../core/utils/state_listeners.dart';
 import '../../../auth/data/auth_repository.dart';
@@ -16,6 +17,7 @@ import '../../../screenplay/data/screenplay_image_upload_service.dart';
 import '../../../screenplay/data/screenplay_local_repository.dart';
 import '../../../screenplay/data/screenplay_publish_service.dart';
 import '../../../screenplay/data/screenplay_remote_repository.dart';
+import '../utils/screenplay_preview_options.dart';
 import '../widgets/frame_thumbnail_grid.dart';
 import '../widgets/publish_visibility_dialog.dart';
 import '../widgets/screenplay_delete_actions.dart';
@@ -23,6 +25,7 @@ import '../widgets/screenplay_detail_hero.dart';
 import '../widgets/screenplay_info_header.dart';
 import '../widgets/screenplay_structure_tree.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
+import '../../../../shared/widgets/image_preview.dart';
 import '../../../../shared/widgets/pose_cover_image.dart';
 import '../../../../shared/widgets/primary_button.dart';
 import '../../../../shared/widgets/profile_widgets.dart';
@@ -103,11 +106,19 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
   bool _importing = false;
 
   void _onEdit(BuildContext context, Screenplay script) {
-    context.go(AppRoutes.uploadEdit(script.id));
+    context.go(AppRoutes.createEdit(script.id));
   }
 
   Future<void> _onLike(Screenplay script) async {
     if (_likeBusy || script.isLocal) return;
+
+    if (!AuthRepository.instance.isLoggedIn) {
+      context.go(
+        AppRoutes.loginWithRedirect(AppRoutes.script(widget.scriptId)),
+      );
+      return;
+    }
+
     setState(() => _likeBusy = true);
     final updated = await SocialRepository.instance.toggleLikeScreenplay(script);
     if (!mounted) return;
@@ -120,6 +131,14 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
   Future<void> _onFollow(Screenplay script) async {
     final ownerId = script.ownerUserId;
     if (_followBusy || ownerId == null || ownerId <= 0) return;
+
+    if (!AuthRepository.instance.isLoggedIn) {
+      context.go(
+        AppRoutes.loginWithRedirect(AppRoutes.script(widget.scriptId)),
+      );
+      return;
+    }
+
     setState(() => _followBusy = true);
     final err = await SocialRepository.instance.followUser(ownerId);
     if (!mounted) return;
@@ -470,17 +489,17 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
     _showDeleteMessage(result.error);
   }
 
-  Future<void> _onUploadFrame(
+  Future<bool> _onUploadFrame(
     Screenplay script,
     int actIndex,
     int sceneIndex,
     int frameIndex,
   ) async {
-    if (_uploadingFrame) return;
+    if (_uploadingFrame) return false;
     final doc = _localRepository.documentById(script.id);
     if (doc == null) {
       _showDeleteMessage('本地剧本不存在');
-      return;
+      return false;
     }
 
     setState(() => _uploadingFrame = true);
@@ -492,15 +511,33 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
         sceneIdx: sceneIndex,
         frameIdx: frameIndex,
       );
-      if (!mounted) return;
+      if (!mounted) return result.error == null;
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
           SnackBar(content: Text(result.error ?? '图片已上传')),
         );
+      return result.error == null;
     } finally {
       if (mounted) setState(() => _uploadingFrame = false);
     }
+  }
+
+  ImagePreviewOptions _previewOptions(Screenplay script) {
+    final doc = _localRepository.documentById(script.id);
+    final isOwner = SocialRepository.instance.isCurrentUserOwner(script);
+    return buildScreenplayPreviewOptions(
+      screenplay: script,
+      document: doc,
+      onUploadFrame: isOwner
+          ? (actIdx, sceneIdx, frameIdx) => _onUploadFrame(
+                script,
+                actIdx,
+                sceneIdx,
+                frameIdx,
+              )
+          : null,
+    );
   }
 
   @override
@@ -522,8 +559,7 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
     }
 
     if (script == null) {
-      final needsLogin = _remoteError != null &&
-          !AuthRepository.instance.isLoggedIn;
+      final needsLogin = isUnauthorizedError(_remoteError);
       return Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
@@ -552,10 +588,12 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
     }
 
     final isOwner = SocialRepository.instance.isCurrentUserOwner(script);
+    final previewOptions = _previewOptions(script);
 
     return ResponsiveBuilder(
       mobile: (_) => _ScreenplayDetailMobile(
         screenplay: script,
+        previewOptions: previewOptions,
         isOwner: isOwner,
         onEdit: isOwner ? () => _onEdit(context, script) : null,
         onFork: () => _onFork(script),
@@ -623,6 +661,7 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
       ),
       desktop: (_) => _ScreenplayDetailDesktop(
         screenplay: script,
+        previewOptions: previewOptions,
         isOwner: isOwner,
         onEdit: isOwner ? () => _onEdit(context, script) : null,
         onFork: () => _onFork(script),
@@ -677,6 +716,7 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
 class _ScreenplayDetailMobile extends StatefulWidget {
   const _ScreenplayDetailMobile({
     required this.screenplay,
+    required this.previewOptions,
     required this.isOwner,
     this.onEdit,
     this.onFork,
@@ -700,6 +740,7 @@ class _ScreenplayDetailMobile extends StatefulWidget {
   });
 
   final Screenplay screenplay;
+  final ImagePreviewOptions previewOptions;
   final bool isOwner;
   final VoidCallback? onEdit;
   final VoidCallback? onFork;
@@ -765,6 +806,7 @@ class _ScreenplayDetailMobileState extends State<_ScreenplayDetailMobile> {
           children: [
             ScreenplayDetailHero(
               screenplay: screenplay,
+              previewOptions: widget.previewOptions,
               isOwner: widget.isOwner,
               onBack: () => popOrGoExplore(context),
               onMore: widget.onMore,
@@ -822,6 +864,7 @@ class _ScreenplayDetailMobileState extends State<_ScreenplayDetailMobile> {
           screenplay: screenplay,
           galleryPaths: framePaths,
           galleryCaptions: frameCaptions,
+          previewOptions: widget.previewOptions,
           onDeleteAct: widget.onDeleteAct,
           onDeleteScene: widget.onDeleteScene,
           onDeleteFrame: widget.onDeleteFrame,
@@ -842,6 +885,7 @@ class _ScreenplayDetailMobileState extends State<_ScreenplayDetailMobile> {
 class _ScreenplayDetailDesktop extends StatelessWidget {
   const _ScreenplayDetailDesktop({
     required this.screenplay,
+    required this.previewOptions,
     required this.isOwner,
     this.onEdit,
     this.onFork,
@@ -866,6 +910,7 @@ class _ScreenplayDetailDesktop extends StatelessWidget {
   });
 
   final Screenplay screenplay;
+  final ImagePreviewOptions previewOptions;
   final bool isOwner;
   final VoidCallback? onEdit;
   final VoidCallback? onFork;
@@ -945,6 +990,7 @@ class _ScreenplayDetailDesktop extends StatelessWidget {
                       enablePreview: true,
                       previewGallery: framePaths,
                       previewCaptions: frameCaptions,
+                      previewOptions: previewOptions,
                       isUploaded: frames.first.isRemoteUploaded,
                     )
                   else
@@ -954,6 +1000,7 @@ class _ScreenplayDetailDesktop extends StatelessWidget {
                     frames: frames,
                     galleryPaths: framePaths,
                     galleryCaptions: frameCaptions,
+                    previewOptions: previewOptions,
                     crossAxisCount: 4,
                     showCaptions: false,
                     iconSize: 24,
@@ -975,6 +1022,7 @@ class _ScreenplayDetailDesktop extends StatelessWidget {
                     screenplay: screenplay,
                     galleryPaths: framePaths,
                     galleryCaptions: frameCaptions,
+                    previewOptions: previewOptions,
                     onDeleteAct: onDeleteAct,
                     onDeleteScene: onDeleteScene,
                     onDeleteFrame: onDeleteFrame,

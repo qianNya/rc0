@@ -23,8 +23,19 @@ class AdaptiveShellPage extends StatelessWidget {
 
   int _mobileSelectedIndex() {
     final branch = navigationShell.currentIndex;
-    final match = mobileNavItems.indexWhere((item) => item.branchIndex == branch);
+    final match =
+        mobileNavItems.indexWhere((item) => item.branchIndex == branch);
     return match >= 0 ? match : 0;
+  }
+
+  void _onDesktopNavItem(ShellNavItem item, BuildContext context) {
+    if (item.stackRoute != null) {
+      context.push(item.stackRoute!);
+      return;
+    }
+    if (item.branchIndex != null) {
+      _goToBranch(item.branchIndex!);
+    }
   }
 
   @override
@@ -37,8 +48,8 @@ class AdaptiveShellPage extends StatelessWidget {
           children: [
             DesktopSidebar(
               currentBranch: navigationShell.currentIndex,
-              onSelect: _goToBranch,
-              onProfileTap: () => _goToBranch(3),
+              onNavItemTap: (item) => _onDesktopNavItem(item, context),
+              onProfileTap: () => _goToBranch(4),
               onUploadTap: () => _goToBranch(2),
             ),
             Expanded(child: navigationShell),
@@ -52,11 +63,7 @@ class AdaptiveShellPage extends StatelessWidget {
       bottomNavigationBar: AppBottomNavBar(
         selectedIndex: _mobileSelectedIndex(),
         onItemSelected: (index) {
-          if (index == AppBottomNavBar.createNavIndex) {
-            _goToBranch(mobileNavItems[index].branchIndex);
-          } else {
-            _goToBranch(mobileNavItems[index].branchIndex);
-          }
+          _goToBranch(mobileNavItems[index].branchIndex!);
         },
         onCreateTap: () => _goToBranch(2),
       ),

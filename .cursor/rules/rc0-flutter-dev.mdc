@@ -66,5 +66,6 @@ context.push(AppRoutes.script(id));
 ```
 
 - Tab → `StatefulShellRoute` branch；全屏 → root `GoRoute`
-- 需登录：`/upload`、`/tasks`、`/favorites`、profile 子路由
+- 需登录（路由层）：`/tasks`、`/favorites`、`/messages`、profile 子路由
+- 需登录（页面级）：发布/同步/上传图片、点赞、关注
 - 返回兜底：`popOrGoExplore(context)`

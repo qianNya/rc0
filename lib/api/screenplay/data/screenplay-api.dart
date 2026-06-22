@@ -1338,41 +1338,76 @@ class ReorderScenesReq {
   }
 }
 
-class SaveScreenplayTreeReq {
-  final num id;
+class TreeAssetEntry {
+  final String kind;
 
-  final Map<String, String> assetMap;
+  final String remoteUrl;
+
+  final num? remoteImageId;
+
+  final num? remoteImageFileId;
+
+  TreeAssetEntry({
+    required this.kind,
+    this.remoteUrl = '',
+    this.remoteImageId,
+    this.remoteImageFileId,
+  });
+
+  factory TreeAssetEntry.fromJson(Map<String, dynamic> m) {
+    return TreeAssetEntry(
+      kind: m['kind'] ?? '',
+      remoteUrl: m['remote_url'] ?? '',
+      remoteImageId: m['remote_image_id'],
+      remoteImageFileId: m['remote_image_file_id'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'kind': kind,
+      'remote_url': remoteUrl,
+      'remote_image_id': remoteImageId,
+      'remote_image_file_id': remoteImageFileId,
+    };
+  }
+}
+
+class SaveScreenplayTreeReq {
+  final Map<String, TreeAssetEntry> assetMap;
 
   final Screenplay screenplay;
 
   final List<ActNode> acts;
 
-  final num version;
   SaveScreenplayTreeReq({
-    required this.id,
-    required this.assetMap,
+    this.assetMap = const {},
     required this.screenplay,
     required this.acts,
-    required this.version,
   });
+
   factory SaveScreenplayTreeReq.fromJson(Map<String, dynamic> m) {
+    final rawAssetMap = m['asset_map'] as Map<String, dynamic>? ?? {};
     return SaveScreenplayTreeReq(
-      id: m['id'] ?? 0,
-      assetMap: Map<String, String>.from(m['asset_map'] ?? {}),
-      screenplay: Screenplay.fromJson(m['screenplay']),
+      assetMap: rawAssetMap.map(
+        (key, value) => MapEntry(
+          key,
+          TreeAssetEntry.fromJson(value as Map<String, dynamic>),
+        ),
+      ),
+      screenplay: Screenplay.fromJson(m['screenplay'] as Map<String, dynamic>),
       acts: ((m['acts'] ?? []) as List<dynamic>)
-          .map((i) => ActNode.fromJson(i))
+          .map((i) => ActNode.fromJson(i as Map<String, dynamic>))
           .toList(),
-      version: m['version'] ?? 0,
     );
   }
+
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'asset_map': assetMap,
+      if (assetMap.isNotEmpty)
+        'asset_map': assetMap.map((key, value) => MapEntry(key, value.toJson())),
       'screenplay': screenplay.toJson(),
-      'acts': acts.map((i) => i.toJson()),
-      'version': version,
+      'acts': acts.map((i) => i.toJson()).toList(),
     };
   }
 }

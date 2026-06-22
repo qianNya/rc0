@@ -5,6 +5,7 @@ import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/domain/screenplay/script_frame.dart';
 import '../../../../core/domain/screenplay/script_frame_display.dart';
+import '../../../../shared/widgets/image_preview.dart';
 import '../../../../shared/widgets/pose_cover_image.dart';
 
 typedef FrameStripLongPress = void Function(int frameIndex, ScriptFrame frame);
@@ -19,6 +20,7 @@ class FrameThumbnailStrip extends StatelessWidget {
     this.placeholderCount = 3,
     this.maxWidth,
     this.maxVisible,
+    this.previewOptions,
     this.onExpandTap,
     this.onFrameLongPress,
   });
@@ -30,6 +32,7 @@ class FrameThumbnailStrip extends StatelessWidget {
   final int placeholderCount;
   final double? maxWidth;
   final int? maxVisible;
+  final ImagePreviewOptions? previewOptions;
   final VoidCallback? onExpandTap;
   final FrameStripLongPress? onFrameLongPress;
 
@@ -105,6 +108,7 @@ class FrameThumbnailStrip extends StatelessWidget {
         previewGallery: galleryPaths,
         previewIndex: globalIndex >= 0 ? globalIndex : index,
         previewCaptions: galleryCaptions,
+        previewOptions: previewOptions,
         isUploaded: frame.isRemoteUploaded,
       ),
     );

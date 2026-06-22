@@ -56,7 +56,7 @@ class _ProfileLikesPageState extends State<ProfileLikesPage> {
                         title: '暂无点赞',
                         subtitle: _error ?? '你点赞的剧本会显示在这里',
                         actionLabel: '去社区看看',
-                        onAction: () => context.go(AppRoutes.community),
+                        onAction: () => context.push(AppRoutes.community),
                       ),
                     ],
                   )

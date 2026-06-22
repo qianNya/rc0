@@ -5,8 +5,8 @@ import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../screenplay/data/screenplay_draft.dart';
 import '../../../../shared/widgets/image_preview.dart';
+import '../../../../shared/widgets/pose_cover_image.dart';
 import '../../../../shared/widgets/rc0_image.dart';
-import '../../domain/upload_image_file.dart';
 
 class _FrameThumbnail extends StatelessWidget {
   const _FrameThumbnail({required this.path, required this.size});
@@ -86,9 +86,9 @@ class FrameListEditor extends StatelessWidget {
         const SizedBox(height: 8),
         ...List.generate(frames.length, (index) {
           final frame = frames[index];
-          final paths = frames.map((f) => f.image.path).toList();
+          final paths = frames.map((f) => f.image.displayPath).toList();
           final thumbSize = compact ? 72.0 : 88.0;
-          final canPreview = isPreviewableImagePath(frame.image.path);
+          final canPreview = isPreviewableImagePath(frame.image.displayPath);
 
           return Container(
             margin: const EdgeInsets.only(bottom: 12),
@@ -116,7 +116,7 @@ class FrameListEditor extends StatelessWidget {
                       width: thumbSize,
                       height: thumbSize,
                       child: _FrameThumbnail(
-                        path: frame.image.path,
+                        path: frame.image.displayPath,
                         size: thumbSize,
                       ),
                     ),
@@ -152,6 +152,89 @@ class FrameListEditor extends StatelessWidget {
             ),
           );
         }),
+      ],
+    );
+  }
+}
+
+class CoverEditorSection extends StatelessWidget {
+  const CoverEditorSection({
+    super.key,
+    required this.displayPath,
+    required this.usesDefault,
+    required this.hasFrames,
+    required this.onPickCover,
+    required this.onResetDefault,
+  });
+
+  final String? displayPath;
+  final bool usesDefault;
+  final bool hasFrames;
+  final VoidCallback onPickCover;
+  final VoidCallback onResetDefault;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text('封面', style: AppTextStyles.title),
+            const Spacer(),
+            if (usesDefault && hasFrames)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Text(
+                  '默认首图',
+                  style: AppTextStyles.bodySecondary.copyWith(fontSize: 11),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          usesDefault
+              ? '未单独设置时，使用第一张分镜图；视频将取第一帧。'
+              : '已设置自定义封面。',
+          style: AppTextStyles.bodySecondary,
+        ),
+        const SizedBox(height: 12),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+          child: AspectRatio(
+            aspectRatio: 16 / 9,
+            child: PoseCoverImage(
+              imagePath: displayPath,
+              aspectRatio: 16 / 9,
+              borderRadius: AppDimensions.radiusMd,
+              enablePreview: displayPath != null &&
+                  isPreviewableImagePath(displayPath!),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            OutlinedButton.icon(
+              onPressed: onPickCover,
+              icon: const Icon(Icons.image_outlined, size: 18),
+              label: const Text('更换封面'),
+            ),
+            if (!usesDefault) ...[
+              const SizedBox(width: 8),
+              TextButton(
+                onPressed: onResetDefault,
+                child: const Text('恢复默认'),
+              ),
+            ],
+          ],
+        ),
       ],
     );
   }
@@ -351,33 +434,4 @@ class ActEditorSection extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Pick target for image picker within draft hierarchy.
-class FramePickTarget {
-  FramePickTarget({required this.actIndex, required this.sceneIndex});
-
-  final int actIndex;
-  final int sceneIndex;
-}
-
-void addImagesToScene(
-  ScreenplayDraft draft,
-  FramePickTarget target,
-  List<UploadImageFile> images,
-) {
-  final scene = draft.acts[target.actIndex].scenes[target.sceneIndex];
-  for (final image in images) {
-    scene.frames.add(FrameDraft(image: image));
-  }
-}
-
-int countDraftFrames(ScreenplayDraft draft) {
-  var count = 0;
-  for (final act in draft.acts) {
-    for (final scene in act.scenes) {
-      count += scene.frames.length;
-    }
-  }
-  return count;
 }

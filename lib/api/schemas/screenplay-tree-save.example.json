@@ -1,0 +1,67 @@
+{
+  "asset_map": {
+    "asset-cover-001": {
+      "kind": "cover",
+      "remote_url": "https://cdn.example.com/cover.jpg",
+      "remote_image_id": null,
+      "remote_image_file_id": null
+    },
+    "frame-0-0-0": {
+      "kind": "frame_image",
+      "remote_url": "",
+      "remote_image_id": 101,
+      "remote_image_file_id": null
+    }
+  },
+  "screenplay": {
+    "title": "Tree Sync Test",
+    "subtitle": "",
+    "summary": "integration test",
+    "cover_ref": null,
+    "cover_url": "https://cdn.example.com/cover.jpg",
+    "visibility": 0
+  },
+  "acts": [
+    {
+      "act": {
+        "id": 0,
+        "title": "Act 1",
+        "summary": null,
+        "sort": 1
+      },
+      "scenes": [
+        {
+          "scene": {
+            "id": 0,
+            "title": "Scene 1",
+            "summary": null,
+            "location": "",
+            "time_of_day": "",
+            "sort": 1
+          },
+          "frames": [
+            {
+              "id": 0,
+              "title": "Frame 1",
+              "dialogue": null,
+              "action_note": null,
+              "sort": 1,
+              "duration_sec": 3,
+              "image_ref": "frame-0-0-0",
+              "thumbnail_ref": null,
+              "image_url": "",
+              "thumbnail_url": "",
+              "acgn_image_id": null,
+              "acgn_image_file_id": null,
+              "cine_preset_id": null,
+              "lens_mm": null,
+              "aspect_ratio": "",
+              "shot_type": "",
+              "extra_params": {}
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

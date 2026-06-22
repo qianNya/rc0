@@ -3,6 +3,7 @@ import 'dart:io';
 import 'screenplay.dart';
 import 'screenplay_image_resolver.dart';
 import 'script_frame_display.dart';
+import '../../utils/media_path_utils.dart';
 
 extension ScreenplayDisplay on Screenplay {
   bool get coverIsRemoteUploaded =>
@@ -21,6 +22,13 @@ extension ScreenplayDisplay on Screenplay {
         for (final frame in scene.frames) {
           final path = frame.effectiveDisplayPath;
           if (path.isNotEmpty) return path;
+          final local = frame.localImagePath;
+          if (local != null && local.isNotEmpty && isVideoPath(local)) {
+            final thumb = frame.localThumbnailPath;
+            if (thumb != null && thumb.isNotEmpty && File(thumb).existsSync()) {
+              return thumb;
+            }
+          }
         }
       }
     }

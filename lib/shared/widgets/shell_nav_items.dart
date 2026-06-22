@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
 
+import '../../app/router/routes.dart';
+
 class ShellNavItem {
   const ShellNavItem({
-    required this.branchIndex,
     required this.label,
     required this.icon,
     required this.selectedIcon,
+    this.branchIndex,
+    this.stackRoute,
     this.desktopOnly = false,
     this.mobileOnly = false,
-  });
+  }) : assert(
+          branchIndex != null || stackRoute != null,
+          'ShellNavItem needs branchIndex or stackRoute',
+        );
 
-  final int branchIndex;
+  final int? branchIndex;
+  final String? stackRoute;
   final String label;
   final IconData icon;
   final IconData selectedIcon;
@@ -18,19 +25,19 @@ class ShellNavItem {
   final bool mobileOnly;
 }
 
-/// Mobile bottom-nav items (探索 / 社区 / 创作 / 收藏 / 我的).
+/// Mobile bottom-nav items (首页 / 图库 / 创作 / 消息 / 我的).
 const List<ShellNavItem> mobileNavItems = [
   ShellNavItem(
     branchIndex: 0,
-    label: '探索',
-    icon: Icons.explore_outlined,
-    selectedIcon: Icons.explore,
+    label: '首页',
+    icon: Icons.home_outlined,
+    selectedIcon: Icons.home,
   ),
   ShellNavItem(
     branchIndex: 1,
-    label: '社区',
-    icon: Icons.forum_outlined,
-    selectedIcon: Icons.forum,
+    label: '图库',
+    icon: Icons.grid_view_outlined,
+    selectedIcon: Icons.grid_view,
   ),
   ShellNavItem(
     branchIndex: 2,
@@ -40,13 +47,13 @@ const List<ShellNavItem> mobileNavItems = [
     mobileOnly: true,
   ),
   ShellNavItem(
-    branchIndex: 5,
-    label: '收藏',
-    icon: Icons.favorite_border,
-    selectedIcon: Icons.favorite,
+    branchIndex: 3,
+    label: '消息',
+    icon: Icons.notifications_outlined,
+    selectedIcon: Icons.notifications,
   ),
   ShellNavItem(
-    branchIndex: 3,
+    branchIndex: 4,
     label: '我的',
     icon: Icons.person_outline,
     selectedIcon: Icons.person,
@@ -64,19 +71,19 @@ const List<ShellNavItem> desktopNavItems = [
   ),
   ShellNavItem(
     branchIndex: 1,
-    label: '社区',
-    icon: Icons.forum_outlined,
-    selectedIcon: Icons.forum,
+    label: '图库',
+    icon: Icons.grid_view_outlined,
+    selectedIcon: Icons.grid_view,
   ),
   ShellNavItem(
-    branchIndex: 4,
+    stackRoute: AppRoutes.tasks,
     label: '任务',
     icon: Icons.task_alt_outlined,
     selectedIcon: Icons.task_alt,
     desktopOnly: true,
   ),
   ShellNavItem(
-    branchIndex: 5,
+    stackRoute: AppRoutes.favorites,
     label: '收藏',
     icon: Icons.bookmark_outline,
     selectedIcon: Icons.bookmark,

@@ -88,7 +88,7 @@ class _ProfileWorksPageState extends State<ProfileWorksPage> {
                         title: '暂无作品',
                         subtitle: '创作后会显示在这里',
                         actionLabel: '开始创作',
-                        onAction: () => context.go(AppRoutes.upload),
+                        onAction: () => context.go(AppRoutes.create),
                       ),
                     ],
                   )

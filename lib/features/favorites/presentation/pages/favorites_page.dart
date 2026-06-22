@@ -128,7 +128,7 @@ class _FrameFavoritesTab extends StatelessWidget {
             title: '暂无画格收藏',
             subtitle: '在全屏预览中收藏喜欢的画格',
             actionLabel: '去探索',
-            onAction: () => context.go(AppRoutes.explore),
+            onAction: () => context.go(AppRoutes.discovery),
           );
         }
 
@@ -199,7 +199,7 @@ class _ScreenplayFavoritesTab extends StatelessWidget {
         title: '暂无剧本收藏',
         subtitle: error ?? '在社区中收藏喜欢的剧本',
         actionLabel: '去社区',
-        onAction: () => context.go(AppRoutes.community),
+        onAction: () => context.push(AppRoutes.community),
       );
     }
 

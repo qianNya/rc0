@@ -6,6 +6,7 @@ import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/domain/screenplay/script_act.dart';
 import '../../../../core/domain/screenplay/script_scene.dart';
+import '../../../../shared/widgets/image_preview.dart';
 import 'frame_thumbnail_grid.dart';
 import 'frame_thumbnail_strip.dart';
 
@@ -15,6 +16,7 @@ class ScreenplayStructureTree extends StatefulWidget {
     required this.screenplay,
     required this.galleryPaths,
     required this.galleryCaptions,
+    this.previewOptions,
     this.onDeleteAct,
     this.onDeleteScene,
     this.onDeleteFrame,
@@ -24,6 +26,7 @@ class ScreenplayStructureTree extends StatefulWidget {
   final Screenplay screenplay;
   final List<String> galleryPaths;
   final List<String> galleryCaptions;
+  final ImagePreviewOptions? previewOptions;
   final Future<void> Function(int actIndex)? onDeleteAct;
   final Future<void> Function(int actIndex, int sceneIndex)? onDeleteScene;
   final Future<void> Function(int actIndex, int sceneIndex, int frameIndex)?
@@ -79,6 +82,7 @@ class _ScreenplayStructureTreeState extends State<ScreenplayStructureTree> {
             expanded: _expandedActs[actIndex] ?? true,
             galleryPaths: widget.galleryPaths,
             galleryCaptions: widget.galleryCaptions,
+            previewOptions: widget.previewOptions,
             onToggle: () => setState(() {
               _expandedActs[actIndex] = !(_expandedActs[actIndex] ?? true);
             }),
@@ -101,6 +105,7 @@ class _ActTreeSection extends StatelessWidget {
     required this.galleryPaths,
     required this.galleryCaptions,
     required this.onToggle,
+    this.previewOptions,
     this.onDeleteAct,
     this.onDeleteScene,
     this.onDeleteFrame,
@@ -114,6 +119,7 @@ class _ActTreeSection extends StatelessWidget {
   final List<String> galleryPaths;
   final List<String> galleryCaptions;
   final VoidCallback onToggle;
+  final ImagePreviewOptions? previewOptions;
   final Future<void> Function(int actIndex)? onDeleteAct;
   final Future<void> Function(int actIndex, int sceneIndex)? onDeleteScene;
   final Future<void> Function(int actIndex, int sceneIndex, int frameIndex)?
@@ -179,6 +185,7 @@ class _ActTreeSection extends StatelessWidget {
                               sceneCount: act.scenes.length,
                               galleryPaths: galleryPaths,
                               galleryCaptions: galleryCaptions,
+                              previewOptions: previewOptions,
                               onDeleteScene: onDeleteScene,
                               onDeleteFrame: onDeleteFrame,
                               onUploadFrame: onUploadFrame,
@@ -204,6 +211,7 @@ class _SceneTreeRow extends StatefulWidget {
     required this.sceneCount,
     required this.galleryPaths,
     required this.galleryCaptions,
+    this.previewOptions,
     this.onDeleteScene,
     this.onDeleteFrame,
     this.onUploadFrame,
@@ -215,6 +223,7 @@ class _SceneTreeRow extends StatefulWidget {
   final int sceneCount;
   final List<String> galleryPaths;
   final List<String> galleryCaptions;
+  final ImagePreviewOptions? previewOptions;
   final Future<void> Function(int actIndex, int sceneIndex)? onDeleteScene;
   final Future<void> Function(int actIndex, int sceneIndex, int frameIndex)?
       onDeleteFrame;
@@ -354,6 +363,7 @@ class _SceneTreeRowState extends State<_SceneTreeRow> {
                       frames: scene.frames,
                       galleryPaths: widget.galleryPaths,
                       galleryCaptions: widget.galleryCaptions,
+                      previewOptions: widget.previewOptions,
                       itemSize: 40,
                       maxVisible: 3,
                       onExpandTap: _toggleExpanded,
@@ -416,6 +426,7 @@ class _SceneTreeRowState extends State<_SceneTreeRow> {
                           frames: scene.frames,
                           galleryPaths: widget.galleryPaths,
                           galleryCaptions: widget.galleryCaptions,
+                          previewOptions: widget.previewOptions,
                           onFrameLongPress:
                               canFrameLongPress ? onFrameLongPress : null,
                         ),

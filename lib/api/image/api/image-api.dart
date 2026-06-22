@@ -46,6 +46,36 @@ Future uploadImageFile(
   );
 }
 
+Future listImages({
+  int page = 1,
+  int pageSize = 20,
+  Function(ListImagesResp)? ok,
+  Function(String)? fail,
+  Function? eventually,
+}) async {
+  await apiGet(
+    '/images',
+    query: {'page': '$page', 'page_size': '$pageSize'},
+    ok: (data) => ok?.call(ListImagesResp.fromJson(data)),
+    fail: fail,
+    eventually: eventually,
+  );
+}
+
+Future getImageDetail(
+  int imageId, {
+  Function(ImageDetailResp)? ok,
+  Function(String)? fail,
+  Function? eventually,
+}) async {
+  await apiGet(
+    '/images/$imageId',
+    ok: (data) => ok?.call(ImageDetailResp.fromJson(data)),
+    fail: fail,
+    eventually: eventually,
+  );
+}
+
 Future getImageDownloadUrl(
   int imageId, {
   Function(ImageDownloadResp)? ok,

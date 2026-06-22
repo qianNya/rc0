@@ -163,6 +163,45 @@ class ScreenplayRemoteRepository extends ChangeNotifier {
 
   Map<String, dynamic>? rawTreeAfterRefresh(int id) => _rawTreeCache[id];
 
+  Future<({sp_dto.GetScreenplayTreeResp? tree, String? error})> saveScreenplayTree(
+    int id,
+    Map<String, dynamic> payload, {
+    required bool isInitial,
+  }) async {
+    final (tree, error) = await apiCallback<sp_dto.GetScreenplayTreeResp>(
+      ({ok, fail, eventually}) {
+        if (isInitial) {
+          return screenplay_api.createScreenplayTree(
+            id,
+            payload,
+            ok: ok,
+            fail: fail,
+            eventually: eventually,
+          );
+        }
+        return screenplay_api.updateScreenplayTree(
+          id,
+          payload,
+          ok: ok,
+          fail: fail,
+          eventually: eventually,
+        );
+      },
+    );
+
+    if (error != null) {
+      return (tree: null, error: error);
+    }
+    if (tree == null) {
+      return (tree: null, error: 'tree save failed');
+    }
+
+    final raw = ScreenplayApiMapper.treeToJsonMap(tree);
+    _rawTreeCache[id] = raw;
+    _treeCache[id] = ScreenplayApiMapper.fromTree(tree);
+    return (tree: tree, error: null);
+  }
+
   void clearTreeCache([int? id]) {
     if (id != null) {
       _treeCache.remove(id);

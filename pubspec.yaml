@@ -41,6 +41,7 @@ dependencies:
   open_filex: ^4.7.0
   package_info_plus: ^8.3.0
   window_manager: ^0.4.3
+  video_thumbnail: ^0.5.3
 
 dev_dependencies:
   flutter_test:

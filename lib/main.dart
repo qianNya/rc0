@@ -8,6 +8,7 @@ import 'core/services/image_favorite_store.dart';
 import 'core/theme/theme_mode_notifier.dart';
 import 'features/auth/data/auth_repository.dart';
 import 'features/favorites/data/image_favorite_repository.dart';
+import 'features/gallery/data/image_gallery_repository.dart';
 import 'features/screenplay/data/screenplay_local_repository.dart';
 
 Future<void> main() async {
@@ -31,6 +32,7 @@ Future<void> main() async {
   await ScreenplayLocalRepository.instance.initialize();
   await ImageFavoriteRepository.instance.initialize();
   ImageFavoriteStore.instance = ImageFavoriteRepository.instance;
+  await ImageGalleryRepository.instance.initialize();
   await ThemeModeNotifier.instance.initialize();
   await AuthRepository.instance.initialize();
   onApiUnauthorized = AuthRepository.instance.handleUnauthorized;

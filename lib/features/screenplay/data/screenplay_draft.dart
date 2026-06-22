@@ -51,6 +51,7 @@ class ScreenplayDraft {
     this.synopsis = '',
     Set<String>? tags,
     List<ActDraft>? acts,
+    this.coverImage,
   })  : tags = Set<String>.from(tags ?? {'站姿'}),
         acts = acts ?? [ActDraft()];
 
@@ -63,8 +64,9 @@ class ScreenplayDraft {
             .map(
               (frame) => FrameDraft(
                 image: UploadImageFile(
-                  path: frame.displayImagePath,
-                  name: _basename(frame.displayImagePath),
+                  path: frame.localImagePath ?? frame.imagePath,
+                  name: _basename(frame.localImagePath ?? frame.imagePath),
+                  previewPath: frame.localThumbnailPath,
                 ),
                 caption: frame.caption,
                 actionNote: frame.actionNote,
@@ -90,6 +92,32 @@ class ScreenplayDraft {
       );
     }
 
+    UploadImageFile? coverImage;
+    final explicitLocal = screenplay.localCoverPath;
+    final explicitRemote = screenplay.coverUrl;
+    if (explicitLocal != null &&
+        explicitLocal.isNotEmpty &&
+        !_isNetworkUrl(explicitLocal)) {
+      coverImage = UploadImageFile(
+        path: explicitLocal,
+        name: _basename(explicitLocal),
+      );
+    } else if (explicitRemote != null &&
+        explicitRemote.isNotEmpty &&
+        _isNetworkUrl(explicitRemote)) {
+      coverImage = UploadImageFile(
+        path: explicitRemote,
+        name: _basename(explicitRemote),
+      );
+    }
+
+    if (coverImage != null) {
+      final defaultPath = _defaultCoverPathFromActs(acts);
+      if (defaultPath != null && coverImage.path == defaultPath) {
+        coverImage = null;
+      }
+    }
+
     return ScreenplayDraft(
       title: screenplay.title,
       synopsis: screenplay.synopsis,
@@ -97,6 +125,7 @@ class ScreenplayDraft {
           ? Set<String>.from(screenplay.tags)
           : {'站姿'},
       acts: acts.isEmpty ? [ActDraft()] : acts,
+      coverImage: coverImage,
     );
   }
 
@@ -105,8 +134,47 @@ class ScreenplayDraft {
   Set<String> tags;
   final List<ActDraft> acts;
 
+  /// Explicit cover; null means use the first frame/image as default.
+  UploadImageFile? coverImage;
+
   bool get hasFrames =>
       acts.any((act) => act.scenes.any((scene) => scene.frames.isNotEmpty));
+
+  bool get usesDefaultCover => coverImage == null;
+}
+
+bool _isNetworkUrl(String path) =>
+    path.startsWith('http://') || path.startsWith('https://');
+
+String? _defaultCoverPathFromActs(List<ActDraft> acts) {
+  for (final act in acts) {
+    for (final scene in act.scenes) {
+      for (final frame in scene.frames) {
+        return frame.image.displayPath;
+      }
+    }
+  }
+  return null;
+}
+
+/// First frame media in draft order (act → scene → frame).
+UploadImageFile? firstDraftFrameMedia(ScreenplayDraft draft) {
+  for (final act in draft.acts) {
+    for (final scene in act.scenes) {
+      if (scene.frames.isNotEmpty) {
+        return scene.frames.first.image;
+      }
+    }
+  }
+  return null;
+}
+
+/// Cover path for UI preview: explicit cover, else first frame (video → thumbnail).
+String? draftCoverDisplayPath(ScreenplayDraft draft) {
+  if (draft.coverImage != null) {
+    return draft.coverImage!.displayPath;
+  }
+  return firstDraftFrameMedia(draft)?.displayPath;
 }
 
 String _newId(String prefix) =>
@@ -123,6 +191,7 @@ Screenplay buildScreenplayFromDraft(
   required Map<UploadImageFile, String> persistedPaths,
   String? scriptId,
   DateTime? createdAt,
+  String? coverPath,
 }) {
   final resolvedId = scriptId ?? _newId('script');
   final acts = <ScriptAct>[];
@@ -142,12 +211,19 @@ Screenplay buildScreenplayFromDraft(
         final path = persistedPaths[frameDraft.image];
         if (path == null || path.isEmpty) continue;
 
+        String? thumbPath;
+        if (frameDraft.image.isVideo) {
+          thumbPath = persistedPaths[frameDraft.image.previewPathKey] ??
+              frameDraft.image.previewPath;
+        }
+
         frames.add(
           ScriptFrame(
             id: '$sceneId-frame-$frameIndex',
             orderIndex: frameIndex,
-            imagePath: path,
+            imagePath: thumbPath ?? path,
             localImagePath: path,
+            localThumbnailPath: thumbPath,
             caption: frameDraft.caption,
             actionNote: frameDraft.actionNote,
             tags: draft.tags.toList(),
@@ -196,17 +272,72 @@ Screenplay buildScreenplayFromDraft(
     acts: acts,
     isLocal: true,
     createdAt: createdAt ?? DateTime.now(),
+    localCoverPath: coverPath,
   );
 }
 
 List<UploadImageFile> collectDraftImages(ScreenplayDraft draft) {
   final images = <UploadImageFile>[];
+  final seen = <String>{};
+
+  void add(UploadImageFile file) {
+    if (seen.add(file.path)) {
+      images.add(file);
+    }
+    final preview = file.previewPath;
+    if (preview != null &&
+        preview.isNotEmpty &&
+        seen.add(preview)) {
+      images.add(UploadImageFile(path: preview, name: _basename(preview)));
+    }
+  }
+
+  if (draft.coverImage != null) {
+    add(draft.coverImage!);
+  }
+
   for (final act in draft.acts) {
     for (final scene in act.scenes) {
       for (final frame in scene.frames) {
-        images.add(frame.image);
+        add(frame.image);
       }
     }
   }
   return images;
+}
+
+int countDraftFrames(ScreenplayDraft draft) {
+  var count = 0;
+  for (final act in draft.acts) {
+    for (final scene in act.scenes) {
+      count += scene.frames.length;
+    }
+  }
+  return count;
+}
+
+/// Pick target for image picker within draft hierarchy.
+class FramePickTarget {
+  FramePickTarget({required this.actIndex, required this.sceneIndex});
+
+  final int actIndex;
+  final int sceneIndex;
+}
+
+void addImagesToScene(
+  ScreenplayDraft draft,
+  FramePickTarget target,
+  List<UploadImageFile> images,
+) {
+  final scene = draft.acts[target.actIndex].scenes[target.sceneIndex];
+  for (final image in images) {
+    scene.frames.add(FrameDraft(image: image));
+  }
+}
+
+extension UploadImageFilePersistKey on UploadImageFile {
+  UploadImageFile get previewPathKey => UploadImageFile(
+        path: previewPath ?? path,
+        name: previewPath != null ? _basename(previewPath!) : name,
+      );
 }

@@ -16,6 +16,7 @@ import '../../../screenplay/data/screenplay_publish_service.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../data/image_pick_service.dart';
 import '../widgets/screenplay_editor_sections.dart';
+import '../../domain/upload_image_file.dart';
 
 class UploadPage extends StatefulWidget {
   const UploadPage({super.key, this.editScriptId});
@@ -76,6 +77,7 @@ class _UploadPageState extends State<UploadPage> {
     _draft.acts
       ..clear()
       ..add(ActDraft());
+    _draft.coverImage = null;
     _titleController.text = '';
     _synopsisController.text = '';
   }
@@ -85,8 +87,46 @@ class _UploadPageState extends State<UploadPage> {
       context.go(AppRoutes.script(widget.editScriptId!));
     } else {
       _resetDraft();
-      context.go(AppRoutes.explore);
+      context.go(AppRoutes.discovery);
     }
+  }
+
+  Future<void> _pickCover() async {
+    if (_isPicking) return;
+
+    setState(() => _isPicking = true);
+    try {
+      final result = await _imagePickService.pickCover();
+      if (!mounted) return;
+
+      if (result.added.isNotEmpty) {
+        _draft.coverImage = _coverImageFromPick(result.added.first);
+        _refresh();
+      }
+      if (result.hasRejected) {
+        _showSnackBar('封面格式不支持或无法提取视频首帧');
+      }
+    } catch (error) {
+      if (mounted) _showSnackBar('选择封面失败：$error');
+    } finally {
+      if (mounted) setState(() => _isPicking = false);
+    }
+  }
+
+  void _resetCover() {
+    _draft.coverImage = null;
+    _refresh();
+  }
+
+  UploadImageFile _coverImageFromPick(UploadImageFile file) {
+    if (file.isVideo && file.previewPath != null) {
+      final thumb = file.previewPath!;
+      return UploadImageFile(
+        path: thumb,
+        name: thumb.split('/').last,
+      );
+    }
+    return file;
   }
 
   Future<void> _pickImages(FramePickTarget target) async {
@@ -165,7 +205,7 @@ class _UploadPageState extends State<UploadPage> {
         await repository.publish(_draft);
         if (!mounted) return;
         _showSnackBar('剧本发布成功，已保存到本地');
-        if (goHome) context.go(AppRoutes.explore);
+        if (goHome) context.go(AppRoutes.discovery);
       }
     } catch (error) {
       if (mounted) _showSnackBar('保存失败：$error');
@@ -242,6 +282,14 @@ class _UploadPageState extends State<UploadPage> {
             });
           },
           onAdd: (tag) => setState(() => _draft.tags.add(tag)),
+        ),
+        const SizedBox(height: 20),
+        CoverEditorSection(
+          displayPath: draftCoverDisplayPath(_draft),
+          usesDefault: _draft.usesDefaultCover,
+          hasFrames: _draft.hasFrames,
+          onPickCover: _pickCover,
+          onResetDefault: _resetCover,
         ),
         const SizedBox(height: 20),
         Row(

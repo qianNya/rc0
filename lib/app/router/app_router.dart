@@ -6,6 +6,7 @@ import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/community/presentation/pages/community_page.dart';
 import '../../features/explore/presentation/pages/explore_page.dart';
+import '../../features/gallery/presentation/pages/my_gallery_page.dart';
 import '../../features/favorites/presentation/pages/favorites_page.dart';
 import '../../features/profile/presentation/pages/edit_profile_page.dart';
 import '../../features/profile/presentation/pages/profile_about_page.dart';
@@ -25,9 +26,10 @@ abstract final class AppRouter {
       GlobalKey<NavigatorState>();
 
   static const _protectedRoutes = <String>[
-    AppRoutes.upload,
-    AppRoutes.tasks,
+    AppRoutes.library,
     AppRoutes.favorites,
+    AppRoutes.tasks,
+    AppRoutes.messages,
     AppRoutes.profileWorks,
     AppRoutes.profileLikes,
     AppRoutes.profileEdit,
@@ -46,18 +48,56 @@ abstract final class AppRouter {
     if (auth.isLoggedIn && auth.profile != null && isAuthRoute) {
       final from = state.uri.queryParameters['from'];
       if (from != null && from.isNotEmpty) return from;
-      return AppRoutes.explore;
+      return AppRoutes.discovery;
     }
 
     return null;
   }
 
+  static GoRoute _comingSoonRoute(String path, String title, {String? name}) {
+    return GoRoute(
+      path: path,
+      name: name,
+      parentNavigatorKey: rootNavigatorKey,
+      builder: (context, state) => ProfileComingSoonPage(title: title),
+    );
+  }
+
   static final GoRouter router = GoRouter(
     navigatorKey: rootNavigatorKey,
-    initialLocation: AppRoutes.explore,
+    initialLocation: AppRoutes.discovery,
     refreshListenable: AuthRepository.instance,
     redirect: _redirect,
     routes: [
+      // Legacy path redirects
+      GoRoute(
+        path: AppRoutes.explore,
+        redirect: (_, _) => AppRoutes.discovery,
+      ),
+      GoRoute(
+        path: AppRoutes.upload,
+        redirect: (context, state) {
+          final edit = state.uri.queryParameters['edit'];
+          if (edit != null && edit.isNotEmpty) {
+            return AppRoutes.createEdit(edit);
+          }
+          return AppRoutes.create;
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.community,
+        name: 'community',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const CommunityPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.follow,
+        redirect: (_, _) => AppRoutes.discovery,
+      ),
+      GoRoute(
+        path: AppRoutes.recommend,
+        redirect: (_, _) => AppRoutes.discovery,
+      ),
       GoRoute(
         path: AppRoutes.login,
         name: 'login',
@@ -74,6 +114,28 @@ abstract final class AppRouter {
           redirectFrom: state.uri.queryParameters['from'],
         ),
       ),
+      _comingSoonRoute(AppRoutes.scriptList, '我的脚本', name: 'script-list'),
+      GoRoute(
+        path: AppRoutes.scriptExport,
+        name: 'script-export',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) =>
+            const ProfileComingSoonPage(title: '导出分镜'),
+      ),
+      GoRoute(
+        path: AppRoutes.scriptShotDetail,
+        name: 'script-shot-detail',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) =>
+            const ProfileComingSoonPage(title: '分镜详情'),
+      ),
+      GoRoute(
+        path: AppRoutes.scriptSceneDetail,
+        name: 'script-scene-detail',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) =>
+            const ProfileComingSoonPage(title: '场景详情'),
+      ),
       GoRoute(
         path: AppRoutes.scriptDetail,
         name: 'script-detail',
@@ -83,6 +145,30 @@ abstract final class AppRouter {
           return ScreenplayDetailPage(scriptId: id);
         },
       ),
+      GoRoute(
+        path: AppRoutes.imageAnalysis,
+        name: 'image-analysis',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) =>
+            const ProfileComingSoonPage(title: 'AI 视觉分析'),
+      ),
+      GoRoute(
+        path: AppRoutes.imageDetail,
+        name: 'image-detail',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) =>
+            const ProfileComingSoonPage(title: '图片详情'),
+      ),
+      _comingSoonRoute(AppRoutes.preset, '摄影预设', name: 'preset-list'),
+      GoRoute(
+        path: AppRoutes.presetDetail,
+        name: 'preset-detail',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) =>
+            const ProfileComingSoonPage(title: '预设详情'),
+      ),
+      _comingSoonRoute(AppRoutes.search, '全局搜索', name: 'search'),
+      _comingSoonRoute(AppRoutes.settings, '设置', name: 'settings'),
       GoRoute(
         path: AppRoutes.userProfile,
         name: 'user-profile',
@@ -126,12 +212,28 @@ abstract final class AppRouter {
         },
       ),
       GoRoute(
+        path: AppRoutes.favorites,
+        name: 'favorites',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) {
+          final tab =
+              int.tryParse(state.uri.queryParameters['tab'] ?? '') ?? 0;
+          return FavoritesPage(initialTab: tab);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.tasks,
+        name: 'tasks',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const TasksPage(),
+      ),
+      GoRoute(
         path: AppRoutes.poseDetail,
         name: 'pose-detail',
         parentNavigatorKey: rootNavigatorKey,
         redirect: (context, state) {
           final id = state.pathParameters['id'];
-          if (id == null) return AppRoutes.explore;
+          if (id == null) return AppRoutes.discovery;
           return AppRoutes.script(id);
         },
       ),
@@ -143,8 +245,8 @@ abstract final class AppRouter {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: AppRoutes.explore,
-                name: 'explore',
+                path: AppRoutes.discovery,
+                name: 'discovery',
                 pageBuilder: (context, state) => const NoTransitionPage(
                   child: ExplorePage(),
                 ),
@@ -154,10 +256,10 @@ abstract final class AppRouter {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: AppRoutes.community,
-                name: 'community',
+                path: AppRoutes.library,
+                name: 'library',
                 pageBuilder: (context, state) => const NoTransitionPage(
-                  child: CommunityPage(),
+                  child: MyGalleryPage(),
                 ),
               ),
             ],
@@ -165,8 +267,8 @@ abstract final class AppRouter {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: AppRoutes.upload,
-                name: 'upload',
+                path: AppRoutes.create,
+                name: 'create',
                 pageBuilder: (context, state) {
                   final editId = state.uri.queryParameters['edit'];
                   return NoTransitionPage(
@@ -179,38 +281,22 @@ abstract final class AppRouter {
           StatefulShellBranch(
             routes: [
               GoRoute(
+                path: AppRoutes.messages,
+                name: 'messages',
+                pageBuilder: (context, state) => const NoTransitionPage(
+                  child: ProfileComingSoonPage(title: '消息'),
+                ),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
                 path: AppRoutes.profile,
                 name: 'profile',
                 pageBuilder: (context, state) => const NoTransitionPage(
                   child: ProfilePage(),
                 ),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: AppRoutes.tasks,
-                name: 'tasks',
-                pageBuilder: (context, state) => const NoTransitionPage(
-                  child: TasksPage(),
-                ),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: AppRoutes.favorites,
-                name: 'favorites',
-                pageBuilder: (context, state) {
-                  final tab =
-                      int.tryParse(state.uri.queryParameters['tab'] ?? '') ??
-                          0;
-                  return NoTransitionPage(
-                    child: FavoritesPage(initialTab: tab),
-                  );
-                },
               ),
             ],
           ),

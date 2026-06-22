@@ -22,6 +22,7 @@ class PoseCoverImage extends StatelessWidget {
     this.previewGallery,
     this.previewIndex = 0,
     this.previewCaptions,
+    this.previewOptions,
     this.isUploaded = false,
   });
 
@@ -35,6 +36,7 @@ class PoseCoverImage extends StatelessWidget {
   final List<String>? previewGallery;
   final int previewIndex;
   final List<String>? previewCaptions;
+  final ImagePreviewOptions? previewOptions;
   final bool isUploaded;
 
   static bool isNetworkUrl(String path) => isNetworkImagePath(path);
@@ -78,6 +80,7 @@ class PoseCoverImage extends StatelessWidget {
       imagePaths: gallery,
       initialIndex: index,
       captions: captions,
+      options: previewOptions,
     );
   }
 

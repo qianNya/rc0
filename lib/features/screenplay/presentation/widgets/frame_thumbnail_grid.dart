@@ -29,6 +29,7 @@ class FrameThumbnailGrid extends StatelessWidget {
     this.iconSize = 20,
     this.frameOverlayBuilder,
     this.onFrameLongPress,
+    this.previewOptions,
   });
 
   final List<ScriptFrame> frames;
@@ -40,6 +41,7 @@ class FrameThumbnailGrid extends StatelessWidget {
   final double iconSize;
   final FrameThumbnailOverlayBuilder? frameOverlayBuilder;
   final FrameGridLongPress? onFrameLongPress;
+  final ImagePreviewOptions? previewOptions;
 
   @override
   Widget build(BuildContext context) {
@@ -70,6 +72,7 @@ class FrameThumbnailGrid extends StatelessWidget {
               previewGallery: galleryPaths,
               previewIndex: globalIndex >= 0 ? globalIndex : index,
               previewCaptions: galleryCaptions,
+              previewOptions: previewOptions,
               isUploaded: frame.isRemoteUploaded,
             ),
             ?overlay,
@@ -109,6 +112,7 @@ Future<void> showScreenplayFramePreview(
   BuildContext context, {
   required Screenplay screenplay,
   int initialIndex = 0,
+  ImagePreviewOptions? options,
 }) {
   final frames = screenplay.allFrames;
   return showImagePreview(
@@ -116,6 +120,7 @@ Future<void> showScreenplayFramePreview(
     imagePaths: frames.map((f) => f.effectiveDisplayPath).toList(),
     initialIndex: initialIndex,
     captions: frames.map((f) => f.caption).toList(),
-    options: ImagePreviewOptions(sourceLabel: screenplay.title),
+    options: options ??
+        ImagePreviewOptions(sourceLabel: screenplay.title),
   );
 }

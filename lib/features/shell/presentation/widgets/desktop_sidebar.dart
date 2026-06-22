@@ -10,13 +10,13 @@ class DesktopSidebar extends StatelessWidget {
   const DesktopSidebar({
     super.key,
     required this.currentBranch,
-    required this.onSelect,
+    required this.onNavItemTap,
     required this.onProfileTap,
     required this.onUploadTap,
   });
 
   final int currentBranch;
-  final ValueChanged<int> onSelect;
+  final ValueChanged<ShellNavItem> onNavItemTap;
   final VoidCallback onProfileTap;
   final VoidCallback onUploadTap;
 
@@ -45,12 +45,13 @@ class DesktopSidebar extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             ...desktopNavItems.map((item) {
-              final active = currentBranch == item.branchIndex;
+              final active =
+                  item.branchIndex != null && currentBranch == item.branchIndex;
               return _SidebarTile(
                 label: item.label,
                 icon: active ? item.selectedIcon : item.icon,
                 selected: active,
-                onTap: () => onSelect(item.branchIndex),
+                onTap: () => onNavItemTap(item),
               );
             }),
             const Spacer(),
@@ -70,7 +71,7 @@ class DesktopSidebar extends StatelessWidget {
                 child: Icon(Icons.person, size: 18),
               ),
               title: const Text('我的', style: AppTextStyles.label),
-              selected: currentBranch == 3,
+              selected: currentBranch == 4,
               selectedTileColor: AppColors.sidebarActive,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppDimensions.radiusSm),

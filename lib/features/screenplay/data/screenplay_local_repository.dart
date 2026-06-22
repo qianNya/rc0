@@ -185,12 +185,17 @@ class ScreenplayLocalRepository extends ChangeNotifier {
   Future<Screenplay> publish(ScreenplayDraft draft) async {
     final images = collectDraftImages(draft);
     final scriptId = 'script-${DateTime.now().millisecondsSinceEpoch}';
-    final persisted = await _persistImages(images, scriptId);
+    final persisted = await _persistImages(
+      images,
+      scriptId,
+      coverFile: draft.coverImage,
+    );
 
     final screenplay = buildScreenplayFromDraft(
       draft,
       persistedPaths: persisted,
       scriptId: scriptId,
+      coverPath: draft.coverImage != null ? persisted[draft.coverImage!] : null,
     );
 
     _documents.insert(0, ScreenplayTreeDocument.fromScreenplay(screenplay));
@@ -207,13 +212,18 @@ class ScreenplayLocalRepository extends ChangeNotifier {
 
     final existing = _documents[index].toScreenplay();
     final images = collectDraftImages(draft);
-    final persisted = await _persistImages(images, id);
+    final persisted = await _persistImages(
+      images,
+      id,
+      coverFile: draft.coverImage,
+    );
 
     final screenplay = buildScreenplayFromDraft(
       draft,
       persistedPaths: persisted,
       scriptId: id,
       createdAt: existing.createdAt,
+      coverPath: draft.coverImage != null ? persisted[draft.coverImage!] : null,
     ).copyWith(
       author: existing.author,
       authorBio: existing.authorBio,
@@ -227,6 +237,7 @@ class ScreenplayLocalRepository extends ChangeNotifier {
       visibility: existing.visibility,
       treeJsonObjectKey: existing.treeJsonObjectKey,
       publishedAt: existing.publishedAt,
+      coverUrl: draft.coverImage != null ? existing.coverUrl : null,
     );
 
     _documents[index] = ScreenplayTreeDocument.fromScreenplay(
@@ -737,29 +748,41 @@ class ScreenplayLocalRepository extends ChangeNotifier {
 
   Future<Map<UploadImageFile, String>> _persistImages(
     List<UploadImageFile> files,
-    String scriptId,
-  ) async {
+    String scriptId, {
+    UploadImageFile? coverFile,
+  }) async {
     final appDir = await getApplicationDocumentsDirectory();
     final frameDir = Directory('${appDir.path}/screenplays/$scriptId/frames');
+    final coverDir = Directory('${appDir.path}/screenplays/$scriptId/cover');
     if (!frameDir.existsSync()) {
       await frameDir.create(recursive: true);
+    }
+    if (!coverDir.existsSync()) {
+      await coverDir.create(recursive: true);
     }
 
     final map = <UploadImageFile, String>{};
     final framesDir = frameDir.path;
+    final coverDirPath = coverDir.path;
     for (var i = 0; i < files.length; i++) {
       final file = files[i];
       final source = File(file.path);
       if (!source.existsSync()) continue;
 
-      if (_isPersistedFrame(file.path, scriptId, framesDir)) {
+      final isCover = coverFile != null && coverFile.path == file.path;
+      final targetDir = isCover ? coverDirPath : framesDir;
+      if (!isCover && _isPersistedFrame(file.path, scriptId, framesDir)) {
+        map[file] = file.path;
+        continue;
+      }
+      if (isCover && file.path.startsWith(coverDirPath)) {
         map[file] = file.path;
         continue;
       }
 
       final safeName = file.name.replaceAll(RegExp(r'[^\w.\-]'), '_');
-      final frameId = 'frame-$i';
-      final dest = File('${frameDir.path}/$frameId-$safeName');
+      final fileId = isCover ? 'cover' : 'frame-$i';
+      final dest = File('$targetDir/$fileId-$safeName');
       await source.copy(dest.path);
       map[file] = dest.path;
     }

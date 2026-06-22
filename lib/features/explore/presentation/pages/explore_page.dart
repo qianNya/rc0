@@ -132,7 +132,7 @@ class _ExplorePageState extends State<ExplorePage> {
         onFeedTabChanged: (i) => setState(() => _feedTabIndex = i),
         onDelete: _deleteScript,
         onFork: _forkTemplate,
-        onUpload: () => context.go(AppRoutes.upload),
+        onUpload: () => context.go(AppRoutes.create),
         onRefreshRemote: () => _remoteRepository.loadFirstPage(),
       ),
       desktop: (_) => _ExploreDesktopView(
@@ -143,7 +143,7 @@ class _ExplorePageState extends State<ExplorePage> {
         onFeedTabChanged: (i) => setState(() => _feedTabIndex = i),
         onTagChanged: (tag) => setState(() => _selectedTag = tag),
         onDelete: _deleteScript,
-        onUpload: () => context.go(AppRoutes.upload),
+        onUpload: () => context.go(AppRoutes.create),
       ),
     );
   }

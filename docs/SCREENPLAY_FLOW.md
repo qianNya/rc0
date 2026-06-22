@@ -118,22 +118,25 @@ sequenceDiagram
 
 ## 3. 首次发布（Mode A，对齐 screenplay.http）
 
-与 `screenplay.http` 一致：**先建壳 → 剧本域上传资源 → PUT 保存树**。
+与 `screenplay.http` 一致：**先建壳 → 上传资源 → POST/PUT 保存树 → publish**。
 
 ```mermaid
 sequenceDiagram
   participant App as ScreenplayPublishService
   participant SP as screenplay API
-  participant Assets as POST .../tree/assets
-  participant Tree as PUT .../tree
+  participant Img as POST /images
+  participant Cover as POST /cover
+  participant Tree as POST_or_PUT /tree
 
-  App->>SP: POST /screenplays<br/>{ title, publish_status:0 }
+  App->>SP: POST /screenplays
   SP-->>App: id（远程剧本壳）
-  App->>Assets: multipart refs + files
-  Assets-->>App: items → asset_map
-  App->>Tree: PUT /screenplays/:id/tree<br/>{ asset_map, screenplay, acts }
+  App->>Img: batch 上传帧图
+  Img-->>App: refToImageId
+  App->>Cover: 上传封面（若有本地封面）
+  Cover-->>App: coverUrl
+  App->>Tree: POST /tree（首次）或 PUT /tree（已存在）
   Tree-->>App: GetScreenplayTreeResp
-  App->>App: 更新 meta.remote_screenplay_id
+  App->>SP: POST /publish（首次发布）
 ```
 
 **HTTP 对照**（`screenplay.http`）
@@ -141,29 +144,33 @@ sequenceDiagram
 | 步骤 | HTTP | App 实现 |
 |------|------|----------|
 | 1 创建壳 | `createScreenplay` | `ScreenplayPublishService._createScreenplay` |
-| 2 上传资源 | `batchUploadTreeAssets` | `tree_assets_upload.dart` → `DataUploadRepository.uploadBatchForScreenplay` |
-| 3 保存树 | `saveScreenplayTreeJson` (PUT) | `screenplay_tree_http.saveScreenplayTreePut` |
+| 2 上传帧图 | `POST /images` | `DataUploadRepository.uploadBatch` |
+| 3 上传封面 | `uploadScreenplayCover` | `DataUploadRepository.uploadScreenplayCover` |
+| 4 保存树 | `createScreenplayTree` / `updateScreenplayTree` | `ScreenplayRemoteRepository.saveScreenplayTree` |
 
-**PUT 请求体**（与 `saveScreenplayTreeJson` 同构）：
+**POST/PUT 请求体**（与 Rust `SaveScreenplayTreeReq` 同构，无 `tree` 包装层）：
 
 ```json
 {
   "asset_map": {
-    "cover-ref": "https://cdn/.../cover.jpg",
-    "frame-0-0-0": "https://cdn/.../frame.jpg"
+    "frame-0-0-0": {
+      "kind": "frame_image",
+      "remote_url": "",
+      "remote_image_id": 101
+    }
   },
   "screenplay": {
     "title": "标题",
-    "cover_ref": "cover-ref"
+    "cover_url": "https://cdn/.../cover.jpg"
   },
   "acts": [
     {
-      "act": { "title": "第一幕", "sort": 1 },
+      "act": { "id": 0, "title": "第一幕", "sort": 1 },
       "scenes": [
         {
-          "scene": { "title": "第一场", "sort": 1 },
+          "scene": { "id": 0, "title": "第一场", "sort": 1 },
           "frames": [
-            { "title": "", "sort": 1, "image_ref": "frame-0-0-0" }
+            { "id": 0, "title": "", "sort": 1, "image_ref": "frame-0-0-0" }
           ]
         }
       ]
@@ -187,12 +194,14 @@ sequenceDiagram
 sequenceDiagram
   participant UI as 详情页「同步」
   participant Pub as ScreenplayPublishService
-  participant Assets as tree/assets
-  participant Tree as PUT .../tree
+  participant Img as POST /images
+  participant Cover as POST /cover
+  participant Tree as PUT /tree
 
   UI->>Pub: syncToServer(document)
-  Pub->>Assets: 仅上传新增/变更的本地文件
-  Pub->>Tree: PUT diff（带节点 id，缺失节点软删）
+  Pub->>Img: 仅上传新增/变更的本地帧图
+  Pub->>Cover: 上传本地封面（若有）
+  Pub->>Tree: PUT 完整树（带节点 id，缺失节点软删）
   Tree-->>Pub: 完整树响应
   Pub->>UI: 更新本地 document
 ```

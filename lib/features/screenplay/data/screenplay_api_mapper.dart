@@ -293,7 +293,13 @@ abstract final class ScreenplayApiMapper {
     };
     if (localImagePath != null) {
       json['local_image_path'] = localImagePath;
-      json['local_thumbnail_path'] = localImagePath;
+      if (frame.localThumbnailPath != null &&
+          frame.localThumbnailPath!.isNotEmpty) {
+        json['local_thumbnail_path'] = frame.localThumbnailPath;
+      } else if (localImagePath != null &&
+          !ScreenplayImageResolver.isNetworkUrl(localImagePath)) {
+        json['local_thumbnail_path'] = localImagePath;
+      }
     }
     return json;
   }
@@ -496,6 +502,7 @@ abstract final class ScreenplayApiMapper {
     required int visibility,
     required Map<String, int> refToImageId,
     required bool isRepublish,
+    String? coverUrl,
   }) {
     final screenplayMap =
         Map<String, dynamic>.from(tree['screenplay'] as Map<String, dynamic>);
@@ -505,12 +512,21 @@ abstract final class ScreenplayApiMapper {
     final screenplayPayload = <String, dynamic>{
       'title': title,
       'subtitle': screenplayMap['subtitle'] as String? ?? '',
+      'cover_url': '',
+      'cover_ref': null,
     };
     if (summary.isNotEmpty) {
       screenplayPayload['summary'] = summary;
     }
     if (isRepublish) {
       screenplayPayload['visibility'] = visibility;
+    }
+
+    final resolvedCoverUrl = coverUrl ??
+        ScreenplayImageResolver.coverRemoteUrl(screenplayMap) ??
+        '';
+    if (resolvedCoverUrl.isNotEmpty) {
+      screenplayPayload['cover_url'] = resolvedCoverUrl;
     }
 
     final assetMap = <String, dynamic>{};
@@ -524,6 +540,16 @@ abstract final class ScreenplayApiMapper {
         isRepublish,
       );
 
+      final actFields = <String, dynamic>{
+        'title': actMap['title'] as String? ?? '',
+        'sort': (actMap['sort'] as num?)?.toInt() ?? actIdx + 1,
+      };
+      if (actId > 0) actFields['id'] = actId;
+      final actSummary = actMap['summary'] as String?;
+      if (actSummary != null && actSummary.isNotEmpty) {
+        actFields['summary'] = actSummary;
+      }
+
       final scenePayloads = <Map<String, dynamic>>[];
       final scenes = actNode['scenes'] as List<dynamic>? ?? [];
       for (var sceneIdx = 0; sceneIdx < scenes.length; sceneIdx++) {
@@ -533,6 +559,18 @@ abstract final class ScreenplayApiMapper {
           (sceneMap['id'] as num?)?.toInt() ?? 0,
           isRepublish,
         );
+
+        final sceneFields = <String, dynamic>{
+          'title': sceneMap['title'] as String? ?? '',
+          'sort': (sceneMap['sort'] as num?)?.toInt() ?? sceneIdx + 1,
+          'location': sceneMap['location'] as String? ?? '',
+          'time_of_day': sceneMap['time_of_day'] as String? ?? '',
+        };
+        if (sceneId > 0) sceneFields['id'] = sceneId;
+        final sceneSummary = sceneMap['summary'] as String?;
+        if (sceneSummary != null && sceneSummary.isNotEmpty) {
+          sceneFields['summary'] = sceneSummary;
+        }
 
         final framePayloads = <Map<String, dynamic>>[];
         final frames = sceneNode['frames'] as List<dynamic>? ?? [];
@@ -551,6 +589,10 @@ abstract final class ScreenplayApiMapper {
             'aspect_ratio': frameMap['aspect_ratio'] as String? ?? '',
             'shot_type': frameMap['shot_type'] as String? ?? '',
             'extra_params': frameMap['extra_params'] ?? {},
+            'image_url': '',
+            'thumbnail_url': '',
+            'image_ref': null,
+            'thumbnail_ref': null,
           };
           if (frameId > 0) framePayload['id'] = frameId;
 
@@ -565,49 +607,49 @@ abstract final class ScreenplayApiMapper {
 
           final uploadedId = refToImageId[ref];
           final existingId = _existingFrameImageId(frameMap);
-          final imageId = uploadedId ?? existingId;
-          if (imageId != null) {
-            assetMap.putIfAbsent(ref, () => _frameAssetEntry(imageId));
+          final remoteUrl = ScreenplayImageResolver.frameRemoteUrl(frameMap);
+          final thumbnailUrl =
+              ScreenplayImageResolver.hasRemoteUrl(frameMap['thumbnail_url'] as String?)
+                  ? frameMap['thumbnail_url'] as String
+                  : '';
+
+          if (uploadedId != null) {
+            assetMap.putIfAbsent(ref, () => _frameAssetEntry(uploadedId));
+            framePayload['image_ref'] = ref;
+          } else if (remoteUrl != null && existingId != null) {
+            framePayload['image_url'] = remoteUrl;
+            framePayload['acgn_image_id'] = existingId;
+            if (thumbnailUrl.isNotEmpty) {
+              framePayload['thumbnail_url'] = thumbnailUrl;
+            }
+            final fileId = (frameMap['acgn_image_file_id'] as num?)?.toInt();
+            if (fileId != null && fileId > 0) {
+              framePayload['acgn_image_file_id'] = fileId;
+            }
+          } else if (existingId != null) {
+            assetMap.putIfAbsent(ref, () => _frameAssetEntry(existingId));
             framePayload['image_ref'] = ref;
           }
 
           framePayloads.add(framePayload);
         }
 
-        final scenePayload = <String, dynamic>{
-          'title': sceneMap['title'] as String? ?? '',
-          'sort': (sceneMap['sort'] as num?)?.toInt() ?? sceneIdx + 1,
-          'location': sceneMap['location'] as String? ?? '',
-          'time_of_day': sceneMap['time_of_day'] as String? ?? '',
+        scenePayloads.add({
+          'scene': sceneFields,
           'frames': framePayloads,
-        };
-        if (sceneId > 0) scenePayload['id'] = sceneId;
-        final sceneSummary = sceneMap['summary'] as String?;
-        if (sceneSummary != null && sceneSummary.isNotEmpty) {
-          scenePayload['summary'] = sceneSummary;
-        }
-        scenePayloads.add(scenePayload);
+        });
       }
 
-      final actPayload = <String, dynamic>{
-        'title': actMap['title'] as String? ?? '',
-        'sort': (actMap['sort'] as num?)?.toInt() ?? actIdx + 1,
+      actPayloads.add({
+        'act': actFields,
         'scenes': scenePayloads,
-      };
-      if (actId > 0) actPayload['id'] = actId;
-      final actSummary = actMap['summary'] as String?;
-      if (actSummary != null && actSummary.isNotEmpty) {
-        actPayload['summary'] = actSummary;
-      }
-      actPayloads.add(actPayload);
+      });
     }
 
     return {
-      'asset_map': assetMap,
-      'tree': {
-        'screenplay': screenplayPayload,
-        'acts': actPayloads,
-      },
+      if (assetMap.isNotEmpty) 'asset_map': assetMap,
+      'screenplay': screenplayPayload,
+      'acts': actPayloads,
     };
   }
 
