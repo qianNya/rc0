@@ -43,10 +43,13 @@ Future getPublicUserProfile(
   );
 }
 
+const _defaultPublishStatus = 1;
+
 Future listUserScreenplays(
   int userId, {
   int page = 1,
   int pageSize = 20,
+  int? kind,
   int? publishStatus,
   Function(ListUserScreenplaysResp)? ok,
   Function(String)? fail,
@@ -56,7 +59,8 @@ Future listUserScreenplays(
     'page': '$page',
     'page_size': '$pageSize',
   };
-  if (publishStatus != null) {
+  if (kind != null) query['kind'] = '$kind';
+  if (publishStatus != null && publishStatus != _defaultPublishStatus) {
     query['publish_status'] = '$publishStatus';
   }
   await apiGet(

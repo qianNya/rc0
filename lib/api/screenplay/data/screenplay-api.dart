@@ -1033,21 +1033,96 @@ class ListScreenplaysReq {
   }
 }
 
+class AuthorSummary {
+  final num id;
+
+  final String nickname;
+
+  final String avatar;
+  AuthorSummary({
+    required this.id,
+    required this.nickname,
+    required this.avatar,
+  });
+  factory AuthorSummary.fromJson(Map<String, dynamic> m) {
+    return AuthorSummary(
+      id: m['id'] ?? 0,
+      nickname: m['nickname'] ?? '',
+      avatar: m['avatar'] ?? '',
+    );
+  }
+}
+
+class FeedItemDto {
+  final String itemType;
+
+  final Screenplay screenplay;
+
+  final AuthorSummary? author;
+  FeedItemDto({
+    required this.itemType,
+    required this.screenplay,
+    this.author,
+  });
+  factory FeedItemDto.fromJson(Map<String, dynamic> m) {
+    final screenplayJson = m['screenplay'] is Map<String, dynamic>
+        ? m['screenplay'] as Map<String, dynamic>
+        : m;
+    return FeedItemDto(
+      itemType: m['item_type'] ?? '',
+      screenplay: Screenplay.fromJson(screenplayJson),
+      author: m['author'] is Map<String, dynamic>
+          ? AuthorSummary.fromJson(m['author'] as Map<String, dynamic>)
+          : null,
+    );
+  }
+}
+
 class ListScreenplaysResp {
   final List<Screenplay> list;
 
+  final List<FeedItemDto> items;
+
   final num total;
-  ListScreenplaysResp({required this.list, required this.total});
+
+  final num page;
+
+  final num pageSize;
+  ListScreenplaysResp({
+    required this.list,
+    required this.items,
+    required this.total,
+    required this.page,
+    required this.pageSize,
+  });
   factory ListScreenplaysResp.fromJson(Map<String, dynamic> m) {
+    final rawItems = (m['items'] ?? m['list'] ?? []) as List<dynamic>;
+    final feedItems = rawItems
+        .map((i) => FeedItemDto.fromJson(i as Map<String, dynamic>))
+        .toList();
     return ListScreenplaysResp(
-      list: ((m['list'] ?? []) as List<dynamic>)
-          .map((i) => Screenplay.fromJson(i))
-          .toList(),
+      list: feedItems.map((item) => item.screenplay).toList(),
+      items: feedItems,
       total: m['total'] ?? 0,
+      page: m['page'] ?? 1,
+      pageSize: m['page_size'] ?? 20,
     );
   }
   Map<String, dynamic> toJson() {
-    return {'list': list.map((i) => i.toJson()), 'total': total};
+    return {
+      'items': items.map((i) => {
+            'item_type': i.itemType,
+            'screenplay': i.screenplay.toJson(),
+            if (i.author != null) 'author': {
+              'id': i.author!.id,
+              'nickname': i.author!.nickname,
+              'avatar': i.author!.avatar,
+            },
+          }),
+      'total': total,
+      'page': page,
+      'page_size': pageSize,
+    };
   }
 }
 

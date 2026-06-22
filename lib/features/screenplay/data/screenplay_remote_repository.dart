@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
+import '../../../api/http/api_client.dart';
 import '../../../api/screenplay/api/screenplay-api.dart' as screenplay_api;
 import '../../../api/screenplay/data/screenplay-api.dart' as sp_dto;
 import '../../../core/domain/screenplay/screenplay.dart';
@@ -50,7 +53,6 @@ class ScreenplayRemoteRepository extends ChangeNotifier {
       ({ok, fail, eventually}) => screenplay_api.listScreenplays(
         page: page,
         pageSize: pageSize,
-        publishStatus: 1,
         ok: ok,
         fail: fail,
         eventually: eventually,
@@ -125,23 +127,24 @@ class ScreenplayRemoteRepository extends ChangeNotifier {
   Future<({sp_dto.GetScreenplayTreeResp? tree, String? error})>
       refreshTreeAfterPublish(int id) async {
     clearTreeCache(id);
-    final (tree, error) = await apiCallback<sp_dto.GetScreenplayTreeResp>(
-      ({ok, fail, eventually}) => screenplay_api.getScreenplayTree(
-        id,
-        ok: ok,
-        fail: fail,
-        eventually: eventually,
-      ),
-    );
-    if (error != null || tree == null) {
-      return (tree: null, error: error ?? 'tree not found');
-    }
+    final completer =
+        Completer<({sp_dto.GetScreenplayTreeResp? tree, String? error})>();
 
-    final raw = ScreenplayApiMapper.treeToJsonMap(tree);
-    _rawTreeCache[id] = raw;
-    _treeCache[id] = ScreenplayApiMapper.fromTree(tree);
-    return (tree: tree, error: null);
+    await apiGet(
+      '/screenplays/$id/tree',
+      ok: (data) {
+        _rawTreeCache[id] = deepCopyJson(data);
+        final tree = sp_dto.GetScreenplayTreeResp.fromJson(data);
+        _treeCache[id] = ScreenplayApiMapper.fromTree(tree);
+        completer.complete((tree: tree, error: null));
+      },
+      fail: (msg) => completer.complete((tree: null, error: msg)),
+    );
+
+    return completer.future;
   }
+
+  Map<String, dynamic>? rawTreeAfterRefresh(int id) => _rawTreeCache[id];
 
   void clearTreeCache([int? id]) {
     if (id != null) {

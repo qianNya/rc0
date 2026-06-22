@@ -399,33 +399,25 @@ abstract final class ScreenplayApiMapper {
 
   static const coverRef = 'cover-ref';
 
-  /// Picks cover URL for createScreenplay shell from batch upload results.
-  static String coverUrlForShell(Map<String, String> assetMap) {
-    final cover = assetMap[coverRef];
-    if (cover != null && cover.isNotEmpty) return cover;
-    for (final url in assetMap.values) {
-      if (url.isNotEmpty) return url;
-    }
-    return '';
-  }
-
   static String frameRef(int actIdx, int sceneIdx, int frameIdx) =>
       'frame-$actIdx-$sceneIdx-$frameIdx';
 
-  /// Collects local files that need batch upload with stable refs.
-  static Map<String, File> collectLocalAssets(Map<String, dynamic> tree) {
-    final refToFile = <String, File>{};
+  /// Local cover file pending upload via POST /screenplays/{id}/cover.
+  static File? collectLocalCoverFile(Map<String, dynamic> tree) {
     final screenplayMap = tree['screenplay'] as Map<String, dynamic>?;
-    if (screenplayMap != null &&
-        ScreenplayImageResolver.coverRemoteUrl(screenplayMap) == null) {
-      final coverSrc = ScreenplayImageResolver.localUploadPath(
-        screenplayMap['local_cover_path'] as String?,
-      );
-      if (coverSrc != null) {
-        refToFile[coverRef] = File(coverSrc);
-      }
+    if (screenplayMap == null ||
+        ScreenplayImageResolver.coverRemoteUrl(screenplayMap) != null) {
+      return null;
     }
+    final coverSrc = ScreenplayImageResolver.localUploadPath(
+      screenplayMap['local_cover_path'] as String?,
+    );
+    return coverSrc == null ? null : File(coverSrc);
+  }
 
+  /// Collects local frame files that need upload with stable refs.
+  static Map<String, File> collectLocalFrameAssets(Map<String, dynamic> tree) {
+    final refToFile = <String, File>{};
     final acts = tree['acts'] as List<dynamic>? ?? [];
     for (var actIdx = 0; actIdx < acts.length; actIdx++) {
       final scenes =
@@ -452,61 +444,58 @@ abstract final class ScreenplayApiMapper {
     return refToFile;
   }
 
-  /// Dedupes refs that point to the same local file (e.g. cover-ref + frame-0-0-0).
-  static ({Map<String, File> unique, Map<String, String> refToPrimaryRef})
-      dedupeRefsByFile(Map<String, File> refToFile) {
-    final pathToPrimaryRef = <String, String>{};
-    final refToPrimaryRef = <String, String>{};
-    final unique = <String, File>{};
+  /// Collects local cover + frame files (legacy helper).
+  static Map<String, File> collectLocalAssets(Map<String, dynamic> tree) {
+    final refToFile = collectLocalFrameAssets(tree);
+    final cover = collectLocalCoverFile(tree);
+    if (cover != null) {
+      refToFile[coverRef] = cover;
+    }
+    return refToFile;
+  }
 
-    for (final entry in refToFile.entries) {
-      final canonical = _canonicalFilePath(entry.value);
-      final primaryRef = pathToPrimaryRef[canonical];
-      if (primaryRef == null) {
-        pathToPrimaryRef[canonical] = entry.key;
-        refToPrimaryRef[entry.key] = entry.key;
-        unique[entry.key] = entry.value;
-      } else {
-        refToPrimaryRef[entry.key] = primaryRef;
+  static Map<String, dynamic> _frameAssetEntry(int imageId) => {
+        'kind': 'frame_image',
+        'remote_url': '',
+        'remote_image_id': imageId,
+        'remote_image_file_id': null,
+      };
+
+  static int? _existingFrameImageId(Map<String, dynamic> frameMap) {
+    final imageId = (frameMap['acgn_image_id'] as num?)?.toInt() ?? 0;
+    return imageId > 0 ? imageId : null;
+  }
+
+  /// Writes freshly uploaded image ids into the local tree before tree sync.
+  static void stampUploadedImageIds(
+    Map<String, dynamic> tree,
+    Map<String, int> refToImageId,
+  ) {
+    final acts = tree['acts'] as List<dynamic>? ?? [];
+    for (var actIdx = 0; actIdx < acts.length; actIdx++) {
+      final scenes =
+          (acts[actIdx] as Map<String, dynamic>)['scenes'] as List<dynamic>? ??
+              [];
+      for (var sceneIdx = 0; sceneIdx < scenes.length; sceneIdx++) {
+        final frames = (scenes[sceneIdx] as Map<String, dynamic>)['frames']
+                as List<dynamic>? ??
+            [];
+        for (var frameIdx = 0; frameIdx < frames.length; frameIdx++) {
+          final ref = frameRef(actIdx, sceneIdx, frameIdx);
+          final imageId = refToImageId[ref];
+          if (imageId == null) continue;
+          (frames[frameIdx] as Map<String, dynamic>)['acgn_image_id'] = imageId;
+        }
       }
     }
-
-    return (unique: unique, refToPrimaryRef: refToPrimaryRef);
   }
 
-  /// Expands uploaded URLs from primary refs to all aliased refs.
-  static Map<String, String> expandRefUrls({
-    required Map<String, File> refToFile,
-    required Map<String, String> uploaded,
-    required Map<String, String> refToPrimaryRef,
-  }) {
-    final expanded = <String, String>{};
-    for (final entry in refToFile.entries) {
-      final primaryRef = refToPrimaryRef[entry.key] ?? entry.key;
-      final url = uploaded[primaryRef];
-      if (url != null && url.isNotEmpty) {
-        expanded[entry.key] = url;
-      }
-    }
-    return expanded;
-  }
-
-  static String _canonicalFilePath(File file) {
-    try {
-      return file.absolute.resolveSymbolicLinksSync().toLowerCase();
-    } catch (_) {
-      return file.absolute.path.toLowerCase();
-    }
-  }
-
-  /// Builds PUT `/tree` JSON body (Mode A) aligned with `screenplay.http` `saveScreenplayTreeJson`.
+  /// Builds POST/PUT `/screenplays/{id}/tree` body (`SaveScreenplayTreeReq`).
   static Map<String, dynamic> buildSaveTreePayload({
     required Map<String, dynamic> tree,
     required int visibility,
-    required Map<String, String> assetMap,
+    required Map<String, int> refToImageId,
     required bool isRepublish,
-    int version = 0,
-    DateTime? publishedAt,
   }) {
     final screenplayMap =
         Map<String, dynamic>.from(tree['screenplay'] as Map<String, dynamic>);
@@ -515,26 +504,16 @@ abstract final class ScreenplayApiMapper {
 
     final screenplayPayload = <String, dynamic>{
       'title': title,
+      'subtitle': screenplayMap['subtitle'] as String? ?? '',
     };
     if (summary.isNotEmpty) {
       screenplayPayload['summary'] = summary;
     }
-
-    final coverRemote = ScreenplayImageResolver.coverRemoteUrl(screenplayMap);
-
-    if (assetMap.containsKey(coverRef)) {
-      screenplayPayload['cover_ref'] = coverRef;
-    } else if (coverRemote != null) {
-      screenplayPayload['cover_url'] = coverRemote;
-    }
-
     if (isRepublish) {
       screenplayPayload['visibility'] = visibility;
-      final publishTime = publishedAt ?? DateTime.now();
-      screenplayPayload['publish_status'] = 1;
-      screenplayPayload['published_at'] = publishTime.toIso8601String();
     }
 
+    final assetMap = <String, dynamic>{};
     final actPayloads = <Map<String, dynamic>>[];
     final acts = tree['acts'] as List<dynamic>? ?? [];
     for (var actIdx = 0; actIdx < acts.length; actIdx++) {
@@ -567,59 +546,69 @@ abstract final class ScreenplayApiMapper {
 
           final framePayload = <String, dynamic>{
             'title': frameMap['title'] as String? ?? '',
-            'dialogue': frameMap['dialogue'] as String? ?? '',
-            'action_note': frameMap['action_note'] as String? ?? '',
             'sort': (frameMap['sort'] as num?)?.toInt() ?? frameIdx + 1,
+            'duration_sec': (frameMap['duration_sec'] as num?)?.toInt() ?? 3,
+            'aspect_ratio': frameMap['aspect_ratio'] as String? ?? '',
+            'shot_type': frameMap['shot_type'] as String? ?? '',
+            'extra_params': frameMap['extra_params'] ?? {},
           };
           if (frameId > 0) framePayload['id'] = frameId;
 
-          final remoteUrl = ScreenplayImageResolver.frameRemoteUrl(frameMap);
+          final dialogue = frameMap['dialogue'] as String?;
+          if (dialogue != null && dialogue.isNotEmpty) {
+            framePayload['dialogue'] = dialogue;
+          }
+          final actionNote = frameMap['action_note'] as String?;
+          if (actionNote != null && actionNote.isNotEmpty) {
+            framePayload['action_note'] = actionNote;
+          }
 
-          if (assetMap.containsKey(ref)) {
+          final uploadedId = refToImageId[ref];
+          final existingId = _existingFrameImageId(frameMap);
+          final imageId = uploadedId ?? existingId;
+          if (imageId != null) {
+            assetMap.putIfAbsent(ref, () => _frameAssetEntry(imageId));
             framePayload['image_ref'] = ref;
-            framePayload['thumbnail_ref'] = ref;
-          } else if (remoteUrl != null) {
-            framePayload['image_url'] = remoteUrl;
-            framePayload['thumbnail_url'] = remoteUrl;
           }
 
           framePayloads.add(framePayload);
         }
 
         final scenePayload = <String, dynamic>{
-          'scene': {
-            if (sceneId > 0) 'id': sceneId,
-            'title': sceneMap['title'] as String? ?? '',
-            'summary': sceneMap['summary'] as String? ?? '',
-            'location': sceneMap['location'] as String? ?? '',
-            'time_of_day': sceneMap['time_of_day'] as String? ?? '',
-            'sort': (sceneMap['sort'] as num?)?.toInt() ?? sceneIdx + 1,
-          },
+          'title': sceneMap['title'] as String? ?? '',
+          'sort': (sceneMap['sort'] as num?)?.toInt() ?? sceneIdx + 1,
+          'location': sceneMap['location'] as String? ?? '',
+          'time_of_day': sceneMap['time_of_day'] as String? ?? '',
           'frames': framePayloads,
         };
+        if (sceneId > 0) scenePayload['id'] = sceneId;
+        final sceneSummary = sceneMap['summary'] as String?;
+        if (sceneSummary != null && sceneSummary.isNotEmpty) {
+          scenePayload['summary'] = sceneSummary;
+        }
         scenePayloads.add(scenePayload);
       }
 
-      actPayloads.add({
-        'act': {
-          if (actId > 0) 'id': actId,
-          'title': actMap['title'] as String? ?? '',
-          'summary': actMap['summary'] as String? ?? '',
-          'sort': (actMap['sort'] as num?)?.toInt() ?? actIdx + 1,
-        },
+      final actPayload = <String, dynamic>{
+        'title': actMap['title'] as String? ?? '',
+        'sort': (actMap['sort'] as num?)?.toInt() ?? actIdx + 1,
         'scenes': scenePayloads,
-      });
+      };
+      if (actId > 0) actPayload['id'] = actId;
+      final actSummary = actMap['summary'] as String?;
+      if (actSummary != null && actSummary.isNotEmpty) {
+        actPayload['summary'] = actSummary;
+      }
+      actPayloads.add(actPayload);
     }
 
-    final payload = <String, dynamic>{
+    return {
       'asset_map': assetMap,
-      'screenplay': screenplayPayload,
-      'acts': actPayloads,
+      'tree': {
+        'screenplay': screenplayPayload,
+        'acts': actPayloads,
+      },
     };
-    if (version > 0) {
-      payload['version'] = version;
-    }
-    return payload;
   }
 
   static int _saveNodeId(int existingId, bool isRepublish) {
@@ -632,8 +621,11 @@ abstract final class ScreenplayApiMapper {
     required api.GetScreenplayTreeResp response,
     required ScreenplayLocalMeta meta,
     Map<String, dynamic>? previousTree,
+    Map<String, dynamic>? rawTree,
   }) {
-    final tree = treeToJsonMap(response);
+    final tree = rawTree != null
+        ? deepCopyJson(rawTree)
+        : treeToJsonMap(response);
     if (previousTree != null) {
       _preserveLocalPaths(tree, previousTree);
     }
@@ -648,6 +640,33 @@ abstract final class ScreenplayApiMapper {
       meta: meta.copyWith(
         remoteScreenplayId: sp.id.toInt(),
         visibility: sp.visibility.toInt(),
+        publishedAt: publishedAt ?? DateTime.now(),
+      ),
+    );
+  }
+
+  /// Applies raw GET `/tree` JSON (preserves fields missing from generated DTOs).
+  static ScreenplayTreeDocument applyRawTreeResponse({
+    required Map<String, dynamic> rawTree,
+    required ScreenplayLocalMeta meta,
+    Map<String, dynamic>? previousTree,
+  }) {
+    final tree = deepCopyJson(rawTree);
+    if (previousTree != null) {
+      _preserveLocalPaths(tree, previousTree);
+    }
+
+    final sp = tree['screenplay'] as Map<String, dynamic>;
+    final publishedAtRaw = sp['published_at'] as String? ?? '';
+    final publishedAt = publishedAtRaw.isNotEmpty
+        ? DateTime.tryParse(publishedAtRaw)
+        : meta.publishedAt;
+
+    return ScreenplayTreeDocument(
+      tree: tree,
+      meta: meta.copyWith(
+        remoteScreenplayId: (sp['id'] as num?)?.toInt(),
+        visibility: (sp['visibility'] as num?)?.toInt() ?? meta.visibility,
         publishedAt: publishedAt ?? DateTime.now(),
       ),
     );

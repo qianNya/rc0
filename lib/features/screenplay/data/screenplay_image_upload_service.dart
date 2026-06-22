@@ -41,9 +41,9 @@ class ScreenplayImageUploadService {
       return (document: null, error: uploaded.error ?? '上传失败');
     }
 
-    final url = uploaded.object!.downloadUrl;
-    frameMap['image_url'] = url;
-    frameMap['thumbnail_url'] = url;
+    frameMap['acgn_image_id'] = uploaded.object!.imageId;
+    frameMap.remove('image_url');
+    frameMap.remove('thumbnail_url');
 
     return _persistAndMaybeSync(
       ScreenplayTreeDocument(tree: tree, meta: document.meta),
@@ -65,13 +65,17 @@ class ScreenplayImageUploadService {
       return (document: null, error: '本地封面不存在');
     }
 
-    final uploaded =
-        await DataUploadRepository.instance.uploadImage(File(uploadSrc));
-    if (uploaded.error != null || uploaded.object == null) {
-      return (document: null, error: uploaded.error ?? '上传失败');
+    final remoteId = document.meta.remoteScreenplayId;
+    if (remoteId != null) {
+      final uploaded = await DataUploadRepository.instance.uploadScreenplayCover(
+        remoteId,
+        File(uploadSrc),
+      );
+      if (uploaded.error != null || uploaded.coverUrl == null) {
+        return (document: null, error: uploaded.error ?? '上传失败');
+      }
+      screenplayMap['cover_url'] = uploaded.coverUrl;
     }
-
-    screenplayMap['cover_url'] = uploaded.object!.downloadUrl;
 
     return _persistAndMaybeSync(
       ScreenplayTreeDocument(tree: tree, meta: document.meta),

@@ -152,22 +152,25 @@ class ScreenplayBrief {
   });
 
   factory ScreenplayBrief.fromJson(Map<String, dynamic> m) {
+    final source = m['screenplay'] is Map<String, dynamic>
+        ? m['screenplay'] as Map<String, dynamic>
+        : m;
     final author = m['author'];
-    var creatorId = m['creator_id'] ?? m['creator'] ?? 0;
-    var creatorNickname = m['creator_nickname'] ?? '';
+    var creatorId = source['creator_id'] ?? source['creator'] ?? 0;
+    var creatorNickname = source['creator_nickname'] ?? '';
     if (author is Map<String, dynamic>) {
       creatorId = author['id'] ?? creatorId;
       creatorNickname = author['nickname'] ?? creatorNickname;
     }
     return ScreenplayBrief(
-      id: m['id'] ?? 0,
-      title: m['title'] ?? '',
-      coverUrl: m['cover_url'] ?? '',
-      likeCount: m['like_count'] ?? 0,
-      viewCount: m['view_count'] ?? 0,
+      id: source['id'] ?? 0,
+      title: source['title'] ?? '',
+      coverUrl: source['cover_url'] ?? '',
+      likeCount: source['like_count'] ?? 0,
+      viewCount: source['view_count'] ?? 0,
       creatorId: creatorId,
       creatorNickname: creatorNickname,
-      createAt: m['create_at'] ?? m['created_at'] ?? '',
+      createAt: source['create_at'] ?? source['created_at'] ?? '',
     );
   }
 }
@@ -175,15 +178,25 @@ class ScreenplayBrief {
 class ListUserScreenplaysResp {
   final List<ScreenplayBrief> list;
   final num total;
+  final num page;
+  final num pageSize;
 
-  ListUserScreenplaysResp({required this.list, required this.total});
+  ListUserScreenplaysResp({
+    required this.list,
+    required this.total,
+    required this.page,
+    required this.pageSize,
+  });
 
   factory ListUserScreenplaysResp.fromJson(Map<String, dynamic> m) {
+    final rawItems = (m['items'] ?? m['list'] ?? []) as List<dynamic>;
     return ListUserScreenplaysResp(
-      list: ((m['list'] ?? []) as List<dynamic>)
+      list: rawItems
           .map((i) => ScreenplayBrief.fromJson(i as Map<String, dynamic>))
           .toList(),
       total: m['total'] ?? 0,
+      page: m['page'] ?? 1,
+      pageSize: m['page_size'] ?? 20,
     );
   }
 }

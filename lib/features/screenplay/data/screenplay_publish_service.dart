@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import '../../../api/screenplay/api/screenplay-api.dart' as screenplay_api;
 import '../../../api/screenplay/data/screenplay-api.dart' as api;
@@ -24,7 +25,7 @@ class PublishResult {
   final ScreenplayTreeDocument document;
 }
 
-/// Publishes local screenplays via Rust stepwise REST API.
+/// Publishes local screenplays via POST/PUT `/screenplays/{id}/tree`.
 class ScreenplayPublishService {
   ScreenplayPublishService._();
 
@@ -74,9 +75,10 @@ class ScreenplayPublishService {
       if (uploads.error != null) {
         return (result: null, error: uploads.error);
       }
+      ScreenplayApiMapper.stampUploadedImageIds(tree, uploads.refToImageId!);
 
       onProgress?.call('同步剧本树', 0, 1);
-      final synced = await _syncTreeStepwise(
+      final synced = await _saveTree(
         remoteId: remoteId,
         tree: tree,
         refToImageId: uploads.refToImageId!,
@@ -85,6 +87,17 @@ class ScreenplayPublishService {
       );
       if (synced.error != null) {
         return (result: null, error: synced.error);
+      }
+
+      if (uploads.coverFile != null) {
+        onProgress?.call('上传封面', 0, 1);
+        final cover = await DataUploadRepository.instance.uploadScreenplayCover(
+          remoteId,
+          uploads.coverFile!,
+        );
+        if (cover.error != null) {
+          return (result: null, error: cover.error);
+        }
       }
 
       onProgress?.call('发布剧本', 0, 1);
@@ -104,11 +117,19 @@ class ScreenplayPublishService {
           ? profile.nickname
           : (profile?.username ?? document.meta.author);
 
-      final resultDoc = ScreenplayApiMapper.applySaveTreeResponse(
-        response: saved.tree!,
-        meta: document.meta.copyWith(author: authorName),
-        previousTree: tree,
-      );
+      final rawTree =
+          ScreenplayRemoteRepository.instance.rawTreeAfterRefresh(remoteId);
+      final resultDoc = rawTree != null
+          ? ScreenplayApiMapper.applyRawTreeResponse(
+              rawTree: rawTree,
+              meta: document.meta.copyWith(author: authorName),
+              previousTree: tree,
+            )
+          : ScreenplayApiMapper.applySaveTreeResponse(
+              response: saved.tree!,
+              meta: document.meta.copyWith(author: authorName),
+              previousTree: tree,
+            );
 
       onProgress?.call('完成', 1, 1);
       return (
@@ -146,9 +167,10 @@ class ScreenplayPublishService {
       if (uploads.error != null) {
         return (result: null, error: uploads.error);
       }
+      ScreenplayApiMapper.stampUploadedImageIds(tree, uploads.refToImageId!);
 
       onProgress?.call('同步剧本树', 0, 1);
-      final synced = await _syncTreeStepwise(
+      final synced = await _saveTree(
         remoteId: remoteId,
         tree: tree,
         refToImageId: uploads.refToImageId!,
@@ -157,6 +179,17 @@ class ScreenplayPublishService {
       );
       if (synced.error != null) {
         return (result: null, error: synced.error);
+      }
+
+      if (uploads.coverFile != null) {
+        onProgress?.call('上传封面', 0, 1);
+        final cover = await DataUploadRepository.instance.uploadScreenplayCover(
+          remoteId,
+          uploads.coverFile!,
+        );
+        if (cover.error != null) {
+          return (result: null, error: cover.error);
+        }
       }
 
       final saved = await ScreenplayRemoteRepository.instance
@@ -170,11 +203,19 @@ class ScreenplayPublishService {
           ? profile.nickname
           : (profile?.username ?? document.meta.author);
 
-      final resultDoc = ScreenplayApiMapper.applySaveTreeResponse(
-        response: saved.tree!,
-        meta: document.meta.copyWith(author: authorName),
-        previousTree: document.tree,
-      );
+      final rawTree =
+          ScreenplayRemoteRepository.instance.rawTreeAfterRefresh(remoteId);
+      final resultDoc = rawTree != null
+          ? ScreenplayApiMapper.applyRawTreeResponse(
+              rawTree: rawTree,
+              meta: document.meta.copyWith(author: authorName),
+              previousTree: document.tree,
+            )
+          : ScreenplayApiMapper.applySaveTreeResponse(
+              response: saved.tree!,
+              meta: document.meta.copyWith(author: authorName),
+              previousTree: document.tree,
+            );
 
       onProgress?.call('完成', 1, 1);
       return (
@@ -186,176 +227,84 @@ class ScreenplayPublishService {
     }
   }
 
-  Future<({Map<String, int>? refToImageId, String? error})> _uploadLocalAssets(
+  Future<({
+    Map<String, int>? refToImageId,
+    File? coverFile,
+    String? error,
+  })> _uploadLocalAssets(
     Map<String, dynamic> tree, {
     PublishProgressCallback? onProgress,
   }) async {
-    final refToFile = ScreenplayApiMapper.collectLocalAssets(tree);
+    final coverFile = ScreenplayApiMapper.collectLocalCoverFile(tree);
+    final refToFile = ScreenplayApiMapper.collectLocalFrameAssets(tree);
+
     if (refToFile.isEmpty) {
-      return (refToImageId: <String, int>{}, error: null);
+      return (
+        refToImageId: <String, int>{},
+        coverFile: coverFile,
+        error: null,
+      );
     }
 
-    final deduped = ScreenplayApiMapper.dedupeRefsByFile(refToFile);
     final total = refToFile.length;
     onProgress?.call('上传图片', 0, total);
 
     final result = await DataUploadRepository.instance.uploadBatch(
-      deduped.unique,
+      refToFile,
       onProgress: (done, batchTotal) {
         onProgress?.call('上传图片', done, batchTotal);
       },
     );
 
     if (result.error != null || result.refToImageId == null) {
-      return (refToImageId: null, error: result.error ?? '图片上传失败');
+      return (
+        refToImageId: null,
+        coverFile: null,
+        error: result.error ?? '图片上传失败',
+      );
     }
 
-    final expanded = <String, int>{};
-    for (final entry in refToFile.entries) {
-      final primary = deduped.refToPrimaryRef[entry.key] ?? entry.key;
-      final imageId = result.refToImageId![primary];
-      if (imageId == null) {
-        return (refToImageId: null, error: '图片上传不完整: ${entry.key}');
-      }
-      expanded[entry.key] = imageId;
-    }
-
-    return (refToImageId: expanded, error: null);
+    return (
+      refToImageId: result.refToImageId,
+      coverFile: coverFile,
+      error: null,
+    );
   }
 
-  Future<({String? error})> _syncTreeStepwise({
+  Future<({api.GetScreenplayTreeResp? tree, String? error})> _saveTree({
     required int remoteId,
     required Map<String, dynamic> tree,
     required Map<String, int> refToImageId,
     required int visibility,
     required bool isRepublish,
   }) async {
-    final screenplayMap = tree['screenplay'] as Map<String, dynamic>;
-    final updateErr = await _updateScreenplayMetadata(
-      remoteId,
-      title: screenplayMap['title'] as String? ?? '',
-      summary: screenplayMap['summary'] as String? ?? '',
+    final payload = ScreenplayApiMapper.buildSaveTreePayload(
+      tree: tree,
       visibility: visibility,
+      refToImageId: refToImageId,
       isRepublish: isRepublish,
     );
-    if (updateErr != null) return (error: updateErr);
 
-    final acts = tree['acts'] as List<dynamic>? ?? [];
-    for (var actIdx = 0; actIdx < acts.length; actIdx++) {
-      final actNode = acts[actIdx] as Map<String, dynamic>;
-      final actMap = actNode['act'] as Map<String, dynamic>;
-      final actSort = (actMap['sort'] as num?)?.toInt() ?? actIdx + 1;
-      final actTitle = actMap['title'] as String? ?? '';
-      final actSummary = actMap['summary'] as String? ?? '';
-      final existingActId = (actMap['id'] as num?)?.toInt() ?? 0;
+    final completer =
+        Completer<({api.GetScreenplayTreeResp? tree, String? error})>();
 
-      late final int actId;
-      if (isRepublish && existingActId > 0) {
-        final err = await _updateAct(
-          remoteId,
-          existingActId,
-          title: actTitle,
-          summary: actSummary,
-          sort: actSort,
-        );
-        if (err != null) return (error: err);
-        actId = existingActId;
-      } else {
-        final created = await _createAct(
-          remoteId,
-          title: actTitle,
-          summary: actSummary,
-          sort: actSort,
-        );
-        if (created.error != null || created.act == null) {
-          return (error: created.error ?? '创建幕失败');
-        }
-        actId = created.act!.id.toInt();
-        actMap['id'] = actId;
-      }
-
-      final scenes = actNode['scenes'] as List<dynamic>? ?? [];
-      for (var sceneIdx = 0; sceneIdx < scenes.length; sceneIdx++) {
-        final sceneNode = scenes[sceneIdx] as Map<String, dynamic>;
-        final sceneMap = sceneNode['scene'] as Map<String, dynamic>;
-        final sceneSort = (sceneMap['sort'] as num?)?.toInt() ?? sceneIdx + 1;
-        final sceneTitle = sceneMap['title'] as String? ?? '';
-        final sceneSummary = sceneMap['summary'] as String? ?? '';
-        final existingSceneId = (sceneMap['id'] as num?)?.toInt() ?? 0;
-
-        late final int sceneId;
-        if (isRepublish && existingSceneId > 0) {
-          final err = await _updateScene(
-            remoteId,
-            actId,
-            existingSceneId,
-            title: sceneTitle,
-            summary: sceneSummary,
-            sort: sceneSort,
-          );
-          if (err != null) return (error: err);
-          sceneId = existingSceneId;
-        } else {
-          final created = await _createScene(
-            remoteId,
-            actId,
-            title: sceneTitle,
-            summary: sceneSummary,
-            sort: sceneSort,
-          );
-          if (created.error != null || created.scene == null) {
-            return (error: created.error ?? '创建场失败');
-          }
-          sceneId = created.scene!.id.toInt();
-          sceneMap['id'] = sceneId;
-        }
-
-        final frames = sceneNode['frames'] as List<dynamic>? ?? [];
-        for (var frameIdx = 0; frameIdx < frames.length; frameIdx++) {
-          final frameMap = frames[frameIdx] as Map<String, dynamic>;
-          final frameSort = (frameMap['sort'] as num?)?.toInt() ?? frameIdx + 1;
-          final frameTitle = frameMap['title'] as String? ?? '';
-          final ref = ScreenplayApiMapper.frameRef(actIdx, sceneIdx, frameIdx);
-          final imageId = refToImageId[ref];
-          final existingFrameId = (frameMap['id'] as num?)?.toInt() ?? 0;
-
-          if (isRepublish && existingFrameId > 0) {
-            final err = await _updateFrame(
-              remoteId,
-              actId,
-              sceneId,
-              existingFrameId,
-              title: frameTitle,
-              sort: frameSort,
-              imageId: imageId,
-              dialogue: frameMap['dialogue'] as String? ?? '',
-              actionNote: frameMap['action_note'] as String? ?? '',
-            );
-            if (err != null) return (error: err);
-          } else {
-            if (imageId == null) {
-              return (error: '缺少帧图片: $ref');
-            }
-            final created = await _createFrame(
-              remoteId,
-              actId,
-              sceneId,
-              title: frameTitle,
-              sort: frameSort,
-              imageId: imageId,
-              dialogue: frameMap['dialogue'] as String? ?? '',
-              actionNote: frameMap['action_note'] as String? ?? '',
-            );
-            if (created.error != null || created.frame == null) {
-              return (error: created.error ?? '创建帧失败');
-            }
-            frameMap['id'] = created.frame!.id.toInt();
-          }
-        }
-      }
+    if (isRepublish) {
+      await screenplay_api.saveScreenplayTree(
+        remoteId,
+        payload,
+        ok: (tree) => completer.complete((tree: tree, error: null)),
+        fail: (msg) => completer.complete((tree: null, error: msg)),
+      );
+    } else {
+      await screenplay_api.createScreenplayTree(
+        remoteId,
+        payload,
+        ok: (tree) => completer.complete((tree: tree, error: null)),
+        fail: (msg) => completer.complete((tree: null, error: msg)),
+      );
     }
 
-    return (error: null);
+    return completer.future;
   }
 
   Future<({api.Screenplay? screenplay, String? error})> _createScreenplay({
@@ -379,182 +328,6 @@ class ScreenplayPublishService {
       fail: (msg) => completer.complete((screenplay: null, error: msg)),
     );
 
-    return completer.future;
-  }
-
-  Future<String?> _updateScreenplayMetadata(
-    int remoteId, {
-    required String title,
-    required String summary,
-    required int visibility,
-    required bool isRepublish,
-  }) async {
-    final body = <String, dynamic>{
-      'title': title,
-      if (summary.isNotEmpty) 'summary': summary,
-    };
-    if (isRepublish) {
-      body['visibility'] = visibility;
-    }
-
-    final completer = Completer<String?>();
-    await screenplay_api.updateScreenplay(
-      remoteId,
-      body,
-      ok: (_) => completer.complete(null),
-      fail: completer.complete,
-    );
-    return completer.future;
-  }
-
-  Future<({api.Act? act, String? error})> _createAct(
-    int remoteId, {
-    required String title,
-    required String summary,
-    required int sort,
-  }) async {
-    final completer = Completer<({api.Act? act, String? error})>();
-    await screenplay_api.createAct(
-      remoteId,
-      {
-        'title': title,
-        if (summary.isNotEmpty) 'summary': summary,
-        'sort': sort,
-      },
-      ok: (act) => completer.complete((act: act, error: null)),
-      fail: (msg) => completer.complete((act: null, error: msg)),
-    );
-    return completer.future;
-  }
-
-  Future<String?> _updateAct(
-    int remoteId,
-    int actId, {
-    required String title,
-    required String summary,
-    required int sort,
-  }) async {
-    final completer = Completer<String?>();
-    await screenplay_api.updateAct(
-      remoteId,
-      actId,
-      {
-        'title': title,
-        if (summary.isNotEmpty) 'summary': summary,
-        'sort': sort,
-      },
-      ok: (_) => completer.complete(null),
-      fail: completer.complete,
-    );
-    return completer.future;
-  }
-
-  Future<({api.Scene? scene, String? error})> _createScene(
-    int remoteId,
-    int actId, {
-    required String title,
-    required String summary,
-    required int sort,
-  }) async {
-    final completer = Completer<({api.Scene? scene, String? error})>();
-    await screenplay_api.createScene(
-      remoteId,
-      actId,
-      {
-        'title': title,
-        if (summary.isNotEmpty) 'summary': summary,
-        'sort': sort,
-      },
-      ok: (scene) => completer.complete((scene: scene, error: null)),
-      fail: (msg) => completer.complete((scene: null, error: msg)),
-    );
-    return completer.future;
-  }
-
-  Future<String?> _updateScene(
-    int remoteId,
-    int actId,
-    int sceneId, {
-    required String title,
-    required String summary,
-    required int sort,
-  }) async {
-    final completer = Completer<String?>();
-    await screenplay_api.updateScene(
-      remoteId,
-      actId,
-      sceneId,
-      {
-        'title': title,
-        if (summary.isNotEmpty) 'summary': summary,
-        'sort': sort,
-      },
-      ok: (_) => completer.complete(null),
-      fail: completer.complete,
-    );
-    return completer.future;
-  }
-
-  Future<({api.Frame? frame, String? error})> _createFrame(
-    int remoteId,
-    int actId,
-    int sceneId, {
-    required String title,
-    required int sort,
-    required int imageId,
-    required String dialogue,
-    required String actionNote,
-  }) async {
-    final completer = Completer<({api.Frame? frame, String? error})>();
-    await screenplay_api.createFrame(
-      remoteId,
-      actId,
-      sceneId,
-      {
-        'title': title,
-        'sort': sort,
-        'acgn_image_id': imageId,
-        if (dialogue.isNotEmpty) 'dialogue': dialogue,
-        if (actionNote.isNotEmpty) 'action_note': actionNote,
-        'duration_sec': 3,
-      },
-      ok: (frame) => completer.complete((frame: frame, error: null)),
-      fail: (msg) => completer.complete((frame: null, error: msg)),
-    );
-    return completer.future;
-  }
-
-  Future<String?> _updateFrame(
-    int remoteId,
-    int actId,
-    int sceneId,
-    int frameId, {
-    required String title,
-    required int sort,
-    int? imageId,
-    required String dialogue,
-    required String actionNote,
-  }) async {
-    final body = <String, dynamic>{
-      'title': title,
-      'sort': sort,
-      if (dialogue.isNotEmpty) 'dialogue': dialogue,
-      if (actionNote.isNotEmpty) 'action_note': actionNote,
-    };
-    if (imageId != null) {
-      body['acgn_image_id'] = imageId;
-    }
-
-    final completer = Completer<String?>();
-    await screenplay_api.updateFrame(
-      remoteId,
-      actId,
-      sceneId,
-      frameId,
-      body,
-      ok: (_) => completer.complete(null),
-      fail: completer.complete,
-    );
     return completer.future;
   }
 

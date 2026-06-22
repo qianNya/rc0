@@ -1,25 +1,66 @@
+import 'dart:io';
+
 import '../../http/api_client.dart';
 import '../data/screenplay-api.dart';
+
+const _defaultPublishStatus = 1;
+
+Map<String, String> _buildScreenplayListQuery({
+  required int page,
+  required int pageSize,
+  int? kind,
+  int? publishStatus,
+  String? sort,
+  String? q,
+  int? tagId,
+  int? creator,
+}) {
+  final query = <String, String>{
+    'page': '$page',
+    'page_size': '$pageSize',
+  };
+  if (kind != null) query['kind'] = '$kind';
+  if (publishStatus != null && publishStatus != _defaultPublishStatus) {
+    query['publish_status'] = '$publishStatus';
+  }
+  final trimmedSort = sort?.trim();
+  if (trimmedSort != null && trimmedSort.isNotEmpty) {
+    query['sort'] = trimmedSort;
+  }
+  final trimmedQ = q?.trim();
+  if (trimmedQ != null && trimmedQ.isNotEmpty) {
+    query['q'] = trimmedQ;
+  }
+  if (tagId != null) query['tag_id'] = '$tagId';
+  if (creator != null) query['creator'] = '$creator';
+  return query;
+}
 
 Future listScreenplays({
   int page = 1,
   int pageSize = 20,
+  int? kind,
   int? publishStatus,
+  String? sort,
+  String? q,
+  int? tagId,
   int? creator,
   Function(ListScreenplaysResp)? ok,
   Function(String)? fail,
   Function? eventually,
 }) async {
-  final query = <String, String>{
-    'page': '$page',
-    'page_size': '$pageSize',
-  };
-  if (publishStatus != null) query['publish_status'] = '$publishStatus';
-  if (creator != null) query['creator'] = '$creator';
-
   await apiGet(
     '/screenplays',
-    query: query,
+    query: _buildScreenplayListQuery(
+      page: page,
+      pageSize: pageSize,
+      kind: kind,
+      publishStatus: publishStatus,
+      sort: sort,
+      q: q,
+      tagId: tagId,
+      creator: creator,
+    ),
     ok: (data) => ok?.call(ListScreenplaysResp.fromJson(data)),
     fail: fail,
     eventually: eventually,
@@ -66,6 +107,58 @@ Future getScreenplayTree(
   await apiGet(
     '/screenplays/$id/tree',
     ok: (data) => ok?.call(GetScreenplayTreeResp.fromJson(data)),
+    fail: fail,
+    eventually: eventually,
+  );
+}
+
+Future createScreenplayTree(
+  int id,
+  Map<String, dynamic> body, {
+  Function(GetScreenplayTreeResp)? ok,
+  Function(String)? fail,
+  Function? eventually,
+}) async {
+  await apiPost(
+    '/screenplays/$id/tree',
+    body,
+    ok: (data) => ok?.call(GetScreenplayTreeResp.fromJson(data)),
+    fail: fail,
+    eventually: eventually,
+  );
+}
+
+Future saveScreenplayTree(
+  int id,
+  Map<String, dynamic> body, {
+  Function(GetScreenplayTreeResp)? ok,
+  Function(String)? fail,
+  Function? eventually,
+}) async {
+  await apiPut(
+    '/screenplays/$id/tree',
+    body,
+    ok: (data) => ok?.call(GetScreenplayTreeResp.fromJson(data)),
+    fail: fail,
+    eventually: eventually,
+  );
+}
+
+Future uploadScreenplayCover(
+  int id,
+  File file, {
+  Function(Screenplay)? ok,
+  Function(String)? fail,
+  Function? eventually,
+}) async {
+  final bytes = await file.readAsBytes();
+  final name = file.path.split(Platform.pathSeparator).last;
+  await apiMultipart(
+    '/screenplays/$id/cover',
+    fileField: 'file',
+    bytes: bytes,
+    filename: name.isNotEmpty ? name : 'cover.jpg',
+    ok: (data) => ok?.call(Screenplay.fromJson(data)),
     fail: fail,
     eventually: eventually,
   );
