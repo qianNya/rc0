@@ -94,7 +94,7 @@ Future upload({
 }) async {
   await apiPost(
     "/api/data/upload",
-    request,
+    <String, dynamic>{},
     ok: (data) {
       if (ok != null) ok(UploadResp.fromJson(data));
     },

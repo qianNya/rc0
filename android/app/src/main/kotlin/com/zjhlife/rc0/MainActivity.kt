@@ -1,4 +1,4 @@
-package com.example.rc0
+package com.zjhlife.rc0
 
 import io.flutter.embedding.android.FlutterActivity
 

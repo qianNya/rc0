@@ -52,11 +52,9 @@ abstract final class ScreenplayApiMapper {
   }
 
   static Screenplay _applySocial(Screenplay base, api.Screenplay sp) {
-    final author = sp.creatorNickname.isNotEmpty ? sp.creatorNickname : '创作者';
     return base.copyWith(
-      author: author,
-      authorAvatar: sp.creatorAvatar.isNotEmpty ? sp.creatorAvatar : null,
-      ownerUserId: sp.creatorId.toInt(),
+      author: '创作者',
+      ownerUserId: sp.creator.toInt(),
       likes: sp.likeCount.toInt(),
       views: sp.viewCount.toInt(),
       favorites: sp.favoriteCount.toInt(),
