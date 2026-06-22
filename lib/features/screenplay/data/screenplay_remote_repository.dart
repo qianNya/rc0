@@ -74,6 +74,23 @@ class ScreenplayRemoteRepository extends ChangeNotifier {
     return (items: items, error: null);
   }
 
+  Future<({Screenplay? screenplay, String? error})> fetchScreenplayDetail(
+    int id,
+  ) async {
+    final (detail, error) = await apiCallback<sp_dto.Screenplay>(
+      ({ok, fail, eventually}) => screenplay_api.getScreenplayDetail(
+        id,
+        ok: ok,
+        fail: fail,
+        eventually: eventually,
+      ),
+    );
+    if (error != null || detail == null) {
+      return (screenplay: null, error: error ?? 'detail not found');
+    }
+    return (screenplay: ScreenplayApiMapper.fromListItem(detail), error: null);
+  }
+
   Future<({Screenplay? screenplay, String? error})> fetchScreenplayTree(
     int id, {
     bool useCache = true,

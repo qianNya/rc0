@@ -15,7 +15,7 @@ alwaysApply: true
 | `lib/core/` | domain、network、responsive、utils |
 | `lib/features/` | Feature-first（`data/` + `presentation/`） |
 | `lib/shared/` | 跨功能 UI 与服务 |
-| `lib/api/` | **只读** 生成 HTTP 客户端 |
+| `lib/api/` | 手写 Rust 对齐 HTTP 客户端（`api/data/vars`） |
 
 ## 技术栈（实际使用）
 
@@ -28,7 +28,7 @@ alwaysApply: true
 
 - 不引入 Provider / Riverpod / Bloc / GetX
 - 不使用 dio / freezed / hive / drift（项目未采用）
-- 不修改 `lib/api/**`（改 Go 后端后重新 codegen）
+- 不修改 `lib/api/**` 时需与 `rc0-rust/docs` 保持路径一致；后端变更后同步更新手写客户端
 - 不硬编码颜色、间距、路由路径
 - UI 不直接调用 API（经 Repository）
 

@@ -1,0 +1,237 @@
+### 剧本模块 — 层级 CRUD / Fork / 模板 / 电影预设
+
+### @name listScreenplays
+GET {{baseUrl}}/screenplays?page=1&page_size=20
+Accept: application/json
+
+###
+
+### @name createScreenplay
+POST {{baseUrl}}/screenplays
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "title": "我的第一个剧本",
+  "summary": "剧本摘要",
+  "kind": 1
+}
+
+###
+
+### @name createTemplate
+POST {{baseUrl}}/screenplays
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "title": "科幻开场模版",
+  "summary": "三幕结构开场",
+  "kind": 2
+}
+
+###
+
+### @name listDraftScreenplays
+GET {{baseUrl}}/screenplays?creator=1&publish_status=0&page=1&page_size=20
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+###
+
+### @name getScreenplay
+GET {{baseUrl}}/screenplays/{{screenplayId}}
+Accept: application/json
+
+###
+
+### @name getScreenplayTree
+GET {{baseUrl}}/screenplays/{{screenplayId}}/tree
+Accept: application/json
+
+###
+
+### @name createScreenplayTree
+POST {{baseUrl}}/screenplays/{{screenplayId}}/tree
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+< ../schemas/screenplay-tree-save.example.json
+
+###
+
+### @name updateScreenplayTree
+PUT {{baseUrl}}/screenplays/{{screenplayId}}/tree
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+< ../schemas/screenplay-tree-save.example.json
+
+###
+
+### @name forkScreenplay
+POST {{baseUrl}}/screenplays/{{screenplayId}}/fork
+Authorization: Bearer {{accessToken}}
+
+###
+
+### @name recordView
+POST {{baseUrl}}/screenplays/{{screenplayId}}/view
+Accept: application/json
+
+###
+
+### @name createAct
+POST {{baseUrl}}/screenplays/{{screenplayId}}/acts
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "title": "第一幕",
+  "sort": 1
+}
+
+###
+
+### @name createScene
+POST {{baseUrl}}/screenplays/{{screenplayId}}/acts/{{actId}}/scenes
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "title": "开场",
+  "sort": 1
+}
+
+###
+
+### @name createFrame
+POST {{baseUrl}}/screenplays/{{screenplayId}}/acts/{{actId}}/scenes/{{sceneId}}/frames
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "title": "帧 1",
+  "sort": 1,
+  "acgn_image_id": 1,
+  "duration_sec": 3
+}
+
+###
+
+### @name listTemplates
+GET {{baseUrl}}/templates?page=1&page_size=20
+Accept: application/json
+
+###
+
+### @name listHotTemplates
+GET {{baseUrl}}/templates/hot?page=1&page_size=10
+Accept: application/json
+
+###
+
+### @name listFeaturedCollections
+GET {{baseUrl}}/templates/featured
+Accept: application/json
+
+###
+
+### @name listCineCategories
+GET {{baseUrl}}/cine-presets/categories
+Accept: application/json
+
+###
+
+### @name listCinePresets
+GET {{baseUrl}}/cine-presets/categories/{{categoryId}}
+Accept: application/json
+
+###
+
+### @name getCinePreset
+GET {{baseUrl}}/cine-presets/1
+Accept: application/json
+
+###
+
+### @name getScreenplayDetail
+GET {{baseUrl}}/screenplays/{{screenplayId}}/detail
+Accept: application/json
+
+###
+
+### @name getEngagement
+GET {{baseUrl}}/screenplays/{{screenplayId}}/engagement
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+###
+
+### @name updateScreenplay
+PUT {{baseUrl}}/screenplays/{{screenplayId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "title": "更新标题",
+  "summary": "更新摘要"
+}
+
+###
+
+### @name publishScreenplay
+POST {{baseUrl}}/screenplays/{{screenplayId}}/publish
+Authorization: Bearer {{accessToken}}
+
+###
+
+### @name uploadCover
+POST {{baseUrl}}/screenplays/{{screenplayId}}/cover
+Authorization: Bearer {{accessToken}}
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="cover.jpg"
+Content-Type: image/jpeg
+
+< ./cover.jpg
+--boundary--
+
+###
+
+### @name listRelated
+GET {{baseUrl}}/screenplays/{{screenplayId}}/related?limit=10
+Accept: application/json
+
+###
+
+### @name listForks
+GET {{baseUrl}}/screenplays/{{screenplayId}}/forks
+Accept: application/json
+
+###
+
+### @name getFeaturedDetail
+GET {{baseUrl}}/templates/featured/1
+Accept: application/json
+
+###
+
+### @name updateAct
+PUT {{baseUrl}}/screenplays/{{screenplayId}}/acts/{{actId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "title": "第一幕（改）",
+  "sort": 1
+}
+
+###
+
+### @name deleteAct
+DELETE {{baseUrl}}/screenplays/{{screenplayId}}/acts/{{actId}}
+Authorization: Bearer {{accessToken}}
+
+###

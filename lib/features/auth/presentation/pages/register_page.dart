@@ -22,6 +22,7 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
   final _usernameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
   bool _loading = false;
@@ -34,6 +35,7 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   void dispose() {
     _usernameController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     _confirmController.dispose();
     super.dispose();
@@ -41,6 +43,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   Future<void> _submit() async {
     final username = _usernameController.text.trim();
+    final email = _emailController.text.trim();
     final password = _passwordController.text;
     final confirm = _confirmController.text;
 
@@ -61,10 +64,16 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
 
+    if (email.isNotEmpty && !email.contains('@')) {
+      _showError('请输入有效的邮箱地址');
+      return;
+    }
+
     setState(() => _loading = true);
     final error = await AuthRepository.instance.registerAndLogin(
       username: username,
       password: password,
+      email: email.isEmpty ? null : email,
     );
     if (!mounted) return;
     setState(() => _loading = false);
@@ -116,6 +125,14 @@ class _RegisterPageState extends State<RegisterPage> {
             controller: _usernameController,
             hintText: '用户名',
             prefixIcon: Icons.person_outline,
+            textInputAction: TextInputAction.next,
+          ),
+          const SizedBox(height: 14),
+          AuthTextField(
+            controller: _emailController,
+            hintText: '邮箱（选填）',
+            prefixIcon: Icons.email_outlined,
+            keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: 14),

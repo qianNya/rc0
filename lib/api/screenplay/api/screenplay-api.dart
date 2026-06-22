@@ -112,33 +112,15 @@ Future getScreenplayTree(
   );
 }
 
-Future createScreenplayTree(
-  int id,
-  Map<String, dynamic> body, {
-  Function(GetScreenplayTreeResp)? ok,
+Future getScreenplayDetail(
+  int id, {
+  Function(Screenplay)? ok,
   Function(String)? fail,
   Function? eventually,
 }) async {
-  await apiPost(
-    '/screenplays/$id/tree',
-    body,
-    ok: (data) => ok?.call(GetScreenplayTreeResp.fromJson(data)),
-    fail: fail,
-    eventually: eventually,
-  );
-}
-
-Future saveScreenplayTree(
-  int id,
-  Map<String, dynamic> body, {
-  Function(GetScreenplayTreeResp)? ok,
-  Function(String)? fail,
-  Function? eventually,
-}) async {
-  await apiPut(
-    '/screenplays/$id/tree',
-    body,
-    ok: (data) => ok?.call(GetScreenplayTreeResp.fromJson(data)),
+  await apiGet(
+    '/screenplays/$id/detail',
+    ok: (data) => ok?.call(Screenplay.fromJson(data)),
     fail: fail,
     eventually: eventually,
   );

@@ -1,0 +1,147 @@
+### 图库模块 — 图片 / 作品 / 标签
+
+### @name listImages
+GET {{baseUrl}}/images?page=1&page_size=20
+Accept: application/json
+
+###
+
+### @name getImage
+GET {{baseUrl}}/images/{{imageId}}
+Accept: application/json
+
+###
+### @name uploadImage
+POST {{baseUrl}}/images
+Authorization: Bearer {{accessToken}}
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="title"
+
+upload test
+--WebAppBoundary
+Content-Disposition: form-data; name="description"
+
+uploadImage test
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="img.png"
+Content-Type: image/png
+
+< /Users/qianl/RustroverProjects/rc0-rust/docs/http/img.png
+--WebAppBoundary--
+
+> {%
+    if (response.body.data && response.body.data.id) {
+        client.global.set("imageId", response.body.data.id);
+    }
+%}
+
+###
+
+### @name deleteImage
+DELETE {{baseUrl}}/images/{{imageId}}
+Authorization: Bearer {{accessToken}}
+
+###
+
+### @name tagImage
+POST {{baseUrl}}/images/{{imageId}}/tags
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "tag_id": 1
+}
+
+###
+
+### @name listWorks
+GET {{baseUrl}}/works?page=1&page_size=20
+Accept: application/json
+
+###
+
+### @name createWork
+POST {{baseUrl}}/works
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "title": "某动漫作品",
+  "work_type": 2,
+  "release_year": 2024,
+  "summary": "作品简介"
+}
+
+###
+
+### @name getWork
+GET {{baseUrl}}/works/{{workId}}
+Accept: application/json
+
+###
+
+### @name listImageTags
+GET {{baseUrl}}/image-tags?namespace=general
+Accept: application/json
+
+###
+
+### @name createImageTag
+POST {{baseUrl}}/image-tags
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "namespace": "general",
+  "name": "Portrait",
+  "slug": "portrait"
+}
+
+###
+
+### @name getImageAnalysis
+GET {{baseUrl}}/images/{{imageId}}/analysis
+Accept: application/json
+
+###
+
+### @name getImageMetrics
+GET {{baseUrl}}/images/{{imageId}}/metrics
+Accept: application/json
+
+###
+
+### @name downloadImage
+GET {{baseUrl}}/images/{{imageId}}/download
+Accept: application/json
+
+###
+
+### @name listImageWorks
+GET {{baseUrl}}/images/{{imageId}}/works
+Accept: application/json
+
+###
+
+### @name linkImageWork
+POST {{baseUrl}}/images/{{imageId}}/works
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "work_id": 1
+}
+
+###
+
+### @name unlinkImageWork
+DELETE {{baseUrl}}/images/{{imageId}}/works/{{workId}}
+Authorization: Bearer {{accessToken}}
+
+###
+
+### @name retryAnalysis
+POST {{baseUrl}}/images/{{imageId}}/retry-analysis
+Authorization: Bearer {{accessToken}}

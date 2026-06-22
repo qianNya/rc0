@@ -1,0 +1,34 @@
+### 帧模块 — 单帧 / 场景帧 / 下载 / 预设
+
+### @name getFrame
+GET {{baseUrl}}/frames/{{frameId}}
+Accept: application/json
+
+###
+
+### @name downloadFrame
+GET {{baseUrl}}/frames/{{frameId}}/download
+Accept: application/json
+
+###
+
+### @name listSceneFrames
+GET {{baseUrl}}/scenes/{{sceneId}}/frames
+Accept: application/json
+
+###
+
+### @name applyPreset
+POST {{baseUrl}}/frames/{{frameId}}/apply-preset
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "preset_id": 1
+}
+
+###
+
+### @name getCinePreset
+GET {{baseUrl}}/cine-presets/1
+Accept: application/json

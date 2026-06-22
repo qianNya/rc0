@@ -1,0 +1,56 @@
+### 认证模块 — 注册 / 登录 / 刷新令牌
+
+### @name register
+# @no-log
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "alice",
+  "password": "password123",
+  "email": "alice@example.com",
+  "nickname": "Alice"
+}
+
+> {%
+  if (response.body.data && response.body.data.tokens) {
+    client.global.set("accessToken", response.body.data.tokens.access_token);
+    client.global.set("refreshToken", response.body.data.tokens.refresh_token);
+  }
+%}
+
+###
+
+### @name login
+# @no-log
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "alice",
+  "password": "password123"
+}
+
+> {%
+  if (response.body.data && response.body.data.tokens) {
+    client.global.set("accessToken", response.body.data.tokens.access_token);
+    client.global.set("refreshToken", response.body.data.tokens.refresh_token);
+  }
+%}
+
+###
+
+### @name refresh
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refresh_token": "{{refreshToken}}"
+}
+
+> {%
+  if (response.body.data) {
+    client.global.set("accessToken", response.body.data.access_token);
+    client.global.set("refreshToken", response.body.data.refresh_token);
+  }
+%}

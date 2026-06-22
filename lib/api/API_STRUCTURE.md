@@ -11,6 +11,8 @@
 | `lib/api/user/` | 当前用户、公开资料、关注、用户剧本/收藏/点赞列表 |
 | `lib/api/screenplay/` | 剧本 CRUD、层级树、分步 act/scene/frame、发布 |
 | `lib/api/community/` | 点赞 / 收藏切换 |
+| `lib/api/feed/` | 发现 Feed、全局搜索 |
+| `lib/api/frame/` | 单帧详情、下载、场景帧列表 |
 | `lib/api/image/` | 图片上传与 presigned 下载 |
 | `lib/api/system/` | 健康检查 |
 
@@ -29,5 +31,6 @@
 
 ## 参考
 
+- Rust HTTP 调试参考：`lib/api/http/*.http`（来自 `rc0-rust/docs/http`）
 - Rust 文档：`rc0-rust/docs/http-api.md`
 - 应用矩阵：`docs/APP_API_MATRIX.md`

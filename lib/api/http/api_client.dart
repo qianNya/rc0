@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import '../../core/config/api_config.dart';
+import '../../core/network/api_auth.dart';
 import '../../core/network/api_headers.dart';
 import '../../core/network/network_error.dart';
 import '../auth/vars/kv.dart';
@@ -219,6 +220,9 @@ void _handleResponse(
   }
 
   final code = base['code'];
+  if (code == 401) {
+    onApiUnauthorized?.call();
+  }
   if (statusCode == 200 && code == 0) {
     final data = base['data'];
     if (data is Map<String, dynamic>) {

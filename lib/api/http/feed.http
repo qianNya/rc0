@@ -1,0 +1,29 @@
+### 发现模块 — Feed / 搜索
+
+### @name listFeed
+GET {{baseUrl}}/feed?page=1&page_size=20&sort=latest
+Accept: application/json
+
+###
+
+### @name listFeedHot
+GET {{baseUrl}}/feed?sort=hot&kind=2
+Accept: application/json
+
+###
+
+### @name searchScreenplays
+GET {{baseUrl}}/search?q=cosplay&type=screenplay&page=1&page_size=20
+Accept: application/json
+
+###
+
+### @name searchUsers
+GET {{baseUrl}}/search?q=alice&type=user
+Accept: application/json
+
+###
+
+### @name searchImages
+GET {{baseUrl}}/search?q=portrait&type=image
+Accept: application/json

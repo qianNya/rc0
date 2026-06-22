@@ -46,6 +46,8 @@ class AuthRepository extends ChangeNotifier {
 
   bool _hasToken = false;
 
+  bool _refreshing = false;
+
 
 
   Future<void> initialize() async {
@@ -122,7 +124,15 @@ class AuthRepository extends ChangeNotifier {
 
     required String password,
 
+    String? email,
+
   }) async {
+
+    final resolvedEmail = (email?.trim().isNotEmpty ?? false)
+
+        ? email!.trim()
+
+        : '$username@local.rc0';
 
     final (_, error) = await apiCallback<RegisterResp>(
 
@@ -136,7 +146,7 @@ class AuthRepository extends ChangeNotifier {
 
           nickname: username,
 
-          email: '$username@local.rc0',
+          email: resolvedEmail,
 
         ),
 
@@ -162,6 +172,8 @@ class AuthRepository extends ChangeNotifier {
 
     required String password,
 
+    String? email,
+
   }) async {
 
     final registerError = await register(
@@ -170,11 +182,57 @@ class AuthRepository extends ChangeNotifier {
 
       password: password,
 
+      email: email,
+
     );
 
     if (registerError != null) return registerError;
 
     return login(username: username, password: password);
+
+  }
+
+
+
+  Future<bool> tryRefreshToken() async {
+
+    final tokens = await getTokens();
+
+    if (tokens == null || tokens.refreshToken.trim().isEmpty) {
+
+      return false;
+
+    }
+
+
+
+    final (refreshed, error) = await apiCallback<AuthTokens>(
+
+      ({ok, fail, eventually}) => auth_api.refreshToken(
+
+        RefreshTokenReq(refreshToken: tokens.refreshToken),
+
+        ok: ok,
+
+        fail: fail,
+
+        eventually: eventually,
+
+      ),
+
+    );
+
+    if (error != null || refreshed == null) return false;
+
+
+
+    await setTokens(toStoredTokens(refreshed));
+
+    _hasToken = true;
+
+    notifyListeners();
+
+    return true;
 
   }
 
@@ -195,6 +253,22 @@ class AuthRepository extends ChangeNotifier {
 
 
   Future<void> handleUnauthorized() async {
+
+    if (!_refreshing) {
+
+      _refreshing = true;
+
+      try {
+
+        if (await tryRefreshToken()) return;
+
+      } finally {
+
+        _refreshing = false;
+
+      }
+
+    }
 
     if (!_hasToken && _profile == null) return;
 

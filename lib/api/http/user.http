@@ -1,0 +1,89 @@
+### 用户模块 — 资料 / 关注
+### 先执行 auth.http 中的 login 获取 accessToken
+
+### @name me
+GET {{baseUrl}}/users/me
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+###
+
+### @name updateMe
+PUT {{baseUrl}}/users/me
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "bio": "ACGN creator",
+  "location": "Shanghai",
+  "website": "https://example.com",
+  "nickname": "Alice",
+  "avatar": "https://cdn.example.com/avatar.png"
+}
+
+###
+
+### @name getProfile
+GET {{baseUrl}}/users/{{userId}}/profile
+Accept: application/json
+
+###
+
+### @name listUserScreenplays
+GET {{baseUrl}}/users/{{userId}}/screenplays?page=1&page_size=20
+Accept: application/json
+
+###
+
+### @name listUserDraftScreenplays
+GET {{baseUrl}}/users/{{userId}}/screenplays?publish_status=0&page=1&page_size=20
+Accept: application/json
+
+###
+
+### @name listUserFavorites
+GET {{baseUrl}}/users/{{userId}}/favorites?page=1&page_size=20
+Accept: application/json
+
+###
+
+### @name listUserLikes
+GET {{baseUrl}}/users/{{userId}}/likes?page=1&page_size=20
+Accept: application/json
+
+###
+
+### @name listFollowers
+GET {{baseUrl}}/users/{{userId}}/followers?page=1&page_size=20
+Accept: application/json
+
+###
+
+### @name listFollowing
+GET {{baseUrl}}/users/{{userId}}/following?page=1&page_size=20
+Accept: application/json
+
+###
+
+### @name followStatus
+GET {{baseUrl}}/users/{{userId}}/follow-status
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+###
+
+### @name getUser
+GET {{baseUrl}}/users/{{userId}}
+Accept: application/json
+
+###
+
+### @name follow
+POST {{baseUrl}}/users/{{userId}}/follow
+Authorization: Bearer {{accessToken}}
+
+###
+
+### @name unfollow
+DELETE {{baseUrl}}/users/{{userId}}/follow
+Authorization: Bearer {{accessToken}}
