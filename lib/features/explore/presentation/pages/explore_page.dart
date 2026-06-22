@@ -8,12 +8,12 @@ import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/data/app_catalog.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/domain/screenplay/screenplay_adapter.dart';
+import '../../../../core/domain/screenplay/screenplay_display.dart';
 import '../../../../core/responsive/breakpoints.dart';
 import '../../../../core/responsive/responsive_builder.dart';
 import '../../../../core/utils/state_listeners.dart';
 import '../../../screenplay/data/screenplay_local_repository.dart';
 import '../../../screenplay/data/screenplay_remote_repository.dart';
-import '../../../screenplay/data/screenplay_display.dart';
 import '../../../screenplay/presentation/widgets/screenplay_delete_actions.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/explore_feed_tile.dart';
@@ -179,7 +179,6 @@ class _ExploreMobileView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -333,7 +332,6 @@ class _ExploreDesktopView extends StatelessWidget {
     final rest = scripts.length > 3 ? scripts.sublist(3) : <Screenplay>[];
 
     return Scaffold(
-      backgroundColor: AppColors.background,
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(24, 24, 32, 32),
         child: AdaptiveContent(

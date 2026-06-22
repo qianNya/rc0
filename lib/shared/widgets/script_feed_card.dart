@@ -7,7 +7,7 @@ import '../../app/theme/app_shadows.dart';
 import '../../app/theme/app_text_styles.dart';
 import '../../core/domain/screenplay/screenplay.dart';
 import '../../core/domain/screenplay/screenplay_adapter.dart';
-import '../../features/screenplay/data/screenplay_display.dart';
+import '../../core/domain/screenplay/screenplay_display.dart';
 import 'content_card_shared.dart';
 import 'pose_cover_image.dart';
 

@@ -8,10 +8,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/domain/pose_item.dart';
 import '../../../core/domain/screenplay/screenplay.dart';
 import '../../../core/domain/screenplay/screenplay_adapter.dart';
+import '../../../core/domain/screenplay/screenplay_image_resolver.dart';
+import '../../../core/domain/screenplay/script_frame_display.dart';
+import '../../../core/utils/image_url_utils.dart';
 import '../../upload/domain/upload_image_file.dart';
 import 'screenplay_draft.dart';
-import 'screenplay_image_resolver.dart';
-import 'script_frame_display.dart';
 import 'screenplay_remote_delete_service.dart';
 import 'screenplay_remote_repository.dart';
 import 'screenplay_tree_document.dart';
@@ -140,17 +141,11 @@ class ScreenplayLocalRepository extends ChangeNotifier {
     final screenplayMap = tree['screenplay'] as Map<String, dynamic>;
     final coverUrl = screenplayMap['cover_url'] as String? ?? '';
     final coverLocal = screenplayMap['local_cover_path'] as String?;
-    if ((coverLocal == null || coverLocal.isEmpty) &&
-        coverUrl.isNotEmpty &&
-        !ScreenplayImageResolver.isNetworkUrl(coverUrl)) {
-      screenplayMap['local_cover_path'] = coverUrl;
-      changed = true;
-    }
-    if (doc.meta.imagesLocalized &&
-        coverUrl.isNotEmpty &&
-        !ScreenplayImageResolver.isNetworkUrl(coverUrl) &&
-        (coverLocal == null || coverLocal.isEmpty)) {
-      screenplayMap['local_cover_path'] = coverUrl;
+    if (coverUrl.isNotEmpty && !ScreenplayImageResolver.isNetworkUrl(coverUrl)) {
+      if (coverLocal == null || coverLocal.isEmpty) {
+        screenplayMap['local_cover_path'] = coverUrl;
+      }
+      screenplayMap['cover_url'] = '';
       changed = true;
     }
 
@@ -165,12 +160,18 @@ class ScreenplayLocalRepository extends ChangeNotifier {
         for (final frame in frames) {
           final frameMap = frame as Map<String, dynamic>;
           final imageUrl = frameMap['image_url'] as String? ?? '';
+          final thumbUrl = frameMap['thumbnail_url'] as String? ?? '';
           final localPath = frameMap['local_image_path'] as String?;
-          if ((localPath == null || localPath.isEmpty) &&
-              imageUrl.isNotEmpty &&
+          if (imageUrl.isNotEmpty &&
               !ScreenplayImageResolver.isNetworkUrl(imageUrl)) {
-            frameMap['local_image_path'] = imageUrl;
-            frameMap['local_thumbnail_path'] = imageUrl;
+            if (localPath == null || localPath.isEmpty) {
+              frameMap['local_image_path'] = imageUrl;
+              frameMap['local_thumbnail_path'] = imageUrl;
+            }
+            frameMap['image_url'] = '';
+            if (!ScreenplayImageResolver.isNetworkUrl(thumbUrl)) {
+              frameMap['thumbnail_url'] = '';
+            }
             changed = true;
           }
         }
@@ -412,24 +413,13 @@ class ScreenplayLocalRepository extends ChangeNotifier {
       if (response.statusCode != 200) {
         throw HttpException('下载失败: ${response.statusCode}');
       }
-      final ext = _extensionFromUrl(url);
+      final ext = imageFileExtensionFromPath(url);
       final dest = File('${frameDir.path}/$prefix$ext');
       await response.pipe(dest.openWrite());
       return dest.path;
     } finally {
       client.close();
     }
-  }
-
-  String _extensionFromUrl(String url) {
-    final uri = Uri.parse(url);
-    final path = uri.path;
-    final dot = path.lastIndexOf('.');
-    if (dot >= 0 && dot < path.length - 1) {
-      final ext = path.substring(dot);
-      if (ext.length <= 5) return ext;
-    }
-    return '.jpg';
   }
 
   bool isValidForImport(Screenplay script) => _hasValidFrames(script);

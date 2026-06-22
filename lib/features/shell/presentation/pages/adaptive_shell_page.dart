@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/responsive/breakpoints.dart';
 import '../../../../shared/widgets/app_bottom_nav_bar.dart';
+import '../../../../shared/widgets/shell_nav_items.dart';
 import '../widgets/desktop_sidebar.dart';
 
 class AdaptiveShellPage extends StatelessWidget {

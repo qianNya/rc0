@@ -6,6 +6,8 @@ import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_dimensions.dart';
 import '../../core/utils/image_url_utils.dart';
 import 'image_preview.dart';
+import 'image_upload_badge.dart';
+import 'rc0_image.dart';
 import 'rc0_widgets.dart';
 
 class PoseCoverImage extends StatelessWidget {
@@ -20,6 +22,7 @@ class PoseCoverImage extends StatelessWidget {
     this.previewGallery,
     this.previewIndex = 0,
     this.previewCaptions,
+    this.isUploaded = false,
   });
 
   final String? imagePath;
@@ -32,6 +35,7 @@ class PoseCoverImage extends StatelessWidget {
   final List<String>? previewGallery;
   final int previewIndex;
   final List<String>? previewCaptions;
+  final bool isUploaded;
 
   static bool isNetworkUrl(String path) => isNetworkImagePath(path);
 
@@ -91,20 +95,31 @@ class PoseCoverImage extends StatelessWidget {
       if (!isValidNetworkImageUrl(resolved)) {
         return _placeholder(fill: fill);
       }
-      return Image.network(
-        resolved,
+      return Rc0Image(
+        path: resolved,
         fit: BoxFit.cover,
         width: fill ? double.infinity : null,
         height: fill ? double.infinity : null,
-        errorBuilder: (_, _, _) => _placeholder(fill: fill),
+        errorWidget: _placeholder(fill: fill),
       );
     }
-    return Image.file(
-      File(resolved),
+    return Rc0Image(
+      path: resolved,
       fit: BoxFit.cover,
       width: fill ? double.infinity : null,
       height: fill ? double.infinity : null,
-      errorBuilder: (_, _, _) => _placeholder(fill: fill),
+      errorWidget: _placeholder(fill: fill),
+    );
+  }
+
+  Widget _wrapWithBadge(Widget child) {
+    if (!isUploaded) return child;
+    return Stack(
+      fit: expand ? StackFit.expand : StackFit.loose,
+      children: [
+        child,
+        const ImageUploadBadge(isUploaded: true),
+      ],
     );
   }
 
@@ -116,13 +131,15 @@ class PoseCoverImage extends StatelessWidget {
     if (expand) {
       return _wrapPreview(
         context,
-        ClipRRect(
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(borderRadius),
+        _wrapWithBadge(
+          ClipRRect(
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(borderRadius),
+            ),
+            child: hasImage
+                ? _imageWidget(path!, fill: true)
+                : _placeholder(fill: true),
           ),
-          child: hasImage
-              ? _imageWidget(path!, fill: true)
-              : _placeholder(fill: true),
         ),
       );
     }
@@ -137,11 +154,13 @@ class PoseCoverImage extends StatelessWidget {
 
     return _wrapPreview(
       context,
-      AspectRatio(
-        aspectRatio: aspectRatio,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(borderRadius),
-          child: _imageWidget(path!, fill: false),
+      _wrapWithBadge(
+        AspectRatio(
+          aspectRatio: aspectRatio,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(borderRadius),
+            child: _imageWidget(path!, fill: false),
+          ),
         ),
       ),
     );

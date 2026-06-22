@@ -12,6 +12,8 @@ import '../../../../shared/widgets/profile_widgets.dart';
 import '../../../../shared/widgets/tag_editor.dart';
 import '../../../screenplay/data/screenplay_draft.dart';
 import '../../../screenplay/data/screenplay_local_repository.dart';
+import '../../../screenplay/data/screenplay_publish_service.dart';
+import '../../../auth/data/auth_repository.dart';
 import '../../data/image_pick_service.dart';
 import '../widgets/screenplay_editor_sections.dart';
 
@@ -130,7 +132,34 @@ class _UploadPageState extends State<UploadPage> {
       if (_isEditing) {
         await repository.update(widget.editScriptId!, _draft);
         if (!mounted) return;
-        _showSnackBar('剧本已保存');
+
+        if (_isPublished) {
+          if (!AuthRepository.instance.isLoggedIn) {
+            _showSnackBar('本地已保存，请先登录后再同步');
+            if (goHome) context.go(AppRoutes.script(widget.editScriptId!));
+            return;
+          }
+          final doc = repository.documentById(widget.editScriptId!);
+          if (doc != null) {
+            final sync = await ScreenplayPublishService.instance.syncToServer(
+              document: doc,
+            );
+            if (!mounted) return;
+            if (sync.error != null) {
+              _showSnackBar('本地已保存，同步失败：${sync.error}');
+              if (goHome) context.go(AppRoutes.script(widget.editScriptId!));
+              return;
+            }
+            await repository.updateDocument(sync.result!.document);
+            if (!mounted) return;
+            _showSnackBar('剧本已保存并同步');
+          } else {
+            _showSnackBar('剧本已保存');
+          }
+        } else {
+          _showSnackBar('剧本已保存');
+        }
+
         if (goHome) context.go(AppRoutes.script(widget.editScriptId!));
       } else {
         await repository.publish(_draft);
@@ -150,42 +179,8 @@ class _UploadPageState extends State<UploadPage> {
     _refresh();
   }
 
-  void _reloadDraftFromLocal() {
-    final script =
-        ScreenplayLocalRepository.instance.findById(widget.editScriptId!);
-    if (script == null) return;
-    _editingScript = script;
-    final draft = ScreenplayDraft.fromScreenplay(script);
-    _draft.title = draft.title;
-    _draft.synopsis = draft.synopsis;
-    _draft.tags
-      ..clear()
-      ..addAll(draft.tags);
-    _draft.acts
-      ..clear()
-      ..addAll(draft.acts);
-    _titleController.text = _draft.title;
-    _synopsisController.text = _draft.synopsis;
-    _refresh();
-  }
-
   Future<void> _removeAct(int index) async {
     if (_draft.acts.length <= 1) return;
-
-    if (_isEditing && _isPublished) {
-      final result = await ScreenplayLocalRepository.instance.deleteAct(
-        widget.editScriptId!,
-        index,
-      );
-      if (!mounted) return;
-      if (result.error != null) {
-        _showSnackBar(result.error!);
-        return;
-      }
-      _reloadDraftFromLocal();
-      return;
-    }
-
     _draft.acts.removeAt(index);
     _refresh();
   }
@@ -197,22 +192,6 @@ class _UploadPageState extends State<UploadPage> {
 
   Future<void> _removeScene(int actIndex, int sceneIndex) async {
     if (_draft.acts[actIndex].scenes.length <= 1) return;
-
-    if (_isEditing && _isPublished) {
-      final result = await ScreenplayLocalRepository.instance.deleteScene(
-        widget.editScriptId!,
-        actIndex,
-        sceneIndex,
-      );
-      if (!mounted) return;
-      if (result.error != null) {
-        _showSnackBar(result.error!);
-        return;
-      }
-      _reloadDraftFromLocal();
-      return;
-    }
-
     _draft.acts[actIndex].scenes.removeAt(sceneIndex);
     _refresh();
   }
@@ -224,22 +203,6 @@ class _UploadPageState extends State<UploadPage> {
   ) async {
     final scene = _draft.acts[actIndex].scenes[sceneIndex];
     if (scene.frames.length <= 1 && _isPublished) return;
-
-    if (_isEditing && _isPublished) {
-      final result = await ScreenplayLocalRepository.instance.deleteFrame(
-        widget.editScriptId!,
-        actIndex,
-        sceneIndex,
-        frameIndex,
-      );
-      if (!mounted) return;
-      if (result.error != null) {
-        _showSnackBar(result.error!);
-        return;
-      }
-      _reloadDraftFromLocal();
-      return;
-    }
 
     scene.frames.removeAt(frameIndex);
     _refresh();
@@ -345,7 +308,6 @@ class _UploadPageState extends State<UploadPage> {
 
     return ResponsiveBuilder(
       mobile: (_) => Scaffold(
-        backgroundColor: AppColors.background,
         appBar: AppBar(
           title: Text(pageTitle),
           leading: TextButton(
@@ -386,7 +348,6 @@ class _UploadPageState extends State<UploadPage> {
         ),
       ),
       desktop: (_) => Scaffold(
-        backgroundColor: AppColors.background,
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(32),
           child: Column(

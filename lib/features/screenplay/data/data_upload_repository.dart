@@ -2,122 +2,115 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
-import '../../../api/data/api/data-api.dart' as data_api;
-import '../../../api/data/api/upload.dart' as upload_api;
-import '../../../api/data/data/data-api.dart';
-import '../../../core/config/app_update_config.dart';
-import '../../../core/utils/image_url_utils.dart';
+import '../../../api/image/api/image-api.dart' as image_api;
+import '../../../api/image/data/image-api.dart';
+import '../../../api/screenplay/api/screenplay-api.dart' as screenplay_api;
 
-class UploadedObject {
-  const UploadedObject({
-    required this.objectKey,
-    required this.bucket,
-    required this.downloadUrl,
-  });
+class UploadedImage {
+  const UploadedImage({required this.imageId});
 
-  final String objectKey;
-  final String bucket;
-  final String downloadUrl;
+  final int imageId;
 }
 
-/// Wraps object storage upload + presigned download URL.
 class DataUploadRepository {
   DataUploadRepository._();
 
   static final DataUploadRepository instance = DataUploadRepository._();
 
-  static const _presignExpireSec = 86400 * 7;
-
-  Future<({UploadedObject? object, String? error})> uploadImage(File file) async {
-    final upload = await upload_api.uploadFile(file);
+  Future<({UploadedImage? object, String? error})> uploadImage(File file) async {
+    final upload = await _uploadFile(file);
     if (upload.error != null || upload.resp == null) {
       return (object: null, error: upload.error ?? '上传失败');
     }
-    return _presignUploaded(upload.resp!);
+    return (
+      object: UploadedImage(imageId: upload.resp!.id.toInt()),
+      error: null,
+    );
   }
 
-  Future<({UploadedObject? object, String? error})> uploadBytes(
+  Future<({UploadedImage? object, String? error})> uploadBytes(
     Uint8List bytes,
     String filename,
   ) async {
-    final upload = await upload_api.uploadBytes(bytes, filename);
+    final upload = await _uploadBytes(bytes, filename);
     if (upload.error != null || upload.resp == null) {
       return (object: null, error: upload.error ?? '上传失败');
     }
-    return _presignUploaded(upload.resp!);
+    return (
+      object: UploadedImage(imageId: upload.resp!.id.toInt()),
+      error: null,
+    );
   }
 
-  Future<({UploadedObject? object, String? error})> _presignUploaded(
-    UploadResp upload,
+  Future<({String? coverUrl, String? error})> uploadScreenplayCover(
+    int screenplayId,
+    File file,
   ) async {
-    final directUrl = resolveNetworkImageUrl(upload.url);
-    if (directUrl != null && isValidNetworkImageUrl(directUrl)) {
-      return (
-        object: UploadedObject(
-          objectKey: upload.objectKey,
-          bucket: upload.bucket,
-          downloadUrl: directUrl,
-        ),
+    final completer = Completer<({String? coverUrl, String? error})>();
+    await screenplay_api.uploadScreenplayCover(
+      screenplayId,
+      file,
+      ok: (sp) => completer.complete((
+        coverUrl: sp.coverUrl.isNotEmpty ? sp.coverUrl : null,
         error: null,
-      );
+      )),
+      fail: (msg) => completer.complete((coverUrl: null, error: msg)),
+    );
+    return completer.future;
+  }
+
+  Future<({ImageUploadResp? resp, String? error})> _uploadFile(File file) async {
+    final completer = Completer<({ImageUploadResp? resp, String? error})>();
+    await image_api.uploadImageFile(
+      file,
+      ok: (resp) => completer.complete((resp: resp, error: null)),
+      fail: (msg) => completer.complete((resp: null, error: msg)),
+    );
+    return completer.future;
+  }
+
+  Future<({ImageUploadResp? resp, String? error})> _uploadBytes(
+    Uint8List bytes,
+    String filename,
+  ) async {
+    final completer = Completer<({ImageUploadResp? resp, String? error})>();
+    await image_api.uploadImageBytes(
+      bytes,
+      filename,
+      ok: (resp) => completer.complete((resp: resp, error: null)),
+      fail: (msg) => completer.complete((resp: null, error: msg)),
+    );
+    return completer.future;
+  }
+
+  Future<({Map<String, int>? refToImageId, String? error})> uploadBatchForScreenplay(
+    int screenplayId,
+    Map<String, File> refToFile, {
+    void Function(int done, int total)? onProgress,
+  }) async {
+    return uploadBatch(refToFile, onProgress: onProgress);
+  }
+
+  Future<({Map<String, int>? refToImageId, String? error})> uploadBatch(
+    Map<String, File> refToFile, {
+    void Function(int done, int total)? onProgress,
+  }) async {
+    if (refToFile.isEmpty) {
+      return (refToImageId: <String, int>{}, error: null);
     }
 
-    final completer = Completer<({UploadedObject? object, String? error})>();
+    final refToImageId = <String, int>{};
+    var index = 0;
+    for (final entry in refToFile.entries) {
+      final uploaded = await uploadImage(entry.value);
+      if (uploaded.error != null || uploaded.object == null) {
+        return (refToImageId: null, error: uploaded.error);
+      }
+      refToImageId[entry.key] = uploaded.object!.imageId;
+      index++;
+      onProgress?.call(index, refToFile.length);
+    }
 
-    await data_api.presignDownload(
-      PresignDownloadReq(
-        bucket: upload.bucket,
-        objectKey: upload.objectKey,
-        expireSec: _presignExpireSec,
-      ),
-      ok: (resp) {
-        final presigned = resolveNetworkImageUrl(resp.downloadUrl);
-        if (presigned == null || !isValidNetworkImageUrl(presigned)) {
-          completer.complete((
-            object: null,
-            error: '无法获取有效的下载链接',
-          ));
-          return;
-        }
-        completer.complete((
-          object: UploadedObject(
-            objectKey: upload.objectKey,
-            bucket: upload.bucket,
-            downloadUrl: presigned,
-          ),
-          error: null,
-        ));
-      },
-      fail: (msg) => completer.complete((object: null, error: msg)),
-    );
-
-    return completer.future;
-  }
-
-  Future<({String? downloadUrl, String? error})> presignDownloadUrl({
-    required String bucket,
-    required String objectKey,
-    int expireSec = AppUpdateConfig.presignExpireSec,
-  }) async {
-    final completer = Completer<({String? downloadUrl, String? error})>();
-
-    await data_api.presignDownload(
-      PresignDownloadReq(
-        bucket: bucket,
-        objectKey: objectKey,
-        expireSec: expireSec,
-      ),
-      ok: (resp) {
-        final url = resp.downloadUrl.trim();
-        if (url.isEmpty) {
-          completer.complete((downloadUrl: null, error: '无法获取下载链接'));
-        } else {
-          completer.complete((downloadUrl: url, error: null));
-        }
-      },
-      fail: (msg) => completer.complete((downloadUrl: null, error: msg)),
-    );
-
-    return completer.future;
+    return (refToImageId: refToImageId, error: null);
   }
 }

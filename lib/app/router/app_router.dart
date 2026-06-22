@@ -7,7 +7,12 @@ import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/community/presentation/pages/community_page.dart';
 import '../../features/explore/presentation/pages/explore_page.dart';
 import '../../features/favorites/presentation/pages/favorites_page.dart';
+import '../../features/profile/presentation/pages/edit_profile_page.dart';
+import '../../features/profile/presentation/pages/profile_about_page.dart';
+import '../../features/profile/presentation/pages/profile_coming_soon_page.dart';
+import '../../features/profile/presentation/pages/profile_likes_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
+import '../../features/profile/presentation/pages/profile_works_page.dart';
 import '../../features/screenplay/presentation/pages/screenplay_detail_page.dart';
 import '../../features/shell/presentation/pages/adaptive_shell_page.dart';
 import '../../features/tasks/presentation/pages/tasks_page.dart';
@@ -23,6 +28,9 @@ abstract final class AppRouter {
     AppRoutes.upload,
     AppRoutes.tasks,
     AppRoutes.favorites,
+    AppRoutes.profileWorks,
+    AppRoutes.profileLikes,
+    AppRoutes.profileEdit,
   ];
 
   static String? _redirect(BuildContext context, GoRouterState state) {
@@ -54,13 +62,17 @@ abstract final class AppRouter {
         path: AppRoutes.login,
         name: 'login',
         parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) => const LoginPage(),
+        builder: (context, state) => LoginPage(
+          redirectFrom: state.uri.queryParameters['from'],
+        ),
       ),
       GoRoute(
         path: AppRoutes.register,
         name: 'register',
         parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) => const RegisterPage(),
+        builder: (context, state) => RegisterPage(
+          redirectFrom: state.uri.queryParameters['from'],
+        ),
       ),
       GoRoute(
         path: AppRoutes.scriptDetail,
@@ -78,6 +90,39 @@ abstract final class AppRouter {
         builder: (context, state) {
           final id = int.parse(state.pathParameters['id']!);
           return UserProfilePage(userId: id);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.profileWorks,
+        name: 'profile-works',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const ProfileWorksPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.profileLikes,
+        name: 'profile-likes',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const ProfileLikesPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.profileEdit,
+        name: 'profile-edit',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const EditProfilePage(),
+      ),
+      GoRoute(
+        path: AppRoutes.profileAbout,
+        name: 'profile-about',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const ProfileAboutPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.profileComingSoon,
+        name: 'profile-coming-soon',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) {
+          final title = state.uri.queryParameters['title'] ?? '功能';
+          return ProfileComingSoonPage(title: title);
         },
       ),
       GoRoute(
@@ -158,9 +203,14 @@ abstract final class AppRouter {
               GoRoute(
                 path: AppRoutes.favorites,
                 name: 'favorites',
-                pageBuilder: (context, state) => const NoTransitionPage(
-                  child: FavoritesPage(),
-                ),
+                pageBuilder: (context, state) {
+                  final tab =
+                      int.tryParse(state.uri.queryParameters['tab'] ?? '') ??
+                          0;
+                  return NoTransitionPage(
+                    child: FavoritesPage(initialTab: tab),
+                  );
+                },
               ),
             ],
           ),

@@ -274,12 +274,20 @@ class StatBar extends StatelessWidget {
     this.following = 0,
     this.followers = 0,
     this.likes = 0,
+    this.onWorksTap,
+    this.onFollowingTap,
+    this.onFollowersTap,
+    this.onLikesTap,
   });
 
   final int works;
   final int following;
   final int followers;
   final int likes;
+  final VoidCallback? onWorksTap;
+  final VoidCallback? onFollowingTap;
+  final VoidCallback? onFollowersTap;
+  final VoidCallback? onLikesTap;
 
   @override
   Widget build(BuildContext context) {
@@ -293,10 +301,10 @@ class StatBar extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _StatColumn(label: '作品', value: works),
-          _StatColumn(label: '关注', value: following),
-          _StatColumn(label: '粉丝', value: followers),
-          _StatColumn(label: '获赞', value: likes),
+          _StatColumn(label: '作品', value: works, onTap: onWorksTap),
+          _StatColumn(label: '关注', value: following, onTap: onFollowingTap),
+          _StatColumn(label: '粉丝', value: followers, onTap: onFollowersTap),
+          _StatColumn(label: '获赞', value: likes, onTap: onLikesTap),
         ],
       ),
     );
@@ -304,10 +312,15 @@ class StatBar extends StatelessWidget {
 }
 
 class _StatColumn extends StatelessWidget {
-  const _StatColumn({required this.label, required this.value});
+  const _StatColumn({
+    required this.label,
+    required this.value,
+    this.onTap,
+  });
 
   final String label;
   final int value;
+  final VoidCallback? onTap;
 
   String get _display {
     if (value >= 1000) return '${(value / 1000).toStringAsFixed(1)}K';
@@ -316,12 +329,20 @@ class _StatColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    final child = Column(
       children: [
         Text(_display, style: AppTextStyles.title),
         const SizedBox(height: 2),
         Text(label, style: AppTextStyles.bodySecondary),
       ],
+    );
+
+    if (onTap == null) return child;
+
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: child,
     );
   }
 }

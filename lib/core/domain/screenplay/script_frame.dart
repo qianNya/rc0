@@ -26,6 +26,9 @@ class ScriptFrame {
         !_isNetworkUrl(localImagePath!)) {
       return localImagePath!;
     }
+    if (imagePath.isNotEmpty && !_isNetworkUrl(imagePath)) {
+      return imagePath;
+    }
     if (remoteImageUrl != null && remoteImageUrl!.isNotEmpty) {
       return remoteImageUrl!;
     }

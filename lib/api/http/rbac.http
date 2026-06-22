@@ -1,0 +1,65 @@
+### RBAC 模块 — 角色 / 菜单 / 权限分配
+### 需要 admin 角色或对应 Casbin 权限
+
+### @name listRoles
+GET {{baseUrl}}/roles/
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+###
+
+### @name createRole
+POST {{baseUrl}}/roles/
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "管理员",
+  "code": "admin"
+}
+
+###
+
+### @name assignUserRole
+POST {{baseUrl}}/roles/assign
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "user_id": 1,
+  "role_id": 1
+}
+
+###
+
+### @name listMenus
+GET {{baseUrl}}/menus/
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+###
+
+### @name createMenu
+POST {{baseUrl}}/menus/
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "parent_id": 0,
+  "name": "角色管理",
+  "path": "/roles",
+  "perms": "sys:role",
+  "menu_type": "M"
+}
+
+###
+
+### @name assignRoleMenu
+POST {{baseUrl}}/menus/assign
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "role_id": 1,
+  "menu_id": 1
+}

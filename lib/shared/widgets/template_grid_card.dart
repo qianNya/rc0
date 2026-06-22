@@ -8,7 +8,7 @@ import '../../app/theme/app_shadows.dart';
 import '../../app/theme/app_text_styles.dart';
 import '../../core/domain/screenplay/screenplay.dart';
 import '../../core/domain/screenplay/screenplay_adapter.dart';
-import '../../features/screenplay/data/screenplay_display.dart';
+import '../../core/domain/screenplay/screenplay_display.dart';
 import 'content_card_shared.dart';
 import 'pose_cover_image.dart';
 import 'profile_widgets.dart';
@@ -67,7 +67,7 @@ class TemplateGridCard extends StatelessWidget {
                         top: 6,
                         right: 6,
                         child: Material(
-                          color: Colors.black.withValues(alpha: 0.55),
+                          color: AppColors.scrim,
                           shape: const CircleBorder(),
                           clipBehavior: Clip.antiAlias,
                           child: InkWell(

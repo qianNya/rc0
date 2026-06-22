@@ -1,0 +1,70 @@
+---
+description: Dart 风格、架构、API 与路由开发规范
+globs: "lib/**/*.dart"
+alwaysApply: false
+---
+
+# Flutter 开发规范（Dev）
+
+## 命名与 Import
+
+| 类型 | 约定 | 示例 |
+|------|------|------|
+| 文件 | `snake_case` | `auth_repository.dart` |
+| 页面 | `*_page.dart` | `login_page.dart` |
+| 仓库 | `*_repository.dart` | `screenplay_local_repository.dart` |
+| Token 类 | `abstract final class` | `AppColors`, `AppRoutes` |
+
+- 源码：相对路径 import；测试：`package:rc0/...`
+- 优先 `const` 构造、`super.key`；领域术语保留英文
+
+## Feature 结构
+
+```
+features/{name}/
+  data/{name}_repository.dart
+  presentation/pages/ + widgets/
+```
+
+- 跨 feature UI → `lib/shared/widgets/`
+- 跨 feature 模型 → `lib/core/domain/`
+- feature 内模型 → `features/{name}/domain/`
+
+## Repository 模式
+
+```dart
+class XxxRepository extends ChangeNotifier {
+  XxxRepository._();
+  static final instance = XxxRepository._();
+}
+```
+
+- `initialize()` 在 `main.dart` 注册；鉴权相关注册 `GoRouter(refreshListenable:)`
+- 页面监听：`addListener` / `removeListener` + `scheduleSetState(this)`
+
+## API 调用链
+
+`Page → Repository → lib/api/*-api.dart → core/network`
+
+```dart
+final (data, error) = await apiCallback<LoginResp>(
+  ({ok, fail, eventually}) => auth_api.login(req, ok: ok, fail: fail),
+);
+```
+
+- 401 → `onApiUnauthorized`；错误 → `friendlyNetworkError()` / `apiErrorMessage()`
+- **只读** `lib/api/**` · **可写** `core/network/`、`features/*/data/`、`core/config/`
+- 新封装前查 `docs/APP_API_MATRIX.md`
+
+## 路由（go_router）
+
+路径只用 `AppRoutes`（`routes.dart`），注册在 `app_router.dart`：
+
+```dart
+context.push(AppRoutes.upload);
+context.push(AppRoutes.script(id));
+```
+
+- Tab → `StatefulShellRoute` branch；全屏 → root `GoRoute`
+- 需登录：`/upload`、`/tasks`、`/favorites`、profile 子路由
+- 返回兜底：`popOrGoExplore(context)`

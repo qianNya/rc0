@@ -1,0 +1,97 @@
+### 社区模块 — 点赞 / 收藏 / 评论 / 标签
+
+### @name toggleLike
+POST {{baseUrl}}/likes/{{screenplayId}}
+Authorization: Bearer {{accessToken}}
+
+###
+
+### @name getLikeStatus
+GET {{baseUrl}}/likes/{{screenplayId}}
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+###
+
+### @name toggleFavorite
+POST {{baseUrl}}/favorites/{{screenplayId}}
+Authorization: Bearer {{accessToken}}
+
+###
+
+### @name getFavoriteStatus
+GET {{baseUrl}}/favorites/{{screenplayId}}
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+###
+
+### @name listComments
+GET {{baseUrl}}/comments/{{screenplayId}}?page=1&page_size=20
+Accept: application/json
+
+###
+
+### @name createComment
+POST {{baseUrl}}/comments/{{screenplayId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "parent_id": 0,
+  "content": "很棒的剧本！"
+}
+
+###
+
+### @name createReply
+POST {{baseUrl}}/comments/{{screenplayId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "parent_id": 1,
+  "content": "同意，构图很棒。"
+}
+
+###
+
+### @name listTags
+GET {{baseUrl}}/tags?namespace=default
+Accept: application/json
+
+###
+
+### @name createTag
+POST {{baseUrl}}/tags
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "namespace": "default",
+  "name": "Cosplay",
+  "slug": "cosplay"
+}
+
+###
+
+### @name tagScreenplay
+POST {{baseUrl}}/tags/{{screenplayId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "tag_id": 1
+}
+
+###
+
+### @name untagScreenplay
+DELETE {{baseUrl}}/tags/{{screenplayId}}/1
+Authorization: Bearer {{accessToken}}
+
+###
+
+### @name listReplies
+GET {{baseUrl}}/comments/{{screenplayId}}/replies/1?page=1&page_size=20
+Accept: application/json

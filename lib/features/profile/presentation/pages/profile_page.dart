@@ -3,23 +3,22 @@ import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../../../app/router/routes.dart';
-import '../../../../app/theme/app_colors.dart';
-import '../../../../core/data/app_catalog.dart';
-import '../../../../core/domain/screenplay/screenplay.dart';
-import '../../../../core/responsive/breakpoints.dart';
-import '../../../../core/responsive/responsive_builder.dart';
+import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/services/app_update_service.dart';
-import '../../../../core/utils/state_listeners.dart';
-import '../../../auth/data/auth_repository.dart';
-import '../../../user/data/user_profile_repository.dart';
-import '../../../screenplay/data/screenplay_local_repository.dart';
-import '../../../screenplay/presentation/widgets/screenplay_delete_actions.dart';
-import '../../../../shared/widgets/empty_state_view.dart';
-import '../../../../shared/widgets/feed_tab_bar.dart';
-import '../../../../shared/widgets/profile_widgets.dart';
 import '../../../../core/theme/theme_mode_notifier.dart';
+import '../../../../core/utils/state_listeners.dart';
+import '../../../../shared/widgets/profile_widgets.dart';
+import '../../../../shared/widgets/rc0_widgets.dart';
 import '../../../../shared/widgets/theme_mode_selector.dart';
-import '../../../../shared/widgets/screenplay_card.dart';
+import '../../../auth/data/auth_repository.dart';
+import '../../../favorites/data/image_favorite_repository.dart';
+import '../../../screenplay/data/screenplay_local_repository.dart';
+import '../../../user/data/user_profile_repository.dart';
+import '../../data/profile_cache_service.dart';
+import '../../data/screenplay_favorite_repository.dart';
+import '../widgets/profile_grid_tile.dart';
+import '../widgets/profile_header_card.dart';
+import '../widgets/profile_settings_tile.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -29,30 +28,59 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final _repository = ScreenplayLocalRepository.instance;
   final _auth = AuthRepository.instance;
   final _userProfile = UserProfileRepository.instance;
-  int _selectedTab = 0;
+  final _localScripts = ScreenplayLocalRepository.instance;
+  final _imageFavorites = ImageFavoriteRepository.instance;
+  final _spFavorites = ScreenplayFavoriteRepository.instance;
+
   String _appVersion = '';
+  int _spFavoriteCount = 0;
 
   @override
   void initState() {
     super.initState();
-    _repository.addListener(_onDataChanged);
     _auth.addListener(_onDataChanged);
     _userProfile.addListener(_onDataChanged);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && _auth.isLoggedIn) {
-        _userProfile.refreshMyStats();
-      }
-    });
+    _localScripts.addListener(_onDataChanged);
+    _imageFavorites.addListener(_onDataChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refresh());
     _loadVersion();
+  }
+
+  @override
+  void dispose() {
+    _auth.removeListener(_onDataChanged);
+    _userProfile.removeListener(_onDataChanged);
+    _localScripts.removeListener(_onDataChanged);
+    _imageFavorites.removeListener(_onDataChanged);
+    super.dispose();
+  }
+
+  void _onDataChanged() => scheduleSetState(this);
+
+  Future<void> _refresh() async {
+    if (_auth.isLoggedIn) {
+      await _userProfile.refreshMyStats();
+      final fav = await _spFavorites.fetchFavorites();
+      if (mounted) setState(() => _spFavoriteCount = fav.items.length);
+    }
   }
 
   Future<void> _loadVersion() async {
     final info = await PackageInfo.fromPlatform();
     if (!mounted) return;
     setState(() => _appVersion = info.version);
+  }
+
+  void _showSnack(String msg) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  void _comingSoon(String title) {
+    context.push(AppRoutes.comingSoon(title));
   }
 
   Future<void> _manualUpdate() async {
@@ -72,17 +100,13 @@ class _ProfilePageState extends State<ProfilePage> {
             final percent = total != null && total > 0
                 ? (value.received * 100 / total).clamp(0, 100).toInt()
                 : null;
-            final statusText = percent != null
-                ? '正在下载… $percent%'
-                : '正在下载…';
-
             return AlertDialog(
-              title: const Text('手动更新'),
+              title: const Text('版本更新'),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(statusText),
+                  Text(percent != null ? '正在下载… $percent%' : '正在下载…'),
                   const SizedBox(height: 16),
                   LinearProgressIndicator(
                     value: total != null && total > 0
@@ -102,7 +126,6 @@ class _ProfilePageState extends State<ProfilePage> {
         progress.value = (received: received, total: total);
       },
     );
-
     progress.dispose();
 
     if (!mounted) return;
@@ -111,54 +134,33 @@ class _ProfilePageState extends State<ProfilePage> {
     }
 
     if (result.success) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          const SnackBar(content: Text('已打开安装界面，请按提示完成更新')),
-        );
+      _showSnack('已打开安装界面，请按提示完成更新');
     } else {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(content: Text(result.error ?? '更新失败')),
-        );
+      _showSnack(result.error ?? '更新失败');
     }
   }
 
-  Widget _updateFooter({Widget? primaryFooter}) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (primaryFooter != null) ...[
-          primaryFooter,
-          const SizedBox(height: 12),
+  Future<void> _clearCache() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('清理缓存'),
+        content: const Text('将清除本地草稿与画格收藏缓存，登录状态不受影响。'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('清理')),
         ],
-        ListenableBuilder(
-          listenable: ThemeModeNotifier.instance,
-          builder: (context, _) => ThemeModeSelector(compact: true),
-        ),
-        const SizedBox(height: 8),
-        TextButton.icon(
-          onPressed: _manualUpdate,
-          style: TextButton.styleFrom(foregroundColor: Colors.white70),
-          icon: const Icon(Icons.system_update, size: 18),
-          label: Text(
-            _appVersion.isEmpty ? '手动更新' : '手动更新 · v$_appVersion',
-          ),
-        ),
-      ],
+      ),
     );
-  }
+    if (confirmed != true || !mounted) return;
 
-  @override
-  void dispose() {
-    _repository.removeListener(_onDataChanged);
-    _auth.removeListener(_onDataChanged);
-    _userProfile.removeListener(_onDataChanged);
-    super.dispose();
+    final result = await ProfileCacheService.clearCaches();
+    await _localScripts.load();
+    await _imageFavorites.load();
+    if (!mounted) return;
+    _showSnack(result.message);
+    setState(() {});
   }
-
-  void _onDataChanged() => scheduleSetState(this);
 
   Future<void> _logout() async {
     await _auth.logout();
@@ -166,345 +168,303 @@ class _ProfilePageState extends State<ProfilePage> {
     context.go(AppRoutes.explore);
   }
 
-  ProfileHeaderData _headerData() {
+  @override
+  Widget build(BuildContext context) {
     final profile = _auth.profile;
-    if (!_auth.isLoggedIn || profile == null) {
-      return ProfileHeaderData(
-        name: '未登录',
-        bio: '登录后查看个人资料',
-        footer: _updateFooter(
-          primaryFooter: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              OutlinedButton(
-                onPressed: () async {
-                  if (_auth.isLoggedIn && _auth.profile == null) {
-                    await _auth.handleUnauthorized();
-                  }
-                  if (!mounted) return;
-                  context.go(AppRoutes.loginWithRedirect(AppRoutes.profile));
-                },
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  side: const BorderSide(color: Colors.white54),
-                ),
-                child: const Text('登录'),
-              ),
-              const SizedBox(width: 12),
-              TextButton(
-                onPressed: () => context.go(AppRoutes.register),
-                style: TextButton.styleFrom(foregroundColor: Colors.white),
-                child: const Text('注册'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
+    final loggedIn = _auth.isLoggedIn && profile != null;
 
-    final displayName =
-        profile.nickname.isNotEmpty ? profile.nickname : profile.username;
-    final bio = profile.bio.isNotEmpty
-        ? profile.bio
-        : (profile.email.isNotEmpty ? profile.email : '@${profile.username}');
-    final works = profile.screenplayCount.toInt() > 0
-        ? profile.screenplayCount.toInt()
-        : _repository.localScreenplays.length;
+    final displayName = loggedIn
+        ? (profile.nickname.isNotEmpty ? profile.nickname : profile.username)
+        : 'rc0用户';
+    final bio = loggedIn
+        ? (profile.bio.isNotEmpty
+            ? profile.bio
+            : '用镜头记录美好，分享创意灵感')
+        : '登录后查看个人资料与作品';
+    final level = loggedIn ? profile.level.toInt() : null;
 
-    return ProfileHeaderData(
-      name: displayName,
-      bio: bio,
-      avatarUrl: profile.avatar.isNotEmpty ? profile.avatar : null,
-      works: works,
-      following: profile.followingCount.toInt(),
-      followers: profile.followerCount.toInt(),
-      totalLikes: profile.totalLikes.toInt(),
-      footer: _updateFooter(
-        primaryFooter: TextButton.icon(
-          onPressed: _logout,
-          style: TextButton.styleFrom(foregroundColor: Colors.white70),
-          icon: const Icon(Icons.logout, size: 18),
-          label: const Text('退出登录'),
-        ),
-      ),
-    );
-  }
+    final worksCount = loggedIn
+        ? (profile.screenplayCount.toInt() > 0
+            ? profile.screenplayCount.toInt()
+            : _localScripts.localScreenplays.length)
+        : _localScripts.localScreenplays.length;
+    final favoriteCount =
+        _imageFavorites.items.length + _spFavoriteCount;
 
-  Future<void> _deleteScript(Screenplay script) async {
-    final confirmed = await confirmDeleteScreenplay(
-      context,
-      title: script.title,
-    );
-    if (!confirmed || !mounted) return;
-
-    final result = await _repository.deleteScreenplay(script.id);
-    if (!mounted) return;
-    if (result.success) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(content: Text('剧本已删除')));
-    } else {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(content: Text(result.error ?? '删除失败，请重试')),
-        );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final scripts = _repository.localScreenplays;
-    final header = _headerData();
-
-    return ResponsiveBuilder(
-      mobile: (_) => _ProfileMobileView(
-        header: header,
-        scripts: scripts,
-        selectedTab: _selectedTab,
-        onTabChanged: (i) => setState(() => _selectedTab = i),
-        onDelete: _deleteScript,
-        onUpload: () => context.go(AppRoutes.upload),
-      ),
-      desktop: (_) => _ProfileDesktopView(
-        header: header,
-        scripts: scripts,
-        selectedTab: _selectedTab,
-        onTabChanged: (i) => setState(() => _selectedTab = i),
-        onDelete: _deleteScript,
-        onUpload: () => context.go(AppRoutes.upload),
-      ),
-    );
-  }
-}
-
-class ProfileHeaderData {
-  const ProfileHeaderData({
-    required this.name,
-    required this.bio,
-    this.avatarUrl,
-    this.footer,
-    this.works = 0,
-    this.following = 0,
-    this.followers = 0,
-    this.totalLikes = 0,
-  });
-
-  final String name;
-  final String bio;
-  final String? avatarUrl;
-  final Widget? footer;
-  final int works;
-  final int following;
-  final int followers;
-  final int totalLikes;
-}
-
-class _ProfileMobileView extends StatelessWidget {
-  const _ProfileMobileView({
-    required this.header,
-    required this.scripts,
-    required this.selectedTab,
-    required this.onTabChanged,
-    required this.onDelete,
-    required this.onUpload,
-  });
-
-  final ProfileHeaderData header;
-  final List<Screenplay> scripts;
-  final int selectedTab;
-  final ValueChanged<int> onTabChanged;
-  final Future<void> Function(Screenplay) onDelete;
-  final VoidCallback onUpload;
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(
-            child: ProfileGradientHeader(
-              name: header.name,
-              bio: header.bio,
-              avatarUrl: header.avatarUrl,
-              footer: header.footer,
-            ),
+      appBar: AppBar(
+        title: const Text('我的'),
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.qr_code_scanner_outlined),
+            onPressed: () => _showSnack('扫码功能即将上线'),
           ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: () => _showSnack('请使用下方设置项'),
+          ),
+        ],
+      ),
+      body: RefreshIndicator(
+        onRefresh: _refresh,
+        child: ListView(
+          padding: const EdgeInsets.only(bottom: 24),
+          children: [
+            ProfileHeaderCard(
+              name: displayName,
+              bio: bio,
+              level: level,
+              avatarUrl: loggedIn && profile.avatar.isNotEmpty
+                  ? profile.avatar
+                  : null,
+              isLoggedIn: loggedIn,
+              onLogin: () => context.go(
+                AppRoutes.loginWithRedirect(AppRoutes.profile),
+              ),
+              onRegister: () => context.go(AppRoutes.register),
+              onEdit: loggedIn
+                  ? () => context.push(AppRoutes.profileEdit)
+                  : null,
+              onLogout: loggedIn ? _logout : null,
+              onMembership: () => _comingSoon('会员'),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: StatBar(
-                works: header.works,
-                following: header.following,
-                followers: header.followers,
-                likes: header.totalLikes,
+                works: worksCount,
+                following: loggedIn ? profile.followingCount.toInt() : 0,
+                followers: loggedIn ? profile.followerCount.toInt() : 0,
+                likes: loggedIn ? profile.totalLikes.toInt() : 0,
+                onWorksTap: () => context.push(AppRoutes.profileWorks),
+                onFollowingTap: () => _comingSoon('关注列表'),
+                onFollowersTap: () => _comingSoon('粉丝列表'),
+                onLikesTap: loggedIn
+                    ? () => context.push(AppRoutes.profileLikes)
+                    : () => context.go(
+                          AppRoutes.loginWithRedirect(AppRoutes.profileLikes),
+                        ),
               ),
             ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: ListenableBuilder(
-                listenable: ThemeModeNotifier.instance,
-                builder: (context, _) => const ThemeModeSelector(),
+            const SizedBox(height: 8),
+            _section(
+              title: '我的资产',
+              actionLabel: '全部',
+              onAction: () => context.push(AppRoutes.profileWorks),
+              children: [
+                ProfileGridTile(
+                  title: '作品库',
+                  subtitle: '$worksCount 个作品',
+                  icon: Icons.video_library_outlined,
+                  iconColor: const Color(0xFF7C4DFF),
+                  iconBackground: const Color(0xFFEDE7F6),
+                  onTap: () => context.push(AppRoutes.profileWorks),
+                ),
+                ProfileGridTile(
+                  title: '收藏夹',
+                  subtitle: '$favoriteCount 个收藏',
+                  icon: Icons.star_outline,
+                  iconColor: const Color(0xFFE91E63),
+                  iconBackground: const Color(0xFFFCE4EC),
+                  onTap: () => context.go(AppRoutes.favoritesTab(1)),
+                ),
+                ProfileGridTile(
+                  title: '模板库',
+                  subtitle: '快速制作视频',
+                  icon: Icons.dashboard_outlined,
+                  iconColor: const Color(0xFF2196F3),
+                  iconBackground: const Color(0xFFE3F2FD),
+                  onTap: () => context.go(AppRoutes.community),
+                ),
+                ProfileGridTile(
+                  title: 'LUT 调色',
+                  subtitle: '电影感预设',
+                  icon: Icons.tune,
+                  iconColor: const Color(0xFF4CAF50),
+                  iconBackground: const Color(0xFFE8F5E9),
+                  onTap: () => _comingSoon('LUT 调色'),
+                ),
+              ],
+            ),
+            _section(
+              title: '创作与工具',
+              children: [
+                ProfileGridTile(
+                  title: '创建作品',
+                  subtitle: '开始你的创作',
+                  icon: Icons.add_circle_outline,
+                  iconColor: const Color(0xFF7C4DFF),
+                  iconBackground: const Color(0xFFEDE7F6),
+                  onTap: () => context.go(AppRoutes.upload),
+                ),
+                ProfileGridTile(
+                  title: '使用模板',
+                  subtitle: '快速制作视频',
+                  icon: Icons.auto_awesome_mosaic_outlined,
+                  iconColor: const Color(0xFF9C27B0),
+                  iconBackground: const Color(0xFFF3E5F5),
+                  onTap: () => context.go(AppRoutes.community),
+                ),
+                ProfileGridTile(
+                  title: '导入素材',
+                  subtitle: '导入本地文件',
+                  icon: Icons.upload_file_outlined,
+                  iconColor: const Color(0xFF2196F3),
+                  iconBackground: const Color(0xFFE3F2FD),
+                  onTap: () => context.go(AppRoutes.upload),
+                ),
+                ProfileGridTile(
+                  title: 'AI 工具',
+                  subtitle: '智能创作助手',
+                  icon: Icons.auto_fix_high_outlined,
+                  iconColor: const Color(0xFFE91E63),
+                  iconBackground: const Color(0xFFFCE4EC),
+                  onTap: () => _comingSoon('AI 工具'),
+                ),
+              ],
+            ),
+            _section(
+              title: '互动与服务',
+              children: [
+                ProfileGridTile(
+                  title: '消息中心',
+                  subtitle: '评论、点赞和通知',
+                  icon: Icons.chat_bubble_outline,
+                  iconColor: const Color(0xFF7C4DFF),
+                  iconBackground: const Color(0xFFEDE7F6),
+                  onTap: () => _comingSoon('消息中心'),
+                ),
+                ProfileGridTile(
+                  title: '点赞记录',
+                  subtitle: '查看你点赞的内容',
+                  icon: Icons.favorite_outline,
+                  iconColor: const Color(0xFFE91E63),
+                  iconBackground: const Color(0xFFFCE4EC),
+                  onTap: loggedIn
+                      ? () => context.push(AppRoutes.profileLikes)
+                      : () => context.go(
+                            AppRoutes.loginWithRedirect(AppRoutes.profileLikes),
+                          ),
+                ),
+                ProfileGridTile(
+                  title: '关注动态',
+                  subtitle: '关注用户的最新动态',
+                  icon: Icons.people_outline,
+                  iconColor: const Color(0xFF2196F3),
+                  iconBackground: const Color(0xFFE3F2FD),
+                  onTap: () => context.go(AppRoutes.community),
+                ),
+                ProfileGridTile(
+                  title: '帮助与反馈',
+                  subtitle: '问题反馈与建议',
+                  icon: Icons.headset_mic_outlined,
+                  iconColor: const Color(0xFFFF9800),
+                  iconBackground: const Color(0xFFFFF3E0),
+                  onTap: () => _comingSoon('帮助与反馈'),
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: SectionHeader(
+                title: '设置',
+                titleStyle: AppTextStyles.title.copyWith(fontSize: 16),
+                padding: const EdgeInsets.fromLTRB(4, 8, 4, 12),
               ),
             ),
-          ),
-          SliverToBoxAdapter(
-            child: FeedTabBar(
-              tabs: AppCatalog.profileTabs,
-              selectedIndex: selectedTab,
-              onChanged: onTabChanged,
-              underlineStyle: true,
-            ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 12)),
-          if (selectedTab == 0)
-            scripts.isEmpty
-                ? const SliverFillRemaining(
-                    child: EmptyStateView(
-                      icon: Icons.folder_open_outlined,
-                      title: '暂无作品',
-                      subtitle: '创作后会显示在这里',
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                children: [
+                  ListenableBuilder(
+                    listenable: ThemeModeNotifier.instance,
+                    builder: (context, _) => ProfileSettingsTile(
+                      title: '外观设置',
+                      subtitle: '深色 / 浅色 / 跟随系统',
+                      icon: Icons.dark_mode_outlined,
+                      onTap: () => _showThemeSheet(context),
                     ),
-                  )
-                : SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    sliver: SliverGrid(
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        mainAxisSpacing: 12,
-                        crossAxisSpacing: 12,
-                        childAspectRatio: 0.68,
-                      ),
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final script = scripts[index];
-                          return ScreenplayCard(
-                            screenplay: script,
-                            compact: true,
-                            onDelete: () => onDelete(script),
-                          );
-                        },
-                        childCount: scripts.length,
-                      ),
-                    ),
-                  )
-          else
-            const SliverFillRemaining(
-              child: EmptyStateView(
-                icon: Icons.construction_outlined,
-                title: '即将上线',
-                subtitle: '该分类正在建设中',
+                  ),
+                  const SizedBox(height: 10),
+                  ProfileSettingsTile(
+                    title: '缓存管理',
+                    subtitle: '清理缓存释放空间',
+                    icon: Icons.delete_outline,
+                    onTap: _clearCache,
+                  ),
+                  const SizedBox(height: 10),
+                  ProfileSettingsTile(
+                    title: '版本更新',
+                    subtitle: _appVersion.isEmpty ? '检查更新' : 'v$_appVersion',
+                    icon: Icons.system_update_alt_outlined,
+                    onTap: _manualUpdate,
+                  ),
+                  const SizedBox(height: 10),
+                  ProfileSettingsTile(
+                    title: '关于 rc0',
+                    subtitle: '了解更多关于我们',
+                    icon: Icons.info_outline,
+                    onTap: () => context.push(AppRoutes.profileAbout),
+                  ),
+                ],
               ),
             ),
-          const SliverToBoxAdapter(child: SizedBox(height: 24)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _section({
+    required String title,
+    required List<Widget> children,
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SectionHeader(
+            title: title,
+            action: actionLabel,
+            onActionTap: onAction,
+            showChevron: true,
+            titleStyle: AppTextStyles.title.copyWith(fontSize: 16),
+            actionStyle: AppTextStyles.bodySecondary.copyWith(fontSize: 13),
+            padding: const EdgeInsets.fromLTRB(4, 8, 4, 12),
+          ),
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            childAspectRatio: 2.4,
+            children: children,
+          ),
         ],
       ),
     );
   }
-}
 
-class _ProfileDesktopView extends StatelessWidget {
-  const _ProfileDesktopView({
-    required this.header,
-    required this.scripts,
-    required this.selectedTab,
-    required this.onTabChanged,
-    required this.onDelete,
-    required this.onUpload,
-  });
-
-  final ProfileHeaderData header;
-  final List<Screenplay> scripts;
-  final int selectedTab;
-  final ValueChanged<int> onTabChanged;
-  final Future<void> Function(Screenplay) onDelete;
-  final VoidCallback onUpload;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SingleChildScrollView(
+  void _showThemeSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(16),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            ProfileGradientHeader(
-              name: header.name,
-              bio: header.bio,
-              avatarUrl: header.avatarUrl,
-              footer: header.footer,
+            const Text(
+              '外观设置',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
-            Padding(
-              padding: const EdgeInsets.all(32),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: StatBar(
-                          works: header.works,
-                          following: header.following,
-                          followers: header.followers,
-                          likes: header.totalLikes,
-                        ),
-                      ),
-                      const SizedBox(width: 24),
-                      ElevatedButton.icon(
-                        onPressed: onUpload,
-                        icon: const Icon(Icons.add, size: 18),
-                        label: const Text('创作'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  FeedTabBar(
-                    tabs: AppCatalog.profileTabs,
-                    selectedIndex: selectedTab,
-                    onChanged: onTabChanged,
-                    underlineStyle: true,
-                  ),
-                  const SizedBox(height: 20),
-                  if (selectedTab == 0)
-                    scripts.isEmpty
-                        ? const EmptyStateView(
-                            icon: Icons.folder_open_outlined,
-                            title: '暂无作品',
-                            subtitle: '点击右上角开始创作',
-                          )
-                        : GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount:
-                                  Breakpoints.gridColumns(context, desktop: 4),
-                              mainAxisSpacing: 12,
-                              crossAxisSpacing: 12,
-                              childAspectRatio: 0.72,
-                            ),
-                            itemCount: scripts.length,
-                            itemBuilder: (_, index) {
-                              final script = scripts[index];
-                              return ScreenplayCard(
-                                screenplay: script,
-                                compact: true,
-                                onDelete: () => onDelete(script),
-                              );
-                            },
-                          )
-                  else
-                    const EmptyStateView(
-                      icon: Icons.construction_outlined,
-                      title: '即将上线',
-                      subtitle: '该分类正在建设中',
-                    ),
-                ],
-              ),
-            ),
+            const SizedBox(height: 16),
+            const ThemeModeSelector(),
+            const SizedBox(height: 8),
           ],
         ),
       ),

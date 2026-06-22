@@ -1,0 +1,14 @@
+### 系统模块 — 健康检查
+### 变量见 http-client.env.json
+
+### @name health
+GET {{baseUrl}}/health
+Accept: application/json
+x-trace-id: {{$uuid}}
+
+###
+
+### @name listAuditLogs
+GET {{baseUrl}}/admin/audit-logs?page=1&page_size=20
+Authorization: Bearer {{accessToken}}
+Accept: application/json

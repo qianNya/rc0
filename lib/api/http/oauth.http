@@ -1,0 +1,46 @@
+### OAuth 模块 — 客户端凭证 / 客户端注册
+
+### @name clientCredentials
+# @no-log
+POST {{baseUrl}}/oauth/token
+Content-Type: application/json
+
+{
+  "grant_type": "client_credentials",
+  "client_id": "my-client",
+  "client_secret": "your-client-secret"
+}
+
+> {%
+  if (response.body.data && response.body.data.access_token) {
+    client.global.set("accessToken", response.body.data.access_token);
+  }
+%}
+
+###
+
+### @name createOAuthClient
+POST {{baseUrl}}/oauth/clients
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "client_id": "my-client",
+  "client_secret": "your-client-secret",
+  "client_name": "第三方应用",
+  "scope": "read"
+}
+
+###
+
+### @name listOAuthClients
+GET {{baseUrl}}/oauth/clients?page=1&page_size=20
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+###
+
+### @name getOAuthClient
+GET {{baseUrl}}/oauth/clients/my-client
+Authorization: Bearer {{accessToken}}
+Accept: application/json

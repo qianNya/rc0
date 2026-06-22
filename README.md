@@ -42,10 +42,10 @@ flowchart TB
 | 探索 | `/` | 已实现 | 本地剧本列表、标签筛选、删除 |
 | 上传/编辑 | `/upload`、`/upload?edit={id}` | 已实现 | 分层编辑器，发布与更新 |
 | 剧本详情 | `/script/:id` | 已实现 | 幕/场展开、编辑入口、图片预览 |
-| 社区 | `/community` | 占位 | 空状态 UI，无后端数据 |
-| 收藏 | `/favorites` | 占位 | 空状态 UI |
+| 社区 | `/community` | 已实现 | 推荐模板、分类筛选、剧本入口 |
+| 收藏 | `/favorites` | 已实现 | 图片收藏与剧本收藏 |
 | 任务 | `/tasks` | 占位 | 空状态 UI |
-| 个人 | `/profile` | 占位 | 菜单骨架 |
+| 个人 | `/profile` | 已实现 | 资料、作品、点赞、设置与更新 |
 
 ### 交互亮点
 
@@ -61,7 +61,7 @@ flowchart TB
 lib/
 ├── main.dart                 # 入口：窗口初始化、Repository 预热
 ├── app/                      # 应用壳：主题、路由、导航工具
-├── core/                     # 领域模型、常量、响应式、平台判断
+├── core/                     # 领域模型、网络辅助、常量、响应式、平台判断
 ├── features/                 # 按功能分包（explore / screenplay / upload / shell …）
 └── shared/widgets/           # 跨功能 UI 组件
 ```
@@ -69,7 +69,7 @@ lib/
 ### 架构要点
 
 - **路由**：`go_router` + `StatefulShellRoute`，定义于 [`app_router.dart`](lib/app/router/app_router.dart)
-- **状态/数据**：`ScreenplayLocalRepository` 单例 + `ChangeNotifier`，页面通过 `addListener` 响应数据变化
+- **状态/数据**：Repository 单例 + `ChangeNotifier`，页面通过 `addListener` 响应数据变化
 - **存储**：元数据写入 `SharedPreferences`（key: `rc0_screenplays`）；图片文件保存在 `documents/screenplays/{id}/frames/`
 - **响应式**：`Breakpoints`（宽度 ≥ 1024px 视为桌面）+ `ResponsiveBuilder`
 
@@ -115,6 +115,6 @@ flutter build apk --release    # 输出 build/app/outputs/flutter-apk/app-releas
 
 ## 已知限制
 
-- 社区、收藏、任务、个人页暂无真实后端，仅展示空状态 UI
+- 任务页暂无真实后端，仅展示空状态 UI
 - Android Release 构建当前使用 debug 签名，上架应用商店需配置正式 keystore
 - 旧路由 `/pose/:id` 自动重定向到 `/script/:id`

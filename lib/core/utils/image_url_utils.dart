@@ -1,7 +1,32 @@
-/// Helpers for validating and repairing remote image URLs.
+// Helpers for validating and repairing remote image URLs.
+
+/// File extensions recognized as previewable images (lowercase, no dot).
+const kSupportedImageExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'];
 
 bool isNetworkImagePath(String path) =>
     path.startsWith('http://') || path.startsWith('https://');
+
+/// Lowercase extension without dot, e.g. `webp`; null when absent.
+String? imageExtensionFromPath(String path) {
+  final base = path.split('?').first.split('#').first;
+  final dot = base.lastIndexOf('.');
+  if (dot <= 0 || dot >= base.length - 1) return null;
+  return base.substring(dot + 1).toLowerCase();
+}
+
+bool isWebpImagePath(String path) => imageExtensionFromPath(path) == 'webp';
+
+bool isSupportedImageExtension(String path) {
+  final ext = imageExtensionFromPath(path);
+  return ext != null && kSupportedImageExtensions.contains(ext);
+}
+
+/// Normalized `.<ext>` for saving downloaded images; defaults to `.jpg`.
+String imageFileExtensionFromPath(String path) {
+  final ext = imageExtensionFromPath(path);
+  if (ext == null || ext.isEmpty || ext.length > 5) return '.jpg';
+  return '.$ext';
+}
 
 /// Returns true when [url] can be parsed as http(s) with a valid port.
 bool isValidNetworkImageUrl(String url) {

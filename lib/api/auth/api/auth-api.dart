@@ -1,33 +1,21 @@
-import 'api.dart';
+import '../../http/api_client.dart';
 import '../data/auth-api.dart';
 
-/// auth-api
-
-/// --/api/auth/login--
-///
-/// request: LoginReq
-/// response: LoginResp
 Future login(
   LoginReq request, {
-  Function(LoginResp)? ok,
+  Function(AuthSessionResp)? ok,
   Function(String)? fail,
   Function? eventually,
 }) async {
   await apiPost(
-    "/api/auth/login",
-    request,
-    ok: (data) {
-      if (ok != null) ok(LoginResp.fromJson(data));
-    },
+    '/auth/login',
+    request.toJson(),
+    ok: (data) => ok?.call(AuthSessionResp.fromJson(data)),
     fail: fail,
     eventually: eventually,
   );
 }
 
-/// --/api/auth/register--
-///
-/// request: RegisterReq
-/// response: RegisterResp
 Future register(
   RegisterReq request, {
   Function(RegisterResp)? ok,
@@ -35,30 +23,24 @@ Future register(
   Function? eventually,
 }) async {
   await apiPost(
-    "/api/auth/register",
-    request,
-    ok: (data) {
-      if (ok != null) ok(RegisterResp.fromJson(data));
-    },
+    '/auth/register',
+    request.toJson(),
+    ok: (data) => ok?.call(RegisterResp.fromJson(data)),
     fail: fail,
     eventually: eventually,
   );
 }
 
-/// --/api/auth/ping--
-///
-/// request:
-/// response: PingResp
-Future ping({
-  Function(PingResp)? ok,
+Future refreshToken(
+  RefreshTokenReq request, {
+  Function(AuthTokens)? ok,
   Function(String)? fail,
   Function? eventually,
 }) async {
-  await apiGet(
-    "/api/auth/ping",
-    ok: (data) {
-      if (ok != null) ok(PingResp.fromJson(data));
-    },
+  await apiPost(
+    '/auth/refresh',
+    request.toJson(),
+    ok: (data) => ok?.call(AuthTokens.fromJson(data)),
     fail: fail,
     eventually: eventually,
   );

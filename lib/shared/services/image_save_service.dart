@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
 
+import '../../core/utils/image_url_utils.dart';
 import '../widgets/image_preview.dart';
 
 class ImageSaveResult {
@@ -33,7 +34,7 @@ class ImageSaveService {
       final destDir = await _destinationDirectory();
       await destDir.create(recursive: true);
 
-      final ext = _extensionFromPath(localPath);
+      final ext = imageFileExtensionFromPath(localPath);
       final fileName =
           'rc0_${DateTime.now().millisecondsSinceEpoch}$ext';
       final dest = File('${destDir.path}/$fileName');
@@ -57,7 +58,7 @@ class ImageSaveService {
     final cacheDir = Directory('${tempDir.path}/rc0_image_cache');
     await cacheDir.create(recursive: true);
 
-    final ext = _extensionFromUrl(sourcePath);
+    final ext = imageFileExtensionFromPath(sourcePath);
     final cacheFile = File(
       '${cacheDir.path}/${sourcePath.hashCode.abs()}$ext',
     );
@@ -83,21 +84,5 @@ class ImageSaveService {
 
     final docs = await getApplicationDocumentsDirectory();
     return Directory('${docs.path}/Downloads');
-  }
-
-  String _extensionFromPath(String path) {
-    final dot = path.lastIndexOf('.');
-    if (dot <= 0 || dot >= path.length - 1) return '.jpg';
-    final ext = path.substring(dot).split('?').first.toLowerCase();
-    if (ext.length > 6) return '.jpg';
-    return ext;
-  }
-
-  String _extensionFromUrl(String url) {
-    try {
-      return _extensionFromPath(Uri.parse(url).path);
-    } catch (_) {
-      return '.jpg';
-    }
   }
 }
