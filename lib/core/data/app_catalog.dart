@@ -82,6 +82,33 @@ abstract final class AppCatalog {
     ),
   ];
 
+  static const studioQuickStartActions = [
+    DiscoveryQuickActionItem(
+      label: '角色库',
+      icon: Icons.person_outline,
+      backgroundColor: Color(0xFFF0EBFF),
+      iconColor: Color(0xFF6B4FE0),
+    ),
+    DiscoveryQuickActionItem(
+      label: '场景库',
+      icon: Icons.view_in_ar_outlined,
+      backgroundColor: Color(0xFFE3F0FF),
+      iconColor: Color(0xFF3B9EFF),
+    ),
+    DiscoveryQuickActionItem(
+      label: '摄影预设',
+      icon: Icons.camera_outlined,
+      backgroundColor: Color(0xFFFFF4E0),
+      iconColor: Color(0xFFFFB020),
+    ),
+    DiscoveryQuickActionItem(
+      label: '我的素材',
+      icon: Icons.perm_media_outlined,
+      backgroundColor: Color(0xFFE6F7EE),
+      iconColor: Color(0xFF34C759),
+    ),
+  ];
+
   static const discoveryQuickActions = [
     DiscoveryQuickActionItem(
       label: '图片',
@@ -130,6 +157,14 @@ abstract final class AppCatalog {
   static const defaultShootParams = PresetCatalog.defaultShootParams;
 
   static const builtInShootPresets = PresetCatalog.builtInShootPresets;
+
+  static const shotTypePresets = ['全景', '中景', '近景', '特写', '大特写'];
+  static const cameraAnglePresets = ['平视', '俯拍', '仰拍', '鸟瞰', '虫视'];
+  static const movementPresets = ['固定', '推', '拉', '摇', '移', '跟', '升降'];
+  static const lensMmPresets = ['24mm', '35mm', '50mm', '85mm', '135mm'];
+  static const compositionPresets = ['三分法', '居中', '对称', '引导线', '框架'];
+  static const durationSecPresets = [1, 2, 3, 5, 8, 10];
+  static const weatherPresets = ['晴天', '阴天', '雨天', '雪天', '大雾', '黄昏'];
 
   static const communityShootPresets = PresetCatalog.communityShootPresets;
 

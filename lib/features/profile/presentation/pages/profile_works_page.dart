@@ -157,7 +157,7 @@ class _ProfileWorksPageState extends State<ProfileWorksPage> {
                         actionLabel: error != null ? '重试' : '开始创作',
                         onAction: error != null
                             ? _load
-                            : () => context.go(AppRoutes.create),
+                            : () => context.push(AppRoutes.create),
                       ),
                     ],
                   )

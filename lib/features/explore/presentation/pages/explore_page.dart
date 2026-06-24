@@ -7,12 +7,14 @@ import '../../../../core/data/app_catalog.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/responsive/breakpoints.dart';
 import '../../../../core/responsive/responsive_builder.dart';
+import '../../../../core/network/api_auth.dart';
 import '../../../../core/utils/state_listeners.dart';
 import '../../../screenplay/data/screenplay_local_repository.dart';
 import '../../../screenplay/data/screenplay_remote_repository.dart';
 import '../../../screenplay/presentation/widgets/screenplay_delete_actions.dart';
 import '../../../screenplay/presentation/widgets/screenplay_selection_bar.dart';
 import '../../../screenplay/presentation/widgets/screenplay_selection_controller.dart';
+import '../../../../shared/widgets/app_brand_icon.dart';
 import '../../../../shared/widgets/content_card_shared.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/inline_error_banner.dart';
@@ -98,7 +100,7 @@ class _ExplorePageState extends State<ExplorePage> {
         remoteHasMore: _remoteRepository.hasMore,
         onFeedTabChanged: (i) => setState(() => _feedTabIndex = i),
         onDelete: _deleteScript,
-        onUpload: () => context.go(AppRoutes.create),
+        onUpload: () => context.go(AppRoutes.studio),
         onRefreshRemote: () => _remoteRepository.loadFirstPage(),
         onLoadMore: () => _remoteRepository.loadMore(),
         selectionController: selectionProps.controller,
@@ -115,7 +117,7 @@ class _ExplorePageState extends State<ExplorePage> {
         remoteHasMore: _remoteRepository.hasMore,
         onFeedTabChanged: (i) => setState(() => _feedTabIndex = i),
         onDelete: _deleteScript,
-        onUpload: () => context.go(AppRoutes.create),
+        onUpload: () => context.go(AppRoutes.studio),
         onRefreshRemote: () => _remoteRepository.loadFirstPage(),
         onLoadMore: () => _remoteRepository.loadMore(),
         selectionController: selectionProps.controller,
@@ -169,6 +171,73 @@ List<Widget> _buildDiscoverySlivers({
   ];
 }
 
+Widget _buildRemoteEmptyState({
+  required BuildContext context,
+  required String? remoteError,
+  required Future<void> Function() onRefreshRemote,
+  required VoidCallback onUpload,
+}) {
+  if (remoteError == null) {
+    return EmptyStateView(
+      icon: Icons.movie_creation_outlined,
+      title: '还没有内容',
+      subtitle: '上传参考图，按「剧本 → 幕 → 场 → 画」组织你的分镜',
+      actionLabel: '去创作',
+      onAction: onUpload,
+    );
+  }
+
+  if (isUnauthorizedError(remoteError)) {
+    return EmptyStateView(
+      icon: Icons.lock_outline,
+      title: '登录已过期',
+      subtitle: '请重新登录后查看云端内容',
+      actionLabel: '去登录',
+      onAction: () => context.go(
+        AppRoutes.loginWithRedirect(AppRoutes.discovery),
+      ),
+    );
+  }
+
+  if (isMaintenanceError(remoteError)) {
+    return EmptyStateView(
+      icon: Icons.build_circle_outlined,
+      title: '系统维护中',
+      subtitle: remoteError,
+      actionLabel: '重试',
+      onAction: () => onRefreshRemote(),
+    );
+  }
+
+  if (isNetworkError(remoteError)) {
+    return EmptyStateView(
+      icon: Icons.wifi_off_outlined,
+      title: '网络不可用',
+      subtitle: remoteError,
+      actionLabel: '重试',
+      onAction: () => onRefreshRemote(),
+    );
+  }
+
+  if (isServerError(remoteError)) {
+    return EmptyStateView(
+      icon: Icons.cloud_off_outlined,
+      title: '服务暂时不可用',
+      subtitle: remoteError,
+      actionLabel: '重试',
+      onAction: () => onRefreshRemote(),
+    );
+  }
+
+  return EmptyStateView(
+    icon: Icons.cloud_off_outlined,
+    title: '加载失败',
+    subtitle: remoteError,
+    actionLabel: '重试',
+    onAction: () => onRefreshRemote(),
+  );
+}
+
 Widget _buildDiscoveryFeedBody({
   required BuildContext context,
   required List<Screenplay> feedItems,
@@ -192,15 +261,11 @@ Widget _buildDiscoveryFeedBody({
   if (feedItems.isEmpty) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 48),
-      child: EmptyStateView(
-        icon: remoteError != null
-            ? Icons.cloud_off_outlined
-            : Icons.movie_creation_outlined,
-        title: remoteError != null ? '加载失败' : '还没有内容',
-        subtitle: remoteError ??
-            '上传参考图，按「剧本 → 幕 → 场 → 画」组织你的分镜',
-        actionLabel: remoteError != null ? '重试' : '去创作',
-        onAction: remoteError != null ? () => onRefreshRemote() : onUpload,
+      child: _buildRemoteEmptyState(
+        context: context,
+        remoteError: remoteError,
+        onRefreshRemote: onRefreshRemote,
+        onUpload: onUpload,
       ),
     );
   }
@@ -211,7 +276,7 @@ Widget _buildDiscoveryFeedBody({
   return Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      if (remoteError != null)
+      if (remoteError != null && !isUnauthorizedError(remoteError))
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
           child: InlineErrorBanner(
@@ -442,10 +507,12 @@ class _ExploreDesktopView extends StatelessWidget {
                           onPressed: () => context.push(AppRoutes.search),
                         ),
                         const SizedBox(width: 8),
-                        ElevatedButton.icon(
-                          onPressed: onUpload,
-                          icon: const Icon(Icons.add, size: 18),
-                          label: const Text('创作'),
+                        Tooltip(
+                          message: '创作',
+                          child: IconButton(
+                            onPressed: onUpload,
+                            icon: const AppBrandIcon(size: 22),
+                          ),
                         ),
                         ScreenplaySelectionAppBarActions(
                           controller: selectionController,

@@ -18,10 +18,11 @@ import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/profile/presentation/pages/profile_works_page.dart';
 import '../../features/screenplay/presentation/pages/screenplay_detail_page.dart';
 import '../../features/shell/presentation/pages/adaptive_shell_page.dart';
+import '../../features/studio/presentation/pages/script_studio_workspace_page.dart';
 import '../../features/tasks/presentation/pages/tasks_page.dart';
 import '../../features/user/presentation/pages/user_profile_page.dart';
+import '../../features/upload/presentation/pages/ai_creation_hub_page.dart';
 import '../../features/upload/presentation/pages/shoot_preset_picker_page.dart';
-import '../../features/upload/presentation/pages/upload_page.dart';
 import 'routes.dart';
 
 abstract final class AppRouter {
@@ -82,7 +83,7 @@ abstract final class AppRouter {
         redirect: (context, state) {
           final edit = state.uri.queryParameters['edit'];
           if (edit != null && edit.isNotEmpty) {
-            return AppRoutes.createEdit(edit);
+            return AppRoutes.studioEdit(edit);
           }
           return AppRoutes.create;
         },
@@ -288,6 +289,27 @@ abstract final class AppRouter {
           return AppRoutes.script(id);
         },
       ),
+      GoRoute(
+        path: AppRoutes.create,
+        name: 'create',
+        parentNavigatorKey: rootNavigatorKey,
+        redirect: (context, state) {
+          final edit = state.uri.queryParameters['edit'];
+          if (edit != null && edit.isNotEmpty) {
+            return AppRoutes.studioEdit(edit);
+          }
+          return null;
+        },
+        builder: (context, state) => const ScriptStudioWorkspacePage(
+          createMode: true,
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.createAiHubPath,
+        name: 'create-ai-hub',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const AiCreationHubPage(),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return AdaptiveShellPage(navigationShell: navigationShell);
@@ -318,12 +340,12 @@ abstract final class AppRouter {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: AppRoutes.create,
-                name: 'create',
+                path: AppRoutes.studio,
+                name: 'studio',
                 pageBuilder: (context, state) {
                   final editId = state.uri.queryParameters['edit'];
                   return NoTransitionPage(
-                    child: UploadPage(editScriptId: editId),
+                    child: ScriptStudioWorkspacePage(editScriptId: editId),
                   );
                 },
               ),

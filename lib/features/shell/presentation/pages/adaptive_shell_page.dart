@@ -50,7 +50,7 @@ class AdaptiveShellPage extends StatelessWidget {
               currentBranch: navigationShell.currentIndex,
               onNavItemTap: (item) => _onDesktopNavItem(item, context),
               onProfileTap: () => _goToBranch(4),
-              onUploadTap: () => _goToBranch(2),
+              onStudioTap: () => _goToBranch(2),
             ),
             Expanded(child: navigationShell),
           ],
@@ -65,7 +65,6 @@ class AdaptiveShellPage extends StatelessWidget {
         onItemSelected: (index) {
           _goToBranch(mobileNavItems[index].branchIndex!);
         },
-        onCreateTap: () => _goToBranch(2),
       ),
     );
   }

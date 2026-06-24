@@ -44,6 +44,35 @@ void main() {
       expect(result.shouldPresentGlobally, isTrue);
     });
 
+    test('HTTP 503 returns maintenance message', () {
+      final result = ApiResponseInterceptor.intercept(503, '');
+
+      expect(result.category, ApiErrorCategory.server);
+      expect(result.message, '系统维护中，请稍后再试');
+      expect(result.shouldPresentGlobally, isTrue);
+    });
+
+    test('envelope code 503 returns maintenance message', () {
+      final result = ApiResponseInterceptor.intercept(
+        200,
+        '{"code":503,"msg":"scheduled maintenance"}',
+      );
+
+      expect(result.category, ApiErrorCategory.server);
+      expect(result.message, '系统维护中，请稍后再试');
+      expect(result.shouldPresentGlobally, isTrue);
+    });
+
+    test('envelope maintenance text returns maintenance message', () {
+      final result = ApiResponseInterceptor.intercept(
+        200,
+        '{"code":1,"msg":"系统维护中，预计 30 分钟"}',
+      );
+
+      expect(result.category, ApiErrorCategory.server);
+      expect(result.message, '系统维护中，请稍后再试');
+    });
+
     test('HTTP 500 with non-JSON body is server error', () {
       final result = ApiResponseInterceptor.intercept(500, 'Internal Server Error');
 

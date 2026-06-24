@@ -11,6 +11,8 @@ class ShellNavItem {
     this.stackRoute,
     this.desktopOnly = false,
     this.mobileOnly = false,
+    this.hideLabel = false,
+    this.useBrandLogo = false,
   }) : assert(
           branchIndex != null || stackRoute != null,
           'ShellNavItem needs branchIndex or stackRoute',
@@ -23,6 +25,8 @@ class ShellNavItem {
   final IconData selectedIcon;
   final bool desktopOnly;
   final bool mobileOnly;
+  final bool hideLabel;
+  final bool useBrandLogo;
 }
 
 /// Mobile bottom-nav items (首页 / 图库 / 创作 / 消息 / 我的).
@@ -42,8 +46,10 @@ const List<ShellNavItem> mobileNavItems = [
   ShellNavItem(
     branchIndex: 2,
     label: '创作',
-    icon: Icons.add,
-    selectedIcon: Icons.add,
+    icon: Icons.movie_creation_outlined,
+    selectedIcon: Icons.movie_creation,
+    hideLabel: true,
+    useBrandLogo: true,
     mobileOnly: true,
   ),
   ShellNavItem(

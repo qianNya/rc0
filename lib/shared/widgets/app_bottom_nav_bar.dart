@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_dimensions.dart';
 import '../../app/theme/app_shadows.dart';
+import 'app_brand_icon.dart';
 import 'shell_nav_items.dart';
 
 class AppBottomNavBar extends StatelessWidget {
@@ -10,14 +11,10 @@ class AppBottomNavBar extends StatelessWidget {
     super.key,
     required this.selectedIndex,
     required this.onItemSelected,
-    required this.onCreateTap,
   });
 
   final int selectedIndex;
   final ValueChanged<int> onItemSelected;
-  final VoidCallback onCreateTap;
-
-  static const int createNavIndex = 2;
 
   @override
   Widget build(BuildContext context) {
@@ -52,16 +49,13 @@ class AppBottomNavBar extends StatelessWidget {
             child: Row(
               children: [
                 for (var i = 0; i < mobileNavItems.length; i++)
-                  if (i == createNavIndex)
-                    Expanded(child: _CreateNavButton(onTap: onCreateTap))
-                  else
-                    Expanded(
-                      child: _NavItem(
-                        item: mobileNavItems[i],
-                        selected: selectedIndex == i,
-                        onTap: () => onItemSelected(i),
-                      ),
+                  Expanded(
+                    child: _NavItem(
+                      item: mobileNavItems[i],
+                      selected: selectedIndex == i,
+                      onTap: () => onItemSelected(i),
                     ),
+                  ),
               ],
             ),
           ),
@@ -91,54 +85,31 @@ class _NavItem extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            selected ? item.selectedIcon : item.icon,
-            size: 22,
-            color: color,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            item.label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CreateNavButton extends StatelessWidget {
-  const _CreateNavButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Center(
-        child: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: AppColors.accent,
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.accent.withValues(alpha: 0.2),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
+      child: Tooltip(
+        message: item.label,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (item.useBrandLogo)
+              AppBrandIcon(size: 28, selected: selected)
+            else
+              Icon(
+                selected ? item.selectedIcon : item.icon,
+                size: 22,
+                color: color,
+              ),
+            if (!item.hideLabel) ...[
+              const SizedBox(height: 4),
+              Text(
+                item.label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                  color: color,
+                ),
               ),
             ],
-          ),
-          child: const Icon(Icons.add, color: Colors.white, size: 24),
+          ],
         ),
       ),
     );

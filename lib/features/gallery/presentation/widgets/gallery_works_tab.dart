@@ -126,7 +126,7 @@ class GalleryWorksTabState extends State<GalleryWorksTab>
           title: '暂无作品',
           subtitle: error ?? '创作后会显示在这里',
           actionLabel: error != null ? '重试' : '开始创作',
-          onAction: error != null ? load : () => context.go(AppRoutes.create),
+          onAction: error != null ? load : () => context.push(AppRoutes.create),
         ),
       );
     }

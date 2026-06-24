@@ -298,7 +298,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   icon: Icons.add_circle_outline,
                   iconColor: const Color(0xFF7C4DFF),
                   iconBackground: const Color(0xFFEDE7F6),
-                  onTap: () => context.go(AppRoutes.create),
+                  onTap: () => context.push(AppRoutes.create),
                 ),
                 ProfileGridTile(
                   title: '使用模板',
@@ -314,7 +314,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   icon: Icons.upload_file_outlined,
                   iconColor: const Color(0xFF2196F3),
                   iconBackground: const Color(0xFFE3F2FD),
-                  onTap: () => context.go(AppRoutes.create),
+                  onTap: () => context.push(AppRoutes.create),
                 ),
                 ProfileGridTile(
                   title: 'AI 工具',

@@ -6,6 +6,7 @@ import '../../../../core/domain/screenplay/script_act.dart';
 import '../../../../core/domain/screenplay/script_frame.dart';
 import '../../../../core/domain/screenplay/script_scene.dart';
 import '../domain/shoot_params.dart';
+import '../domain/cine_params.dart';
 import 'screenplay_draft_tags.dart';
 
 class FrameDraft {
@@ -14,14 +15,52 @@ class FrameDraft {
     this.caption = '',
     this.actionNote = '',
     this.paramOverride,
+    CineParams? cineParams,
+    this.positivePrompt = '',
+    this.negativePrompt = '',
+    this.characterNote = '',
     Set<String>? tags,
-  }) : tags = tags != null ? Set<String>.from(tags) : <String>{};
+    List<UploadImageFile>? referenceImages,
+  })  : cineParams = cineParams ?? const CineParams(),
+        tags = tags != null ? Set<String>.from(tags) : <String>{},
+        referenceImages = referenceImages ?? [];
 
-  final UploadImageFile image;
+  UploadImageFile image;
   String caption;
   String actionNote;
   ShootParams? paramOverride;
+  CineParams cineParams;
+  String positivePrompt;
+  String negativePrompt;
+  String characterNote;
   Set<String> tags;
+  final List<UploadImageFile> referenceImages;
+
+  FrameDraft copyDeep() {
+    return FrameDraft(
+      image: UploadImageFile(
+        path: image.path,
+        name: image.name,
+        previewPath: image.previewPath,
+      ),
+      caption: caption,
+      actionNote: actionNote,
+      paramOverride: paramOverride?.copyWith(),
+      cineParams: cineParams.copyWith(),
+      positivePrompt: positivePrompt,
+      negativePrompt: negativePrompt,
+      characterNote: characterNote,
+      tags: Set<String>.from(tags),
+      referenceImages: [
+        for (final ref in referenceImages)
+          UploadImageFile(
+            path: ref.path,
+            name: ref.name,
+            previewPath: ref.previewPath,
+          ),
+      ],
+    );
+  }
 }
 
 class SceneDraft {
@@ -29,6 +68,7 @@ class SceneDraft {
     this.title = '第一场',
     this.location = '',
     this.timeOfDay = '',
+    this.weather = '',
     this.description = '',
     List<FrameDraft>? frames,
     this.paramOverride,
@@ -39,10 +79,24 @@ class SceneDraft {
   String title;
   String location;
   String timeOfDay;
+  String weather;
   String description;
   final List<FrameDraft> frames;
   ShootParams? paramOverride;
   Set<String> tags;
+
+  SceneDraft copyDeep() {
+    return SceneDraft(
+      title: title,
+      location: location,
+      timeOfDay: timeOfDay,
+      weather: weather,
+      description: description,
+      frames: frames.map((f) => f.copyDeep()).toList(),
+      paramOverride: paramOverride?.copyWith(),
+      tags: Set<String>.from(tags),
+    );
+  }
 }
 
 class ActDraft {
@@ -58,6 +112,15 @@ class ActDraft {
   String synopsis;
   final List<SceneDraft> scenes;
   Set<String> tags;
+
+  ActDraft copyDeep() {
+    return ActDraft(
+      title: title,
+      synopsis: synopsis,
+      scenes: scenes.map((s) => s.copyDeep()).toList(),
+      tags: Set<String>.from(tags),
+    );
+  }
 }
 
 class ScreenplayDraft {
@@ -160,6 +223,23 @@ class ScreenplayDraft {
       acts.any((act) => act.scenes.any((scene) => scene.frames.isNotEmpty));
 
   bool get usesDefaultCover => coverImage == null;
+
+  ScreenplayDraft copyDeep() {
+    return ScreenplayDraft(
+      title: title,
+      synopsis: synopsis,
+      tags: Set<String>.from(tags),
+      acts: acts.map((a) => a.copyDeep()).toList(),
+      coverImage: coverImage == null
+          ? null
+          : UploadImageFile(
+              path: coverImage!.path,
+              name: coverImage!.name,
+              previewPath: coverImage!.previewPath,
+            ),
+      defaultParams: defaultParams.copyWith(),
+    );
+  }
 }
 
 bool _isNetworkUrl(String path) =>
@@ -333,6 +413,117 @@ int countDraftFrames(ScreenplayDraft draft) {
     }
   }
   return count;
+}
+
+int countDraftScenes(ScreenplayDraft draft) {
+  return draft.acts.fold(0, (sum, act) => sum + act.scenes.length);
+}
+
+String draftHierarchySummary(ScreenplayDraft draft) {
+  return '${draft.acts.length}幕 · ${countDraftScenes(draft)}场 · ${countDraftFrames(draft)}画';
+}
+
+/// Reference to a frame within the draft hierarchy.
+class DraftFrameRef {
+  const DraftFrameRef({
+    required this.actIndex,
+    required this.sceneIndex,
+    required this.frameIndex,
+    required this.frame,
+    required this.preview,
+    required this.sceneTitle,
+    required this.actTitle,
+  });
+
+  final int actIndex;
+  final int sceneIndex;
+  final int frameIndex;
+  final FrameDraft frame;
+  final ScriptFrame preview;
+  final String sceneTitle;
+  final String actTitle;
+
+  String get shotLabel => '${actIndex + 1}-${frameIndex + 1}';
+}
+
+ScriptFrame frameDraftToPreviewFrame({
+  required FrameDraft frame,
+  required String id,
+  required int orderIndex,
+}) {
+  return ScriptFrame(
+    id: id,
+    orderIndex: orderIndex,
+    imagePath: frame.image.displayPath,
+    localImagePath: frame.image.path,
+    localThumbnailPath: frame.image.previewPath,
+    caption: frame.caption,
+    actionNote: frame.actionNote,
+    tags: frame.tags.toList(),
+  );
+}
+
+List<ScriptFrame> draftFramesForScene(
+  ScreenplayDraft draft,
+  int actIndex,
+  int sceneIndex,
+) {
+  if (actIndex < 0 || actIndex >= draft.acts.length) return const [];
+  final scenes = draft.acts[actIndex].scenes;
+  if (sceneIndex < 0 || sceneIndex >= scenes.length) return const [];
+
+  final scene = scenes[sceneIndex];
+  return [
+    for (var i = 0; i < scene.frames.length; i++)
+      frameDraftToPreviewFrame(
+        frame: scene.frames[i],
+        id: 'draft-$actIndex-$sceneIndex-$i',
+        orderIndex: i,
+      ),
+  ];
+}
+
+List<DraftFrameRef> draftAllFrameRefs(
+  ScreenplayDraft draft, {
+  int? filterActIndex,
+  int? filterSceneIndex,
+}) {
+  final refs = <DraftFrameRef>[];
+  for (var actIndex = 0; actIndex < draft.acts.length; actIndex++) {
+    if (filterActIndex != null && actIndex != filterActIndex) continue;
+    final act = draft.acts[actIndex];
+    final actTitle = act.title.trim().isEmpty
+        ? '第${actIndex + 1}幕'
+        : act.title.trim();
+    for (var sceneIndex = 0; sceneIndex < act.scenes.length; sceneIndex++) {
+      if (filterSceneIndex != null && sceneIndex != filterSceneIndex) {
+        continue;
+      }
+      final scene = act.scenes[sceneIndex];
+      final sceneTitle = scene.title.trim().isEmpty
+          ? '第${sceneIndex + 1}场'
+          : scene.title.trim();
+      for (var frameIndex = 0; frameIndex < scene.frames.length; frameIndex++) {
+        final frame = scene.frames[frameIndex];
+        refs.add(
+          DraftFrameRef(
+            actIndex: actIndex,
+            sceneIndex: sceneIndex,
+            frameIndex: frameIndex,
+            frame: frame,
+            preview: frameDraftToPreviewFrame(
+              frame: frame,
+              id: 'draft-$actIndex-$sceneIndex-$frameIndex',
+              orderIndex: frameIndex,
+            ),
+            sceneTitle: sceneTitle,
+            actTitle: actTitle,
+          ),
+        );
+      }
+    }
+  }
+  return refs;
 }
 
 /// Pick target for image picker within draft hierarchy.

@@ -42,11 +42,16 @@ class AuthRepository extends ChangeNotifier {
 
   bool get isLoggedIn => _profile != null || _hasToken;
 
+  /// True when persisted tokens exist (session may still be loading profile).
+  bool get hasAuthToken => _hasToken;
+
 
 
   bool _hasToken = false;
 
-  bool _refreshing = false;
+  bool _recoveringSession = false;
+
+  Future<bool>? _handleUnauthorizedFuture;
 
 
 
@@ -63,9 +68,13 @@ class AuthRepository extends ChangeNotifier {
     _hasToken = tokens != null;
 
     if (tokens != null) {
-
-      await _fetchProfile();
-
+      // Do not block runApp on profile fetch — network can hang on cold start.
+      unawaited(
+        _fetchProfile().timeout(
+          const Duration(seconds: 8),
+          onTimeout: () {},
+        ),
+      );
     }
 
     notifyListeners();
@@ -252,34 +261,41 @@ class AuthRepository extends ChangeNotifier {
 
 
 
-  Future<void> handleUnauthorized() async {
+  /// Handles HTTP 401: tries refresh first, clears session if needed.
+  /// Returns true when the global "登录已过期" snackbar should be suppressed.
+  Future<bool> handleUnauthorized() async {
+    final inFlight = _handleUnauthorizedFuture;
+    if (inFlight != null) return inFlight;
 
-    if (!_refreshing) {
-
-      _refreshing = true;
-
-      try {
-
-        if (await tryRefreshToken()) return;
-
-      } finally {
-
-        _refreshing = false;
-
+    final future = _handleUnauthorizedImpl();
+    _handleUnauthorizedFuture = future;
+    try {
+      return await future;
+    } finally {
+      if (identical(_handleUnauthorizedFuture, future)) {
+        _handleUnauthorizedFuture = null;
       }
+    }
+  }
 
+  Future<bool> _handleUnauthorizedImpl() async {
+    if (!_recoveringSession) {
+      _recoveringSession = true;
+      try {
+        if (await tryRefreshToken()) return true;
+      } finally {
+        _recoveringSession = false;
+      }
     }
 
-    if (!_hasToken && _profile == null) return;
+    final hadSession = _hasToken || _profile != null;
+    if (!hadSession) return true;
 
     await removeTokens();
-
     _profile = null;
-
     _hasToken = false;
-
     notifyListeners();
-
+    return false;
   }
 
 

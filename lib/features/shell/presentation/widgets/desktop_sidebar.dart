@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../shared/widgets/app_brand_icon.dart';
 import '../../../../shared/widgets/rc0_widgets.dart';
 import '../../../../shared/widgets/shell_nav_items.dart';
 
@@ -12,13 +13,13 @@ class DesktopSidebar extends StatelessWidget {
     required this.currentBranch,
     required this.onNavItemTap,
     required this.onProfileTap,
-    required this.onUploadTap,
+    required this.onStudioTap,
   });
 
   final int currentBranch;
   final ValueChanged<ShellNavItem> onNavItemTap;
   final VoidCallback onProfileTap;
-  final VoidCallback onUploadTap;
+  final VoidCallback onStudioTap;
 
   @override
   Widget build(BuildContext context) {
@@ -57,10 +58,15 @@ class DesktopSidebar extends StatelessWidget {
             const Spacer(),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: ElevatedButton.icon(
-                onPressed: onUploadTap,
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('创作'),
+              child: Tooltip(
+                message: '创作',
+                child: ElevatedButton(
+                  onPressed: onStudioTap,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const AppBrandIcon(size: 22),
+                ),
               ),
             ),
             const SizedBox(height: 12),

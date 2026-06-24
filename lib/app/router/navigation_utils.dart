@@ -12,6 +12,15 @@ void popOrGoDiscovery(BuildContext context) {
   }
 }
 
+/// 编辑器返回：有栈则 pop，否则回到 Script Studio。
+void popOrGoStudio(BuildContext context) {
+  if (context.canPop()) {
+    context.pop();
+  } else {
+    context.go(AppRoutes.studio);
+  }
+}
+
 /// @deprecated Use [popOrGoDiscovery] instead.
 void popOrGoExplore(BuildContext context) => popOrGoDiscovery(context);
 

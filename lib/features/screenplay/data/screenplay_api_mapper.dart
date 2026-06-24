@@ -7,6 +7,7 @@ import '../../../../core/domain/screenplay/script_frame.dart';
 import '../../../../core/domain/screenplay/script_scene.dart';
 import '../../../../core/domain/screenplay/screenplay_image_resolver.dart';
 import 'screenplay_draft.dart';
+import 'cine_params_draft.dart';
 import 'shoot_params_draft.dart';
 import 'screenplay_tree_document.dart';
 
@@ -859,6 +860,8 @@ abstract final class ScreenplayApiMapper {
           } else {
             frameMap.remove('shoot_override');
           }
+
+          writeCineParamsToFrameMap(frameMap, frameDraft);
         }
       }
     }

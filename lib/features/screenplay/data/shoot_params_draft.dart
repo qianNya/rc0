@@ -1,4 +1,5 @@
 import '../domain/shoot_params.dart';
+import 'cine_params_draft.dart';
 import 'screenplay_draft.dart';
 import 'screenplay_draft_tags.dart';
 import 'screenplay_tree_document.dart';
@@ -64,6 +65,7 @@ ScreenplayDraft screenplayDraftFromTreeDocument(ScreenplayTreeDocument doc) {
 
       if (sceneMap != null) {
         sceneDraft.tags = parseDraftTagList(sceneMap['tags']);
+        sceneDraft.weather = sceneMap['weather'] as String? ?? '';
         final override = sceneMap['shoot_override'];
         if (override is Map<String, dynamic>) {
           final parsed = ShootParams.fromJson(override);
@@ -80,6 +82,8 @@ ScreenplayDraft screenplayDraftFromTreeDocument(ScreenplayTreeDocument doc) {
         final frameDraft = sceneDraft.frames[frameIndex];
 
         frameDraft.tags = parseDraftTagList(frameMap['tags']);
+
+        applyCineParamsFromFrameMap(frameDraft, frameMap);
 
         final frameOverride = frameMap['shoot_override'];
         if (frameOverride is Map<String, dynamic>) {

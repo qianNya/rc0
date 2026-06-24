@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -60,14 +61,17 @@ class ShootPresetRepository extends ChangeNotifier {
 
   Future<void> load() async {
     await Future.wait([_loadCache(), _loadRecent()]);
-    if (AuthRepository.instance.isLoggedIn) {
-      await refreshFromApi();
-    } else if (_builtin.isEmpty) {
+    if (_builtin.isEmpty) {
       _builtin.addAll(PresetCatalog.builtInShootPresets);
     }
     _ensureCommunityFallback();
     _loaded = true;
     notifyListeners();
+
+    // Do not block app startup on preset API — phone may be off-LAN.
+    if (AuthRepository.instance.hasAuthToken) {
+      unawaited(refreshFromApi());
+    }
   }
 
   Future<void> refreshFromApi() async {

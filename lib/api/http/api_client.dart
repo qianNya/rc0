@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -11,6 +12,7 @@ import '../../core/network/network_error.dart';
 import '../auth/vars/kv.dart';
 
 const serverHost = ApiConfig.serverHost;
+const _requestTimeout = Duration(seconds: 8);
 
 Future apiGet(
   String path, {
@@ -104,7 +106,7 @@ Future apiMultipart(
 }) async {
   try {
     final tokens = await getTokens();
-    final client = HttpClient();
+    final client = HttpClient()..connectionTimeout = _requestTimeout;
     final request = await client.postUrl(Uri.parse(serverHost + path));
 
     final boundary = '----Rc0Upload${DateTime.now().millisecondsSinceEpoch}';
@@ -142,7 +144,7 @@ Future apiMultipart(
 
     final response = await request.close();
     final responseBody = await response.transform(utf8.decoder).join();
-    _handleResponse(response.statusCode, responseBody, ok: ok, fail: fail);
+    await _handleResponse(response.statusCode, responseBody, ok: ok, fail: fail);
   } catch (e) {
     _handleNetworkError(e, fail: fail);
   }
@@ -160,7 +162,7 @@ Future _apiRequest(
 }) async {
   final tokens = await getTokens();
   try {
-    final client = HttpClient();
+    final client = HttpClient()..connectionTimeout = _requestTimeout;
     late final HttpClientRequest request;
     switch (method) {
       case 'POST':
@@ -195,7 +197,7 @@ Future _apiRequest(
 
     final response = await request.close();
     final body = await response.transform(utf8.decoder).join();
-    _handleResponse(response.statusCode, body, ok: ok, fail: fail);
+    await _handleResponse(response.statusCode, body, ok: ok, fail: fail);
   } catch (e) {
     _handleNetworkError(e, fail: fail);
   }
@@ -209,30 +211,39 @@ void _handleNetworkError(Object error, {Function(String)? fail}) {
   ApiErrorPresenter.presentIfNeeded(result);
 }
 
-void _handleInterceptResult(
+Future<void> _handleInterceptResultAsync(
   ApiInterceptResult result, {
   Function(Map<String, dynamic>)? ok,
   Function(String)? fail,
-}) {
+}) async {
   if (result.isSuccess) {
     ok?.call(result.data ?? const {});
     return;
   }
 
+  var suppressUnauthorized = true;
   if (result.isUnauthorized) {
-    onApiUnauthorized?.call();
+    suppressUnauthorized = await onApiUnauthorized?.call() ?? true;
   }
 
   fail?.call(result.message ?? 'request failed');
+
+  if (result.isUnauthorized) {
+    if (!suppressUnauthorized) {
+      ApiErrorPresenter.presentIfNeeded(result);
+    }
+    return;
+  }
+
   ApiErrorPresenter.presentIfNeeded(result);
 }
 
-void _handleResponse(
+Future<void> _handleResponse(
   int statusCode,
   String body, {
   Function(Map<String, dynamic>)? ok,
   Function(String)? fail,
-}) {
+}) async {
   final result = ApiResponseInterceptor.intercept(statusCode, body);
-  _handleInterceptResult(result, ok: ok, fail: fail);
+  await _handleInterceptResultAsync(result, ok: ok, fail: fail);
 }

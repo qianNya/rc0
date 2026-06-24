@@ -3,7 +3,10 @@ abstract final class AppRoutes {
   // Primary tab routes
   static const String discovery = '/discovery';
   static const String library = '/library';
+  static const String studio = '/studio';
   static const String create = '/create';
+  static const String createSettingsPath = '/create/settings';
+  static const String createAiHubPath = '/create/ai';
   static const String messages = '/messages';
   static const String profile = '/profile';
 
@@ -78,6 +81,11 @@ abstract final class AppRoutes {
   static String user(int id) => '/user/$id';
   static String pose(String id) => '/pose/$id';
   static String createEdit(String id) => '$create?edit=$id';
+  static String studioEdit(String id) => '$studio?edit=${Uri.encodeComponent(id)}';
+  static String createSettings(String id) =>
+      '$createSettingsPath?edit=${Uri.encodeComponent(id)}';
+  static String createAiHub(String id) =>
+      '$createAiHubPath?edit=${Uri.encodeComponent(id)}';
 
   /// @deprecated Use [createEdit] instead.
   static String uploadEdit(String id) => createEdit(id);

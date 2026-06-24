@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -34,15 +35,23 @@ Future<void> main() async {
   }
 
   await ScreenplayLocalRepository.instance.initialize();
-  await ImageFavoriteRepository.instance.initialize();
-  ImageFavoriteStore.instance = ImageFavoriteRepository.instance;
-  await ImageGalleryRepository.instance.initialize();
-  await ImageTagsRepository.instance.initialize();
-  await IpRepository.instance.initialize();
-  await ScreenplayTagsRepository.instance.initialize();
   await ThemeModeNotifier.instance.initialize();
   await AuthRepository.instance.initialize();
-  await ShootPresetRepository.instance.load();
   onApiUnauthorized = AuthRepository.instance.handleUnauthorized;
   runApp(const Rc0App());
+
+  // Local + network warm-up must not block first frame.
+  unawaited(_initBackgroundServices());
+}
+
+Future<void> _initBackgroundServices() async {
+  await Future.wait([
+    ImageFavoriteRepository.instance.initialize(),
+    ImageGalleryRepository.instance.initialize(),
+    ImageTagsRepository.instance.initialize(),
+    IpRepository.instance.initialize(),
+    ScreenplayTagsRepository.instance.initialize(),
+    ShootPresetRepository.instance.load(),
+  ]);
+  ImageFavoriteStore.instance = ImageFavoriteRepository.instance;
 }

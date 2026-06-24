@@ -37,6 +37,7 @@ class ApiInterceptResult {
 abstract final class ApiResponseInterceptor {
   static const _unauthorizedMessage = '登录已过期，请先登录';
   static const _serverMessage = '服务器异常，请稍后重试';
+  static const _maintenanceMessage = '系统维护中，请稍后再试';
   static const _badResponseMessage = '服务响应异常，请稍后重试';
 
   static ApiInterceptResult intercept(int statusCode, String body) {
@@ -52,6 +53,9 @@ abstract final class ApiResponseInterceptor {
     }
     if (statusCode == 429) {
       return _failure('请求过于频繁，请稍后再试', ApiErrorCategory.business);
+    }
+    if (statusCode == 503) {
+      return _failure(_maintenanceMessage, ApiErrorCategory.server);
     }
 
     if (statusCode >= 500) {
@@ -70,6 +74,14 @@ abstract final class ApiResponseInterceptor {
     if (code == 401) {
       return _failure(_unauthorizedMessage, ApiErrorCategory.unauthorized);
     }
+    if (code == 503) {
+      return _failure(_maintenanceMessage, ApiErrorCategory.server);
+    }
+
+    final envelopeMessage = apiErrorMessage(base);
+    if (_isMaintenanceText(envelopeMessage)) {
+      return _failure(_maintenanceMessage, ApiErrorCategory.server);
+    }
 
     if (statusCode == 200 && code == 0) {
       final data = base['data'];
@@ -79,7 +91,14 @@ abstract final class ApiResponseInterceptor {
       return ApiInterceptResult(isSuccess: true, data: const {});
     }
 
-    return _failure(apiErrorMessage(base), ApiErrorCategory.business);
+    return _failure(envelopeMessage, ApiErrorCategory.business);
+  }
+
+  static bool _isMaintenanceText(String message) {
+    final lower = message.toLowerCase();
+    return message.contains('维护') ||
+        lower.contains('maintenance') ||
+        message.contains('系统维护中');
   }
 
   static ApiInterceptResult network(String message) {

@@ -5,6 +5,7 @@ import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../screenplay/data/screenplay_draft.dart';
 import '../../../screenplay/data/shoot_params_draft.dart';
+import '../../../screenplay/data/cine_params_draft.dart';
 import '../../../screenplay/domain/shoot_params.dart';
 import '../../../../shared/widgets/image_preview.dart';
 import '../../../../shared/widgets/pose_cover_image.dart';
@@ -12,6 +13,7 @@ import '../../../../shared/widgets/rc0_image.dart';
 import 'upload_shoot_param_cards.dart';
 import 'upload_structure_drag.dart';
 import 'collapsible_tag_picker.dart';
+import 'frame_editor/cine_params_chips.dart';
 
 const _collapseDuration = Duration(milliseconds: 200);
 const _collapseCurve = Curves.easeOutCubic;
@@ -181,6 +183,7 @@ class FrameListEditor extends StatelessWidget {
     required this.onMoveFrame,
     required this.poolTags,
     required this.onToggleFrameTag,
+    this.onOpenFrameDetail,
   });
 
   final List<FrameDraft> frames;
@@ -196,6 +199,7 @@ class FrameListEditor extends StatelessWidget {
   final void Function(FrameDragData data, int toInsertIndex) onMoveFrame;
   final List<String> poolTags;
   final void Function(int index, String tag) onToggleFrameTag;
+  final ValueChanged<int>? onOpenFrameDetail;
 
   SceneDraft get _scene => draft.acts[actIndex].scenes[sceneIndex];
 
@@ -292,7 +296,13 @@ class FrameListEditor extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: GestureDetector(
-                  onTap: () => onToggleFrame(frame),
+                  onTap: () {
+                    if (onOpenFrameDetail != null) {
+                      onOpenFrameDetail!(index);
+                    } else {
+                      onToggleFrame(frame);
+                    }
+                  },
                   behavior: HitTestBehavior.opaque,
                   child: Text(
                     captionSummary,
@@ -307,6 +317,12 @@ class FrameListEditor extends StatelessWidget {
                   ),
                 ),
               ),
+              if (onOpenFrameDetail != null)
+                IconButton(
+                  icon: const Icon(Icons.chevron_right, size: 18),
+                  onPressed: () => onOpenFrameDetail!(index),
+                  tooltip: '画面详情',
+                ),
               _EditorCollapseToggle(
                 expanded: expanded,
                 onPressed: () => onToggleFrame(frame),
@@ -331,6 +347,27 @@ class FrameListEditor extends StatelessWidget {
                       isDense: true,
                     ),
                     onChanged: (v) => onCaptionChanged(index, v),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    initialValue: frame.actionNote,
+                    maxLines: 2,
+                    decoration: const InputDecoration(
+                      hintText: '画面描述',
+                      isDense: true,
+                      alignLabelWithHint: true,
+                    ),
+                    onChanged: (v) => onActionNoteChanged(index, v),
+                  ),
+                  const SizedBox(height: 8),
+                  CineParamsChips(
+                    params: effectiveCineParamsForFrame(
+                      draft,
+                      actIndex,
+                      sceneIndex,
+                      index,
+                    ),
+                    compact: true,
                   ),
                   const SizedBox(height: 8),
                           ShootParamOverrideSection(
@@ -476,6 +513,7 @@ class SceneEditorSection extends StatelessWidget {
     required this.poolTags,
     required this.onToggleSceneTag,
     required this.onToggleFrameTag,
+    this.onOpenFrameDetail,
   });
 
   final SceneDraft scene;
@@ -500,6 +538,7 @@ class SceneEditorSection extends StatelessWidget {
   final List<String> poolTags;
   final ValueChanged<String> onToggleSceneTag;
   final void Function(int frameIndex, String tag) onToggleFrameTag;
+  final ValueChanged<int>? onOpenFrameDetail;
 
   String get _titleSummary {
     final title = scene.title.trim();
@@ -658,6 +697,7 @@ class SceneEditorSection extends StatelessWidget {
                     onMoveFrame: onMoveFrame,
                     poolTags: poolTags,
                     onToggleFrameTag: onToggleFrameTag,
+                    onOpenFrameDetail: onOpenFrameDetail,
                   ),
                 ],
               ),
