@@ -9,6 +9,7 @@ import 'core/theme/theme_mode_notifier.dart';
 import 'features/auth/data/auth_repository.dart';
 import 'features/favorites/data/image_favorite_repository.dart';
 import 'features/gallery/data/image_gallery_repository.dart';
+import 'features/screenplay/data/shoot_preset_repository.dart';
 import 'features/screenplay/data/screenplay_local_repository.dart';
 
 Future<void> main() async {
@@ -35,6 +36,7 @@ Future<void> main() async {
   await ImageGalleryRepository.instance.initialize();
   await ThemeModeNotifier.instance.initialize();
   await AuthRepository.instance.initialize();
+  await ShootPresetRepository.instance.load();
   onApiUnauthorized = AuthRepository.instance.handleUnauthorized;
   runApp(const Rc0App());
 }

@@ -36,6 +36,20 @@ abstract final class AppRoutes {
   static const String preset = '/preset';
   static const String presetDetail = '/preset/:id';
 
+  static String shootPresetPicker({
+    String mode = 'select',
+    String scope = 'screenplay',
+    int? actIndex,
+    int? sceneIndex,
+    int? frameIndex,
+  }) {
+    final query = <String, String>{'mode': mode, 'scope': scope};
+    if (actIndex != null) query['act'] = '$actIndex';
+    if (sceneIndex != null) query['scene'] = '$sceneIndex';
+    if (frameIndex != null) query['frame'] = '$frameIndex';
+    return Uri(path: preset, queryParameters: query).toString();
+  }
+
   static const String profileWorks = '/profile/works';
   static const String profileLikes = '/profile/likes';
   static const String profileEdit = '/profile/edit';

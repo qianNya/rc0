@@ -18,6 +18,7 @@ import '../../features/screenplay/presentation/pages/screenplay_detail_page.dart
 import '../../features/shell/presentation/pages/adaptive_shell_page.dart';
 import '../../features/tasks/presentation/pages/tasks_page.dart';
 import '../../features/user/presentation/pages/user_profile_page.dart';
+import '../../features/upload/presentation/pages/shoot_preset_picker_page.dart';
 import '../../features/upload/presentation/pages/upload_page.dart';
 import 'routes.dart';
 
@@ -159,7 +160,31 @@ abstract final class AppRouter {
         builder: (context, state) =>
             const ProfileComingSoonPage(title: '图片详情'),
       ),
-      _comingSoonRoute(AppRoutes.preset, '摄影预设', name: 'preset-list'),
+      GoRoute(
+        path: AppRoutes.preset,
+        name: 'preset-list',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) {
+          final mode = parseShootPresetPickerMode(
+            state.uri.queryParameters['mode'],
+          );
+          final scope = state.uri.queryParameters['scope'] ?? 'screenplay';
+          final actIndex = int.tryParse(state.uri.queryParameters['act'] ?? '');
+          final sceneIndex =
+              int.tryParse(state.uri.queryParameters['scene'] ?? '');
+          final frameIndex =
+              int.tryParse(state.uri.queryParameters['frame'] ?? '');
+          return ShootPresetPickerPage(
+            mode: mode,
+            scopeLabel: scopeLabelForPicker(
+              scope: scope,
+              actIndex: actIndex,
+              sceneIndex: sceneIndex,
+              frameIndex: frameIndex,
+            ),
+          );
+        },
+      ),
       GoRoute(
         path: AppRoutes.presetDetail,
         name: 'preset-detail',
