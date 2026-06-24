@@ -139,6 +139,8 @@ class ScreenplayBrief {
   final num creatorId;
   final String creatorNickname;
   final String createAt;
+  final num publishStatus;
+  final num visibility;
 
   ScreenplayBrief({
     required this.id,
@@ -149,6 +151,8 @@ class ScreenplayBrief {
     required this.creatorId,
     required this.creatorNickname,
     required this.createAt,
+    required this.publishStatus,
+    required this.visibility,
   });
 
   factory ScreenplayBrief.fromJson(Map<String, dynamic> m) {
@@ -171,6 +175,8 @@ class ScreenplayBrief {
       creatorId: creatorId,
       creatorNickname: creatorNickname,
       createAt: source['create_at'] ?? source['created_at'] ?? '',
+      publishStatus: source['publish_status'] ?? 1,
+      visibility: source['visibility'] ?? 0,
     );
   }
 }

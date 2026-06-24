@@ -6,10 +6,29 @@ import '../../../../core/domain/screenplay/script_act.dart';
 import '../../../../core/domain/screenplay/script_frame.dart';
 import '../../../../core/domain/screenplay/script_scene.dart';
 import '../../../../core/domain/screenplay/screenplay_image_resolver.dart';
+import 'screenplay_draft.dart';
+import 'shoot_params_draft.dart';
 import 'screenplay_tree_document.dart';
 
 abstract final class ScreenplayApiMapper {
-  static Screenplay fromListItem(api.Screenplay item) {
+  static Screenplay fromFeedItem(api.FeedItemDto item) {
+    final sp = item.screenplay;
+    final author = item.author;
+    return fromListItem(
+      sp,
+      authorName: _authorLabel(
+        author: author,
+        creatorId: sp.creator.toInt(),
+      ),
+      authorAvatar: author?.avatar.isNotEmpty == true ? author!.avatar : null,
+    );
+  }
+
+  static Screenplay fromListItem(
+    api.Screenplay item, {
+    String? authorName,
+    String? authorAvatar,
+  }) {
     return _applySocial(
       Screenplay(
         id: item.id.toString(),
@@ -23,7 +42,20 @@ abstract final class ScreenplayApiMapper {
         remoteScreenplayId: item.id.toInt(),
       ),
       item,
+      authorName: authorName,
+      authorAvatar: authorAvatar,
     );
+  }
+
+  static String _authorLabel({
+    api.AuthorSummary? author,
+    required int creatorId,
+  }) {
+    if (author != null && author.nickname.isNotEmpty) {
+      return author.nickname;
+    }
+    if (creatorId > 0) return '用户 $creatorId';
+    return '创作者';
   }
 
   static Screenplay fromTree(api.GetScreenplayTreeResp tree) {
@@ -53,15 +85,24 @@ abstract final class ScreenplayApiMapper {
     );
   }
 
-  static Screenplay _applySocial(Screenplay base, api.Screenplay sp) {
+  static Screenplay _applySocial(
+    Screenplay base,
+    api.Screenplay sp, {
+    String? authorName,
+    String? authorAvatar,
+  }) {
+    final creatorId = sp.creator.toInt();
     return base.copyWith(
-      author: '创作者',
-      ownerUserId: sp.creator.toInt(),
+      author: authorName ??
+          (creatorId > 0 ? '用户 $creatorId' : '创作者'),
+      authorAvatar: authorAvatar,
+      ownerUserId: creatorId > 0 ? creatorId : null,
       likes: sp.likeCount.toInt(),
       views: sp.viewCount.toInt(),
       favorites: sp.favoriteCount.toInt(),
       isLiked: sp.isLiked,
       isFavorited: sp.isFavorited,
+      visibility: sp.visibility.toInt(),
     );
   }
 
@@ -761,5 +802,122 @@ abstract final class ScreenplayApiMapper {
         }
       }
     }
+  }
+
+  /// Writes draft shoot defaults/overrides and resolved frame params into tree JSON.
+  static Map<String, dynamic> applyDraftShootParamsToTree(
+    Map<String, dynamic> tree,
+    ScreenplayDraft draft,
+  ) {
+    final copy = deepCopyJson(tree);
+    final screenplayMap = copy['screenplay'] as Map<String, dynamic>;
+    screenplayMap['shoot_defaults'] = draft.defaultParams.toJson();
+
+    final acts = copy['acts'] as List<dynamic>? ?? [];
+    for (var actIndex = 0;
+        actIndex < acts.length && actIndex < draft.acts.length;
+        actIndex++) {
+      final actNode = acts[actIndex] as Map<String, dynamic>;
+      final scenes = actNode['scenes'] as List<dynamic>? ?? [];
+      for (var sceneIndex = 0;
+          sceneIndex < scenes.length &&
+              sceneIndex < draft.acts[actIndex].scenes.length;
+          sceneIndex++) {
+        final sceneNode = scenes[sceneIndex] as Map<String, dynamic>;
+        final sceneMap = sceneNode['scene'] as Map<String, dynamic>;
+        final sceneDraft = draft.acts[actIndex].scenes[sceneIndex];
+
+        if (sceneHasParamOverride(sceneDraft)) {
+          sceneMap['shoot_override'] = sceneDraft.paramOverride!.toJson();
+        } else {
+          sceneMap.remove('shoot_override');
+        }
+
+        final frames = sceneNode['frames'] as List<dynamic>? ?? [];
+        for (var frameIndex = 0;
+            frameIndex < frames.length && frameIndex < sceneDraft.frames.length;
+            frameIndex++) {
+          final frameMap = frames[frameIndex] as Map<String, dynamic>;
+          final frameDraft = sceneDraft.frames[frameIndex];
+          final effective = effectiveParamsForFrame(
+            draft,
+            actIndex,
+            sceneIndex,
+            frameIndex,
+          );
+
+          frameMap['aspect_ratio'] = effective.aspectRatio ?? '';
+          frameMap['extra_params'] = <String, dynamic>{
+            if (effective.device != null && effective.device!.isNotEmpty)
+              'device': effective.device,
+            if (effective.lighting != null && effective.lighting!.isNotEmpty)
+              'lighting': effective.lighting,
+          };
+
+          if (frameHasParamOverride(frameDraft)) {
+            frameMap['shoot_override'] = frameDraft.paramOverride!.toJson();
+          } else {
+            frameMap.remove('shoot_override');
+          }
+        }
+      }
+    }
+
+    return copy;
+  }
+
+  /// Writes draft act/scene/frame tags into tree JSON.
+  static Map<String, dynamic> applyDraftTagsToTree(
+    Map<String, dynamic> tree,
+    ScreenplayDraft draft,
+  ) {
+    final copy = deepCopyJson(tree);
+
+    final acts = copy['acts'] as List<dynamic>? ?? [];
+    for (var actIndex = 0;
+        actIndex < acts.length && actIndex < draft.acts.length;
+        actIndex++) {
+      final actNode = acts[actIndex] as Map<String, dynamic>;
+      final actMap = actNode['act'] as Map<String, dynamic>;
+      final actDraft = draft.acts[actIndex];
+
+      if (actDraft.tags.isEmpty) {
+        actMap.remove('tags');
+      } else {
+        actMap['tags'] = actDraft.tags.toList()..sort();
+      }
+
+      final scenes = actNode['scenes'] as List<dynamic>? ?? [];
+      for (var sceneIndex = 0;
+          sceneIndex < scenes.length &&
+              sceneIndex < actDraft.scenes.length;
+          sceneIndex++) {
+        final sceneNode = scenes[sceneIndex] as Map<String, dynamic>;
+        final sceneMap = sceneNode['scene'] as Map<String, dynamic>;
+        final sceneDraft = actDraft.scenes[sceneIndex];
+
+        if (sceneDraft.tags.isEmpty) {
+          sceneMap.remove('tags');
+        } else {
+          sceneMap['tags'] = sceneDraft.tags.toList()..sort();
+        }
+
+        final frames = sceneNode['frames'] as List<dynamic>? ?? [];
+        for (var frameIndex = 0;
+            frameIndex < frames.length && frameIndex < sceneDraft.frames.length;
+            frameIndex++) {
+          final frameMap = frames[frameIndex] as Map<String, dynamic>;
+          final frameDraft = sceneDraft.frames[frameIndex];
+
+          if (frameDraft.tags.isEmpty) {
+            frameMap.remove('tags');
+          } else {
+            frameMap['tags'] = frameDraft.tags.toList()..sort();
+          }
+        }
+      }
+    }
+
+    return copy;
   }
 }

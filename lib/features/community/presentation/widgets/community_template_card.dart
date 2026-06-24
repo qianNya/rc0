@@ -105,7 +105,10 @@ class CommunityTemplateCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 8),
-                  FeedAuthorRow(author: screenplay.author),
+                  FeedAuthorRow(
+                    author: screenplay.author,
+                    avatarUrl: screenplay.authorAvatar,
+                  ),
                   const SizedBox(height: 6),
                   Text(
                     structureLabel,

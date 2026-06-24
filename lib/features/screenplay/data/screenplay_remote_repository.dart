@@ -21,38 +21,97 @@ class ScreenplayRemoteRepository extends ChangeNotifier {
 
   List<Screenplay> _screenplays = [];
   bool _loading = false;
+  bool _loadingMore = false;
   String? _error;
+  int _page = 1;
+  int _pageSize = 20;
+  num _total = 0;
+  String? _query;
+  String? _sort;
+  int? _visibility;
 
   List<Screenplay> get screenplays => List.unmodifiable(_screenplays);
   bool get loading => _loading;
+  bool get loadingMore => _loadingMore;
   String? get error => _error;
+  num get total => _total;
+  bool get hasMore => _screenplays.length < _total.toInt();
 
   Map<String, dynamic>? getRawTree(int id) => _rawTreeCache[id];
 
-  Future<void> loadFirstPage({int pageSize = 20}) async {
+  Future<void> loadFirstPage({
+    int pageSize = 20,
+    String? q,
+    String? sort,
+    int? visibility = 1,
+  }) async {
     _loading = true;
     _error = null;
+    _page = 1;
+    _pageSize = pageSize;
+    _query = q?.trim().isEmpty == true ? null : q?.trim();
+    _sort = sort?.trim().isEmpty == true ? null : sort?.trim();
+    _visibility = visibility;
     notifyListeners();
 
-    final result = await fetchScreenplays(page: 1, pageSize: pageSize);
+    final result = await fetchScreenplays(
+      page: 1,
+      pageSize: pageSize,
+      q: _query,
+      sort: _sort,
+      visibility: _visibility,
+    );
     _loading = false;
     if (result.error != null) {
       _error = result.error;
     } else {
       _screenplays = result.items;
+      _total = result.total;
+      _page = 1;
       _error = null;
     }
     notifyListeners();
   }
 
-  Future<({List<Screenplay> items, String? error})> fetchScreenplays({
+  Future<void> loadMore() async {
+    if (_loading || _loadingMore || !hasMore) return;
+
+    _loadingMore = true;
+    notifyListeners();
+
+    final nextPage = _page + 1;
+    final result = await fetchScreenplays(
+      page: nextPage,
+      pageSize: _pageSize,
+      q: _query,
+      sort: _sort,
+      visibility: _visibility,
+    );
+    _loadingMore = false;
+    if (result.error != null) {
+      _error = result.error;
+    } else {
+      _screenplays.addAll(result.items);
+      _total = result.total;
+      _page = nextPage;
+    }
+    notifyListeners();
+  }
+
+  Future<({List<Screenplay> items, num total, String? error})> fetchScreenplays({
     int page = 1,
     int pageSize = 20,
+    String? q,
+    String? sort,
+    int? visibility,
   }) async {
     final (resp, error) = await apiCallback<sp_dto.ListScreenplaysResp>(
       ({ok, fail, eventually}) => screenplay_api.listScreenplays(
         page: page,
         pageSize: pageSize,
+        q: q,
+        sort: sort,
+        visibility: visibility,
         ok: ok,
         fail: fail,
         eventually: eventually,
@@ -60,18 +119,17 @@ class ScreenplayRemoteRepository extends ChangeNotifier {
     );
 
     if (error != null) {
-      return (items: <Screenplay>[], error: error);
+      return (items: <Screenplay>[], total: 0, error: error);
     }
 
-    final items = (resp?.list ?? [])
-        .where(
-          (item) =>
-              item.publishStatus.toInt() == 1 && item.visibility.toInt() == 1,
-        )
-        .map(ScreenplayApiMapper.fromListItem)
-        .toList();
+    final feedItems = resp?.items ?? const <sp_dto.FeedItemDto>[];
+    final items = feedItems.isNotEmpty
+        ? feedItems.map(ScreenplayApiMapper.fromFeedItem).toList()
+        : (resp?.list ?? [])
+            .map(ScreenplayApiMapper.fromListItem)
+            .toList();
 
-    return (items: items, error: null);
+    return (items: items, total: resp?.total ?? 0, error: null);
   }
 
   Future<({Screenplay? screenplay, String? error})> fetchScreenplayDetail(
@@ -149,9 +207,13 @@ class ScreenplayRemoteRepository extends ChangeNotifier {
 
     await apiGet(
       '/screenplays/$id/tree',
+      query: screenplay_api.buildScreenplayTreeQuery(),
       ok: (data) {
-        _rawTreeCache[id] = deepCopyJson(data);
-        final tree = sp_dto.GetScreenplayTreeResp.fromJson(data);
+        final normalized = sp_dto.normalizeScreenplayTreeJson(
+          data as Map<String, dynamic>,
+        );
+        _rawTreeCache[id] = deepCopyJson(normalized);
+        final tree = sp_dto.GetScreenplayTreeResp.fromJson(normalized);
         _treeCache[id] = ScreenplayApiMapper.fromTree(tree);
         completer.complete((tree: tree, error: null));
       },

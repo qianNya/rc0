@@ -1,20 +1,27 @@
 
 import '../../upload/domain/upload_image_file.dart';
+import '../../../../core/data/app_catalog.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/domain/screenplay/script_act.dart';
 import '../../../../core/domain/screenplay/script_frame.dart';
 import '../../../../core/domain/screenplay/script_scene.dart';
+import '../domain/shoot_params.dart';
+import 'screenplay_draft_tags.dart';
 
 class FrameDraft {
   FrameDraft({
     required this.image,
     this.caption = '',
     this.actionNote = '',
-  });
+    this.paramOverride,
+    Set<String>? tags,
+  }) : tags = tags != null ? Set<String>.from(tags) : <String>{};
 
   final UploadImageFile image;
   String caption;
   String actionNote;
+  ShootParams? paramOverride;
+  Set<String> tags;
 }
 
 class SceneDraft {
@@ -24,13 +31,18 @@ class SceneDraft {
     this.timeOfDay = '',
     this.description = '',
     List<FrameDraft>? frames,
-  }) : frames = frames ?? [];
+    this.paramOverride,
+    Set<String>? tags,
+  })  : frames = frames ?? [],
+        tags = tags != null ? Set<String>.from(tags) : <String>{};
 
   String title;
   String location;
   String timeOfDay;
   String description;
   final List<FrameDraft> frames;
+  ShootParams? paramOverride;
+  Set<String> tags;
 }
 
 class ActDraft {
@@ -38,11 +50,14 @@ class ActDraft {
     this.title = '第一幕',
     this.synopsis = '',
     List<SceneDraft>? scenes,
-  }) : scenes = scenes ?? [SceneDraft()];
+    Set<String>? tags,
+  })  : scenes = scenes ?? [SceneDraft()],
+        tags = tags != null ? Set<String>.from(tags) : <String>{};
 
   String title;
   String synopsis;
   final List<SceneDraft> scenes;
+  Set<String> tags;
 }
 
 class ScreenplayDraft {
@@ -52,8 +67,10 @@ class ScreenplayDraft {
     Set<String>? tags,
     List<ActDraft>? acts,
     this.coverImage,
+    ShootParams? defaultParams,
   })  : tags = Set<String>.from(tags ?? {'站姿'}),
-        acts = acts ?? [ActDraft()];
+        acts = acts ?? [ActDraft()],
+        defaultParams = defaultParams ?? AppCatalog.defaultShootParams;
 
   factory ScreenplayDraft.fromScreenplay(Screenplay screenplay) {
     final acts = <ActDraft>[];
@@ -70,6 +87,7 @@ class ScreenplayDraft {
                 ),
                 caption: frame.caption,
                 actionNote: frame.actionNote,
+                tags: Set<String>.from(frame.tags),
               ),
             )
             .toList();
@@ -133,6 +151,7 @@ class ScreenplayDraft {
   String synopsis;
   Set<String> tags;
   final List<ActDraft> acts;
+  ShootParams defaultParams;
 
   /// Explicit cover; null means use the first frame/image as default.
   UploadImageFile? coverImage;
@@ -226,7 +245,7 @@ Screenplay buildScreenplayFromDraft(
             localThumbnailPath: thumbPath,
             caption: frameDraft.caption,
             actionNote: frameDraft.actionNote,
-            tags: draft.tags.toList(),
+            tags: frameDraft.tags.toList(),
           ),
         );
       }
@@ -263,7 +282,7 @@ Screenplay buildScreenplayFromDraft(
     id: resolvedId,
     title: draft.title.trim().isEmpty ? '未命名剧本' : draft.title.trim(),
     synopsis: draft.synopsis.trim(),
-    tags: draft.tags.toList(),
+    tags: draftTagPoolSorted(draft),
     author: '我',
     authorBio: '本地发布',
     likes: 0,
@@ -333,6 +352,153 @@ void addImagesToScene(
   for (final image in images) {
     scene.frames.add(FrameDraft(image: image));
   }
+}
+
+/// Reorders [list] in place. [newIndex] must use [ReorderableListView.onReorderItem]
+/// semantics (already adjusted for the removal at [oldIndex]).
+void reorderDraftList<T>(List<T> list, int oldIndex, int newIndex) {
+  if (oldIndex == newIndex) return;
+  final item = list.removeAt(oldIndex);
+  list.insert(newIndex, item);
+}
+
+void reorderDraftActs(ScreenplayDraft draft, int oldIndex, int newIndex) {
+  reorderDraftList(draft.acts, oldIndex, newIndex);
+}
+
+void reorderDraftScenes(
+  ScreenplayDraft draft,
+  int actIndex,
+  int oldIndex,
+  int newIndex,
+) {
+  reorderDraftList(draft.acts[actIndex].scenes, oldIndex, newIndex);
+}
+
+void reorderDraftFrames(
+  ScreenplayDraft draft,
+  int actIndex,
+  int sceneIndex,
+  int oldIndex,
+  int newIndex,
+) {
+  reorderDraftList(
+    draft.acts[actIndex].scenes[sceneIndex].frames,
+    oldIndex,
+    newIndex,
+  );
+}
+
+/// Drag payload for moving a [SceneDraft] across acts.
+class SceneDragData {
+  const SceneDragData({
+    required this.fromActIndex,
+    required this.scene,
+  });
+
+  final int fromActIndex;
+  final SceneDraft scene;
+}
+
+/// Drag payload for moving a [FrameDraft] across scenes.
+class FrameDragData {
+  const FrameDragData({
+    required this.fromActIndex,
+    required this.fromScene,
+    required this.frame,
+  });
+
+  final int fromActIndex;
+  final SceneDraft fromScene;
+  final FrameDraft frame;
+}
+
+void _ensureActHasScene(ActDraft act) {
+  if (act.scenes.isEmpty) {
+    act.scenes.add(SceneDraft());
+  }
+}
+
+/// Inserts [scene] before [toInsertIndex] in the destination act's scene list.
+/// [toInsertIndex] is relative to the list **before** the scene is removed.
+void moveDraftScene(
+  ScreenplayDraft draft, {
+  required SceneDraft scene,
+  required int fromActIndex,
+  required int toActIndex,
+  required int toInsertIndex,
+}) {
+  if (fromActIndex < 0 ||
+      fromActIndex >= draft.acts.length ||
+      toActIndex < 0 ||
+      toActIndex >= draft.acts.length) {
+    return;
+  }
+
+  final fromAct = draft.acts[fromActIndex];
+  final fromSceneIndex = fromAct.scenes.indexOf(scene);
+  if (fromSceneIndex < 0) return;
+
+  var insertIndex = toInsertIndex;
+  if (fromActIndex == toActIndex) {
+    if (fromSceneIndex == insertIndex) return;
+    if (fromSceneIndex < insertIndex) {
+      insertIndex--;
+    }
+  }
+
+  fromAct.scenes.removeAt(fromSceneIndex);
+  _ensureActHasScene(fromAct);
+
+  final toAct = draft.acts[toActIndex];
+  insertIndex = insertIndex.clamp(0, toAct.scenes.length);
+  toAct.scenes.insert(insertIndex, scene);
+}
+
+/// Inserts [frame] before [toInsertIndex] in the destination scene's frame list.
+void moveDraftFrame(
+  ScreenplayDraft draft, {
+  required FrameDraft frame,
+  required int fromActIndex,
+  required SceneDraft fromScene,
+  required int toActIndex,
+  required SceneDraft toScene,
+  required int toInsertIndex,
+}) {
+  if (fromActIndex < 0 ||
+      fromActIndex >= draft.acts.length ||
+      toActIndex < 0 ||
+      toActIndex >= draft.acts.length) {
+    return;
+  }
+
+  final fromAct = draft.acts[fromActIndex];
+  final fromSceneIndex = fromAct.scenes.indexOf(fromScene);
+  if (fromSceneIndex < 0) return;
+
+  final fromFrames = fromAct.scenes[fromSceneIndex].frames;
+  final fromFrameIndex = fromFrames.indexOf(frame);
+  if (fromFrameIndex < 0) return;
+
+  final toAct = draft.acts[toActIndex];
+  final toSceneIndex = toAct.scenes.indexOf(toScene);
+  if (toSceneIndex < 0) return;
+
+  var insertIndex = toInsertIndex;
+  final sameScene =
+      fromActIndex == toActIndex && fromSceneIndex == toSceneIndex;
+  if (sameScene) {
+    if (fromFrameIndex == insertIndex) return;
+    if (fromFrameIndex < insertIndex) {
+      insertIndex--;
+    }
+  }
+
+  fromFrames.removeAt(fromFrameIndex);
+
+  final toFrames = toAct.scenes[toSceneIndex].frames;
+  insertIndex = insertIndex.clamp(0, toFrames.length);
+  toFrames.insert(insertIndex, frame);
 }
 
 extension UploadImageFilePersistKey on UploadImageFile {

@@ -80,8 +80,11 @@ class ActNode {
   final TreePage scenePage;
   ActNode({required this.act, required this.scenes, required this.scenePage});
   factory ActNode.fromJson(Map<String, dynamic> m) {
+    final actSource = m['act'] is Map<String, dynamic>
+        ? m['act'] as Map<String, dynamic>
+        : m;
     return ActNode(
-      act: Act.fromJson(m['act'] as Map<String, dynamic>),
+      act: Act.fromJson(actSource),
       scenes: ((m['scenes'] ?? []) as List<dynamic>)
           .map((i) => SceneNode.fromJson(i as Map<String, dynamic>))
           .toList(),
@@ -787,6 +790,43 @@ class GetScreenplayTreeReq {
   }
 }
 
+/// Normalizes API tree JSON to the local canonical shape:
+/// `acts[].act`, `acts[].scenes[].scene`, `acts[].scenes[].frames[]`.
+Map<String, dynamic> normalizeScreenplayTreeJson(Map<String, dynamic> source) {
+  final root = Map<String, dynamic>.from(source);
+  final screenplay = root['screenplay'];
+  if (screenplay is Map<String, dynamic>) {
+    final sp = Map<String, dynamic>.from(screenplay);
+    if (sp['summary'] == null) sp['summary'] = '';
+    if (sp['subtitle'] == null) sp['subtitle'] = '';
+    root['screenplay'] = sp;
+  }
+
+  final rawActs = root['acts'];
+  if (rawActs is! List) return root;
+
+  root['acts'] = rawActs.map((rawAct) {
+    final actMap = Map<String, dynamic>.from(rawAct as Map<String, dynamic>);
+    if (actMap['act'] is! Map<String, dynamic>) {
+      actMap['act'] = Map<String, dynamic>.from(actMap);
+    }
+    final rawScenes = actMap['scenes'];
+    if (rawScenes is List) {
+      actMap['scenes'] = rawScenes.map((rawScene) {
+        final sceneMap =
+            Map<String, dynamic>.from(rawScene as Map<String, dynamic>);
+        if (sceneMap['scene'] is! Map<String, dynamic>) {
+          sceneMap['scene'] = Map<String, dynamic>.from(sceneMap);
+        }
+        return sceneMap;
+      }).toList();
+    }
+    return actMap;
+  }).toList();
+
+  return root;
+}
+
 class GetScreenplayTreeResp {
   final Screenplay screenplay;
 
@@ -799,14 +839,17 @@ class GetScreenplayTreeResp {
     required this.actPage,
   });
   factory GetScreenplayTreeResp.fromJson(Map<String, dynamic> m) {
+    final normalized = normalizeScreenplayTreeJson(m);
     return GetScreenplayTreeResp(
-      screenplay: Screenplay.fromJson(m['screenplay'] as Map<String, dynamic>),
-      acts: ((m['acts'] ?? []) as List<dynamic>)
+      screenplay: Screenplay.fromJson(
+        normalized['screenplay'] as Map<String, dynamic>,
+      ),
+      acts: ((normalized['acts'] ?? []) as List<dynamic>)
           .map((i) => ActNode.fromJson(i as Map<String, dynamic>))
           .toList(),
-      actPage: m['act_page'] == null
+      actPage: normalized['act_page'] == null
           ? TreePage(page: 1, pageSize: 100, total: 0)
-          : TreePage.fromJson(m['act_page'] as Map<String, dynamic>),
+          : TreePage.fromJson(normalized['act_page'] as Map<String, dynamic>),
     );
   }
   Map<String, dynamic> toJson() {
@@ -1506,8 +1549,11 @@ class SceneNode {
     required this.framePage,
   });
   factory SceneNode.fromJson(Map<String, dynamic> m) {
+    final sceneSource = m['scene'] is Map<String, dynamic>
+        ? m['scene'] as Map<String, dynamic>
+        : m;
     return SceneNode(
-      scene: Scene.fromJson(m['scene'] as Map<String, dynamic>),
+      scene: Scene.fromJson(sceneSource),
       frames: ((m['frames'] ?? []) as List<dynamic>)
           .map((i) => Frame.fromJson(i as Map<String, dynamic>))
           .toList(),

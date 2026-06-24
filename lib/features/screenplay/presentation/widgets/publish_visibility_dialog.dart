@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import 'screenplay_visibility_sheet.dart';
 
 /// Dialog for choosing screenplay visibility before publish.
 class PublishVisibilityDialog extends StatefulWidget {
@@ -20,44 +21,15 @@ class PublishVisibilityDialog extends StatefulWidget {
 }
 
 class _PublishVisibilityDialogState extends State<PublishVisibilityDialog> {
-  int _visibility = 0;
+  int _visibility = 1;
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('发布剧本'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '选择可见性',
-            style: AppTextStyles.bodySecondary,
-          ),
-          const SizedBox(height: 12),
-          RadioListTile<int>(
-            value: 1,
-            groupValue: _visibility,
-            onChanged: (v) => setState(() => _visibility = v!),
-            title: const Text('公开'),
-            subtitle: Text(
-              '出现在社区列表',
-              style: AppTextStyles.bodySecondary.copyWith(fontSize: 12),
-            ),
-            contentPadding: EdgeInsets.zero,
-          ),
-          RadioListTile<int>(
-            value: 0,
-            groupValue: _visibility,
-            onChanged: (v) => setState(() => _visibility = v!),
-            title: const Text('非公开'),
-            subtitle: Text(
-              '仅服务端存档，可通过 JSON 导出分享',
-              style: AppTextStyles.bodySecondary.copyWith(fontSize: 12),
-            ),
-            contentPadding: EdgeInsets.zero,
-          ),
-        ],
+      content: ScreenplayVisibilityOptions(
+        value: _visibility,
+        onChanged: (v) => setState(() => _visibility = v),
       ),
       actions: [
         TextButton(

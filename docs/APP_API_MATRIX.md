@@ -13,12 +13,13 @@
 | 当前用户资料 | `AuthRepository._fetchProfile` | `user/api/user-api.dart` → `getProfile` | GET `/users/me` |
 | 更新资料 | `AuthRepository.updateProfile` | `updateProfile` | PUT `/users/me` |
 | 公开用户资料 | `UserProfileRepository.fetchPublicProfile` | `getPublicUserProfile` | GET `/users/{id}/profile` |
-| 用户作品列表 | `UserProfileRepository.listUserScreenplays` | `listUserScreenplays` | GET `/users/{id}/screenplays` |
-| 用户收藏列表 | `ScreenplayFavoriteRepository.fetchFavorites` | `listUserFavorites` | GET `/users/{id}/favorites` |
-| 用户点赞列表 | `ScreenplayLikeRepository.fetchLikes` | `listUserLikes` | GET `/users/{id}/likes` |
+| 用户作品列表 | `UserScreenplaysRepository` · `fetchUserScreenplaysPage` | `listScreenplays(creator)` → fallback `listUserScreenplays` | GET `/screenplays?creator={id}` · fallback GET `/users/{id}/screenplays` |
+| 剧本可见性 | `ScreenplayVisibilityService.updateVisibility` · `UserScreenplaysRepository.updateItemVisibility` | `updateScreenplay` | PUT `/screenplays/{id}` body `{ visibility: 0\|1 }` |
+| 用户收藏列表 | `ScreenplayFavoriteRepository.fetchFavorites` + `getScreenplayDetail` enrichment | `listUserFavorites` · `getScreenplayDetail` | GET `/users/{id}/favorites` · GET `/screenplays/{id}` |
+| 用户点赞列表 | `ScreenplayLikeRepository.fetchLikes` + `getScreenplayDetail` enrichment | `listUserLikes` · `getScreenplayDetail` | GET `/users/{id}/likes` · GET `/screenplays/{id}` |
 | 关注 / 取关 | `SocialRepository` | `followUser` / `unfollowUser` | POST/DELETE `/users/{id}/follow` |
-| 剧本列表 | `ScreenplayRemoteRepository.fetchScreenplays` | `listScreenplays` | GET `/screenplays` |
-| 剧本树（读） | `ScreenplayRemoteRepository.fetchScreenplayTree` | `getScreenplayTree` | GET `/screenplays/{id}/tree` |
+| 剧本列表 | `ScreenplayRemoteRepository.loadFirstPage` / `loadMore` | `listScreenplays` | GET `/screenplays?page&page_size`（支持 `q` 搜索、`visibility=1` 公开流） |
+| 剧本树（读） | `ScreenplayRemoteRepository.fetchScreenplayTree` | `getScreenplayTree` | GET `/screenplays/{id}/tree?depth=3&act_page_size=0&scene_page_size=0&frame_page_size=0` |
 | 剧本树（写） | `ScreenplayRemoteRepository.saveScreenplayTree` | `createScreenplayTree` / `updateScreenplayTree` | POST/PUT `/screenplays/{id}/tree` |
 | 创建剧本 | `ScreenplayPublishService` | `createScreenplay` | POST `/screenplays` |
 | 批量同步树 | `ScreenplayPublishService._syncTreeBulk` | `createScreenplayTree` / `updateScreenplayTree` | POST/PUT `/screenplays/{id}/tree` |
@@ -29,6 +30,13 @@
 | 图片列表 | `ImageGalleryRepository.loadFirstPage` | `listImages` | GET `/images` |
 | 图片详情 | `ImageGalleryRepository.fetchDetail` | `getImageDetail` | GET `/images/{id}` |
 | 图片下载 URL | `ImageGalleryRepository.fetchDownloadUrl` | `getImageDownloadUrl` | GET `/images/{id}/download` |
+| 图片标签列表 | `ImageTagsRepository.loadTags` | `listImageTags` | GET `/image-tags` |
+| 图片标签创建 / 打标 | `ImageTagsRepository.applyTagsToImage` | `createImageTag` / `tagImage` / `untagImage` | POST `/image-tags` · POST/DELETE `/images/{id}/tags` |
+| IP 列表 / 详情 | `IpRepository.loadFirstPage` / `fetchDetail` | `work/api/work-api.dart` → `listWorks` / `getWork` | GET `/works` · GET `/works/{id}` |
+| IP 创建 / 更新 / 删除 | `IpRepository.create` / `update` / `delete` | `createWork` / `updateWork` / `deleteWork` | POST `/works` · PUT/DELETE `/works/{id}` |
+| 图片关联 IP | `IpRepository.linkToImage` | `image/api/image-api.dart` → `linkImageWork` / `unlinkImageWork` | POST/DELETE `/images/{id}/works` |
+| 剧本标签同步 | `ScreenplayTagsRepository.applyTagsToScreenplay` · `syncTags` | `listScreenplayTags` / `createScreenplayTag` / `tagScreenplay` / `untagScreenplay` | GET/POST `/tags` · POST `/tags/{screenplayId}` · DELETE `/tags/{screenplayId}/{tagId}` |
+| 拍摄参数预设 | `ShootPresetRepository` | `cine-preset/api/cine-preset-api.dart` → `listCinePresets` / `listMyCinePresets` / `createCinePreset` / `updateCinePreset` / `deleteCinePreset` | GET `/cine-presets?scope=0\|1` · GET `/cine-presets/mine` · POST `/cine-presets` · PUT/DELETE `/cine-presets/{id}` |
 | 401 登出 | `main.dart` | `core/network/api_auth.dart` | — |
 
 ---

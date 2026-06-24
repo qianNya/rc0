@@ -32,6 +32,9 @@ abstract final class AppRoutes {
 
   static const String imageDetail = '/image/:id';
   static const String imageAnalysis = '/image/:id/analysis';
+  static const String ipCreate = '/ip/create';
+  static const String ipDetail = '/ip/:id';
+  static const String ipEdit = '/ip/:id/edit';
 
   static const String preset = '/preset';
   static const String presetDetail = '/preset/:id';
@@ -69,6 +72,8 @@ abstract final class AppRoutes {
   static String scriptExportPath(String id) => '/script/$id/export';
   static String image(String id) => '/image/$id';
   static String imageAnalysisPath(String id) => '/image/$id/analysis';
+  static String ip(int id) => '/ip/$id';
+  static String ipEditPath(int id) => '/ip/$id/edit';
   static String presetItem(String id) => '/preset/$id';
   static String user(int id) => '/user/$id';
   static String pose(String id) => '/pose/$id';

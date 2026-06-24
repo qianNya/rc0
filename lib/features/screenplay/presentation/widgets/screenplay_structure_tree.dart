@@ -65,6 +65,15 @@ class _ScreenplayStructureTreeState extends State<ScreenplayStructureTree> {
   Widget build(BuildContext context) {
     final acts = widget.screenplay.acts;
     if (acts.isEmpty) {
+      final summary = widget.screenplay.hierarchySummary;
+      if (widget.screenplay.actCount > 0 ||
+          widget.screenplay.sceneCount > 0 ||
+          widget.screenplay.frameCount > 0) {
+        return Text(
+          '结构预览加载中…（$summary）',
+          style: AppTextStyles.bodySecondary,
+        );
+      }
       return Text(
         '暂无结构',
         style: AppTextStyles.bodySecondary,

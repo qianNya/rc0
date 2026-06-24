@@ -5,6 +5,7 @@ import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/responsive/breakpoints.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/image_preview.dart';
@@ -94,6 +95,7 @@ class _FavoritesPageState extends State<FavoritesPage>
                       loading: _loadingScreenplays,
                       error: _spError,
                       items: _spFavorites.items,
+                      screenplays: _spFavorites.screenplays,
                       onRefresh: _loadScreenplayFavorites,
                     ),
                   ],
@@ -123,16 +125,28 @@ class _FrameFavoritesTab extends StatelessWidget {
       builder: (context, _) {
         final items = repo.items;
         if (items.isEmpty) {
-          return EmptyStateView(
-            icon: Icons.favorite_border,
-            title: '暂无画格收藏',
-            subtitle: '在全屏预览中收藏喜欢的画格',
-            actionLabel: '去探索',
-            onAction: () => context.go(AppRoutes.discovery),
+          return RefreshIndicator(
+            onRefresh: () async => repo.load(),
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                SizedBox(height: MediaQuery.sizeOf(context).height * 0.15),
+                EmptyStateView(
+                  icon: Icons.favorite_border,
+                  title: '暂无画格收藏',
+                  subtitle: '在全屏预览中收藏喜欢的画格',
+                  actionLabel: '去探索',
+                  onAction: () => context.go(AppRoutes.discovery),
+                ),
+              ],
+            ),
           );
         }
 
-        return GridView.builder(
+        return RefreshIndicator(
+          onRefresh: () async => repo.load(),
+          child: GridView.builder(
+            physics: const AlwaysScrollableScrollPhysics(),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: isDesktop ? 5 : 3,
             mainAxisSpacing: 12,
@@ -147,6 +161,7 @@ class _FrameFavoritesTab extends StatelessWidget {
               onRemove: () => repo.remove(items[index].id),
             );
           },
+        ),
         );
       },
     );
@@ -179,12 +194,14 @@ class _ScreenplayFavoritesTab extends StatelessWidget {
     required this.loading,
     required this.error,
     required this.items,
+    required this.screenplays,
     required this.onRefresh,
   });
 
   final bool loading;
   final String? error;
   final List<FavoriteScreenplayRef> items;
+  final Map<int, Screenplay> screenplays;
   final Future<void> Function() onRefresh;
 
   @override
@@ -211,15 +228,24 @@ class _ScreenplayFavoritesTab extends StatelessWidget {
         itemBuilder: (_, i) {
           final fav = items[i];
           final spId = fav.screenplayId;
+          final screenplay = screenplays[spId];
+          final title = screenplay?.title.isNotEmpty == true
+              ? screenplay!.title
+              : '剧本 #$spId';
           return ListTile(
             tileColor: AppColors.surface,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
-            leading: const CircleAvatar(
-              child: Icon(Icons.movie_outlined, size: 20),
+            leading: CircleAvatar(
+              backgroundImage: screenplay?.coverUrl != null
+                  ? NetworkImage(screenplay!.coverUrl!)
+                  : null,
+              child: screenplay?.coverUrl == null
+                  ? const Icon(Icons.movie_outlined, size: 20)
+                  : null,
             ),
-            title: Text('剧本 #$spId'),
+            title: Text(title),
             subtitle: Text(fav.createdAt),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push(AppRoutes.script('$spId')),

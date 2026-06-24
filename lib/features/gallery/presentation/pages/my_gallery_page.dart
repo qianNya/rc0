@@ -4,16 +4,29 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/routes.dart';
+import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_dimensions.dart';
+import '../../../../core/data/app_catalog.dart';
 import '../../../../core/responsive/breakpoints.dart';
 import '../../../../core/utils/image_url_utils.dart';
 import '../../../../core/utils/state_listeners.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
+import '../../../../shared/widgets/feed_tab_bar.dart';
+import '../../../../shared/widgets/inline_error_banner.dart';
 import '../../../../shared/widgets/image_preview.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../upload/data/image_pick_service.dart';
 import '../../data/image_gallery_repository.dart';
+import '../../data/image_tags_repository.dart';
 import '../../domain/gallery_image.dart';
-import '../widgets/gallery_image_tile.dart';
+import '../../domain/image_tag.dart';
+import '../widgets/gallery_category_chips.dart';
+import '../widgets/gallery_masonry_grid.dart';
+import '../widgets/gallery_page_header.dart';
+import '../widgets/gallery_tags_tab.dart';
+import '../widgets/gallery_works_tab.dart';
+import '../../../ip/data/ip_repository.dart';
+import '../../../ip/presentation/widgets/ip_tab.dart';
 
 class MyGalleryPage extends StatefulWidget {
   const MyGalleryPage({super.key});
@@ -25,14 +38,24 @@ class MyGalleryPage extends StatefulWidget {
 class _MyGalleryPageState extends State<MyGalleryPage> {
   final _auth = AuthRepository.instance;
   final _gallery = ImageGalleryRepository.instance;
+  final _tags = ImageTagsRepository.instance;
   final _picker = ImagePickService();
+  final _ipTabKey = GlobalKey<IpTabState>();
+  final _worksTabKey = GlobalKey<GalleryWorksTabState>();
+
   bool _uploading = false;
+  int _mainTabIndex = 0;
+  int _categoryIndex = 0;
+  bool _ipTabVisited = false;
+  bool _worksTabVisited = false;
+  bool _tagsTabVisited = false;
 
   @override
   void initState() {
     super.initState();
     _auth.addListener(_onDataChanged);
     _gallery.addListener(_onDataChanged);
+    _tags.addListener(_onDataChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
@@ -40,6 +63,7 @@ class _MyGalleryPageState extends State<MyGalleryPage> {
   void dispose() {
     _auth.removeListener(_onDataChanged);
     _gallery.removeListener(_onDataChanged);
+    _tags.removeListener(_onDataChanged);
     super.dispose();
   }
 
@@ -47,7 +71,41 @@ class _MyGalleryPageState extends State<MyGalleryPage> {
 
   Future<void> _load() async {
     if (!_auth.isLoggedIn) return;
-    await _gallery.loadFirstPage();
+    await Future.wait([
+      _gallery.loadFirstPage(),
+      _tags.loadTags(),
+    ]);
+  }
+
+  Future<void> _refresh() async {
+    if (!_auth.isLoggedIn) return;
+    await _load();
+    if (_mainTabIndex == 1) {
+      await _ipTabKey.currentState?.load();
+    } else if (_mainTabIndex == 2) {
+      await _worksTabKey.currentState?.load();
+    } else if (_mainTabIndex == 3) {
+      await _tags.loadTags();
+    }
+  }
+
+  List<String> get _categoryLabels => [
+        '全部',
+        ..._tags.tags.map((t) => t.name).where((n) => n.isNotEmpty),
+      ];
+
+  List<GalleryImage> get _filteredImages {
+    final items = _gallery.items;
+    if (_categoryIndex == 0 || _tags.tags.isEmpty) return items;
+    final tagIndex = _categoryIndex - 1;
+    if (tagIndex < 0 || tagIndex >= _tags.tags.length) return items;
+    final tag = _tags.tags[tagIndex];
+    return items.where((image) => image.matchesTag(tag)).toList();
+  }
+
+  int get _masonryColumns {
+    if (Breakpoints.isDesktop(context)) return 4;
+    return 3;
   }
 
   void _showSnack(String message) {
@@ -113,6 +171,34 @@ class _MyGalleryPageState extends State<MyGalleryPage> {
       captions: items.map((e) => e.title).toList(),
       options: ImagePreviewOptions(
         sourceLabel: '我的图库',
+        enableTagEditing: true,
+        tagStates: items
+            .map(
+              (e) => ImagePreviewTagState(
+                serverImageId: e.id,
+                tags: e.tags,
+                tagIds: e.tagIds,
+              ),
+            )
+            .toList(),
+        onLoadSuggestedTags: () async {
+          if (_tags.tags.isEmpty) await _tags.loadTags();
+          return _tags.suggestedNames;
+        },
+        onSaveImageTags: (previewIndex, desired, currentIds) async {
+          final item = items[previewIndex];
+          final error = await _tags.applyTagsToImage(
+            imageId: item.id,
+            currentTagIds: currentIds,
+            desiredNames: desired,
+          );
+          if (error != null) {
+            return (tags: item.tags, tagIds: item.tagIds, error: error);
+          }
+          final detail = await _gallery.fetchDetail(item.id);
+          final image = detail.image ?? item;
+          return (tags: image.tags, tagIds: image.tagIds, error: null);
+        },
         syncInfos: items
             .map((e) => ImagePreviewSyncInfo.uploaded(serverImageId: e.id))
             .toList(),
@@ -120,123 +206,276 @@ class _MyGalleryPageState extends State<MyGalleryPage> {
     );
   }
 
+  void _onTagSelectedFromList(ImageTag tag) {
+    final tagIndex = _tags.tags.indexWhere((t) => t.id == tag.id);
+    setState(() {
+      _mainTabIndex = 0;
+      _categoryIndex = tagIndex >= 0 ? tagIndex + 1 : 0;
+    });
+  }
+
+  void _onMainTabChanged(int index) {
+    setState(() {
+      _mainTabIndex = index;
+      if (index == 1) _ipTabVisited = true;
+      if (index == 2) _worksTabVisited = true;
+      if (index == 3) _tagsTabVisited = true;
+    });
+    if (index == 1) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _ipTabKey.currentState?.load();
+      });
+    } else if (index == 2) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _worksTabKey.currentState?.load();
+      });
+    } else if (index == 3) {
+      _tags.loadTags();
+    }
+  }
+
+  String _formatTotal(num total) {
+    final value = total.toInt();
+    if (value >= 1000) {
+      final s = value.toString();
+      final buf = StringBuffer();
+      for (var i = 0; i < s.length; i++) {
+        if (i > 0 && (s.length - i) % 3 == 0) buf.write(',');
+        buf.write(s[i]);
+      }
+      return buf.toString();
+    }
+    return '$value';
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!_auth.isLoggedIn) {
       return Scaffold(
-        appBar: AppBar(title: const Text('我的图库')),
-        body: EmptyStateView(
-          icon: Icons.photo_library_outlined,
-          title: '登录后查看图库',
-          subtitle: '上传与管理你的参考图片',
-          actionLabel: '去登录',
-          onAction: () =>
-              context.go(AppRoutes.loginWithRedirect(AppRoutes.library)),
+        body: SafeArea(
+          child: Column(
+            children: [
+              const GalleryPageHeader(),
+              Expanded(
+                child: EmptyStateView(
+                  icon: Icons.photo_library_outlined,
+                  title: '登录后查看图库',
+                  subtitle: '上传与管理你的参考图片',
+                  actionLabel: '去登录',
+                  onAction: () =>
+                      context.go(AppRoutes.loginWithRedirect(AppRoutes.library)),
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
 
-    final isDesktop = Breakpoints.isDesktop(context);
-    final items = _gallery.items;
+    final filtered = _filteredImages;
     final loading = _gallery.loading;
     final error = _gallery.error;
+    final theme = Theme.of(context);
+    final secondary =
+        theme.textTheme.bodyMedium?.color ?? AppColors.textSecondary;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('我的图库'),
-        actions: [
-          if (_uploading)
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
+      body: SafeArea(
+        bottom: false,
+        child: RefreshIndicator(
+          onRefresh: _refresh,
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (notification) {
+              if (notification is! ScrollEndNotification) return false;
+              if (notification.metrics.extentAfter >= 240) return false;
+
+              if (_mainTabIndex == 0 &&
+                  _gallery.hasMore &&
+                  !_gallery.loadingMore) {
+                _gallery.loadMore();
+              } else if (_mainTabIndex == 1) {
+                final ip = IpRepository.instance;
+                if (ip.hasMore && !ip.loadingMore) {
+                  ip.loadMore();
+                }
+              } else if (_mainTabIndex == 2) {
+                _worksTabKey.currentState?.loadMore();
+              }
+              return false;
+            },
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                SliverToBoxAdapter(
+                  child: GalleryPageHeader(
+                    onUpload: _pickAndUpload,
+                    uploading: _uploading,
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: FeedTabBar(
+                    tabs: AppCatalog.galleryTabs,
+                    selectedIndex: _mainTabIndex,
+                    onChanged: _onMainTabChanged,
+                    underlineStyle: true,
+                  ),
+                ),
+                if (_mainTabIndex == 0) ..._buildImagesTab(
+                  filtered: filtered,
+                  loading: loading,
+                  error: error,
+                  secondary: secondary,
+                ),
+                if (_ipTabVisited)
+                  SliverToBoxAdapter(
+                    child: Offstage(
+                      offstage: _mainTabIndex != 1,
+                      child: IpTab(key: _ipTabKey),
+                    ),
+                  ),
+                if (_worksTabVisited)
+                  SliverToBoxAdapter(
+                    child: Offstage(
+                      offstage: _mainTabIndex != 2,
+                      child: GalleryWorksTab(key: _worksTabKey),
+                    ),
+                  ),
+                if (_tagsTabVisited)
+                  SliverToBoxAdapter(
+                    child: Offstage(
+                      offstage: _mainTabIndex != 3,
+                      child: GalleryTagsTab(
+                        onTagSelected: _onTagSelectedFromList,
+                      ),
+                    ),
+                  ),
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: AppDimensions.spacingLg),
+                ),
+              ],
             ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _uploading ? null : _pickAndUpload,
-        icon: const Icon(Icons.add_photo_alternate_outlined),
-        label: const Text('上传图片'),
-      ),
-      body: RefreshIndicator(
-        onRefresh: _load,
-        child: _buildBody(
-          isDesktop: isDesktop,
-          items: items,
-          loading: loading,
-          error: error,
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildBody({
-    required bool isDesktop,
-    required List<GalleryImage> items,
+  List<Widget> _buildImagesTab({
+    required List<GalleryImage> filtered,
     required bool loading,
     required String? error,
+    required Color? secondary,
   }) {
-    if (loading && items.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+    if (loading && _gallery.items.isEmpty) {
+      return const [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      ];
     }
 
-    if (items.isEmpty) {
-      return ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        children: [
-          SizedBox(
-            height: MediaQuery.sizeOf(context).height * 0.5,
+    if (_gallery.items.isEmpty) {
+      if (error != null) {
+        return [
+          SliverFillRemaining(
+            hasScrollBody: false,
             child: EmptyStateView(
-              icon: Icons.photo_library_outlined,
-              title: '图库还是空的',
-              subtitle: error ?? '点击右下角上传你的第一张图片',
-              actionLabel: '上传图片',
-              onAction: _pickAndUpload,
+              icon: Icons.cloud_off_outlined,
+              title: '加载失败',
+              subtitle: error,
+              actionLabel: '重试',
+              onAction: _load,
             ),
           ),
-        ],
-      );
+        ];
+      }
+      return [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: EmptyStateView(
+            icon: Icons.photo_library_outlined,
+            title: '图库还是空的',
+            subtitle: '点击右上角上传你的第一张图片',
+            actionLabel: '上传图片',
+            onAction: _pickAndUpload,
+          ),
+        ),
+      ];
     }
 
-    return NotificationListener<ScrollNotification>(
-      onNotification: (notification) {
-        if (notification is ScrollEndNotification &&
-            notification.metrics.extentAfter < 240 &&
-            _gallery.hasMore &&
-            !_gallery.loadingMore) {
-          _gallery.loadMore();
-        }
-        return false;
-      },
-      child: GridView.builder(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: EdgeInsets.all(isDesktop ? 32 : 16),
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: isDesktop ? 6 : 3,
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: 0.85,
+    return [
+      if (error != null)
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppDimensions.spacingMd,
+              AppDimensions.spacingSm,
+              AppDimensions.spacingMd,
+              0,
+            ),
+            child: InlineErrorBanner(
+              message: error,
+              onRetry: () => _gallery.loadFirstPage(),
+            ),
+          ),
         ),
-        itemCount: items.length + (_gallery.loadingMore ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (index >= items.length) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            );
-          }
-
-          return GalleryImageTile(
-            image: items[index],
-            onTap: () => _openPreview(items, index),
-          );
-        },
+      SliverToBoxAdapter(
+        child: GalleryCategoryChips(
+          labels: _categoryLabels,
+          selectedIndex: _categoryIndex.clamp(0, _categoryLabels.length - 1),
+          onChanged: (index) => setState(() => _categoryIndex = index),
+        ),
       ),
-    );
+      if (filtered.isEmpty)
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 48),
+            child: EmptyStateView(
+              icon: Icons.filter_alt_off_outlined,
+              title: '该分类暂无图片',
+              subtitle: '试试选择其他标签',
+              actionLabel: '查看全部',
+              onAction: () => setState(() => _categoryIndex = 0),
+            ),
+          ),
+        )
+      else ...[
+        SliverToBoxAdapter(
+          child: GalleryMasonryGrid(
+            items: filtered,
+            crossAxisCount: _masonryColumns,
+            onTap: (index) => _openPreview(filtered, index),
+          ),
+        ),
+        if (_gallery.loadingMore)
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Center(
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            ),
+          ),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.only(
+              top: AppDimensions.spacingMd,
+              bottom: AppDimensions.spacingSm,
+            ),
+            child: Center(
+              child: Text(
+                '共 ${_formatTotal(_gallery.total)} 张',
+                style: TextStyle(fontSize: 13, color: secondary),
+              ),
+            ),
+          ),
+        ),
+      ],
+    ];
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../core/utils/image_url_utils.dart';
 import '../../domain/gallery_image.dart';
@@ -15,9 +16,19 @@ class GalleryImageTile extends StatelessWidget {
   final GalleryImage image;
   final VoidCallback onTap;
 
+  List<String> get _badges {
+    if (image.tags.isNotEmpty) {
+      return image.tags.take(2).toList(growable: false);
+    }
+    final title = image.title.trim();
+    if (title.isNotEmpty && title.length <= 8) return [title];
+    return const [];
+  }
+
   @override
   Widget build(BuildContext context) {
     final path = resolveNetworkImageUrl(image.displayUrl) ?? image.displayUrl;
+    final badges = _badges;
 
     return GestureDetector(
       onTap: onTap,
@@ -30,36 +41,60 @@ class GalleryImageTile extends StatelessWidget {
               Rc0Image(
                 path: path,
                 fit: BoxFit.cover,
-                errorWidget: const ColoredBox(
-                  color: Color(0xFF2A2A2A),
-                  child: Icon(Icons.broken_image_outlined),
+                errorWidget: ColoredBox(
+                  color: AppColors.placeholderDark,
+                  child: Icon(
+                    Icons.broken_image_outlined,
+                    color: AppColors.textTertiaryDark,
+                  ),
                 ),
               )
             else
-              const ColoredBox(
-                color: Color(0xFF2A2A2A),
-                child: Icon(Icons.image_outlined),
-              ),
-            if (image.title.isNotEmpty)
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 4,
-                  ),
-                  color: Colors.black54,
-                  child: Text(
-                    image.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Colors.white, fontSize: 10),
-                  ),
+              ColoredBox(
+                color: AppColors.placeholderDark,
+                child: Icon(
+                  Icons.image_outlined,
+                  color: AppColors.textTertiaryDark,
                 ),
               ),
+            if (badges.isNotEmpty)
+              Positioned(
+                left: 6,
+                bottom: 6,
+                child: _GalleryCornerBadge(label: badges.first),
+              ),
+            if (badges.length > 1)
+              Positioned(
+                right: 6,
+                bottom: 6,
+                child: _GalleryCornerBadge(label: badges[1]),
+              ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GalleryCornerBadge extends StatelessWidget {
+  const _GalleryCornerBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      decoration: BoxDecoration(
+        color: AppColors.scrim,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );

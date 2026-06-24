@@ -19,15 +19,33 @@ class TemplateGridCard extends StatelessWidget {
     required this.screenplay,
     this.compact = false,
     this.showBadge,
+    this.showVisibilityBadge = false,
     this.onDelete,
     this.onMore,
+    this.selectionMode = false,
+    this.selected = false,
+    this.onSelectedToggle,
+    this.onLongPressEnterSelection,
   });
 
   final Screenplay screenplay;
   final bool compact;
   final ContentBadgeType? showBadge;
+  final bool showVisibilityBadge;
   final VoidCallback? onDelete;
   final VoidCallback? onMore;
+  final bool selectionMode;
+  final bool selected;
+  final VoidCallback? onSelectedToggle;
+  final VoidCallback? onLongPressEnterSelection;
+
+  void _handleTap(BuildContext context) {
+    if (selectionMode) {
+      onSelectedToggle?.call();
+      return;
+    }
+    context.push(AppRoutes.script(screenplay.detailRouteId));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,13 +56,18 @@ class TemplateGridCard extends StatelessWidget {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
         boxShadow: AppShadows.card,
+        border: selectionMode && selected
+            ? Border.all(color: AppColors.accent, width: 2)
+            : null,
       ),
       clipBehavior: Clip.antiAlias,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () =>
-              context.push(AppRoutes.script(screenplay.detailRouteId)),
+          onTap: () => _handleTap(context),
+          onLongPress: selectionMode
+              ? onSelectedToggle
+              : onLongPressEnterSelection ?? onDelete,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -59,10 +82,32 @@ class TemplateGridCard extends StatelessWidget {
                     if (showBadge != null)
                       Positioned(
                         top: 8,
-                        left: 8,
+                        left: selectionMode ? 36 : 8,
                         child: ContentCardBadge(type: showBadge!),
                       ),
-                    if (onDelete != null)
+                    if (selectionMode)
+                      Positioned(
+                        top: 6,
+                        left: 6,
+                        child: Checkbox(
+                          value: selected,
+                          onChanged: (_) => onSelectedToggle?.call(),
+                          visualDensity: VisualDensity.compact,
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ),
+                    if (showVisibilityBadge &&
+                        !screenplay.isLocal &&
+                        screenplay.remoteScreenplayId != null &&
+                        screenplay.visibility != null)
+                      Positioned(
+                        top: 8,
+                        right: onDelete != null ? 40 : 8,
+                        child: _VisibilityBadge(
+                          isPublic: screenplay.visibility == 1,
+                        ),
+                      ),
+                    if (onDelete != null && !selectionMode)
                       Positioned(
                         top: 6,
                         right: 6,
@@ -130,6 +175,31 @@ class TemplateGridCard extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _VisibilityBadge extends StatelessWidget {
+  const _VisibilityBadge({required this.isPublic});
+
+  final bool isPublic;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.scrim,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        isPublic ? '公开' : '非公开',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );

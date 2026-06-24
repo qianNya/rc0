@@ -1,7 +1,13 @@
 ### 剧本模块 — 层级 CRUD / Fork / 模板 / 电影预设
 
 ### @name listScreenplays
-GET {{baseUrl}}/screenplays?page=1&page_size=20
+GET {{baseUrl}}/screenplays?page=1&page_size=20&visibility=1
+Accept: application/json
+
+###
+
+### @name listScreenplaysPublicFeed
+GET {{baseUrl}}/screenplays?page=1&page_size=20&publish_status=1&visibility=1
 Accept: application/json
 
 ###
@@ -39,6 +45,13 @@ Accept: application/json
 
 ###
 
+### @name listUserPublishedScreenplays
+GET {{baseUrl}}/screenplays?creator={{userId}}&page=1&page_size=20
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+###
+
 ### @name getScreenplay
 GET {{baseUrl}}/screenplays/{{screenplayId}}
 Accept: application/json
@@ -46,7 +59,7 @@ Accept: application/json
 ###
 
 ### @name getScreenplayTree
-GET {{baseUrl}}/screenplays/{{screenplayId}}/tree
+GET {{baseUrl}}/screenplays/{{screenplayId}}/tree?depth=3&act_page_size=0&scene_page_size=0&frame_page_size=0
 Accept: application/json
 
 ###
@@ -175,7 +188,8 @@ Content-Type: application/json
 
 {
   "title": "更新标题",
-  "summary": "更新摘要"
+  "summary": "更新摘要",
+  "visibility": 1
 }
 
 ###

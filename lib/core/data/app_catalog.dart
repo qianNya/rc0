@@ -1,4 +1,35 @@
+import 'package:flutter/material.dart';
+
+import 'preset_catalog.dart';
 import '../domain/screenplay/screenplay.dart';
+
+/// 发现页轮播 Banner 静态条目（暂无后端 API）。
+class DiscoveryBannerItem {
+  const DiscoveryBannerItem({
+    required this.eyebrow,
+    required this.title,
+    this.imagePath,
+  });
+
+  final String eyebrow;
+  final String title;
+  final String? imagePath;
+}
+
+/// 发现页功能区快捷入口。
+class DiscoveryQuickActionItem {
+  const DiscoveryQuickActionItem({
+    required this.label,
+    required this.icon,
+    required this.backgroundColor,
+    required this.iconColor,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color backgroundColor;
+  final Color iconColor;
+}
 
 /// 应用静态配置与剧本列表工具
 abstract final class AppCatalog {
@@ -16,17 +47,93 @@ abstract final class AppCatalog {
 
   static const communitySortTabs = ['热门', '最新', '最多使用', '精选'];
 
-  static const feedTabs = ['推荐', '关注', '最新', '人像', '光影', '情绪'];
+  static const feedTabs = ['发现', '关注', '推荐'];
+
+  static const galleryTabs = ['图片', 'IP', '作品', '标签'];
+
+  /// IP `work_type` presets aligned with POST /works.
+  static const ipWorkTypePresets = <({String label, int value})>[
+    (label: '动漫', value: 2),
+    (label: '游戏', value: 3),
+    (label: '漫画', value: 4),
+    (label: '轻小说', value: 5),
+    (label: '其他', value: 1),
+  ];
+
+  static String ipWorkTypeLabel(int workType) {
+    for (final preset in ipWorkTypePresets) {
+      if (preset.value == workType) return preset.label;
+    }
+    return '类型 $workType';
+  }
+
+  static const discoveryBanners = [
+    DiscoveryBannerItem(
+      eyebrow: '本周精选',
+      title: '海边少女摄影合集',
+    ),
+    DiscoveryBannerItem(
+      eyebrow: '热门模板',
+      title: '光影与构图的碰撞',
+    ),
+    DiscoveryBannerItem(
+      eyebrow: '编辑推荐',
+      title: '赛博朋克·夜之城',
+    ),
+  ];
+
+  static const discoveryQuickActions = [
+    DiscoveryQuickActionItem(
+      label: '图片',
+      icon: Icons.photo_library_outlined,
+      backgroundColor: Color(0xFFE3F0FF),
+      iconColor: Color(0xFF3B9EFF),
+    ),
+    DiscoveryQuickActionItem(
+      label: '剧本',
+      icon: Icons.movie_creation_outlined,
+      backgroundColor: Color(0xFFE8F4FF),
+      iconColor: Color(0xFF4A90D9),
+    ),
+    DiscoveryQuickActionItem(
+      label: '分镜',
+      icon: Icons.grid_view_rounded,
+      backgroundColor: Color(0xFFE6F7EE),
+      iconColor: Color(0xFF34C759),
+    ),
+    DiscoveryQuickActionItem(
+      label: '预设',
+      icon: Icons.tune_outlined,
+      backgroundColor: Color(0xFFFFF4E0),
+      iconColor: Color(0xFFFFB020),
+    ),
+    DiscoveryQuickActionItem(
+      label: '用户',
+      icon: Icons.person_outline,
+      backgroundColor: Color(0xFFF0EBFF),
+      iconColor: Color(0xFF6B4FE0),
+    ),
+  ];
 
   static const marketTabs = ['推荐', '人像姿势', '构图', '光影', '场景模板'];
 
   static const profileTabs = ['作品', '模板', 'LUT', '收藏'];
 
-  static const wizardSteps = ['基本信息', '结构', '剧本', '参数', '音频', '发布'];
-
   static const marketQuickActions = ['全部模板', '热榜', '最新', '免费区'];
 
-  static const aspectRatioPresets = ['16:9', '2.39:1', '4:3', '1:1', '9:16'];
+  static const devicePresets = PresetCatalog.devicePresets;
+
+  static const aspectRatioPresets = PresetCatalog.aspectRatioPresets;
+
+  static const lightingPresets = PresetCatalog.lightingPresets;
+
+  static const defaultShootParams = PresetCatalog.defaultShootParams;
+
+  static const builtInShootPresets = PresetCatalog.builtInShootPresets;
+
+  static const communityShootPresets = PresetCatalog.communityShootPresets;
+
+  static const presetCategories = PresetCatalog.categories;
 
   static const placeholderAuthor = '光影捕手';
   static const placeholderLevel = 5;

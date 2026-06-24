@@ -89,3 +89,108 @@ Future getImageDownloadUrl(
     eventually: eventually,
   );
 }
+
+Future listImageTags({
+  String namespace = 'general',
+  Function(ListImageTagsResp)? ok,
+  Function(String)? fail,
+  Function? eventually,
+}) async {
+  await apiGet(
+    '/image-tags',
+    query: {'namespace': namespace},
+    ok: (data) => ok?.call(ListImageTagsResp.fromJson(data)),
+    fail: fail,
+    eventually: eventually,
+  );
+}
+
+Future createImageTag({
+  required String name,
+  String namespace = 'general',
+  String? slug,
+  Function(ImageTagItem)? ok,
+  Function(String)? fail,
+  Function? eventually,
+}) async {
+  final body = <String, dynamic>{
+    'namespace': namespace,
+    'name': name,
+    'slug': slug ?? _slugify(name),
+  };
+  await apiPost(
+    '/image-tags',
+    body,
+    ok: (data) => ok?.call(ImageTagItem.fromJson(data)),
+    fail: fail,
+    eventually: eventually,
+  );
+}
+
+Future tagImage(
+  int imageId, {
+  required int tagId,
+  Function(Map<String, dynamic>)? ok,
+  Function(String)? fail,
+  Function? eventually,
+}) async {
+  await apiPost(
+    '/images/$imageId/tags',
+    {'tag_id': tagId},
+    ok: ok,
+    fail: fail,
+    eventually: eventually,
+  );
+}
+
+Future untagImage(
+  int imageId,
+  int tagId, {
+  Function(Map<String, dynamic>)? ok,
+  Function(String)? fail,
+  Function? eventually,
+}) async {
+  await apiDelete(
+    '/images/$imageId/tags/$tagId',
+    ok: ok,
+    fail: fail,
+    eventually: eventually,
+  );
+}
+
+Future linkImageWork(
+  int imageId, {
+  required int workId,
+  Function(Map<String, dynamic>)? ok,
+  Function(String)? fail,
+  Function? eventually,
+}) async {
+  await apiPost(
+    '/images/$imageId/works',
+    {'work_id': workId},
+    ok: ok,
+    fail: fail,
+    eventually: eventually,
+  );
+}
+
+Future unlinkImageWork(
+  int imageId,
+  int workId, {
+  Function(Map<String, dynamic>)? ok,
+  Function(String)? fail,
+  Function? eventually,
+}) async {
+  await apiDelete(
+    '/images/$imageId/works/$workId',
+    ok: ok,
+    fail: fail,
+    eventually: eventually,
+  );
+}
+
+String _slugify(String name) {
+  final trimmed = name.trim().toLowerCase();
+  if (trimmed.isEmpty) return 'tag';
+  return trimmed.replaceAll(RegExp(r'\s+'), '-');
+}

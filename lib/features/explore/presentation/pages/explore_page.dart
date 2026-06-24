@@ -2,25 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/routes.dart';
-import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/data/app_catalog.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
-import '../../../../core/domain/screenplay/screenplay_adapter.dart';
-import '../../../../core/domain/screenplay/screenplay_display.dart';
 import '../../../../core/responsive/breakpoints.dart';
 import '../../../../core/responsive/responsive_builder.dart';
 import '../../../../core/utils/state_listeners.dart';
 import '../../../screenplay/data/screenplay_local_repository.dart';
 import '../../../screenplay/data/screenplay_remote_repository.dart';
 import '../../../screenplay/presentation/widgets/screenplay_delete_actions.dart';
+import '../../../screenplay/presentation/widgets/screenplay_selection_bar.dart';
+import '../../../screenplay/presentation/widgets/screenplay_selection_controller.dart';
+import '../../../../shared/widgets/content_card_shared.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
-import '../../../../shared/widgets/explore_feed_tile.dart';
+import '../../../../shared/widgets/inline_error_banner.dart';
 import '../../../../shared/widgets/feed_tab_bar.dart';
-import '../../../../shared/widgets/pose_cover_image.dart';
 import '../../../../shared/widgets/rc0_widgets.dart';
-import '../../../../shared/widgets/screenplay_card.dart';
+import '../widgets/explore_featured_carousel.dart';
+import '../widgets/explore_feed_grid_card.dart';
+import '../widgets/explore_quick_actions.dart';
 
 class ExplorePage extends StatefulWidget {
   const ExplorePage({super.key});
@@ -32,16 +32,15 @@ class ExplorePage extends StatefulWidget {
 class _ExplorePageState extends State<ExplorePage> {
   final _localRepository = ScreenplayLocalRepository.instance;
   final _remoteRepository = ScreenplayRemoteRepository.instance;
-  String _selectedTag = '全部';
+  final _selectionController = ScreenplaySelectionController();
   int _feedTabIndex = 0;
-  bool _forking = false;
-  String? _forkingId;
 
   @override
   void initState() {
     super.initState();
     _localRepository.addListener(_onDataChanged);
     _remoteRepository.addListener(_onDataChanged);
+    _selectionController.addListener(_onDataChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _remoteRepository.loadFirstPage();
     });
@@ -51,255 +50,321 @@ class _ExplorePageState extends State<ExplorePage> {
   void dispose() {
     _localRepository.removeListener(_onDataChanged);
     _remoteRepository.removeListener(_onDataChanged);
+    _selectionController.removeListener(_onDataChanged);
+    _selectionController.dispose();
     super.dispose();
   }
 
   void _onDataChanged() => scheduleSetState(this);
 
-  String get _effectiveTag =>
-      _tagFilters.contains(_selectedTag) ? _selectedTag : '全部';
-
   List<Screenplay> get _allScripts => _localRepository.localScreenplays;
 
-  List<Screenplay> get _remoteTemplates => _remoteRepository.screenplays;
+  List<Screenplay> get _feedItems => [..._allScripts, ..._remoteRepository.screenplays];
 
-  List<Screenplay> get _feedItems {
-    final local = filterScreenplaysByTag(_allScripts, _effectiveTag);
-    final remote = _remoteTemplates;
-    return [...local, ...remote];
-  }
-
-  List<String> get _tagFilters => buildTagFilters(_allScripts);
-
-  Future<void> _forkTemplate(Screenplay script) async {
-    if (_forking) return;
-    setState(() {
-      _forking = true;
-      _forkingId = script.id;
-    });
-
-    final result = await _localRepository.fork(script);
-    if (!mounted) return;
-    setState(() {
-      _forking = false;
-      _forkingId = null;
-    });
-
-    if (result.screenplay == null) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(content: Text(result.error ?? 'Fork 失败')),
-        );
-      return;
-    }
-
-    context.go(AppRoutes.script(result.screenplay!.id));
-  }
+  List<String> get _localIds =>
+      _allScripts.map((s) => s.id).toList(growable: false);
 
   Future<void> _deleteScript(Screenplay script) async {
-    final confirmed = await confirmDeleteScreenplay(
-      context,
-      title: script.title,
-    );
-    if (!confirmed || !mounted) return;
+    await confirmAndDeleteScreenplays(context, [script]);
+  }
 
-    final result = await _localRepository.deleteScreenplay(script.id);
-    if (!mounted) return;
-    if (result.success) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(content: Text('剧本已删除')));
-    } else {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(content: Text(result.error ?? '删除失败，请重试')),
-        );
+  Future<void> _deleteSelected() async {
+    final selected = _selectionController.selectedLocalIds.toList();
+    if (selected.isEmpty) return;
+    final scripts = _allScripts
+        .where((s) => selected.contains(s.id))
+        .toList(growable: false);
+    final ok = await confirmAndDeleteScreenplays(context, scripts);
+    if (ok && mounted) {
+      _selectionController.exitSelection();
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final selectionProps = (
+      controller: _selectionController,
+      localIds: _localIds,
+      onDeleteSelected: _deleteSelected,
+    );
+
     return ResponsiveBuilder(
       mobile: (_) => _ExploreMobileView(
         feedItems: _feedItems,
-        suggestions: _allScripts.take(8).toList(),
         feedTabIndex: _feedTabIndex,
         remoteLoading: _remoteRepository.loading,
-        forking: _forking,
-        forkingId: _forkingId,
+        remoteLoadingMore: _remoteRepository.loadingMore,
+        remoteError: _remoteRepository.error,
+        remoteHasMore: _remoteRepository.hasMore,
         onFeedTabChanged: (i) => setState(() => _feedTabIndex = i),
         onDelete: _deleteScript,
-        onFork: _forkTemplate,
         onUpload: () => context.go(AppRoutes.create),
         onRefreshRemote: () => _remoteRepository.loadFirstPage(),
+        onLoadMore: () => _remoteRepository.loadMore(),
+        selectionController: selectionProps.controller,
+        localIds: selectionProps.localIds,
+        onDeleteSelected: selectionProps.onDeleteSelected,
+        onSelectionChanged: _onDataChanged,
       ),
       desktop: (_) => _ExploreDesktopView(
-        scripts: _feedItems,
-        tagFilters: _tagFilters,
-        selectedTag: _selectedTag,
+        feedItems: _feedItems,
         feedTabIndex: _feedTabIndex,
+        remoteLoading: _remoteRepository.loading,
+        remoteLoadingMore: _remoteRepository.loadingMore,
+        remoteError: _remoteRepository.error,
+        remoteHasMore: _remoteRepository.hasMore,
         onFeedTabChanged: (i) => setState(() => _feedTabIndex = i),
-        onTagChanged: (tag) => setState(() => _selectedTag = tag),
         onDelete: _deleteScript,
         onUpload: () => context.go(AppRoutes.create),
+        onRefreshRemote: () => _remoteRepository.loadFirstPage(),
+        onLoadMore: () => _remoteRepository.loadMore(),
+        selectionController: selectionProps.controller,
+        localIds: selectionProps.localIds,
+        onDeleteSelected: selectionProps.onDeleteSelected,
+        onSelectionChanged: _onDataChanged,
       ),
     );
   }
 }
 
+List<Widget> _buildDiscoverySlivers({
+  required BuildContext context,
+  required List<Screenplay> feedItems,
+  required bool remoteLoading,
+  required String? remoteError,
+  required bool remoteLoadingMore,
+  required Future<void> Function(Screenplay) onDelete,
+  required VoidCallback onUpload,
+  required Future<void> Function() onRefreshRemote,
+  required ScreenplaySelectionController selectionController,
+}) {
+  return [
+    SliverToBoxAdapter(
+      child: _buildDiscoveryFeedBody(
+        context: context,
+        feedItems: feedItems,
+        remoteLoading: remoteLoading,
+        remoteError: remoteError,
+        remoteLoadingMore: remoteLoadingMore,
+        onDelete: onDelete,
+        onUpload: onUpload,
+        onRefreshRemote: onRefreshRemote,
+        bottomPadding: 24,
+        selectionController: selectionController,
+      ),
+    ),
+    if (remoteLoadingMore)
+      const SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: Center(
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+        ),
+      ),
+  ];
+}
+
+Widget _buildDiscoveryFeedBody({
+  required BuildContext context,
+  required List<Screenplay> feedItems,
+  required bool remoteLoading,
+  required String? remoteError,
+  required bool remoteLoadingMore,
+  required Future<void> Function(Screenplay) onDelete,
+  required VoidCallback onUpload,
+  required Future<void> Function() onRefreshRemote,
+  required ScreenplaySelectionController selectionController,
+  double bottomPadding = 32,
+  double gridSpacing = 12,
+}) {
+  if (remoteLoading && feedItems.isEmpty) {
+    return const Padding(
+      padding: EdgeInsets.all(48),
+      child: Center(child: CircularProgressIndicator()),
+    );
+  }
+
+  if (feedItems.isEmpty) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 48),
+      child: EmptyStateView(
+        icon: remoteError != null
+            ? Icons.cloud_off_outlined
+            : Icons.movie_creation_outlined,
+        title: remoteError != null ? '加载失败' : '还没有内容',
+        subtitle: remoteError ??
+            '上传参考图，按「剧本 → 幕 → 场 → 画」组织你的分镜',
+        actionLabel: remoteError != null ? '重试' : '去创作',
+        onAction: remoteError != null ? () => onRefreshRemote() : onUpload,
+      ),
+    );
+  }
+
+  final crossAxisCount = Breakpoints.gridColumns(context, mobile: 2, desktop: 4);
+  final aspectRatio = feedGridChildAspectRatio(crossAxisCount);
+
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      if (remoteError != null)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          child: InlineErrorBanner(
+            message: remoteError,
+            onRetry: () => onRefreshRemote(),
+          ),
+        ),
+      GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(16, 8, 16, bottomPadding),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: crossAxisCount,
+          mainAxisSpacing: gridSpacing,
+          crossAxisSpacing: gridSpacing,
+          childAspectRatio: aspectRatio,
+        ),
+        itemCount: feedItems.length,
+        itemBuilder: (_, index) {
+          final item = feedItems[index];
+          final isLocal = item.isLocal;
+          return ExploreFeedGridCard(
+            screenplay: item,
+            onDelete: isLocal ? () => onDelete(item) : null,
+            selectionMode: selectionController.selectionMode && isLocal,
+            selected: selectionController.isSelected(item.id),
+            onSelectedToggle: isLocal
+                ? () => selectionController.toggle(item.id)
+                : null,
+            onLongPressEnterSelection: isLocal
+                ? () => selectionController.enterSelection(initialLocalId: item.id)
+                : null,
+          );
+        },
+      ),
+    ],
+  );
+}
+
 class _ExploreMobileView extends StatelessWidget {
   const _ExploreMobileView({
     required this.feedItems,
-    required this.suggestions,
     required this.feedTabIndex,
     required this.remoteLoading,
-    required this.forking,
-    required this.forkingId,
+    required this.remoteLoadingMore,
+    required this.remoteError,
+    required this.remoteHasMore,
     required this.onFeedTabChanged,
     required this.onDelete,
-    required this.onFork,
     required this.onUpload,
     required this.onRefreshRemote,
+    required this.onLoadMore,
+    required this.selectionController,
+    required this.localIds,
+    required this.onDeleteSelected,
+    required this.onSelectionChanged,
   });
 
   final List<Screenplay> feedItems;
-  final List<Screenplay> suggestions;
   final int feedTabIndex;
   final bool remoteLoading;
-  final bool forking;
-  final String? forkingId;
+  final bool remoteLoadingMore;
+  final String? remoteError;
+  final bool remoteHasMore;
   final ValueChanged<int> onFeedTabChanged;
   final Future<void> Function(Screenplay) onDelete;
-  final Future<void> Function(Screenplay) onFork;
   final VoidCallback onUpload;
   final Future<void> Function() onRefreshRemote;
+  final Future<void> Function() onLoadMore;
+  final ScreenplaySelectionController selectionController;
+  final List<String> localIds;
+  final Future<void> Function() onDeleteSelected;
+  final VoidCallback onSelectionChanged;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              16,
-              12 + MediaQuery.paddingOf(context).top,
-              16,
-              8,
-            ),
-            child: Row(
-              children: [
-                const Rc0Logo(),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: AppSearchField(
-                    hint: '搜索剧本、模板、标签',
-                    onTap: () {},
+      body: SafeArea(
+        bottom: false,
+        child: RefreshIndicator(
+          onRefresh: onRefreshRemote,
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (notification) {
+              if (notification is ScrollEndNotification &&
+                  notification.metrics.extentAfter < 240 &&
+                  remoteHasMore &&
+                  !remoteLoadingMore) {
+                onLoadMore();
+              }
+              return false;
+            },
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 4, right: 4),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: FeedTabBar(
+                            // Cosmetic tabs until feed API is wired.
+                            tabs: AppCatalog.feedTabs,
+                            selectedIndex: feedTabIndex,
+                            onChanged: onFeedTabChanged,
+                            underlineStyle: true,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.search),
+                          onPressed: () => context.push(AppRoutes.search),
+                        ),
+                        ScreenplaySelectionAppBarActions(
+                          controller: selectionController,
+                          localIds: localIds,
+                          onSelectionChanged: onSelectionChanged,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.notifications_outlined),
-                  color: AppColors.textPrimary,
-                  onPressed: () {},
+                const SliverToBoxAdapter(child: ExploreFeaturedCarousel()),
+                const SliverToBoxAdapter(child: ExploreQuickActions()),
+                SliverToBoxAdapter(
+                  child: SectionHeader(
+                    title: '灵感推荐',
+                    action: '更多',
+                    showChevron: true,
+                    onActionTap: () => context.push(AppRoutes.community),
+                    titleStyle: AppTextStyles.title.copyWith(fontSize: 16),
+                    actionStyle: AppTextStyles.bodySecondary.copyWith(fontSize: 13),
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                  ),
+                ),
+                ..._buildDiscoverySlivers(
+                  context: context,
+                  feedItems: feedItems,
+                  remoteLoading: remoteLoading,
+                  remoteError: remoteError,
+                  remoteLoadingMore: remoteLoadingMore,
+                  onDelete: onDelete,
+                  onUpload: onUpload,
+                  onRefreshRemote: onRefreshRemote,
+                  selectionController: selectionController,
                 ),
               ],
             ),
           ),
-          DefaultFeedTabBar(
-            selectedIndex: feedTabIndex,
-            onChanged: onFeedTabChanged,
-            underlineStyle: true,
-          ),
-          const SizedBox(height: 8),
-          Expanded(
-            child: feedItems.isEmpty && !remoteLoading
-                ? EmptyStateView(
-                    icon: Icons.movie_creation_outlined,
-                    title: '还没有内容',
-                    subtitle: '上传参考图，按「剧本 → 幕 → 场 → 画」组织你的分镜',
-                    actionLabel: '去创作',
-                    onAction: onUpload,
-                  )
-                : RefreshIndicator(
-                    onRefresh: onRefreshRemote,
-                    child: ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      children: [
-                        if (remoteLoading && feedItems.isEmpty)
-                          const Padding(
-                            padding: EdgeInsets.all(32),
-                            child: Center(child: CircularProgressIndicator()),
-                          ),
-                        for (final item in feedItems)
-                          ExploreFeedTile(
-                            screenplay: item,
-                            onDelete: item.isLocal
-                                ? () => onDelete(item)
-                                : null,
-                            onFork: item.exploreFeedType ==
-                                    ExploreFeedType.template
-                                ? () => onFork(item)
-                                : null,
-                            forkLoading:
-                                forking && forkingId == item.id,
-                          ),
-                        if (suggestions.isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              const Expanded(
-                                child: Text(
-                                  '你可能喜欢',
-                                  style: AppTextStyles.label,
-                                ),
-                              ),
-                              TextButton(
-                                onPressed: () {},
-                                child: const Text('查看更多'),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          SizedBox(
-                            height: 88,
-                            child: ListView.separated(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: suggestions.length,
-                              separatorBuilder: (_, _) =>
-                                  const SizedBox(width: 8),
-                              itemBuilder: (_, index) {
-                                final script = suggestions[index];
-                                return GestureDetector(
-                                  onTap: () => context.push(
-                                    AppRoutes.script(script.detailRouteId),
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(
-                                      AppDimensions.radiusSm,
-                                    ),
-                                    child: SizedBox(
-                                      width: 88,
-                                      child: PoseCoverImage(
-                                        imagePath: script.effectiveCoverImagePath,
-                                        aspectRatio: 1,
-                                        iconSize: 24,
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-          ),
-        ],
+        ),
+      ),
+      bottomNavigationBar: ScreenplaySelectionBottomBar(
+        controller: selectionController,
+        onDelete: () => onDeleteSelected(),
       ),
     );
   }
@@ -307,135 +372,146 @@ class _ExploreMobileView extends StatelessWidget {
 
 class _ExploreDesktopView extends StatelessWidget {
   const _ExploreDesktopView({
-    required this.scripts,
-    required this.tagFilters,
-    required this.selectedTag,
+    required this.feedItems,
     required this.feedTabIndex,
+    required this.remoteLoading,
+    required this.remoteLoadingMore,
+    required this.remoteError,
+    required this.remoteHasMore,
     required this.onFeedTabChanged,
-    required this.onTagChanged,
     required this.onDelete,
     required this.onUpload,
+    required this.onRefreshRemote,
+    required this.onLoadMore,
+    required this.selectionController,
+    required this.localIds,
+    required this.onDeleteSelected,
+    required this.onSelectionChanged,
   });
 
-  final List<Screenplay> scripts;
-  final List<String> tagFilters;
-  final String selectedTag;
+  final List<Screenplay> feedItems;
   final int feedTabIndex;
+  final bool remoteLoading;
+  final bool remoteLoadingMore;
+  final String? remoteError;
+  final bool remoteHasMore;
   final ValueChanged<int> onFeedTabChanged;
-  final ValueChanged<String> onTagChanged;
   final Future<void> Function(Screenplay) onDelete;
   final VoidCallback onUpload;
+  final Future<void> Function() onRefreshRemote;
+  final Future<void> Function() onLoadMore;
+  final ScreenplaySelectionController selectionController;
+  final List<String> localIds;
+  final Future<void> Function() onDeleteSelected;
+  final VoidCallback onSelectionChanged;
 
   @override
   Widget build(BuildContext context) {
-    final featured = scripts.take(3).toList();
-    final rest = scripts.length > 3 ? scripts.sublist(3) : <Screenplay>[];
-
     return Scaffold(
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24, 24, 32, 32),
-        child: AdaptiveContent(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Text('探索', style: AppTextStyles.display),
-                  const Spacer(),
-                  if (tagFilters.length > 1)
-                    Wrap(
-                      spacing: 8,
+      body: RefreshIndicator(
+        onRefresh: onRefreshRemote,
+        child: NotificationListener<ScrollNotification>(
+          onNotification: (notification) {
+            if (notification is ScrollEndNotification &&
+                notification.metrics.extentAfter < 240 &&
+                remoteHasMore &&
+                !remoteLoadingMore) {
+              onLoadMore();
+            }
+            return false;
+          },
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                  child: AdaptiveContent(
+                    child: Row(
                       children: [
-                        for (final tag in tagFilters.take(6))
-                          TagChip(
-                            label: tag,
-                            selected: selectedTag == tag,
-                            onTap: () => onTagChanged(tag),
+                        Expanded(
+                          child: FeedTabBar(
+                            tabs: AppCatalog.feedTabs,
+                            selectedIndex: feedTabIndex,
+                            onChanged: onFeedTabChanged,
+                            underlineStyle: true,
                           ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.search),
+                          onPressed: () => context.push(AppRoutes.search),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton.icon(
+                          onPressed: onUpload,
+                          icon: const Icon(Icons.add, size: 18),
+                          label: const Text('创作'),
+                        ),
+                        ScreenplaySelectionAppBarActions(
+                          controller: selectionController,
+                          localIds: localIds,
+                          onSelectionChanged: onSelectionChanged,
+                        ),
                       ],
                     ),
-                  const SizedBox(width: 16),
-                  ElevatedButton.icon(
-                    onPressed: onUpload,
-                    icon: const Icon(Icons.add, size: 18),
-                    label: const Text('创作'),
                   ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              FeedTabBar(
-                tabs: AppCatalog.feedTabs,
-                selectedIndex: feedTabIndex,
-                onChanged: onFeedTabChanged,
-                underlineStyle: true,
-              ),
-              const SizedBox(height: 24),
-              if (scripts.isEmpty)
-                EmptyStateView(
-                  icon: Icons.movie_creation_outlined,
-                  title: '还没有剧本',
-                  subtitle: '点击右上角创作，创建你的第一部剧本',
-                  actionLabel: '去创作',
-                  onAction: onUpload,
-                )
-              else ...[
-                if (featured.isNotEmpty)
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      mainAxisSpacing: 16,
-                      crossAxisSpacing: 16,
-                      childAspectRatio: 0.85,
-                    ),
-                    itemCount: featured.length,
-                    itemBuilder: (_, index) => ScreenplayCard(
-                      screenplay: featured[index],
-                      onDelete: () => onDelete(featured[index]),
-                    ),
-                  ),
-                if (rest.isNotEmpty) ...[
-                  const SizedBox(height: 24),
-                  const SectionHeader(title: '更多推荐'),
-                  const SizedBox(height: 12),
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate:
-                        SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount:
-                          Breakpoints.gridColumns(context, desktop: 4),
-                      mainAxisSpacing: 16,
-                      crossAxisSpacing: 16,
-                      childAspectRatio: 0.72,
-                    ),
-                    itemCount: rest.length,
-                    itemBuilder: (_, index) {
-                      final script = rest[index];
-                      return ScreenplayCard(
-                        screenplay: script,
-                        compact: true,
-                        onDelete: () => onDelete(script),
-                      );
-                    },
-                  ),
-                ],
-                const SizedBox(height: 24),
-                const Text('常用电影画幅比', style: AppTextStyles.label),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    for (final ratio in AppCatalog.aspectRatioPresets)
-                      TagChip(label: ratio, selected: false, onTap: () {}),
-                  ],
                 ),
-              ],
+              ),
+              const SliverToBoxAdapter(
+                child: AdaptiveContent(child: ExploreFeaturedCarousel()),
+              ),
+              const SliverToBoxAdapter(
+                child: AdaptiveContent(child: ExploreQuickActions()),
+              ),
+              SliverToBoxAdapter(
+                child: AdaptiveContent(
+                  child: SectionHeader(
+                    title: '灵感推荐',
+                    action: '更多',
+                    showChevron: true,
+                    onActionTap: () => context.push(AppRoutes.community),
+                    titleStyle: AppTextStyles.title.copyWith(fontSize: 16),
+                    actionStyle: AppTextStyles.bodySecondary.copyWith(fontSize: 13),
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                  ),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: AdaptiveContent(
+                  child: _buildDiscoveryFeedBody(
+                    context: context,
+                    feedItems: feedItems,
+                    remoteLoading: remoteLoading,
+                    remoteError: remoteError,
+                    remoteLoadingMore: remoteLoadingMore,
+                    onDelete: onDelete,
+                    onUpload: onUpload,
+                    onRefreshRemote: onRefreshRemote,
+                    gridSpacing: 16,
+                    selectionController: selectionController,
+                  ),
+                ),
+              ),
+              if (remoteLoadingMore)
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Center(
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
+      ),
+      bottomNavigationBar: ScreenplaySelectionBottomBar(
+        controller: selectionController,
+        onDelete: () => onDeleteSelected(),
       ),
     );
   }

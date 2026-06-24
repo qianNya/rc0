@@ -12,11 +12,14 @@ import '../../../../core/responsive/responsive_builder.dart';
 import '../../../../core/utils/state_listeners.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../social/data/social_repository.dart';
+import '../../../user/data/user_profile_repository.dart';
 import '../../../screenplay/data/screenplay_bundle_service.dart';
 import '../../../screenplay/data/screenplay_image_upload_service.dart';
 import '../../../screenplay/data/screenplay_local_repository.dart';
 import '../../../screenplay/data/screenplay_publish_service.dart';
 import '../../../screenplay/data/screenplay_remote_repository.dart';
+import '../../../screenplay/data/shoot_params_draft.dart';
+import '../../../screenplay/domain/shoot_params.dart';
 import '../utils/screenplay_preview_options.dart';
 import '../widgets/frame_thumbnail_grid.dart';
 import '../widgets/publish_visibility_dialog.dart';
@@ -92,6 +95,35 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
       _remoteScreenplay = result.screenplay;
       _remoteError = result.error;
     });
+    if (result.screenplay != null) {
+      await _enrichCreatorProfile(result.screenplay!);
+    }
+  }
+
+  Future<void> _enrichCreatorProfile(Screenplay script) async {
+    final ownerId = script.ownerUserId;
+    if (ownerId == null || ownerId <= 0) return;
+    final needsProfile = script.author.isEmpty ||
+        script.author == '创作者' ||
+        script.author.startsWith('用户 ');
+    if (!needsProfile) return;
+
+    final profile =
+        await UserProfileRepository.instance.fetchPublicProfile(ownerId);
+    if (!mounted || profile == null) return;
+
+    final name = profile.nickname.isNotEmpty
+        ? profile.nickname
+        : profile.username;
+    setState(() {
+      if (_remoteScreenplay?.remoteScreenplayId == script.remoteScreenplayId ||
+          _remoteScreenplay?.id == script.id) {
+        _remoteScreenplay = script.copyWith(
+          author: name,
+          authorAvatar: profile.avatar.isNotEmpty ? profile.avatar : null,
+        );
+      }
+    });
   }
 
   Screenplay? get _screenplay => _resolveLocalScreenplay() ?? _remoteScreenplay;
@@ -105,8 +137,76 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
   bool _exporting = false;
   bool _importing = false;
 
-  void _onEdit(BuildContext context, Screenplay script) {
-    context.go(AppRoutes.createEdit(script.id));
+  Future<void> _refreshScreenplay() async {
+    final local = _resolveLocalScreenplay();
+    if (local != null) {
+      setState(() {});
+      return;
+    }
+
+    final id = int.tryParse(widget.scriptId);
+    if (id == null) return;
+
+    _remoteRepository.clearTreeCache(id);
+    setState(() {
+      _loadingRemote = true;
+      _remoteError = null;
+    });
+
+    final result =
+        await _remoteRepository.fetchScreenplayTree(id, useCache: false);
+    if (!mounted) return;
+
+    setState(() {
+      _loadingRemote = false;
+      _remoteScreenplay = result.screenplay;
+      _remoteError = result.error;
+    });
+    if (result.screenplay != null) {
+      await _enrichCreatorProfile(result.screenplay!);
+    }
+  }
+
+  Future<void> _onEdit(BuildContext context, Screenplay script) async {
+    final remoteId = script.remoteScreenplayId ?? int.tryParse(script.id);
+    final localDoc = remoteId != null
+        ? _localRepository.documentByRemoteId(remoteId)
+        : _localRepository.documentById(script.id);
+
+    if (localDoc != null) {
+      if (!context.mounted) return;
+      context.go(AppRoutes.createEdit(localDoc.meta.localId));
+      return;
+    }
+
+    if (remoteId == null) {
+      context.go(AppRoutes.createEdit(script.id));
+      return;
+    }
+
+    if (!SocialRepository.instance.isCurrentUserOwner(script)) {
+      context.go(AppRoutes.createEdit(script.id));
+      return;
+    }
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    final result = await _localRepository.openRemoteForEdit(remoteId);
+    if (!context.mounted) return;
+    Navigator.of(context, rootNavigator: true).pop();
+
+    if (result.error != null || result.screenplay == null) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(result.error ?? '无法打开编辑')));
+      return;
+    }
+
+    context.go(AppRoutes.createEdit(result.screenplay!.id));
   }
 
   Future<void> _onLike(Screenplay script) async {
@@ -412,8 +512,7 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
                   Navigator.pop(ctx);
                   deleteScreenplayAndPop(
                     context,
-                    id: script.id,
-                    title: script.title,
+                    script: script,
                   );
                 },
               ),
@@ -589,11 +688,15 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
 
     final isOwner = SocialRepository.instance.isCurrentUserOwner(script);
     final previewOptions = _previewOptions(script);
+    final shootDefaults = shootDefaultsFromLocalDocument(
+      _localRepository.documentById(script.id),
+    );
 
     return ResponsiveBuilder(
       mobile: (_) => _ScreenplayDetailMobile(
         screenplay: script,
         previewOptions: previewOptions,
+        shootDefaults: shootDefaults,
         isOwner: isOwner,
         onEdit: isOwner ? () => _onEdit(context, script) : null,
         onFork: () => _onFork(script),
@@ -658,10 +761,12 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
         downloading: _downloading,
         publishing: _publishing,
         exporting: _exporting,
+        onRefresh: _refreshScreenplay,
       ),
       desktop: (_) => _ScreenplayDetailDesktop(
         screenplay: script,
         previewOptions: previewOptions,
+        shootDefaults: shootDefaults,
         isOwner: isOwner,
         onEdit: isOwner ? () => _onEdit(context, script) : null,
         onFork: () => _onFork(script),
@@ -708,6 +813,7 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
         publishing: _publishing,
         exporting: _exporting,
         importing: _importing,
+        onRefresh: _refreshScreenplay,
       ),
     );
   }
@@ -718,6 +824,7 @@ class _ScreenplayDetailMobile extends StatefulWidget {
     required this.screenplay,
     required this.previewOptions,
     required this.isOwner,
+    this.shootDefaults,
     this.onEdit,
     this.onFork,
     this.onDownloadCopy,
@@ -737,10 +844,12 @@ class _ScreenplayDetailMobile extends StatefulWidget {
     this.downloading = false,
     this.publishing = false,
     this.exporting = false,
+    this.onRefresh,
   });
 
   final Screenplay screenplay;
   final ImagePreviewOptions previewOptions;
+  final ShootParams? shootDefaults;
   final bool isOwner;
   final VoidCallback? onEdit;
   final VoidCallback? onFork;
@@ -763,6 +872,7 @@ class _ScreenplayDetailMobile extends StatefulWidget {
   final bool downloading;
   final bool publishing;
   final bool exporting;
+  final Future<void> Function()? onRefresh;
 
   @override
   State<_ScreenplayDetailMobile> createState() =>
@@ -800,7 +910,10 @@ class _ScreenplayDetailMobileState extends State<_ScreenplayDetailMobile> {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SingleChildScrollView(
+      body: RefreshIndicator(
+        onRefresh: widget.onRefresh ?? () async {},
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -839,6 +952,7 @@ class _ScreenplayDetailMobileState extends State<_ScreenplayDetailMobile> {
             ),
           ],
         ),
+        ),
       ),
       bottomNavigationBar: SafeArea(
         child: Padding(
@@ -871,7 +985,10 @@ class _ScreenplayDetailMobileState extends State<_ScreenplayDetailMobile> {
           onUploadFrame: widget.onUploadFrame,
         );
       case 1:
-        return ScreenplayInfoHeader(screenplay: screenplay);
+        return ScreenplayInfoHeader(
+          screenplay: screenplay,
+          shootDefaults: widget.shootDefaults,
+        );
       default:
         return const EmptyStateView(
           icon: Icons.construction_outlined,
@@ -887,6 +1004,7 @@ class _ScreenplayDetailDesktop extends StatelessWidget {
     required this.screenplay,
     required this.previewOptions,
     required this.isOwner,
+    this.shootDefaults,
     this.onEdit,
     this.onFork,
     this.onDownloadCopy,
@@ -907,10 +1025,12 @@ class _ScreenplayDetailDesktop extends StatelessWidget {
     this.publishing = false,
     this.exporting = false,
     this.importing = false,
+    this.onRefresh,
   });
 
   final Screenplay screenplay;
   final ImagePreviewOptions previewOptions;
+  final ShootParams? shootDefaults;
   final bool isOwner;
   final VoidCallback? onEdit;
   final VoidCallback? onFork;
@@ -934,6 +1054,7 @@ class _ScreenplayDetailDesktop extends StatelessWidget {
   final bool publishing;
   final bool exporting;
   final bool importing;
+  final Future<void> Function()? onRefresh;
 
   @override
   Widget build(BuildContext context) {
@@ -972,9 +1093,12 @@ class _ScreenplayDetailDesktop extends StatelessWidget {
             ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(32),
-        child: Row(
+      body: RefreshIndicator(
+        onRefresh: onRefresh ?? () async {},
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(32),
+          child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
@@ -1014,7 +1138,10 @@ class _ScreenplayDetailDesktop extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ScreenplayInfoHeader(screenplay: screenplay),
+                  ScreenplayInfoHeader(
+                    screenplay: screenplay,
+                    shootDefaults: shootDefaults,
+                  ),
                   const SizedBox(height: 20),
                   const Text('结构预览', style: AppTextStyles.label),
                   const SizedBox(height: 8),
@@ -1078,6 +1205,7 @@ class _ScreenplayDetailDesktop extends StatelessWidget {
               ),
             ),
           ],
+        ),
         ),
       ),
     );

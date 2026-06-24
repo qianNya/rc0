@@ -63,7 +63,10 @@ class _ProfilePageState extends State<ProfilePage> {
     if (_auth.isLoggedIn) {
       await _userProfile.refreshMyStats();
       final fav = await _spFavorites.fetchFavorites();
-      if (mounted) setState(() => _spFavoriteCount = fav.items.length);
+      await _imageFavorites.load();
+      if (!mounted) return;
+      setState(() => _spFavoriteCount = fav.items.length);
+      if (fav.error != null) _showSnack(fav.error!);
     }
   }
 

@@ -12,7 +12,10 @@ import '../../../core/domain/screenplay/screenplay_image_resolver.dart';
 import '../../../core/domain/screenplay/script_frame_display.dart';
 import '../../../core/utils/image_url_utils.dart';
 import '../../upload/domain/upload_image_file.dart';
+import 'screenplay_delete_options.dart';
 import 'screenplay_draft.dart';
+import 'screenplay_api_mapper.dart';
+import 'screenplay_draft_tags.dart';
 import 'screenplay_remote_delete_service.dart';
 import 'screenplay_remote_repository.dart';
 import 'screenplay_tree_document.dart';
@@ -198,7 +201,10 @@ class ScreenplayLocalRepository extends ChangeNotifier {
       coverPath: draft.coverImage != null ? persisted[draft.coverImage!] : null,
     );
 
-    _documents.insert(0, ScreenplayTreeDocument.fromScreenplay(screenplay));
+    _documents.insert(
+      0,
+      _documentFromDraft(screenplay, draft),
+    );
     await _save();
     notifyListeners();
     return screenplay;
@@ -240,8 +246,9 @@ class ScreenplayLocalRepository extends ChangeNotifier {
       coverUrl: draft.coverImage != null ? existing.coverUrl : null,
     );
 
-    _documents[index] = ScreenplayTreeDocument.fromScreenplay(
+    _documents[index] = _documentFromDraft(
       screenplay,
+      draft,
       existingMeta: _documents[index].meta,
     );
     await _save();
@@ -474,6 +481,51 @@ class ScreenplayLocalRepository extends ChangeNotifier {
     return downloadLocalCopy(forkResult.screenplay!.id);
   }
 
+  /// Opens the owner's published screenplay for editing by linking remote tree
+  /// to a new local document (not a fork copy).
+  Future<({Screenplay? screenplay, String? error})> openRemoteForEdit(
+    int remoteId,
+  ) async {
+    final existing = documentByRemoteId(remoteId);
+    if (existing != null) {
+      return (screenplay: existing.toScreenplay(), error: null);
+    }
+
+    final result = await ScreenplayRemoteRepository.instance.fetchRawTree(
+      remoteId,
+    );
+    if (result.error != null || result.tree == null) {
+      return (screenplay: null, error: result.error ?? '获取剧本失败');
+    }
+
+    final tree = deepCopyJson(result.tree!);
+    final screenplayMap = tree['screenplay'] as Map<String, dynamic>;
+    final localId = 'script-${DateTime.now().millisecondsSinceEpoch}';
+    final visibility = (screenplayMap['visibility'] as num?)?.toInt();
+    final publishedAtRaw = screenplayMap['published_at'] as String?;
+
+    final meta = ScreenplayLocalMeta(
+      localId: localId,
+      isLocal: true,
+      tags: const [],
+      author: '我',
+      authorBio: '创作者',
+      remoteScreenplayId: remoteId,
+      visibility: visibility,
+      publishedAt: publishedAtRaw != null && publishedAtRaw.isNotEmpty
+          ? DateTime.tryParse(publishedAtRaw)
+          : null,
+      imagesLocalized: false,
+      createdAt: DateTime.now(),
+    );
+
+    final doc = ScreenplayTreeDocument(tree: tree, meta: meta);
+    _documents.insert(0, doc);
+    await _save();
+    notifyListeners();
+    return (screenplay: doc.toScreenplay(), error: null);
+  }
+
   Future<({ScreenplayTreeDocument? document, String? error})> updateDocument(
     ScreenplayTreeDocument document,
   ) async {
@@ -520,6 +572,15 @@ class ScreenplayLocalRepository extends ChangeNotifier {
     return documentByRemoteId(remoteId)?.toScreenplay();
   }
 
+  String? resolveLocalId(Screenplay script) {
+    if (documentById(script.id) != null) return script.id;
+    final remoteId = script.remoteScreenplayId;
+    if (remoteId != null) {
+      return documentByRemoteId(remoteId)?.meta.localId;
+    }
+    return null;
+  }
+
   int _documentIndex(String localId) {
     return _documents.indexWhere((d) => d.meta.localId == localId);
   }
@@ -529,22 +590,62 @@ class ScreenplayLocalRepository extends ChangeNotifier {
     return result.success;
   }
 
-  Future<({bool success, String? error})> deleteScreenplay(String localId) async {
+  Future<({bool success, String? error, String? warning})> deleteScreenplay(
+    String localId, {
+    ScreenplayDeleteOptions options = const ScreenplayDeleteOptions(),
+  }) async {
     final index = _documentIndex(localId);
     if (index < 0) {
-      return (success: false, error: '剧本不存在');
+      return (success: false, error: '剧本不存在', warning: null);
     }
 
     final doc = _documents[index];
-    final remoteId = doc.meta.remoteScreenplayId;
-    if (remoteId != null && doc.meta.forkedFromLocalId == null) {
-      final remoteError =
-          await ScreenplayRemoteDeleteService.instance.deleteScreenplay(remoteId);
-      if (remoteError != null) {
-        return (success: false, error: remoteError);
+    String? warning;
+
+    if (options.deleteRemote &&
+        doc.meta.remoteScreenplayId != null &&
+        doc.meta.forkedFromLocalId == null) {
+      final remoteResult = await ScreenplayRemoteDeleteService.instance
+          .deleteScreenplay(doc.meta.remoteScreenplayId!);
+      if (!remoteResult.success) {
+        return (
+          success: false,
+          error: remoteResult.error ?? '云端删除失败',
+          warning: null,
+        );
+      }
+      warning = remoteResult.warning;
+    }
+
+    await _removeLocalDocumentAt(index, localId);
+    return (success: true, error: null, warning: warning);
+  }
+
+  Future<({int deleted, List<String> errors, List<String> warnings})>
+      deleteScreenplays(
+    List<String> localIds, {
+    required ScreenplayDeleteOptions options,
+  }) async {
+    final errors = <String>[];
+    final warnings = <String>[];
+    var deleted = 0;
+
+    for (final localId in localIds) {
+      final result = await deleteScreenplay(localId, options: options);
+      if (result.success) {
+        deleted++;
+        if (result.warning != null) {
+          warnings.add(result.warning!);
+        }
+      } else if (result.error != null) {
+        errors.add(result.error!);
       }
     }
 
+    return (deleted: deleted, errors: errors, warnings: warnings);
+  }
+
+  Future<void> _removeLocalDocumentAt(int index, String localId) async {
     _documents.removeAt(index);
     await _save();
 
@@ -557,7 +658,6 @@ class ScreenplayLocalRepository extends ChangeNotifier {
     } catch (_) {}
 
     notifyListeners();
-    return (success: true, error: null);
   }
 
   Future<({bool success, String? error})> deleteAct(
@@ -793,6 +893,24 @@ class ScreenplayLocalRepository extends ChangeNotifier {
     final normalized = path.replaceAll('\\', '/');
     return normalized.contains('/screenplays/$scriptId/frames/') ||
         path.startsWith(framesDir);
+  }
+
+  ScreenplayTreeDocument _documentFromDraft(
+    Screenplay screenplay,
+    ScreenplayDraft draft, {
+    ScreenplayLocalMeta? existingMeta,
+  }) {
+    final base = ScreenplayTreeDocument.fromScreenplay(
+      screenplay,
+      existingMeta: existingMeta,
+    );
+    return ScreenplayTreeDocument(
+      tree: ScreenplayApiMapper.applyDraftTagsToTree(
+        ScreenplayApiMapper.applyDraftShootParamsToTree(base.tree, draft),
+        draft,
+      ),
+      meta: base.meta.copyWith(tags: draftTagPoolSorted(draft)),
+    );
   }
 
   Future<void> _save() async {

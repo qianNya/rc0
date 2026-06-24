@@ -40,11 +40,13 @@ class FeedAuthorRow extends StatelessWidget {
   const FeedAuthorRow({
     super.key,
     required this.author,
+    this.avatarUrl,
     this.light = false,
     this.showLevel = false,
   });
 
   final String author;
+  final String? avatarUrl;
   final bool light;
   final bool showLevel;
 
@@ -52,18 +54,23 @@ class FeedAuthorRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final name = author.isNotEmpty ? author : AppCatalog.placeholderAuthor;
     final textColor = light ? Colors.white70 : AppColors.textSecondary;
+    final resolvedAvatar = avatarUrl?.trim();
+    final hasAvatar = resolvedAvatar != null && resolvedAvatar.isNotEmpty;
 
     return Row(
       children: [
         CircleAvatar(
           radius: 12,
-          backgroundColor:
-              light ? Colors.white24 : AppColors.placeholder,
-          child: Icon(
-            Icons.person,
-            size: 14,
-            color: light ? Colors.white : AppColors.textSecondary,
-          ),
+          backgroundColor: light ? Colors.white24 : AppColors.placeholder,
+          backgroundImage:
+              hasAvatar ? NetworkImage(resolvedAvatar) : null,
+          child: hasAvatar
+              ? null
+              : Icon(
+                  Icons.person,
+                  size: 14,
+                  color: light ? Colors.white : AppColors.textSecondary,
+                ),
         ),
         const SizedBox(width: 8),
         Expanded(
@@ -91,6 +98,24 @@ class FeedAuthorRow extends StatelessWidget {
 String formatFeedCount(int n) {
   if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}K';
   return '$n';
+}
+
+/// Grid child aspect ratio for feed cards with cover + title + author + stats.
+double feedGridChildAspectRatio(int crossAxisCount) {
+  if (crossAxisCount >= 4) return 0.62;
+  if (crossAxisCount >= 3) return 0.66;
+  return 0.68;
+}
+
+String feedStructureLabel(Screenplay screenplay) {
+  final acts = screenplay.actCount;
+  final scenes = screenplay.sceneCount;
+  final frames = screenplay.frameCount;
+  if (acts <= 0 && scenes <= 0 && frames <= 0) return '剧本';
+  if (acts > 0 && scenes > 0) return '$acts幕 · $scenes场';
+  if (frames > 0) return '$frames画';
+  if (acts > 0) return '$acts幕';
+  return '$scenes场';
 }
 
 class FeedEngagementRow extends StatelessWidget {

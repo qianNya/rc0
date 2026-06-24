@@ -82,6 +82,26 @@ Accept: application/json
 
 ###
 
+### @name updateWork
+PUT {{baseUrl}}/works/{{workId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "title": "某动漫作品（修订）",
+  "work_type": 2,
+  "release_year": 2024,
+  "summary": "更新后的简介"
+}
+
+###
+
+### @name deleteWork
+DELETE {{baseUrl}}/works/{{workId}}
+Authorization: Bearer {{accessToken}}
+
+###
+
 ### @name listImageTags
 GET {{baseUrl}}/image-tags?namespace=general
 Accept: application/json

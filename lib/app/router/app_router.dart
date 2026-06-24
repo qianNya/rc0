@@ -7,6 +7,8 @@ import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/community/presentation/pages/community_page.dart';
 import '../../features/explore/presentation/pages/explore_page.dart';
 import '../../features/gallery/presentation/pages/my_gallery_page.dart';
+import '../../features/ip/presentation/pages/ip_detail_page.dart';
+import '../../features/ip/presentation/pages/ip_edit_page.dart';
 import '../../features/favorites/presentation/pages/favorites_page.dart';
 import '../../features/profile/presentation/pages/edit_profile_page.dart';
 import '../../features/profile/presentation/pages/profile_about_page.dart';
@@ -159,6 +161,30 @@ abstract final class AppRouter {
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) =>
             const ProfileComingSoonPage(title: '图片详情'),
+      ),
+      GoRoute(
+        path: AppRoutes.ipCreate,
+        name: 'ip-create',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const IpEditPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.ipEdit,
+        name: 'ip-edit',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+          return IpEditPage(ipId: id);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.ipDetail,
+        name: 'ip-detail',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+          return IpDetailPage(ipId: id);
+        },
       ),
       GoRoute(
         path: AppRoutes.preset,

@@ -8,7 +8,10 @@ import 'core/services/image_favorite_store.dart';
 import 'core/theme/theme_mode_notifier.dart';
 import 'features/auth/data/auth_repository.dart';
 import 'features/favorites/data/image_favorite_repository.dart';
+import 'features/ip/data/ip_repository.dart';
 import 'features/gallery/data/image_gallery_repository.dart';
+import 'features/gallery/data/image_tags_repository.dart';
+import 'features/screenplay/data/screenplay_tags_repository.dart';
 import 'features/screenplay/data/shoot_preset_repository.dart';
 import 'features/screenplay/data/screenplay_local_repository.dart';
 
@@ -34,6 +37,9 @@ Future<void> main() async {
   await ImageFavoriteRepository.instance.initialize();
   ImageFavoriteStore.instance = ImageFavoriteRepository.instance;
   await ImageGalleryRepository.instance.initialize();
+  await ImageTagsRepository.instance.initialize();
+  await IpRepository.instance.initialize();
+  await ScreenplayTagsRepository.instance.initialize();
   await ThemeModeNotifier.instance.initialize();
   await AuthRepository.instance.initialize();
   await ShootPresetRepository.instance.load();

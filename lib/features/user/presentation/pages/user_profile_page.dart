@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../social/data/social_repository.dart';
 import '../../../user/data/user_profile_repository.dart';
+import '../../../user/data/user_screenplays_repository.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
+import '../../../../shared/widgets/inline_error_banner.dart';
 import '../../../../shared/widgets/explore_feed_tile.dart';
 import '../../../../shared/widgets/primary_button.dart';
 import '../../../../shared/widgets/profile_widgets.dart';
@@ -20,33 +22,46 @@ class UserProfilePage extends StatefulWidget {
 
 class _UserProfilePageState extends State<UserProfilePage> {
   final _userRepo = UserProfileRepository.instance;
+  final _screenplays = UserScreenplaysRepository.instance;
   final _social = SocialRepository.instance;
 
   UserProfileSummary? _profile;
-  List<Screenplay> _screenplays = [];
   bool _loading = true;
-  String? _error;
+  String? _profileError;
+  String? _worksError;
   bool _followBusy = false;
 
   @override
   void initState() {
     super.initState();
+    _screenplays.addListener(_onScreenplaysChanged);
     _load();
+  }
+
+  @override
+  void dispose() {
+    _screenplays.removeListener(_onScreenplaysChanged);
+    super.dispose();
+  }
+
+  void _onScreenplaysChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _load() async {
     setState(() {
       _loading = true;
-      _error = null;
+      _profileError = null;
+      _worksError = null;
     });
     final profile = await _userRepo.fetchPublicProfile(widget.userId);
-    final scripts = await _userRepo.listUserScreenplays(widget.userId);
+    await _screenplays.loadFirstPage(widget.userId);
     if (!mounted) return;
     setState(() {
       _profile = profile;
-      _screenplays = scripts.items;
       _loading = false;
-      _error = profile == null ? '用户不存在' : scripts.error;
+      _profileError = profile == null ? '用户不存在' : null;
+      _worksError = _screenplays.errorFor(widget.userId);
     });
   }
 
@@ -89,11 +104,15 @@ class _UserProfilePageState extends State<UserProfilePage> {
         appBar: AppBar(title: const Text('用户主页')),
         body: EmptyStateView(
           icon: Icons.person_off_outlined,
-          title: _error ?? '加载失败',
+          title: _profileError ?? '加载失败',
           subtitle: '请稍后重试',
+          actionLabel: '重试',
+          onAction: _load,
         ),
       );
     }
+
+    final screenplays = _screenplays.itemsFor(widget.userId);
 
     final p = _profile!;
     final name = p.nickname.isNotEmpty ? p.nickname : p.username;
@@ -133,13 +152,15 @@ class _UserProfilePageState extends State<UserProfilePage> {
             const SizedBox(height: 24),
             Text('作品', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 12),
-            if (_screenplays.isEmpty)
+            if (_worksError != null)
+              InlineErrorBanner(message: _worksError!, onRetry: _load),
+            if (screenplays.isEmpty && _worksError == null)
               const EmptyStateView(
                 icon: Icons.movie_outlined,
                 title: '暂无公开作品',
               )
             else
-              ..._screenplays.map(
+              ...screenplays.map(
                 (s) => ExploreFeedTile(screenplay: s),
               ),
           ],

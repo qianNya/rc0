@@ -4,7 +4,9 @@ import 'dart:typed_data';
 
 import '../../core/config/api_config.dart';
 import '../../core/network/api_auth.dart';
+import '../../core/network/api_error_presenter.dart';
 import '../../core/network/api_headers.dart';
+import '../../core/network/api_response_interceptor.dart';
 import '../../core/network/network_error.dart';
 import '../auth/vars/kv.dart';
 
@@ -142,7 +144,7 @@ Future apiMultipart(
     final responseBody = await response.transform(utf8.decoder).join();
     _handleResponse(response.statusCode, responseBody, ok: ok, fail: fail);
   } catch (e) {
-    fail?.call(friendlyNetworkError(e));
+    _handleNetworkError(e, fail: fail);
   }
   eventually?.call();
 }
@@ -195,9 +197,34 @@ Future _apiRequest(
     final body = await response.transform(utf8.decoder).join();
     _handleResponse(response.statusCode, body, ok: ok, fail: fail);
   } catch (e) {
-    fail?.call(friendlyNetworkError(e));
+    _handleNetworkError(e, fail: fail);
   }
   eventually?.call();
+}
+
+void _handleNetworkError(Object error, {Function(String)? fail}) {
+  final message = friendlyNetworkError(error);
+  final result = ApiResponseInterceptor.network(message);
+  fail?.call(message);
+  ApiErrorPresenter.presentIfNeeded(result);
+}
+
+void _handleInterceptResult(
+  ApiInterceptResult result, {
+  Function(Map<String, dynamic>)? ok,
+  Function(String)? fail,
+}) {
+  if (result.isSuccess) {
+    ok?.call(result.data ?? const {});
+    return;
+  }
+
+  if (result.isUnauthorized) {
+    onApiUnauthorized?.call();
+  }
+
+  fail?.call(result.message ?? 'request failed');
+  ApiErrorPresenter.presentIfNeeded(result);
 }
 
 void _handleResponse(
@@ -206,32 +233,6 @@ void _handleResponse(
   Function(Map<String, dynamic>)? ok,
   Function(String)? fail,
 }) {
-  if (statusCode == 404) {
-    fail?.call('404 not found');
-    return;
-  }
-
-  Map<String, dynamic> base;
-  try {
-    base = jsonDecode(body) as Map<String, dynamic>;
-  } catch (_) {
-    fail?.call('invalid response');
-    return;
-  }
-
-  final code = base['code'];
-  if (code == 401) {
-    onApiUnauthorized?.call();
-  }
-  if (statusCode == 200 && code == 0) {
-    final data = base['data'];
-    if (data is Map<String, dynamic>) {
-      ok?.call(data);
-    } else {
-      ok?.call(<String, dynamic>{});
-    }
-    return;
-  }
-
-  fail?.call(apiErrorMessage(base));
+  final result = ApiResponseInterceptor.intercept(statusCode, body);
+  _handleInterceptResult(result, ok: ok, fail: fail);
 }

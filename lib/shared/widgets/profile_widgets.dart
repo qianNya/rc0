@@ -353,14 +353,23 @@ class QuickActionCircle extends StatelessWidget {
     required this.label,
     required this.icon,
     this.onTap,
+    this.backgroundColor,
+    this.iconColor,
   });
 
   final String label;
   final IconData icon;
   final VoidCallback? onTap;
+  final Color? backgroundColor;
+  final Color? iconColor;
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = backgroundColor ??
+        (isDark ? AppColors.accentLightDark : AppColors.accentLight);
+    final fg = iconColor ?? AppColors.accent;
+
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -369,10 +378,10 @@ class QuickActionCircle extends StatelessWidget {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: AppColors.accentLight,
+              color: bg,
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: AppColors.accent, size: 26),
+            child: Icon(icon, color: fg, size: 26),
           ),
           const SizedBox(height: 8),
           Text(

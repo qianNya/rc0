@@ -32,4 +32,42 @@ void main() {
 
     expect(resp.imageUrl, 'https://cdn.example.com/a.jpg');
   });
+
+  test('GalleryImageItem parses tag names and ids', () {
+    final item = GalleryImageItem.fromJson({
+      'id': 7,
+      'title': 'portrait',
+      'tags': [
+        '4K',
+        {'id': 2, 'name': '插画', 'slug': 'illustration'},
+      ],
+    });
+
+    expect(item.tags, ['4K', '插画']);
+    expect(item.tagIds, [2]);
+  });
+
+  test('ImageTagItem reads count aliases', () {
+    final tag = ImageTagItem.fromJson({
+      'id': 3,
+      'name': '摄影',
+      'slug': 'photo',
+      'namespace': 'general',
+      'count': 12,
+    });
+
+    expect(tag.name, '摄影');
+    expect(tag.imageCount, 12);
+  });
+
+  test('ListImageTagsResp reads wrapped items list', () {
+    final resp = ListImageTagsResp.fromJson({
+      'items': [
+        {'id': 1, 'name': '全部风格', 'slug': 'all', 'namespace': 'general'},
+      ],
+    });
+
+    expect(resp.list, hasLength(1));
+    expect(resp.list.first.slug, 'all');
+  });
 }

@@ -26,7 +26,16 @@ class ImageGalleryRepository extends ChangeNotifier {
   bool get loading => _loading;
   bool get loadingMore => _loadingMore;
   String? get error => _error;
+  num get total => _total;
   bool get hasMore => _items.length < _total.toInt();
+
+  void patchImage(GalleryImage image) {
+    final index = _items.indexWhere((e) => e.id == image.id);
+    if (index >= 0) {
+      _items[index] = image;
+      notifyListeners();
+    }
+  }
 
   Future<void> initialize() async {
     AuthRepository.instance.addListener(_onAuthChanged);
@@ -50,6 +59,8 @@ class ImageGalleryRepository extends ChangeNotifier {
       imageUrl: dto.imageUrl,
       thumbnailUrl: dto.thumbnailUrl,
       createAt: dto.createAt,
+      tags: dto.tags,
+      tagIds: dto.tagIds,
     );
   }
 
@@ -149,6 +160,8 @@ class ImageGalleryRepository extends ChangeNotifier {
         imageUrl: resp.imageUrl,
         thumbnailUrl: resp.thumbnailUrl,
         createAt: resp.createAt,
+        tags: resp.tags,
+        tagIds: resp.tagIds,
       ),
       error: null,
     );

@@ -91,7 +91,11 @@ class ScriptFeedCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 8),
-                      FeedAuthorRow(author: view.author, light: true),
+                      FeedAuthorRow(
+                        author: view.author,
+                        avatarUrl: screenplay.authorAvatar,
+                        light: true,
+                      ),
                       const SizedBox(height: 8),
                       FeedEngagementRow(
                         likes: view.likes,

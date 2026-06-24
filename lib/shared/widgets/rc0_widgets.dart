@@ -66,18 +66,25 @@ class AppSearchField extends StatelessWidget {
     super.key,
     required this.hint,
     this.onTap,
+    this.onSubmitted,
+    this.controller,
     this.expanded = true,
   });
 
   final String hint;
   final VoidCallback? onTap;
+  final ValueChanged<String>? onSubmitted;
+  final TextEditingController? controller;
   final bool expanded;
 
   @override
   Widget build(BuildContext context) {
     final field = TextField(
+      controller: controller,
       readOnly: onTap != null,
       onTap: onTap,
+      onSubmitted: onSubmitted,
+      textInputAction: TextInputAction.search,
       decoration: InputDecoration(
         hintText: hint,
         prefixIcon: const Icon(Icons.search, size: 20),

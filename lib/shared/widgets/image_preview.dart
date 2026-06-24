@@ -15,6 +15,7 @@ export 'image_preview_sync.dart';
 import '../services/image_save_service.dart';
 import 'image_preview_sync.dart';
 import 'rc0_image.dart';
+import 'tag_editor.dart';
 
 /// Whether [path] can be shown in full-screen preview (local file or network URL).
 bool isPreviewableImagePath(String path) {
@@ -54,6 +55,10 @@ class ImagePreviewOptions {
     this.sourceLabel,
     this.favoriteKeys,
     this.syncInfos,
+    this.tagStates,
+    this.enableTagEditing = false,
+    this.onLoadSuggestedTags,
+    this.onSaveImageTags,
     this.onUpload,
     this.onDownloadToLocal,
   });
@@ -61,6 +66,14 @@ class ImagePreviewOptions {
   final String? sourceLabel;
   final List<String>? favoriteKeys;
   final List<ImagePreviewSyncInfo>? syncInfos;
+  final List<ImagePreviewTagState>? tagStates;
+  final bool enableTagEditing;
+  final Future<List<String>> Function()? onLoadSuggestedTags;
+  final Future<({List<String> tags, List<int> tagIds, String? error})> Function(
+    int index,
+    Set<String> desiredTags,
+    List<int> currentTagIds,
+  )? onSaveImageTags;
   final Future<bool> Function(int index)? onUpload;
   final Future<bool> Function(int index)? onDownloadToLocal;
 }
@@ -70,16 +83,19 @@ class ImagePreviewOptions {
   List<String>? captions,
   List<String>? favoriteKeys,
   List<ImagePreviewSyncInfo>? syncInfos,
+  List<ImagePreviewTagState>? tagStates,
 }) _filterPreviewGallery(
   List<String> imagePaths,
   List<String>? captions,
   List<String>? favoriteKeys,
   List<ImagePreviewSyncInfo>? syncInfos,
+  List<ImagePreviewTagState>? tagStates,
 ) {
   final paths = <String>[];
   final filteredCaptions = captions != null ? <String>[] : null;
   final filteredKeys = favoriteKeys != null ? <String>[] : null;
   final filteredSync = syncInfos != null ? <ImagePreviewSyncInfo>[] : null;
+  final filteredTags = tagStates != null ? <ImagePreviewTagState>[] : null;
 
   for (var i = 0; i < imagePaths.length; i++) {
     final path = imagePaths[i];
@@ -102,6 +118,13 @@ class ImagePreviewOptions {
         ));
       }
     }
+    if (filteredTags != null) {
+      if (tagStates != null && i < tagStates.length) {
+        filteredTags.add(tagStates[i]);
+      } else {
+        filteredTags.add(const ImagePreviewTagState());
+      }
+    }
   }
 
   return (
@@ -109,6 +132,7 @@ class ImagePreviewOptions {
     captions: filteredCaptions,
     favoriteKeys: filteredKeys,
     syncInfos: filteredSync,
+    tagStates: filteredTags,
   );
 }
 
@@ -125,6 +149,7 @@ Future<void> showImagePreview(
     captions,
     options?.favoriteKeys,
     options?.syncInfos,
+    options?.tagStates,
   );
   if (filtered.paths.isEmpty) return Future.value();
 
@@ -145,6 +170,10 @@ Future<void> showImagePreview(
             sourceLabel: options?.sourceLabel,
             favoriteKeys: filtered.favoriteKeys,
             syncInfos: filtered.syncInfos,
+            tagStates: filtered.tagStates,
+            enableTagEditing: options?.enableTagEditing ?? false,
+            onLoadSuggestedTags: options?.onLoadSuggestedTags,
+            onSaveImageTags: options?.onSaveImageTags,
             onUpload: options?.onUpload,
             onDownloadToLocal: options?.onDownloadToLocal,
           ),
@@ -164,6 +193,10 @@ class _ImagePreviewPage extends StatefulWidget {
     this.sourceLabel,
     this.favoriteKeys,
     this.syncInfos,
+    this.tagStates,
+    this.enableTagEditing = false,
+    this.onLoadSuggestedTags,
+    this.onSaveImageTags,
     this.onUpload,
     this.onDownloadToLocal,
   });
@@ -174,6 +207,14 @@ class _ImagePreviewPage extends StatefulWidget {
   final String? sourceLabel;
   final List<String>? favoriteKeys;
   final List<ImagePreviewSyncInfo>? syncInfos;
+  final List<ImagePreviewTagState>? tagStates;
+  final bool enableTagEditing;
+  final Future<List<String>> Function()? onLoadSuggestedTags;
+  final Future<({List<String> tags, List<int> tagIds, String? error})> Function(
+    int index,
+    Set<String> desiredTags,
+    List<int> currentTagIds,
+  )? onSaveImageTags;
   final Future<bool> Function(int index)? onUpload;
   final Future<bool> Function(int index)? onDownloadToLocal;
 
@@ -190,6 +231,7 @@ class _ImagePreviewPageState extends State<_ImagePreviewPage> {
   _ViewMode _viewMode = _ViewMode.single;
   bool _actionLoading = false;
   List<ImagePreviewSyncInfo>? _syncInfos;
+  List<ImagePreviewTagState>? _tagStates;
 
   final _saveService = ImageSaveService.instance;
 
@@ -201,6 +243,9 @@ class _ImagePreviewPageState extends State<_ImagePreviewPage> {
     _syncInfos = widget.syncInfos == null
         ? null
         : List<ImagePreviewSyncInfo>.from(widget.syncInfos!);
+    _tagStates = widget.tagStates == null
+        ? null
+        : List<ImagePreviewTagState>.from(widget.tagStates!);
     _currentIndex = widget.initialIndex;
     _pageController = PageController(initialPage: widget.initialIndex);
     _thumbController = ScrollController();
@@ -246,6 +291,23 @@ class _ImagePreviewPageState extends State<_ImagePreviewPage> {
     if (infos == null || _currentIndex >= infos.length) return null;
     return infos[_currentIndex];
   }
+
+  ImagePreviewTagState? get _currentTagState {
+    final states = _tagStates;
+    if (states == null || _currentIndex >= states.length) return null;
+    return states[_currentIndex];
+  }
+
+  bool get _canEditTags {
+    if (!widget.enableTagEditing) return false;
+    if (widget.onSaveImageTags == null) return false;
+    final imageId = _currentTagState?.serverImageId ??
+        _currentSyncInfo?.serverImageId;
+    return imageId != null && imageId > 0;
+  }
+
+  int? get _currentServerImageId =>
+      _currentTagState?.serverImageId ?? _currentSyncInfo?.serverImageId;
 
   bool get _canUpload {
     final sync = _currentSyncInfo;
@@ -459,6 +521,7 @@ class _ImagePreviewPageState extends State<_ImagePreviewPage> {
     final caption = _currentCaption;
     final isNetwork = isNetworkImagePath(_currentPath);
     final isFav = _isFavorited;
+    final canEditTags = _canEditTags;
 
     showModalBottomSheet<void>(
       context: context,
@@ -475,6 +538,15 @@ class _ImagePreviewPageState extends State<_ImagePreviewPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (canEditTags)
+                  ListTile(
+                    leading: const Icon(Icons.label_outline),
+                    title: const Text('编辑标签'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _onEditTags();
+                    },
+                  ),
                 if (caption != null)
                   ListTile(
                     leading: const Icon(Icons.notes_outlined),
@@ -539,6 +611,105 @@ class _ImagePreviewPageState extends State<_ImagePreviewPage> {
         );
       },
     );
+  }
+
+  Future<void> _onEditTags() async {
+    final imageId = _currentServerImageId;
+    final onSave = widget.onSaveImageTags;
+    if (imageId == null || onSave == null) return;
+
+    final current = _currentTagState;
+    final selected = Set<String>.from(current?.tags ?? const []);
+
+    var suggested = <String>[];
+    if (widget.onLoadSuggestedTags != null) {
+      suggested = await widget.onLoadSuggestedTags!();
+    }
+
+    if (!mounted) return;
+
+    final result = await showModalBottomSheet<Set<String>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppDimensions.radiusLg),
+        ),
+      ),
+      builder: (context) {
+        var localSelected = Set<String>.from(selected);
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: AppDimensions.spacingMd,
+                right: AppDimensions.spacingMd,
+                top: AppDimensions.spacingMd,
+                bottom: MediaQuery.viewInsetsOf(context).bottom +
+                    AppDimensions.spacingLg,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text('图片标签', style: AppTextStyles.title),
+                  const SizedBox(height: AppDimensions.spacingMd),
+                  TagEditor(
+                    suggestedTags: suggested,
+                    selectedTags: localSelected,
+                    onToggle: (tag) {
+                      setSheetState(() {
+                        if (localSelected.contains(tag)) {
+                          localSelected.remove(tag);
+                        } else {
+                          localSelected.add(tag);
+                        }
+                      });
+                    },
+                    onAdd: (tag) {
+                      setSheetState(() => localSelected.add(tag));
+                    },
+                  ),
+                  const SizedBox(height: AppDimensions.spacingMd),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(context, localSelected),
+                    child: const Text('保存'),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    if (result == null || !mounted) return;
+
+    setState(() => _actionLoading = true);
+    final saved = await onSave(
+      _currentIndex,
+      result,
+      current?.tagIds ?? const [],
+    );
+    if (!mounted) return;
+    setState(() => _actionLoading = false);
+
+    if (saved.error != null) {
+      _showSnack(saved.error!);
+      return;
+    }
+
+    if (_tagStates != null) {
+      setState(() {
+        _tagStates![_currentIndex] = ImagePreviewTagState(
+          serverImageId: imageId,
+          tags: saved.tags,
+          tagIds: saved.tagIds,
+        );
+      });
+    }
+    _showSnack('标签已保存');
   }
 
   KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {

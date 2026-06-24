@@ -1,6 +1,34 @@
 /// Rust `ImageResponse.files[].file_role`: 1 = original.
 const _kImageFileRoleOriginal = 1;
 
+List<String> parseImageTagNames(dynamic raw) {
+  if (raw is! List) return const [];
+  final names = <String>[];
+  for (final entry in raw) {
+    if (entry is String && entry.isNotEmpty) {
+      names.add(entry);
+      continue;
+    }
+    if (entry is Map) {
+      final name = entry['name'] as String? ?? entry['slug'] as String? ?? '';
+      if (name.isNotEmpty) names.add(name);
+    }
+  }
+  return names;
+}
+
+List<int> parseImageTagIds(dynamic raw) {
+  if (raw is! List) return const [];
+  final ids = <int>[];
+  for (final entry in raw) {
+    if (entry is Map) {
+      final id = (entry['id'] as num?)?.toInt();
+      if (id != null) ids.add(id);
+    }
+  }
+  return ids;
+}
+
 /// Resolves display URL from flat fields or nested `files` (MinIO http/https).
 String? imageUrlFromApiJson(Map<String, dynamic> m, {int? fileRole}) {
   for (final key in ['image_url', 'url']) {
@@ -35,6 +63,8 @@ class GalleryImageItem {
   final String imageUrl;
   final String thumbnailUrl;
   final String createAt;
+  final List<String> tags;
+  final List<int> tagIds;
 
   GalleryImageItem({
     required this.id,
@@ -43,11 +73,14 @@ class GalleryImageItem {
     required this.imageUrl,
     required this.thumbnailUrl,
     required this.createAt,
+    this.tags = const [],
+    this.tagIds = const [],
   });
 
   factory GalleryImageItem.fromJson(Map<String, dynamic> m) {
     final fileUrl = imageUrlFromApiJson(m, fileRole: _kImageFileRoleOriginal);
     final thumbFromFiles = imageUrlFromApiJson(m);
+    final rawTags = m['tags'];
     return GalleryImageItem(
       id: m['id'] ?? 0,
       title: m['title'] ?? '',
@@ -56,6 +89,8 @@ class GalleryImageItem {
       thumbnailUrl:
           m['thumbnail_url'] ?? m['image_url'] ?? thumbFromFiles ?? m['url'] ?? '',
       createAt: m['create_at']?.toString() ?? '',
+      tags: parseImageTagNames(rawTags),
+      tagIds: parseImageTagIds(rawTags),
     );
   }
 }
@@ -93,6 +128,8 @@ class ImageDetailResp {
   final String imageUrl;
   final String thumbnailUrl;
   final String createAt;
+  final List<String> tags;
+  final List<int> tagIds;
 
   ImageDetailResp({
     required this.id,
@@ -101,11 +138,14 @@ class ImageDetailResp {
     required this.imageUrl,
     required this.thumbnailUrl,
     required this.createAt,
+    this.tags = const [],
+    this.tagIds = const [],
   });
 
   factory ImageDetailResp.fromJson(Map<String, dynamic> m) {
     final fileUrl = imageUrlFromApiJson(m, fileRole: _kImageFileRoleOriginal);
     final thumbFromFiles = imageUrlFromApiJson(m);
+    final rawTags = m['tags'];
     return ImageDetailResp(
       id: m['id'] ?? 0,
       title: m['title'] ?? '',
@@ -114,7 +154,62 @@ class ImageDetailResp {
       thumbnailUrl:
           m['thumbnail_url'] ?? m['image_url'] ?? thumbFromFiles ?? m['url'] ?? '',
       createAt: m['create_at']?.toString() ?? '',
+      tags: parseImageTagNames(rawTags),
+      tagIds: parseImageTagIds(rawTags),
     );
+  }
+}
+
+class ImageTagItem {
+  final num id;
+  final String name;
+  final String slug;
+  final String namespace;
+  final num imageCount;
+
+  ImageTagItem({
+    required this.id,
+    required this.name,
+    required this.slug,
+    required this.namespace,
+    this.imageCount = 0,
+  });
+
+  factory ImageTagItem.fromJson(Map<String, dynamic> m) {
+    return ImageTagItem(
+      id: m['id'] ?? 0,
+      name: m['name'] ?? '',
+      slug: m['slug'] ?? '',
+      namespace: m['namespace'] ?? '',
+      imageCount: m['image_count'] ?? m['count'] ?? 0,
+    );
+  }
+}
+
+class ListImageTagsResp {
+  final List<ImageTagItem> list;
+
+  ListImageTagsResp({required this.list});
+
+  factory ListImageTagsResp.fromJson(dynamic data) {
+    if (data is List) {
+      return ListImageTagsResp(
+        list: data
+            .whereType<Map<String, dynamic>>()
+            .map(ImageTagItem.fromJson)
+            .toList(),
+      );
+    }
+    if (data is Map<String, dynamic>) {
+      final raw = (data['items'] ?? data['list'] ?? data['tags'] ?? []) as List;
+      return ListImageTagsResp(
+        list: raw
+            .whereType<Map<String, dynamic>>()
+            .map(ImageTagItem.fromJson)
+            .toList(),
+      );
+    }
+    return ListImageTagsResp(list: const []);
   }
 }
 

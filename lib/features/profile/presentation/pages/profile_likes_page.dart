@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
+import '../../../../shared/widgets/inline_error_banner.dart';
 import '../../data/screenplay_like_repository.dart';
 
 class ProfileLikesPage extends StatefulWidget {
@@ -49,33 +50,54 @@ class _ProfileLikesPageState extends State<ProfileLikesPage> {
             ? const Center(child: CircularProgressIndicator())
             : items.isEmpty
                 ? ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
                     children: [
                       SizedBox(height: MediaQuery.sizeOf(context).height * 0.2),
                       EmptyStateView(
                         icon: Icons.thumb_up_off_alt_outlined,
-                        title: '暂无点赞',
+                        title: _error != null ? '加载失败' : '暂无点赞',
                         subtitle: _error ?? '你点赞的剧本会显示在这里',
-                        actionLabel: '去社区看看',
-                        onAction: () => context.push(AppRoutes.community),
+                        actionLabel:
+                            _error != null ? '重试' : '去社区看看',
+                        onAction: _error != null
+                            ? _load
+                            : () => context.push(AppRoutes.community),
                       ),
                     ],
                   )
                 : ListView.separated(
+                    physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(16),
-                    itemCount: items.length,
+                    itemCount: items.length + (_error != null ? 1 : 0),
                     separatorBuilder: (_, _) => const SizedBox(height: 8),
                     itemBuilder: (_, i) {
-                      final like = items[i];
+                      if (_error != null && i == 0) {
+                        return InlineErrorBanner(
+                          message: _error!,
+                          onRetry: _load,
+                        );
+                      }
+                      final index = _error != null ? i - 1 : i;
+                      final like = items[index];
                       final spId = like.screenplayId.toInt();
+                      final screenplay = _repo.screenplayFor(spId);
+                      final title = screenplay?.title.isNotEmpty == true
+                          ? screenplay!.title
+                          : '剧本 #$spId';
                       return ListTile(
                         tileColor: AppColors.surface,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        leading: const CircleAvatar(
-                          child: Icon(Icons.movie_outlined, size: 20),
+                        leading: CircleAvatar(
+                          backgroundImage: screenplay?.coverUrl != null
+                              ? NetworkImage(screenplay!.coverUrl!)
+                              : null,
+                          child: screenplay?.coverUrl == null
+                              ? const Icon(Icons.movie_outlined, size: 20)
+                              : null,
                         ),
-                        title: Text('剧本 #$spId'),
+                        title: Text(title),
                         subtitle: Text(like.createAt),
                         trailing: const Icon(Icons.chevron_right),
                         onTap: () => context.push(AppRoutes.script('$spId')),
