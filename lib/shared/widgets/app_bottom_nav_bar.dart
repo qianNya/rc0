@@ -91,24 +91,16 @@ class _NavItem extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (item.useBrandLogo)
-              AppBrandIcon(size: 28, selected: selected)
+              AppBrandIcon(
+                size: AppDimensions.bottomNavBrandIconSize,
+                selected: selected,
+              )
             else
               Icon(
                 selected ? item.selectedIcon : item.icon,
                 size: 22,
                 color: color,
               ),
-            if (!item.hideLabel) ...[
-              const SizedBox(height: 4),
-              Text(
-                item.label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                  color: color,
-                ),
-              ),
-            ],
           ],
         ),
       ),

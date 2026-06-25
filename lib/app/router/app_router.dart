@@ -320,8 +320,9 @@ abstract final class AppRouter {
               GoRoute(
                 path: AppRoutes.discovery,
                 name: 'discovery',
-                pageBuilder: (context, state) => const NoTransitionPage(
-                  child: ExplorePage(),
+                pageBuilder: (context, state) => NoTransitionPage(
+                  key: state.pageKey,
+                  child: const ExplorePage(),
                 ),
               ),
             ],
@@ -331,8 +332,9 @@ abstract final class AppRouter {
               GoRoute(
                 path: AppRoutes.library,
                 name: 'library',
-                pageBuilder: (context, state) => const NoTransitionPage(
-                  child: MyGalleryPage(),
+                pageBuilder: (context, state) => NoTransitionPage(
+                  key: state.pageKey,
+                  child: const MyGalleryPage(),
                 ),
               ),
             ],
@@ -345,6 +347,7 @@ abstract final class AppRouter {
                 pageBuilder: (context, state) {
                   final editId = state.uri.queryParameters['edit'];
                   return NoTransitionPage(
+                    key: state.pageKey,
                     child: ScriptStudioWorkspacePage(editScriptId: editId),
                   );
                 },
@@ -356,8 +359,9 @@ abstract final class AppRouter {
               GoRoute(
                 path: AppRoutes.messages,
                 name: 'messages',
-                pageBuilder: (context, state) => const NoTransitionPage(
-                  child: ProfileComingSoonPage(title: '消息'),
+                pageBuilder: (context, state) => NoTransitionPage(
+                  key: state.pageKey,
+                  child: const ProfileComingSoonPage(title: '消息'),
                 ),
               ),
             ],
@@ -367,8 +371,9 @@ abstract final class AppRouter {
               GoRoute(
                 path: AppRoutes.profile,
                 name: 'profile',
-                pageBuilder: (context, state) => const NoTransitionPage(
-                  child: ProfilePage(),
+                pageBuilder: (context, state) => NoTransitionPage(
+                  key: state.pageKey,
+                  child: const ProfilePage(),
                 ),
               ),
             ],

@@ -11,6 +11,10 @@ abstract final class AppDimensions {
   static const double radiusXl = 20;
 
   static const double pagePadding = 20;
-  static const double bottomNavHeight = 72;
+  static const double bottomNavBrandIconSize = 28;
+  static const double bottomNavBrandIconPadding = 8;
+  static const double shellBarHeight =
+      bottomNavBrandIconSize + bottomNavBrandIconPadding + spacingXs;
+  static const double bottomNavHeight = shellBarHeight;
   static const double primaryButtonHeight = 48;
 }

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../app/theme/app_dimensions.dart';
 import '../../../../core/data/app_catalog.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/responsive/breakpoints.dart';
@@ -19,6 +20,7 @@ import '../../../../shared/widgets/content_card_shared.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/inline_error_banner.dart';
 import '../../../../shared/widgets/feed_tab_bar.dart';
+import '../../../../shared/widgets/shell_bar_icon_button.dart';
 import '../../../../shared/widgets/rc0_widgets.dart';
 import '../widgets/explore_featured_carousel.dart';
 import '../widgets/explore_feed_grid_card.dart';
@@ -374,27 +376,30 @@ class _ExploreMobileView extends StatelessWidget {
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.only(top: 4, right: 4),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: FeedTabBar(
-                            // Cosmetic tabs until feed API is wired.
-                            tabs: AppCatalog.feedTabs,
-                            selectedIndex: feedTabIndex,
-                            onChanged: onFeedTabChanged,
-                            underlineStyle: true,
+                    child: SizedBox(
+                      height: AppDimensions.shellBarHeight,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: FeedTabBar(
+                              // Cosmetic tabs until feed API is wired.
+                              tabs: AppCatalog.feedTabs,
+                              selectedIndex: feedTabIndex,
+                              onChanged: onFeedTabChanged,
+                              underlineStyle: true,
+                            ),
                           ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.search),
-                          onPressed: () => context.push(AppRoutes.search),
-                        ),
-                        ScreenplaySelectionAppBarActions(
-                          controller: selectionController,
-                          localIds: localIds,
-                          onSelectionChanged: onSelectionChanged,
-                        ),
-                      ],
+                          ShellBarIconButton(
+                            icon: Icons.search,
+                            onPressed: () => context.push(AppRoutes.search),
+                          ),
+                          ScreenplaySelectionAppBarActions(
+                            controller: selectionController,
+                            localIds: localIds,
+                            onSelectionChanged: onSelectionChanged,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

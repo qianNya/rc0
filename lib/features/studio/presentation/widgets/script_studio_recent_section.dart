@@ -85,7 +85,7 @@ class _RecentProjectTile extends StatelessWidget {
 
   void _openProject(BuildContext context) {
     if (screenplay.isLocal && !screenplay.isPublished) {
-      context.push(AppRoutes.studioEdit(screenplay.id));
+      context.go(AppRoutes.studioEdit(screenplay.id));
       return;
     }
     context.push(AppRoutes.script(screenplay.detailRouteId));

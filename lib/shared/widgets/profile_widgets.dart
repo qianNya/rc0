@@ -75,7 +75,7 @@ class DetailTabBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 44,
+      height: AppDimensions.shellBarHeight,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: tabs.length,

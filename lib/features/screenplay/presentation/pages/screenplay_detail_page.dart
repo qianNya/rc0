@@ -175,17 +175,17 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
 
     if (localDoc != null) {
       if (!context.mounted) return;
-      context.push(AppRoutes.studioEdit(localDoc.meta.localId));
+      context.go(AppRoutes.studioEdit(localDoc.meta.localId));
       return;
     }
 
     if (remoteId == null) {
-      context.push(AppRoutes.studioEdit(script.id));
+      context.go(AppRoutes.studioEdit(script.id));
       return;
     }
 
     if (!SocialRepository.instance.isCurrentUserOwner(script)) {
-      context.push(AppRoutes.studioEdit(script.id));
+      context.go(AppRoutes.studioEdit(script.id));
       return;
     }
 
@@ -206,7 +206,7 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
       return;
     }
 
-    context.push(AppRoutes.studioEdit(result.screenplay!.id));
+    context.go(AppRoutes.studioEdit(result.screenplay!.id));
   }
 
   Future<void> _onLike(Screenplay script) async {

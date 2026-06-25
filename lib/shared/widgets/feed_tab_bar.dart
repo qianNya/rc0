@@ -36,7 +36,7 @@ class FeedTabBar extends StatelessWidget {
       elevation: 0,
       surfaceTintColor: Colors.transparent,
       child: SizedBox(
-        height: underlineStyle ? 44 : 40,
+        height: AppDimensions.shellBarHeight,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           clipBehavior: Clip.hardEdge,
