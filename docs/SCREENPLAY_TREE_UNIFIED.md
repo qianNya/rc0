@@ -128,6 +128,8 @@ ScreenplayTree
 | `sort` | int | 排序 |
 | `dialogue` | string | 台词 |
 | `action_note` | string | 动作说明 |
+| `acgn_character_id` | int \| null | Wiki 角色引用；与 `sp_frame.acgn_character_id` 一致 |
+| `extra_params.character_note` | string | 分镜级外观 override（App `FrameDraft.characterNote`） |
 | `image` | MediaAsset | 画格图，见 §5 |
 
 ### 4.3 ID 体系

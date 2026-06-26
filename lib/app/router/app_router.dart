@@ -7,6 +7,9 @@ import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/community/presentation/pages/community_page.dart';
 import '../../features/explore/presentation/pages/explore_page.dart';
 import '../../features/gallery/presentation/pages/my_gallery_page.dart';
+import '../../features/character/presentation/pages/character_create_page.dart';
+import '../../features/character/presentation/pages/character_detail_page.dart';
+import '../../features/character/presentation/pages/character_list_page.dart';
 import '../../features/ip/presentation/pages/ip_detail_page.dart';
 import '../../features/ip/presentation/pages/ip_edit_page.dart';
 import '../../features/favorites/presentation/pages/favorites_page.dart';
@@ -185,6 +188,37 @@ abstract final class AppRouter {
         builder: (context, state) {
           final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
           return IpDetailPage(ipId: id);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.characters,
+        name: 'characters',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) {
+          final workId = int.tryParse(state.uri.queryParameters['work_id'] ?? '');
+          return CharacterListPage(
+            workId: workId != null && workId > 0 ? workId : null,
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.characterCreate,
+        name: 'character-create',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) {
+          final workId = int.tryParse(state.uri.queryParameters['work_id'] ?? '');
+          return CharacterCreatePage(
+            workId: workId != null && workId > 0 ? workId : null,
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.characterDetail,
+        name: 'character-detail',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+          return CharacterDetailPage(characterId: id);
         },
       ),
       GoRoute(

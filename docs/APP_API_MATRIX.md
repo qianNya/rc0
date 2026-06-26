@@ -35,6 +35,11 @@
 | IP 列表 / 详情 | `IpRepository.loadFirstPage` / `fetchDetail` | `work/api/work-api.dart` → `listWorks` / `getWork` | GET `/works` · GET `/works/{id}` |
 | IP 创建 / 更新 / 删除 | `IpRepository.create` / `update` / `delete` | `createWork` / `updateWork` / `deleteWork` | POST `/works` · PUT/DELETE `/works/{id}` |
 | 图片关联 IP | `IpRepository.linkToImage` | `image/api/image-api.dart` → `linkImageWork` / `unlinkImageWork` | POST/DELETE `/images/{id}/works` |
+| 角色库 / 详情 | `CharacterRepository.loadFirstPage` / `fetchDetail` | `character/api/character-api.dart` → `listCharacters` / `getCharacter` | GET `/characters` · GET `/characters/{id}` |
+| 角色创建 / 更新 / 删除 | `CharacterRepository.create` / `update` / `delete` | `createCharacter` / `updateCharacter` / `deleteCharacter` | POST `/characters` · PUT/DELETE `/characters/{id}` |
+| IP 下角色列表 | `CharacterRepository.fetchWorkCharacters` · IP 详情页 | `listWorkCharacters` / `createWorkCharacter` | GET/POST `/works/{id}/characters` |
+| 图片关联角色 | — | `character-api.dart`（待 UI） | GET/POST `/images/{id}/characters` · DELETE `/images/{id}/characters/{character_id}` |
+| 分镜绑定角色 | Studio Inspector · tree sync | `FrameDraft.characterId` → `acgn_character_id` | PUT tree / PUT `.../frames/{id}` |
 | 剧本标签同步 | `ScreenplayTagsRepository.applyTagsToScreenplay` · `syncTags` | `listScreenplayTags` / `createScreenplayTag` / `tagScreenplay` / `untagScreenplay` | GET/POST `/tags` · POST `/tags/{screenplayId}` · DELETE `/tags/{screenplayId}/{tagId}` |
 | 拍摄参数预设 | `ShootPresetRepository` | `cine-preset/api/cine-preset-api.dart` → `listCinePresets` / `listMyCinePresets` / `createCinePreset` / `updateCinePreset` / `deleteCinePreset` | GET `/cine-presets?scope=0\|1` · GET `/cine-presets/mine` · POST `/cine-presets` · PUT/DELETE `/cine-presets/{id}` |
 | 401 登出 | `main.dart` | `core/network/api_auth.dart` | — |

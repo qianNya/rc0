@@ -49,6 +49,16 @@ void applyCineParamsFromFrameMap(
   if (characterNote is String) {
     frameDraft.characterNote = characterNote;
   }
+  final characterId = frameMap['acgn_character_id'];
+  if (characterId is num && characterId.toInt() > 0) {
+    frameDraft.characterId = characterId.toInt();
+  } else {
+    frameDraft.characterId = null;
+  }
+  final cachedName = extraMap['character_name'];
+  if (cachedName is String) {
+    frameDraft.characterName = cachedName;
+  }
 }
 
 void writeCineParamsToFrameMap(
@@ -77,6 +87,7 @@ void writeCineParamsToFrameMap(
   extraMap.remove('positive_prompt');
   extraMap.remove('negative_prompt');
   extraMap.remove('character_note');
+  extraMap.remove('character_name');
 
   extraMap.addAll(
     cine.toExtraParams(
@@ -86,6 +97,17 @@ void writeCineParamsToFrameMap(
   );
   if (frameDraft.characterNote.trim().isNotEmpty) {
     extraMap['character_note'] = frameDraft.characterNote.trim();
+  }
+  if (frameDraft.characterId != null &&
+      frameDraft.characterId! > 0 &&
+      frameDraft.characterName.trim().isNotEmpty) {
+    extraMap['character_name'] = frameDraft.characterName.trim();
+  }
+
+  if (frameDraft.characterId != null && frameDraft.characterId! > 0) {
+    frameMap['acgn_character_id'] = frameDraft.characterId;
+  } else {
+    frameMap['acgn_character_id'] = null;
   }
 
   frameMap['extra_params'] = extraMap;

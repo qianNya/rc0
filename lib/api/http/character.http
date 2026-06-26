@@ -1,0 +1,128 @@
+### Character Wiki API
+
+@baseUrl = http://localhost:8080
+@accessToken = {{login.response.body.data.access_token}}
+@workId = 1
+@characterId = 1
+@imageId = 1
+
+### @name listCharacters
+GET {{baseUrl}}/characters?page=1&page_size=20
+Accept: application/json
+
+###
+
+### @name listCharactersByWork
+GET {{baseUrl}}/characters?work_id={{workId}}
+Accept: application/json
+
+###
+
+### @name searchCharacters
+GET {{baseUrl}}/characters?q=守岸
+Accept: application/json
+
+###
+
+### @name createCharacter
+POST {{baseUrl}}/characters
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "work_id": 1,
+  "name": "守岸人",
+  "name_orig": "The Guardian",
+  "slug": "shou-an-ren",
+  "gender": 2,
+  "summary": "神秘少女，常出现在码头",
+  "appearance": "黑色长发，蓝色雨衣，纤细身形",
+  "personality": "沉默寡言，内心温柔",
+  "aliases": ["岸上人", "Girl"],
+  "sort": 0
+}
+
+> {%
+    if (response.body.data && response.body.data.id) {
+        client.global.set("characterId", response.body.data.id);
+    }
+%}
+
+###
+
+### @name getCharacter
+GET {{baseUrl}}/characters/{{characterId}}
+Accept: application/json
+
+###
+
+### @name updateCharacter
+PUT {{baseUrl}}/characters/{{characterId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "work_id": 1,
+  "name": "守岸人",
+  "name_orig": "The Guardian",
+  "slug": "shou-an-ren",
+  "gender": 2,
+  "summary": "更新简介",
+  "appearance": "黑色长发，蓝色雨衣",
+  "personality": "沉默寡言",
+  "aliases": ["岸上人"],
+  "sort": 0
+}
+
+###
+
+### @name deleteCharacter
+DELETE {{baseUrl}}/characters/{{characterId}}
+Authorization: Bearer {{accessToken}}
+
+###
+
+### @name listWorkCharacters
+GET {{baseUrl}}/works/{{workId}}/characters
+Accept: application/json
+
+###
+
+### @name createWorkCharacter
+POST {{baseUrl}}/works/{{workId}}/characters
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "配角A",
+  "slug": "support-a",
+  "gender": 1,
+  "summary": "码头老板",
+  "appearance": "中年男性，戴斗笠"
+}
+
+###
+
+### @name listImageCharacters
+GET {{baseUrl}}/images/{{imageId}}/characters
+Accept: application/json
+
+###
+
+### @name linkImageCharacter
+POST {{baseUrl}}/images/{{imageId}}/characters
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "character_id": 1,
+  "relation_type": 0
+}
+
+###
+
+### @name unlinkImageCharacter
+DELETE {{baseUrl}}/images/{{imageId}}/characters/{{characterId}}
+Authorization: Bearer {{accessToken}}
+
+###

@@ -673,6 +673,11 @@ abstract final class ScreenplayApiMapper {
             framePayload['image_ref'] = ref;
           }
 
+          final characterId = (frameMap['acgn_character_id'] as num?)?.toInt();
+          if (characterId != null && characterId > 0) {
+            framePayload['acgn_character_id'] = characterId;
+          }
+
           framePayloads.add(framePayload);
         }
 

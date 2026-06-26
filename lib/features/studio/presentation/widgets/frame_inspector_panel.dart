@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../character/presentation/widgets/character_picker_sheet.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
@@ -159,7 +160,32 @@ class _FrameInspectorPanelState extends State<FrameInspectorPanel> {
           ),
           const SizedBox(height: 16),
           _CharacterSection(
+            characterId: frame.characterId,
+            characterName: frame.characterName,
             characterNote: frame.characterNote,
+            onPickCharacter: () async {
+              final picked = await CharacterPickerSheet.show(context);
+              if (!context.mounted) return;
+              if (picked == null) {
+                frame.characterId = null;
+                frame.characterName = '';
+              } else {
+                frame.characterId = picked.id;
+                frame.characterName = picked.name;
+                if (frame.characterNote.trim().isEmpty &&
+                    picked.appearance.isNotEmpty) {
+                  frame.characterNote = picked.appearance;
+                }
+              }
+              widget.onChanged();
+              setState(() {});
+            },
+            onClearCharacter: () {
+              frame.characterId = null;
+              frame.characterName = '';
+              widget.onChanged();
+              setState(() {});
+            },
             onNoteChanged: (v) {
               frame.characterNote = v;
               widget.onChanged();
@@ -426,11 +452,19 @@ class _SceneFieldsSection extends StatelessWidget {
 
 class _CharacterSection extends StatelessWidget {
   const _CharacterSection({
+    required this.characterId,
+    required this.characterName,
     required this.characterNote,
+    required this.onPickCharacter,
+    required this.onClearCharacter,
     required this.onNoteChanged,
   });
 
+  final int? characterId;
+  final String characterName;
   final String characterNote;
+  final VoidCallback onPickCharacter;
+  final VoidCallback onClearCharacter;
   final ValueChanged<String> onNoteChanged;
 
   @override
@@ -446,13 +480,38 @@ class _CharacterSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text('角色信息', style: AppTextStyles.label),
+          if (characterId != null && characterName.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    characterName,
+                    style: AppTextStyles.body.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () =>
+                      context.push(AppRoutes.character(characterId!)),
+                  child: const Text('Wiki'),
+                ),
+                IconButton(
+                  tooltip: '解除绑定',
+                  onPressed: onClearCharacter,
+                  icon: const Icon(Icons.close, size: 18),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 8),
           TextFormField(
-            key: ValueKey('character-$characterNote'),
+            key: ValueKey('character-$characterNote-$characterId'),
             initialValue: characterNote,
             decoration: const InputDecoration(
               labelText: '角色描述',
-              hintText: '如：黑色长发、蓝色雨衣',
+              hintText: '分镜级外观 override，如：黑色长发、蓝色雨衣',
               isDense: true,
             ),
             onChanged: onNoteChanged,
@@ -466,9 +525,8 @@ class _CharacterSection extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               OutlinedButton(
-                onPressed: () =>
-                    context.push(AppRoutes.comingSoon('角色库')),
-                child: const Text('选择角色'),
+                onPressed: onPickCharacter,
+                child: Text(characterId == null ? '选择角色' : '更换角色'),
               ),
             ],
           ),

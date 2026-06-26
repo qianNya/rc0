@@ -39,6 +39,10 @@ abstract final class AppRoutes {
   static const String ipDetail = '/ip/:id';
   static const String ipEdit = '/ip/:id/edit';
 
+  static const String characters = '/characters';
+  static const String characterDetail = '/characters/:id';
+  static const String characterCreate = '/characters/create';
+
   static const String preset = '/preset';
   static const String presetDetail = '/preset/:id';
 
@@ -77,6 +81,9 @@ abstract final class AppRoutes {
   static String imageAnalysisPath(String id) => '/image/$id/analysis';
   static String ip(int id) => '/ip/$id';
   static String ipEditPath(int id) => '/ip/$id/edit';
+  static String character(int id) => '/characters/$id';
+  static String charactersForWork(int workId) =>
+      '$characters?work_id=$workId';
   static String presetItem(String id) => '/preset/$id';
   static String user(int id) => '/user/$id';
   static String pose(String id) => '/pose/$id';

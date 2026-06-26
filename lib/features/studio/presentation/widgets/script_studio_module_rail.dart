@@ -22,7 +22,7 @@ class ScriptStudioModuleRail extends StatelessWidget {
     const _RailItem(
       icon: Icons.person_outline,
       label: '角色库',
-      comingSoonTitle: '角色库',
+      route: AppRoutes.characters,
     ),
     const _RailItem(
       icon: Icons.view_in_ar_outlined,

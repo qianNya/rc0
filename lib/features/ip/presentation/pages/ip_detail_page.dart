@@ -8,6 +8,8 @@ import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/data/app_catalog.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../auth/data/auth_repository.dart';
+import '../../../character/data/character_repository.dart';
+import '../../../character/domain/character_entry.dart';
 import '../../data/ip_repository.dart';
 import '../../domain/ip_entry.dart';
 
@@ -22,10 +24,14 @@ class IpDetailPage extends StatefulWidget {
 
 class _IpDetailPageState extends State<IpDetailPage> {
   final _repo = IpRepository.instance;
+  final _characterRepo = CharacterRepository.instance;
   final _auth = AuthRepository.instance;
   IpEntry? _entry;
+  List<CharacterEntry> _characters = [];
   bool _loading = true;
+  bool _loadingCharacters = false;
   String? _error;
+  String? _charactersError;
   bool _deleting = false;
 
   @override
@@ -45,6 +51,23 @@ class _IpDetailPageState extends State<IpDetailPage> {
       _entry = result.ip;
       _error = result.error;
       _loading = false;
+    });
+    if (result.ip != null) {
+      await _loadCharacters();
+    }
+  }
+
+  Future<void> _loadCharacters() async {
+    setState(() {
+      _loadingCharacters = true;
+      _charactersError = null;
+    });
+    final result = await _characterRepo.fetchWorkCharacters(workId: widget.ipId);
+    if (!mounted) return;
+    setState(() {
+      _characters = result.items;
+      _charactersError = result.error;
+      _loadingCharacters = false;
     });
   }
 
@@ -143,52 +166,98 @@ class _IpDetailPageState extends State<IpDetailPage> {
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(AppDimensions.spacingMd),
                     children: [
-                    AspectRatio(
-                      aspectRatio: 16 / 9,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: AppColors.placeholderDark,
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.radiusMd,
+                      AspectRatio(
+                        aspectRatio: 16 / 9,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: AppColors.placeholderDark,
+                            borderRadius: BorderRadius.circular(
+                              AppDimensions.radiusMd,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.auto_stories_outlined,
+                            size: 48,
+                            color: AppColors.textTertiaryDark,
                           ),
                         ),
-                        child: Icon(
-                          Icons.auto_stories_outlined,
-                          size: 48,
-                          color: AppColors.textTertiaryDark,
-                        ),
                       ),
-                    ),
-                    const SizedBox(height: AppDimensions.spacingMd),
-                    Text(entry.title, style: AppTextStyles.title),
-                    const SizedBox(height: 8),
-                    Text(
-                      AppCatalog.ipWorkTypeLabel(entry.workType),
-                      style: AppTextStyles.bodySecondary.copyWith(
-                        color: AppColors.accent,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    if (entry.releaseYear > 0) ...[
+                      const SizedBox(height: AppDimensions.spacingMd),
+                      Text(entry.title, style: AppTextStyles.title),
                       const SizedBox(height: 8),
                       Text(
-                        '年份 ${entry.releaseYear}',
-                        style: AppTextStyles.bodySecondary,
+                        AppCatalog.ipWorkTypeLabel(entry.workType),
+                        style: AppTextStyles.bodySecondary.copyWith(
+                          color: AppColors.accent,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
+                      if (entry.releaseYear > 0) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          '年份 ${entry.releaseYear}',
+                          style: AppTextStyles.bodySecondary,
+                        ),
+                      ],
+                      if (entry.summary.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Text(entry.summary, style: AppTextStyles.body),
+                      ],
+                      const SizedBox(height: AppDimensions.spacingLg),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text('人物', style: AppTextStyles.label),
+                          ),
+                          if (canEdit)
+                            TextButton.icon(
+                              onPressed: () async {
+                                await context.push(
+                                  '${AppRoutes.characterCreate}?work_id=${entry.id}',
+                                );
+                                if (mounted) _loadCharacters();
+                              },
+                              icon: const Icon(Icons.add, size: 18),
+                              label: const Text('添加'),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      if (_loadingCharacters)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          child: Center(child: CircularProgressIndicator()),
+                        )
+                      else if (_charactersError != null)
+                        Text(
+                          _charactersError!,
+                          style: TextStyle(fontSize: 13, color: secondary),
+                        )
+                      else if (_characters.isEmpty)
+                        Text(
+                          '暂无角色',
+                          style: TextStyle(fontSize: 13, color: secondary),
+                        )
+                      else
+                        ..._characters.map(
+                          (character) => ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(character.name),
+                            subtitle: character.summary.isNotEmpty
+                                ? Text(
+                                    character.summary,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  )
+                                : null,
+                            trailing: const Icon(Icons.chevron_right),
+                            onTap: () => context.push(
+                              AppRoutes.character(character.id),
+                            ),
+                          ),
+                        ),
                     ],
-                    if (entry.summary.isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      Text(entry.summary, style: AppTextStyles.body),
-                    ],
-                    const SizedBox(height: AppDimensions.spacingLg),
-                    Text('人物', style: AppTextStyles.label),
-                    const SizedBox(height: 8),
-                    Text(
-                      '人物列表将在后端 character API 接入后展示',
-                      style: TextStyle(fontSize: 13, color: secondary),
-                    ),
-                  ],
-                ),
+                  ),
                 ),
     );
   }

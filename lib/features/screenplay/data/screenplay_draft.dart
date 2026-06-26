@@ -19,6 +19,8 @@ class FrameDraft {
     this.positivePrompt = '',
     this.negativePrompt = '',
     this.characterNote = '',
+    this.characterId,
+    this.characterName = '',
     Set<String>? tags,
     List<UploadImageFile>? referenceImages,
   })  : cineParams = cineParams ?? const CineParams(),
@@ -33,6 +35,8 @@ class FrameDraft {
   String positivePrompt;
   String negativePrompt;
   String characterNote;
+  int? characterId;
+  String characterName;
   Set<String> tags;
   final List<UploadImageFile> referenceImages;
 
@@ -50,6 +54,8 @@ class FrameDraft {
       positivePrompt: positivePrompt,
       negativePrompt: negativePrompt,
       characterNote: characterNote,
+      characterId: characterId,
+      characterName: characterName,
       tags: Set<String>.from(tags),
       referenceImages: [
         for (final ref in referenceImages)
