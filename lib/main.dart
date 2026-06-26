@@ -26,6 +26,7 @@ Future<void> main() async {
         size: Size(1280, 720),
         center: true,
         titleBarStyle: TitleBarStyle.hidden,
+        windowButtonVisibility: false,
       ),
       () async {
         await windowManager.show();

@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/responsive/breakpoints.dart';
 import '../../../../shared/widgets/app_bottom_nav_bar.dart';
 import '../../../../shared/widgets/shell_nav_items.dart';
-import '../widgets/desktop_sidebar.dart';
 
 class AdaptiveShellPage extends StatelessWidget {
   const AdaptiveShellPage({
@@ -28,34 +27,13 @@ class AdaptiveShellPage extends StatelessWidget {
     return match >= 0 ? match : 0;
   }
 
-  void _onDesktopNavItem(ShellNavItem item, BuildContext context) {
-    if (item.stackRoute != null) {
-      context.push(item.stackRoute!);
-      return;
-    }
-    if (item.branchIndex != null) {
-      _goToBranch(item.branchIndex!);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDesktop = Breakpoints.isDesktop(context);
 
+    // Desktop: child pages (e.g. ExplorePage) own the full viewport chrome.
     if (isDesktop) {
-      return Scaffold(
-        body: Row(
-          children: [
-            DesktopSidebar(
-              currentBranch: navigationShell.currentIndex,
-              onNavItemTap: (item) => _onDesktopNavItem(item, context),
-              onProfileTap: () => _goToBranch(4),
-              onStudioTap: () => _goToBranch(2),
-            ),
-            Expanded(child: navigationShell),
-          ],
-        ),
-      );
+      return navigationShell;
     }
 
     return Scaffold(

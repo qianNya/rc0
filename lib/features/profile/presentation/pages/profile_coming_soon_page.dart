@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../shared/widgets/desktop_shell_app_bar.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 
 class ProfileComingSoonPage extends StatelessWidget {
@@ -10,7 +11,7 @@ class ProfileComingSoonPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: DesktopShellAppBar(title: Text(title)),
       body: EmptyStateView(
         icon: Icons.construction_outlined,
         title: '即将上线',

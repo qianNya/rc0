@@ -7,6 +7,7 @@ import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../core/data/app_catalog.dart';
+import '../../../../core/platform/platform_features.dart';
 import '../../../../core/responsive/breakpoints.dart';
 import '../../../../core/utils/image_url_utils.dart';
 import '../../../../core/utils/state_listeners.dart';
@@ -253,6 +254,7 @@ class _MyGalleryPageState extends State<MyGalleryPage> {
     if (!_auth.isLoggedIn) {
       return Scaffold(
         body: SafeArea(
+          top: !shouldUseDesktopWindowChrome,
           child: Column(
             children: [
               const GalleryPageHeader(),
@@ -281,6 +283,7 @@ class _MyGalleryPageState extends State<MyGalleryPage> {
 
     return Scaffold(
       body: SafeArea(
+        top: !shouldUseDesktopWindowChrome,
         bottom: false,
         child: RefreshIndicator(
           onRefresh: _refresh,

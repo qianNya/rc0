@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../core/platform/platform_features.dart';
 import '../core/theme/theme_mode_notifier.dart';
-import '../features/shell/presentation/widgets/desktop_title_bar.dart';
 import 'router/app_router.dart';
 import 'theme/app_theme.dart';
 import 'theme/system_ui_style.dart';
@@ -45,20 +43,9 @@ class _Rc0AppState extends State<Rc0App> {
         final brightness = Theme.of(context).brightness;
         AppSystemUi.applyFor(brightness);
 
-        final content = AnnotatedRegion<SystemUiOverlayStyle>(
+        return AnnotatedRegion<SystemUiOverlayStyle>(
           value: AppSystemUi.styleFor(brightness),
           child: child ?? const SizedBox.shrink(),
-        );
-
-        if (!shouldUseDesktopWindowChrome) {
-          return content;
-        }
-
-        return Column(
-          children: [
-            const DesktopTitleBar(),
-            Expanded(child: content),
-          ],
         );
       },
     );

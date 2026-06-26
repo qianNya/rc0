@@ -4,20 +4,21 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/responsive/breakpoints.dart';
+import '../../../../shared/widgets/desktop_shell_app_bar.dart';
 
 class ScriptStudioAppBar extends StatelessWidget implements PreferredSizeWidget {
   const ScriptStudioAppBar({super.key});
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+  Size get preferredSize => const DesktopShellAppBar().preferredSize;
 
   @override
   Widget build(BuildContext context) {
     final isDesktop = Breakpoints.isDesktop(context);
 
-    return AppBar(
+    return DesktopShellAppBar(
       centerTitle: true,
-      title: const Text('Script Studio', style: AppTextStyles.title),
+      automaticallyImplyLeading: !isDesktop,
       leading: isDesktop
           ? null
           : IconButton(
@@ -25,7 +26,7 @@ class ScriptStudioAppBar extends StatelessWidget implements PreferredSizeWidget 
               onPressed: () {},
               tooltip: '菜单',
             ),
-      automaticallyImplyLeading: !isDesktop,
+      title: const Text('Script Studio', style: AppTextStyles.title),
       actions: [
         IconButton(
           icon: const Icon(Icons.search),

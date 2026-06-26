@@ -19,6 +19,7 @@
 | 用户点赞列表 | `ScreenplayLikeRepository.fetchLikes` + `getScreenplayDetail` enrichment | `listUserLikes` · `getScreenplayDetail` | GET `/users/{id}/likes` · GET `/screenplays/{id}` |
 | 关注 / 取关 | `SocialRepository` | `followUser` / `unfollowUser` | POST/DELETE `/users/{id}/follow` |
 | 剧本列表 | `ScreenplayRemoteRepository.loadFirstPage` / `loadMore` | `listScreenplays` | GET `/screenplays?page&page_size`（支持 `q` 搜索、`visibility=1` 公开流） |
+| 发现页 Feed（桌面） | `FeedRepository.loadFirstPage` / `loadMore` | `feed/api/feed-api.dart` → `listFeed` | GET `/feed?page&page_size&sort&q&tag_id&kind` |
 | 剧本树（读） | `ScreenplayRemoteRepository.fetchScreenplayTree` | `getScreenplayTree` | GET `/screenplays/{id}/tree?depth=3&act_page_size=0&scene_page_size=0&frame_page_size=0` |
 | 剧本树（写） | `ScreenplayRemoteRepository.saveScreenplayTree` | `createScreenplayTree` / `updateScreenplayTree` | POST/PUT `/screenplays/{id}/tree` |
 | 创建剧本 | `ScreenplayPublishService` | `createScreenplay` | POST `/screenplays` |

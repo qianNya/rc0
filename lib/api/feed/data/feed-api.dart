@@ -1,41 +1,17 @@
-import '../../screenplay/data/screenplay-api.dart';
-
-class FeedItem {
-  final Screenplay screenplay;
-  final String itemType;
-  final String authorNickname;
-
-  FeedItem({
-    required this.screenplay,
-    required this.itemType,
-    required this.authorNickname,
-  });
-
-  factory FeedItem.fromJson(Map<String, dynamic> m) {
-    final spMap = m['screenplay'];
-    final author = m['author'];
-    return FeedItem(
-      screenplay: spMap is Map<String, dynamic>
-          ? Screenplay.fromJson(spMap)
-          : Screenplay.fromJson(m),
-      itemType: m['item_type'] ?? m['type'] ?? 'screenplay',
-      authorNickname: author is Map<String, dynamic>
-          ? (author['nickname'] ?? author['username'] ?? '')
-          : (m['author_nickname'] ?? ''),
-    );
-  }
-}
+import '../../screenplay/data/screenplay-api.dart' as sp_dto;
 
 class ListFeedResp {
-  final List<FeedItem> list;
+  ListFeedResp({required this.items, required this.total});
+
+  final List<sp_dto.FeedItemDto> items;
   final num total;
 
-  ListFeedResp({required this.list, required this.total});
-
   factory ListFeedResp.fromJson(Map<String, dynamic> m) {
+    final raw = (m['items'] ?? m['list'] ?? []) as List<dynamic>;
     return ListFeedResp(
-      list: ((m['list'] ?? []) as List<dynamic>)
-          .map((i) => FeedItem.fromJson(i as Map<String, dynamic>))
+      items: raw
+          .whereType<Map<String, dynamic>>()
+          .map(sp_dto.FeedItemDto.fromJson)
           .toList(),
       total: m['total'] ?? 0,
     );
@@ -43,17 +19,17 @@ class ListFeedResp {
 }
 
 class SearchResultItem {
-  final String type;
-  final num id;
-  final String title;
-  final String subtitle;
-
   SearchResultItem({
     required this.type,
     required this.id,
     required this.title,
     required this.subtitle,
   });
+
+  final String type;
+  final num id;
+  final String title;
+  final String subtitle;
 
   factory SearchResultItem.fromJson(Map<String, dynamic> m) {
     return SearchResultItem(
@@ -66,15 +42,16 @@ class SearchResultItem {
 }
 
 class SearchResp {
+  SearchResp({required this.list, required this.total});
+
   final List<SearchResultItem> list;
   final num total;
 
-  SearchResp({required this.list, required this.total});
-
   factory SearchResp.fromJson(Map<String, dynamic> m) {
     return SearchResp(
-      list: ((m['list'] ?? []) as List<dynamic>)
-          .map((i) => SearchResultItem.fromJson(i as Map<String, dynamic>))
+      list: ((m['list'] ?? m['items'] ?? []) as List<dynamic>)
+          .whereType<Map<String, dynamic>>()
+          .map(SearchResultItem.fromJson)
           .toList(),
       total: m['total'] ?? 0,
     );

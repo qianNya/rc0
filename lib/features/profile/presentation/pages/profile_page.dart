@@ -7,6 +7,7 @@ import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/services/app_update_service.dart';
 import '../../../../core/theme/theme_mode_notifier.dart';
 import '../../../../core/utils/state_listeners.dart';
+import '../../../../shared/widgets/desktop_shell_app_bar.dart';
 import '../../../../shared/widgets/profile_widgets.dart';
 import '../../../../shared/widgets/rc0_widgets.dart';
 import '../../../../shared/widgets/theme_mode_selector.dart';
@@ -195,9 +196,9 @@ class _ProfilePageState extends State<ProfilePage> {
         _imageFavorites.items.length + _spFavoriteCount;
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: DesktopShellAppBar(
         title: const Text('我的'),
-        elevation: 0,
+        automaticallyImplyLeading: false,
         actions: [
           IconButton(
             icon: const Icon(Icons.qr_code_scanner_outlined),
