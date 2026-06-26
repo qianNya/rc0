@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/data/app_catalog.dart';
+import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../character/data/character_repository.dart';
@@ -117,10 +119,10 @@ class _IpDetailPageState extends State<IpDetailPage> {
         Theme.of(context).textTheme.bodyMedium?.color ?? AppColors.textSecondary;
     final canEdit = _auth.isLoggedIn;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(entry?.title.isNotEmpty == true ? entry!.title : 'IP 详情'),
-        actions: [
+    return DesktopStackScaffold(
+      title: Text(entry?.title.isNotEmpty == true ? entry!.title : 'IP 详情'),
+      onBack: () => popOrGoDiscovery(context),
+      actions: [
           if (entry != null && canEdit)
             IconButton(
               icon: const Icon(Icons.edit_outlined),
@@ -142,8 +144,7 @@ class _IpDetailPageState extends State<IpDetailPage> {
               tooltip: '删除',
               onPressed: _deleting ? null : _confirmDelete,
             ),
-        ],
-      ),
+      ],
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : entry == null

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
+import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/image_preview.dart';
 import '../../../../shared/widgets/pose_cover_image.dart';
 import '../../../screenplay/data/screenplay_draft.dart';
@@ -73,8 +75,9 @@ class _FrameEditorDetailPageState extends State<FrameEditorDetailPage> {
       widget.frameIndex,
     );
 
-    return Scaffold(
-      appBar: AppBar(title: Text('画面 $shotLabel')),
+    return DesktopStackScaffold(
+      title: Text('画面 $shotLabel'),
+      onBack: () => popOrGoStudio(context),
       body: Column(
         children: [
           Padding(

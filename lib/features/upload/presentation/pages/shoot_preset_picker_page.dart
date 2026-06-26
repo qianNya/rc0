@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/data/preset_catalog.dart';
 import '../../../../core/utils/state_listeners.dart';
+import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../screenplay/data/shoot_preset_repository.dart';
 import '../../../screenplay/domain/shoot_preset.dart';
 import '../widgets/preset_marketplace_widgets.dart';
@@ -242,8 +244,9 @@ class _ShootPresetPickerPageState extends State<ShootPresetPickerPage> {
   @override
   Widget build(BuildContext context) {
     if (!_repo.isLoaded && _repo.allPresets.isEmpty) {
-      return Scaffold(
-        appBar: AppBar(title: Text(_title)),
+      return DesktopStackScaffold(
+        title: Text(_title),
+        onBack: () => popOrGoStudio(context),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
@@ -252,49 +255,57 @@ class _ShootPresetPickerPageState extends State<ShootPresetPickerPage> {
       return _buildManageScaffold();
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_title),
-        centerTitle: false,
-      ),
-      body: Column(
+    return DesktopStackScaffold(
+      title: Text(_title),
+      onBack: () => popOrGoStudio(context),
+      centerTitle: false,
+      body: Stack(
         children: [
-          PresetMarketSearchBar(
-            controller: _searchController,
-            onChanged: (v) => setState(() => _query = v.trim()),
-          ),
-          PresetMarketSegmentedTabs(
-            selectedIndex: _tab.index,
-            myCount: _repo.userPresets.length,
-            onChanged: _onTabChanged,
-          ),
-          if (_repo.lastError != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppDimensions.spacingMd,
+          Column(
+            children: [
+              PresetMarketSearchBar(
+                controller: _searchController,
+                onChanged: (v) => setState(() => _query = v.trim()),
               ),
-              child: Text(
-                _repo.lastError!,
-                style: AppTextStyles.bodySecondary.copyWith(
-                  color: Theme.of(context).colorScheme.error,
+              PresetMarketSegmentedTabs(
+                selectedIndex: _tab.index,
+                myCount: _repo.userPresets.length,
+                onChanged: _onTabChanged,
+              ),
+              if (_repo.lastError != null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppDimensions.spacingMd,
+                  ),
+                  child: Text(
+                    _repo.lastError!,
+                    style: AppTextStyles.bodySecondary.copyWith(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
                 ),
-              ),
+              Expanded(child: _buildTabBody()),
+            ],
+          ),
+          Positioned(
+            right: 16,
+            bottom: 16,
+            child: FloatingActionButton.extended(
+              onPressed: _createPreset,
+              icon: const Icon(Icons.add),
+              label: const Text('创建预设'),
             ),
-          Expanded(child: _buildTabBody()),
+          ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _createPreset,
-        icon: const Icon(Icons.add),
-        label: const Text('创建预设'),
       ),
     );
   }
 
   Widget _buildManageScaffold() {
     final user = _repo.userPresets;
-    return Scaffold(
-      appBar: AppBar(title: Text(_title)),
+    return DesktopStackScaffold(
+      title: Text(_title),
+      onBack: () => popOrGoStudio(context),
       body: ListView(
         padding: const EdgeInsets.all(AppDimensions.spacingMd),
         children: [

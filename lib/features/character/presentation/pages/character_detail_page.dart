@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../domain/character_entry.dart';
@@ -47,12 +49,11 @@ class _CharacterDetailPageState extends State<CharacterDetailPage> {
   @override
   Widget build(BuildContext context) {
     final entry = _entry;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          entry?.name.isNotEmpty == true ? entry!.name : '角色详情',
-        ),
+    return DesktopStackScaffold(
+      title: Text(
+        entry?.name.isNotEmpty == true ? entry!.name : '角色详情',
       ),
+      onBack: () => popOrGoDiscovery(context),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : entry == null

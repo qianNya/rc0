@@ -7,10 +7,10 @@ import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../core/data/app_catalog.dart';
-import '../../../../core/platform/platform_features.dart';
 import '../../../../core/responsive/breakpoints.dart';
 import '../../../../core/utils/image_url_utils.dart';
 import '../../../../core/utils/state_listeners.dart';
+import '../../../../shared/widgets/desktop_shell_app_bar.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/feed_tab_bar.dart';
 import '../../../../shared/widgets/inline_error_banner.dart';
@@ -249,25 +249,118 @@ class _MyGalleryPageState extends State<MyGalleryPage> {
     return '$value';
   }
 
+  Widget _buildGalleryScroll({
+    required bool includeHeader,
+    required List<GalleryImage> filtered,
+    required bool loading,
+    required String? error,
+    required Color? secondary,
+  }) {
+    return RefreshIndicator(
+      onRefresh: _refresh,
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (notification) {
+          if (notification is! ScrollEndNotification) return false;
+          if (notification.metrics.extentAfter >= 240) return false;
+
+          if (_mainTabIndex == 0 &&
+              _gallery.hasMore &&
+              !_gallery.loadingMore) {
+            _gallery.loadMore();
+          } else if (_mainTabIndex == 1) {
+            final ip = IpRepository.instance;
+            if (ip.hasMore && !ip.loadingMore) {
+              ip.loadMore();
+            }
+          } else if (_mainTabIndex == 2) {
+            _worksTabKey.currentState?.loadMore();
+          }
+          return false;
+        },
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            if (includeHeader)
+              SliverToBoxAdapter(
+                child: GalleryPageHeader(
+                  onUpload: _pickAndUpload,
+                  uploading: _uploading,
+                ),
+              ),
+            SliverToBoxAdapter(
+              child: FeedTabBar(
+                tabs: AppCatalog.galleryTabs,
+                selectedIndex: _mainTabIndex,
+                onChanged: _onMainTabChanged,
+                underlineStyle: true,
+              ),
+            ),
+            if (_mainTabIndex == 0)
+              ..._buildImagesTab(
+                filtered: filtered,
+                loading: loading,
+                error: error,
+                secondary: secondary,
+              ),
+            if (_ipTabVisited)
+              SliverToBoxAdapter(
+                child: Offstage(
+                  offstage: _mainTabIndex != 1,
+                  child: IpTab(key: _ipTabKey),
+                ),
+              ),
+            if (_worksTabVisited)
+              SliverToBoxAdapter(
+                child: Offstage(
+                  offstage: _mainTabIndex != 2,
+                  child: GalleryWorksTab(key: _worksTabKey),
+                ),
+              ),
+            if (_tagsTabVisited)
+              SliverToBoxAdapter(
+                child: Offstage(
+                  offstage: _mainTabIndex != 3,
+                  child: GalleryTagsTab(
+                    onTagSelected: _onTagSelectedFromList,
+                  ),
+                ),
+              ),
+            const SliverToBoxAdapter(
+              child: SizedBox(height: AppDimensions.spacingLg),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDesktop = Breakpoints.isDesktop(context);
+
     if (!_auth.isLoggedIn) {
+      final body = EmptyStateView(
+        icon: Icons.photo_library_outlined,
+        title: '登录后查看图库',
+        subtitle: '上传与管理你的参考图片',
+        actionLabel: '去登录',
+        onAction: () =>
+            context.go(AppRoutes.loginWithRedirect(AppRoutes.library)),
+      );
+
+      if (isDesktop) {
+        return DesktopShellTabScaffold(
+          appBar: const GalleryPageHeader(),
+          body: body,
+        );
+      }
+
       return Scaffold(
         body: SafeArea(
-          top: !shouldUseDesktopWindowChrome,
           child: Column(
             children: [
               const GalleryPageHeader(),
-              Expanded(
-                child: EmptyStateView(
-                  icon: Icons.photo_library_outlined,
-                  title: '登录后查看图库',
-                  subtitle: '上传与管理你的参考图片',
-                  actionLabel: '去登录',
-                  onAction: () =>
-                      context.go(AppRoutes.loginWithRedirect(AppRoutes.library)),
-                ),
-              ),
+              Expanded(child: body),
             ],
           ),
         ),
@@ -281,84 +374,28 @@ class _MyGalleryPageState extends State<MyGalleryPage> {
     final secondary =
         theme.textTheme.bodyMedium?.color ?? AppColors.textSecondary;
 
+    final scroll = _buildGalleryScroll(
+      includeHeader: !isDesktop,
+      filtered: filtered,
+      loading: loading,
+      error: error,
+      secondary: secondary,
+    );
+
+    if (isDesktop) {
+      return DesktopShellTabScaffold(
+        appBar: GalleryPageHeader(
+          onUpload: _pickAndUpload,
+          uploading: _uploading,
+        ),
+        body: scroll,
+      );
+    }
+
     return Scaffold(
       body: SafeArea(
-        top: !shouldUseDesktopWindowChrome,
         bottom: false,
-        child: RefreshIndicator(
-          onRefresh: _refresh,
-          child: NotificationListener<ScrollNotification>(
-            onNotification: (notification) {
-              if (notification is! ScrollEndNotification) return false;
-              if (notification.metrics.extentAfter >= 240) return false;
-
-              if (_mainTabIndex == 0 &&
-                  _gallery.hasMore &&
-                  !_gallery.loadingMore) {
-                _gallery.loadMore();
-              } else if (_mainTabIndex == 1) {
-                final ip = IpRepository.instance;
-                if (ip.hasMore && !ip.loadingMore) {
-                  ip.loadMore();
-                }
-              } else if (_mainTabIndex == 2) {
-                _worksTabKey.currentState?.loadMore();
-              }
-              return false;
-            },
-            child: CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                SliverToBoxAdapter(
-                  child: GalleryPageHeader(
-                    onUpload: _pickAndUpload,
-                    uploading: _uploading,
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: FeedTabBar(
-                    tabs: AppCatalog.galleryTabs,
-                    selectedIndex: _mainTabIndex,
-                    onChanged: _onMainTabChanged,
-                    underlineStyle: true,
-                  ),
-                ),
-                if (_mainTabIndex == 0) ..._buildImagesTab(
-                  filtered: filtered,
-                  loading: loading,
-                  error: error,
-                  secondary: secondary,
-                ),
-                if (_ipTabVisited)
-                  SliverToBoxAdapter(
-                    child: Offstage(
-                      offstage: _mainTabIndex != 1,
-                      child: IpTab(key: _ipTabKey),
-                    ),
-                  ),
-                if (_worksTabVisited)
-                  SliverToBoxAdapter(
-                    child: Offstage(
-                      offstage: _mainTabIndex != 2,
-                      child: GalleryWorksTab(key: _worksTabKey),
-                    ),
-                  ),
-                if (_tagsTabVisited)
-                  SliverToBoxAdapter(
-                    child: Offstage(
-                      offstage: _mainTabIndex != 3,
-                      child: GalleryTagsTab(
-                        onTagSelected: _onTagSelectedFromList,
-                      ),
-                    ),
-                  ),
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: AppDimensions.spacingLg),
-                ),
-              ],
-            ),
-          ),
-        ),
+        child: scroll,
       ),
     );
   }

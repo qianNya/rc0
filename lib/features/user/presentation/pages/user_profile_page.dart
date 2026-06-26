@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../../../../app/router/navigation_utils.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../social/data/social_repository.dart';
 import '../../../user/data/user_profile_repository.dart';
 import '../../../user/data/user_screenplays_repository.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
+import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/inline_error_banner.dart';
 import '../../../../shared/widgets/explore_feed_tile.dart';
@@ -95,13 +97,16 @@ class _UserProfilePageState extends State<UserProfilePage> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+      return DesktopStackScaffold(
+        title: const Text('用户主页'),
+        onBack: () => popOrGoDiscovery(context),
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
     if (_profile == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('用户主页')),
+      return DesktopStackScaffold(
+        title: const Text('用户主页'),
+        onBack: () => popOrGoDiscovery(context),
         body: EmptyStateView(
           icon: Icons.person_off_outlined,
           title: _profileError ?? '加载失败',
@@ -117,12 +122,10 @@ class _UserProfilePageState extends State<UserProfilePage> {
     final p = _profile!;
     final name = p.nickname.isNotEmpty ? p.nickname : p.username;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(name),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
+    return DesktopStackScaffold(
+      title: Text(name),
+      onBack: () => popOrGoDiscovery(context),
+      centerTitle: false,
       body: RefreshIndicator(
         onRefresh: _load,
         child: ListView(

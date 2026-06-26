@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 
 class ProfileAboutPage extends StatefulWidget {
   const ProfileAboutPage({super.key});
@@ -28,8 +30,9 @@ class _ProfileAboutPageState extends State<ProfileAboutPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('关于 rc0')),
+    return DesktopStackScaffold(
+      title: const Text('关于 rc0'),
+      onBack: () => popOrGoDiscovery(context),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [

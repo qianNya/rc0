@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../data/character_repository.dart';
@@ -60,10 +62,10 @@ class _CharacterListPageState extends State<CharacterListPage> {
     return AnimatedBuilder(
       animation: Listenable.merge([_repo, _auth]),
       builder: (context, _) {
-        return Scaffold(
-          appBar: AppBar(
-            title: Text(widget.workId != null ? 'IP 角色' : '角色库'),
-            actions: [
+        return DesktopStackScaffold(
+          title: Text(widget.workId != null ? 'IP 角色' : '角色库'),
+          onBack: () => popOrGoDiscovery(context),
+          actions: [
               if (_auth.isLoggedIn)
                 IconButton(
                   tooltip: '新建角色',
@@ -73,8 +75,7 @@ class _CharacterListPageState extends State<CharacterListPage> {
                     if (mounted) _load();
                   },
                 ),
-            ],
-          ),
+          ],
           body: Column(
             children: [
               Padding(

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 
@@ -9,7 +11,9 @@ class TasksPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return DesktopStackScaffold(
+      title: const Text('任务中心'),
+      onBack: () => popOrGoDiscovery(context),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(AppDimensions.spacingXl),

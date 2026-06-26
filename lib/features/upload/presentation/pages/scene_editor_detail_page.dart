@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../../../app/router/navigation_utils.dart';
 import '../../../../core/domain/screenplay/script_frame_display.dart';
 import '../../../../core/responsive/breakpoints.dart';
+import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/profile_widgets.dart';
 import '../../../screenplay/data/screenplay_draft.dart';
@@ -131,8 +133,9 @@ class _SceneEditorDetailPageState extends State<SceneEditorDetailPage> {
   void _openTimeline() {
     Navigator.of(context).push<void>(
       MaterialPageRoute(
-        builder: (_) => Scaffold(
-          appBar: AppBar(title: Text('$_sceneTitle · 时间线')),
+        builder: (_) => DesktopStackScaffold(
+          title: Text('$_sceneTitle · 时间线'),
+          onBack: () => Navigator.of(context).pop(),
           body: ScriptEditorTimelineTab(
             draft: _draft,
             actions: widget.actions,
@@ -151,12 +154,13 @@ class _SceneEditorDetailPageState extends State<SceneEditorDetailPage> {
     final isDesktop = Breakpoints.isDesktop(context);
     final frameCount = frames.length;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('第${widget.sceneIndex + 1}场 · $_sceneTitle（$frameCount 画）'),
-        actions: [
-          if (!isDesktop)
-            PopupMenuButton<String>(
+    return DesktopStackScaffold(
+      title: Text('第${widget.sceneIndex + 1}场 · $_sceneTitle（$frameCount 画）'),
+      onBack: () => popOrGoStudio(context),
+      centerTitle: false,
+      actions: [
+        if (!isDesktop)
+          PopupMenuButton<String>(
               itemBuilder: (context) => [
                 const PopupMenuItem(
                   value: 'timeline',
@@ -182,8 +186,7 @@ class _SceneEditorDetailPageState extends State<SceneEditorDetailPage> {
                 }
               },
             ),
-        ],
-      ),
+      ],
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

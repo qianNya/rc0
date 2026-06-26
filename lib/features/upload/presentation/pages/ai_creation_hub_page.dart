@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/router/routes.dart';
+import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../widgets/editor/ai_hub_section.dart';
 
 class AiCreationHubPage extends StatelessWidget {
@@ -13,8 +15,9 @@ class AiCreationHubPage extends StatelessWidget {
       context.push(AppRoutes.comingSoon(label));
     }
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('AI 创作')),
+    return DesktopStackScaffold(
+      title: const Text('AI 创作'),
+      onBack: () => popOrGoStudio(context),
       body: ListView(
         children: [
           const SizedBox(height: 8),

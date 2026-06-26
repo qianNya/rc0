@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_shadows.dart';
+import '../../../../core/platform/platform_features.dart';
+import '../../../../core/responsive/breakpoints.dart';
+import '../../../../shared/widgets/desktop/desktop_card.dart';
+import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 
 class AuthPageScaffold extends StatelessWidget {
   const AuthPageScaffold({
@@ -12,6 +16,7 @@ class AuthPageScaffold extends StatelessWidget {
     this.footer,
     this.onBack,
     this.onHelp,
+    this.desktopTitle,
   });
 
   final Widget header;
@@ -19,9 +24,78 @@ class AuthPageScaffold extends StatelessWidget {
   final Widget? footer;
   final VoidCallback? onBack;
   final VoidCallback? onHelp;
+  final String? desktopTitle;
+
+  Widget _buildContent() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.accent.withValues(alpha: 0.08),
+                AppColors.accentLight,
+              ],
+            ),
+            borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+          ),
+          child: header,
+        ),
+        const SizedBox(height: 20),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+            boxShadow: AppShadows.card,
+          ),
+          child: form,
+        ),
+        if (footer != null) ...[
+          const SizedBox(height: 24),
+          footer!,
+        ],
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop =
+        Breakpoints.isDesktop(context) && shouldUseDesktopWindowChrome;
+
+    if (isDesktop) {
+      return DesktopStackScaffold(
+        title: Text(desktopTitle ?? '账号'),
+        onBack: onBack ?? () => Navigator.of(context).maybePop(),
+        centerTitle: false,
+        actions: [
+          TextButton(
+            onPressed: onHelp,
+            child: const Text('帮助'),
+          ),
+        ],
+        body: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: DesktopCard(
+                clipChild: false,
+                padding: const EdgeInsets.all(20),
+                child: _buildContent(),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -45,43 +119,7 @@ class AuthPageScaffold extends StatelessWidget {
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            AppColors.accent.withValues(alpha: 0.08),
-                            AppColors.accentLight,
-                          ],
-                        ),
-                        borderRadius:
-                            BorderRadius.circular(AppDimensions.radiusLg),
-                      ),
-                      child: header,
-                    ),
-                    const SizedBox(height: 20),
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius:
-                            BorderRadius.circular(AppDimensions.radiusLg),
-                        boxShadow: AppShadows.card,
-                      ),
-                      child: form,
-                    ),
-                    if (footer != null) ...[
-                      const SizedBox(height: 24),
-                      footer!,
-                    ],
-                  ],
-                ),
+                child: _buildContent(),
               ),
             ),
           ],

@@ -7,6 +7,7 @@ import '../../../../app/theme/app_dimensions.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/responsive/breakpoints.dart';
 import '../../../../core/utils/state_listeners.dart';
+import '../../../../shared/widgets/desktop_shell_app_bar.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/image_preview.dart';
 import '../../../screenplay/data/screenplay_draft.dart';
@@ -106,29 +107,36 @@ class _ScriptStudioWorkspacePageState extends State<ScriptStudioWorkspacePage> {
   }
 
   Widget _buildProjectPicker(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Script Studio')),
-      body: ListView(
-        children: [
-          const SizedBox(height: 8),
-          const ScriptStudioActionCards(),
-          ScriptStudioRecentSection(
-            projects: _recentProjects,
-            onDataChanged: _onRepoChanged,
-          ),
-          Padding(
-            padding: const EdgeInsets.all(AppDimensions.spacingMd),
-            child: EmptyStateView(
-              icon: Icons.movie_creation_outlined,
-              title: '选择或新建项目',
-              subtitle: '从最近项目中选择，或创建新剧本开始编辑',
-              actionLabel: '新建剧本',
-              onAction: () => context.push(AppRoutes.create),
-            ),
-          ),
-        ],
-      ),
+    final appBar = const DesktopShellAppBar(
+      title: Text('Script Studio'),
+      automaticallyImplyLeading: false,
     );
+    final body = ListView(
+      children: [
+        const SizedBox(height: 8),
+        const ScriptStudioActionCards(),
+        ScriptStudioRecentSection(
+          projects: _recentProjects,
+          onDataChanged: _onRepoChanged,
+        ),
+        Padding(
+          padding: const EdgeInsets.all(AppDimensions.spacingMd),
+          child: EmptyStateView(
+            icon: Icons.movie_creation_outlined,
+            title: '选择或新建项目',
+            subtitle: '从最近项目中选择，或创建新剧本开始编辑',
+            actionLabel: '新建剧本',
+            onAction: () => context.push(AppRoutes.create),
+          ),
+        ),
+      ],
+    );
+
+    if (Breakpoints.isDesktop(context)) {
+      return DesktopShellTabScaffold(appBar: appBar, body: body);
+    }
+
+    return Scaffold(appBar: appBar, body: body);
   }
 
   Widget _buildMobileWorkspace(

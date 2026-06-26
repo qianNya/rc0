@@ -107,6 +107,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return AuthPageScaffold(
+      desktopTitle: '欢迎回来',
       onBack: () => popOrGoHome(context),
       onHelp: () => _showPlaceholder('帮助中心即将上线'),
       header: AuthHeader(

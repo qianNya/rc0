@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/primary_button.dart';
 import '../../data/character_repository.dart';
 
@@ -72,8 +74,9 @@ class _CharacterCreatePageState extends State<CharacterCreatePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('新建角色')),
+    return DesktopStackScaffold(
+      title: const Text('新建角色'),
+      onBack: () => popOrGoDiscovery(context),
       body: ListView(
         padding: const EdgeInsets.all(AppDimensions.spacingMd),
         children: [

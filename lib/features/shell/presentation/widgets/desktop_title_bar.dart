@@ -135,7 +135,6 @@ class DesktopMergedTitleBar extends StatelessWidget {
         decoration: decoration ??
             const BoxDecoration(
               color: AppColors.surface,
-              border: Border(bottom: BorderSide(color: AppColors.border)),
             ),
         child: Row(
           children: [

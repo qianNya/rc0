@@ -7,6 +7,7 @@ import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/services/app_update_service.dart';
 import '../../../../core/theme/theme_mode_notifier.dart';
 import '../../../../core/utils/state_listeners.dart';
+import '../../../../core/responsive/breakpoints.dart';
 import '../../../../shared/widgets/desktop_shell_app_bar.dart';
 import '../../../../shared/widgets/profile_widgets.dart';
 import '../../../../shared/widgets/rc0_widgets.dart';
@@ -195,22 +196,22 @@ class _ProfilePageState extends State<ProfilePage> {
     final favoriteCount =
         _imageFavorites.items.length + _spFavoriteCount;
 
-    return Scaffold(
-      appBar: DesktopShellAppBar(
-        title: const Text('我的'),
-        automaticallyImplyLeading: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.qr_code_scanner_outlined),
-            onPressed: () => _showSnack('扫码功能即将上线'),
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () => _showSnack('请使用下方设置项'),
-          ),
-        ],
-      ),
-      body: RefreshIndicator(
+    final appBar = DesktopShellAppBar(
+      title: const Text('我的'),
+      automaticallyImplyLeading: false,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.qr_code_scanner_outlined),
+          onPressed: () => _showSnack('扫码功能即将上线'),
+        ),
+        IconButton(
+          icon: const Icon(Icons.settings_outlined),
+          onPressed: () => _showSnack('请使用下方设置项'),
+        ),
+      ],
+    );
+
+    final body = RefreshIndicator(
         onRefresh: _refresh,
         child: ListView(
           padding: const EdgeInsets.only(bottom: 24),
@@ -415,8 +416,13 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           ],
         ),
-      ),
     );
+
+    if (Breakpoints.isDesktop(context)) {
+      return DesktopShellTabScaffold(appBar: appBar, body: body);
+    }
+
+    return Scaffold(appBar: appBar, body: body);
   }
 
   Widget _section({

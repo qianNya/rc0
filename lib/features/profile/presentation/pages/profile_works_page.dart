@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/utils/state_listeners.dart';
+import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/inline_error_banner.dart';
 import '../../../../shared/widgets/screenplay_card.dart';
@@ -130,110 +132,121 @@ class _ProfileWorksPageState extends State<ProfileWorksPage> {
     final localIds = drafts.map((s) => s.id).toList(growable: false);
     final isEmpty = drafts.isEmpty && remote.isEmpty && !loading;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('作品库'),
-        actions: [
-          if (drafts.isNotEmpty)
-            ScreenplaySelectionAppBarActions(
-              controller: _selectionController,
-              localIds: localIds,
-              onSelectionChanged: _onChanged,
-            ),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: _load,
-        child: loading && isEmpty
-            ? const Center(child: CircularProgressIndicator())
-            : isEmpty
-                ? ListView(
-                    children: [
-                      SizedBox(height: MediaQuery.sizeOf(context).height * 0.2),
-                      EmptyStateView(
-                        icon: Icons.folder_open_outlined,
-                        title: error != null ? '加载失败' : '暂无作品',
-                        subtitle: error ?? '创作后会显示在这里',
-                        actionLabel: error != null ? '重试' : '开始创作',
-                        onAction: error != null
-                            ? _load
-                            : () => context.push(AppRoutes.create),
-                      ),
-                    ],
-                  )
-                : ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
-                      if (error != null)
-                        InlineErrorBanner(message: error, onRetry: _load),
-                      if (remote.isNotEmpty) ...[
-                        const Text(
-                          '已发布',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            mainAxisSpacing: 12,
-                            crossAxisSpacing: 12,
-                            childAspectRatio: 0.68,
-                          ),
-                          itemCount: remote.length,
-                          itemBuilder: (_, i) {
-                            final script = remote[i];
-                            return ScreenplayCard(
-                              screenplay: script,
-                              compact: true,
-                              showVisibilityBadge: true,
-                              onMore: () => _openVisibilitySettings(script),
-                            );
-                          },
-                        ),
-                        if (loadingMore)
-                          const Padding(
-                            padding: EdgeInsets.all(16),
-                            child: Center(
-                              child: SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+    return DesktopStackScaffold(
+      title: const Text('作品库'),
+      onBack: () => popOrGoDiscovery(context),
+      actions: [
+        if (drafts.isNotEmpty)
+          ScreenplaySelectionAppBarActions(
+            controller: _selectionController,
+            localIds: localIds,
+            onSelectionChanged: _onChanged,
+          ),
+      ],
+      body: Column(
+        children: [
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _load,
+              child: loading && isEmpty
+                  ? const Center(child: CircularProgressIndicator())
+                  : isEmpty
+                      ? ListView(
+                          children: [
+                            SizedBox(
+                                height:
+                                    MediaQuery.sizeOf(context).height * 0.2),
+                            EmptyStateView(
+                              icon: Icons.folder_open_outlined,
+                              title: error != null ? '加载失败' : '暂无作品',
+                              subtitle: error ?? '创作后会显示在这里',
+                              actionLabel:
+                                  error != null ? '重试' : '开始创作',
+                              onAction: error != null
+                                  ? _load
+                                  : () => context.push(AppRoutes.create),
+                            ),
+                          ],
+                        )
+                      : ListView(
+                          padding: const EdgeInsets.all(16),
+                          children: [
+                            if (error != null)
+                              InlineErrorBanner(
+                                  message: error, onRetry: _load),
+                            if (remote.isNotEmpty) ...[
+                              const Text(
+                                '已发布',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 15,
+                                ),
                               ),
-                            ),
-                          ),
-                        if (hasMore && !loadingMore)
-                          Center(
-                            child: TextButton(
-                              onPressed: _loadMore,
-                              child: const Text('加载更多'),
-                            ),
-                          ),
-                        const SizedBox(height: 24),
-                      ],
-                      if (drafts.isNotEmpty) ...[
-                        const Text(
-                          '本地草稿',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
-                          ),
+                              const SizedBox(height: 12),
+                              GridView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                gridDelegate:
+                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  mainAxisSpacing: 12,
+                                  crossAxisSpacing: 12,
+                                  childAspectRatio: 0.68,
+                                ),
+                                itemCount: remote.length,
+                                itemBuilder: (_, i) {
+                                  final script = remote[i];
+                                  return ScreenplayCard(
+                                    screenplay: script,
+                                    compact: true,
+                                    showVisibilityBadge: true,
+                                    onMore: () =>
+                                        _openVisibilitySettings(script),
+                                  );
+                                },
+                              ),
+                              if (loadingMore)
+                                const Padding(
+                                  padding: EdgeInsets.all(16),
+                                  child: Center(
+                                    child: SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2),
+                                    ),
+                                  ),
+                                ),
+                              if (hasMore && !loadingMore)
+                                Center(
+                                  child: TextButton(
+                                    onPressed: _loadMore,
+                                    child: const Text('加载更多'),
+                                  ),
+                                ),
+                              const SizedBox(height: 24),
+                            ],
+                            if (drafts.isNotEmpty) ...[
+                              const Text(
+                                '本地草稿',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              _buildDraftGrid(drafts),
+                            ],
+                            const SizedBox(height: 24),
+                          ],
                         ),
-                        const SizedBox(height: 12),
-                        _buildDraftGrid(drafts),
-                      ],
-                      const SizedBox(height: 24),
-                    ],
-                  ),
-      ),
-      bottomNavigationBar: ScreenplaySelectionBottomBar(
-        controller: _selectionController,
-        onDelete: _deleteSelected,
+            ),
+          ),
+          ScreenplaySelectionBottomBar(
+            controller: _selectionController,
+            onDelete: _deleteSelected,
+          ),
+        ],
       ),
     );
   }

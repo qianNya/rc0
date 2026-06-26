@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/inline_error_banner.dart';
 import '../../data/screenplay_like_repository.dart';
@@ -42,8 +44,9 @@ class _ProfileLikesPageState extends State<ProfileLikesPage> {
   Widget build(BuildContext context) {
     final items = _repo.items;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('点赞记录')),
+    return DesktopStackScaffold(
+      title: const Text('点赞记录'),
+      onBack: () => popOrGoDiscovery(context),
       body: RefreshIndicator(
         onRefresh: _load,
         child: _loading

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/router/navigation_utils.dart';
 import '../../../auth/data/auth_repository.dart';
+import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/primary_button.dart';
 
 class EditProfilePage extends StatefulWidget {
@@ -66,8 +68,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('编辑资料')),
+    return DesktopStackScaffold(
+      title: const Text('编辑资料'),
+      onBack: () => popOrGoDiscovery(context),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

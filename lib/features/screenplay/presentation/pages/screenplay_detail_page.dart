@@ -8,7 +8,9 @@ import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/domain/screenplay/script_frame_display.dart';
 import '../../../../core/network/api_auth.dart';
+import '../../../../core/responsive/breakpoints.dart';
 import '../../../../core/responsive/responsive_builder.dart';
+import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../core/utils/state_listeners.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../social/data/social_repository.dart';
@@ -27,6 +29,7 @@ import '../widgets/screenplay_delete_actions.dart';
 import '../widgets/screenplay_detail_hero.dart';
 import '../widgets/screenplay_info_header.dart';
 import '../widgets/screenplay_structure_tree.dart';
+import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/image_preview.dart';
 import '../../../../shared/widgets/pose_cover_image.dart';
@@ -644,45 +647,61 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
     final script = _screenplay;
 
     if (script == null && _loadingRemote) {
+      const loadingBody = Center(child: CircularProgressIndicator());
+      if (Breakpoints.isDesktop(context)) {
+        return DesktopStackScaffold(
+          title: const Text('剧本详情'),
+          onBack: () => popOrGoDiscovery(context),
+          body: loadingBody,
+        );
+      }
       return Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => popOrGoExplore(context),
+            onPressed: () => popOrGoDiscovery(context),
           ),
           title: const Text('剧本详情'),
         ),
-        body: const Center(child: CircularProgressIndicator()),
+        body: loadingBody,
       );
     }
 
     if (script == null) {
       final needsLogin = isUnauthorizedError(_remoteError);
+      final errorBody = EmptyStateView(
+        icon: Icons.search_off_outlined,
+        title: needsLogin ? '请先登录' : '剧本不存在',
+        subtitle: needsLogin
+            ? '登录后查看远程剧本详情'
+            : (_remoteError ?? '可能已被删除，或链接无效'),
+        actionLabel: needsLogin ? '去登录' : '重试',
+        onAction: needsLogin
+            ? () => context.go(
+                  AppRoutes.loginWithRedirect(
+                    AppRoutes.script(widget.scriptId),
+                  ),
+                )
+            : _loadScreenplay,
+      );
+      if (Breakpoints.isDesktop(context)) {
+        return DesktopStackScaffold(
+          title: const Text('剧本详情'),
+          onBack: () => popOrGoDiscovery(context),
+          body: errorBody,
+        );
+      }
       return Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => popOrGoExplore(context),
+            onPressed: () => popOrGoDiscovery(context),
           ),
           title: const Text('剧本详情'),
         ),
-        body: EmptyStateView(
-          icon: Icons.search_off_outlined,
-          title: needsLogin ? '请先登录' : '剧本不存在',
-          subtitle: needsLogin
-              ? '登录后查看远程剧本详情'
-              : (_remoteError ?? '可能已被删除，或链接无效'),
-          actionLabel: needsLogin ? '去登录' : '重试',
-          onAction: needsLogin
-              ? () => context.go(
-                    AppRoutes.loginWithRedirect(
-                      AppRoutes.script(widget.scriptId),
-                    ),
-                  )
-              : _loadScreenplay,
-        ),
+        body: errorBody,
       );
     }
 
@@ -1064,35 +1083,30 @@ class _ScreenplayDetailDesktop extends StatelessWidget {
     final ctaLabel = isOwner ? '编辑剧本' : 'Fork 此剧本';
     final showFork = !isOwner || screenplay.isForkCopy;
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => popOrGoExplore(context),
-        ),
-        title: Text(screenplay.title),
-        actions: [
-          if (onEdit != null)
-            IconButton(
-              icon: const Icon(Icons.edit_outlined),
-              tooltip: '编辑剧本',
-              onPressed: onEdit,
-            ),
-          if (onExport != null)
-            IconButton(
-              icon: const Icon(Icons.upload_outlined),
-              tooltip: '导出 JSON',
-              onPressed: exporting ? null : onExport,
-            ),
-          if (onImport != null)
-            IconButton(
-              icon: const Icon(Icons.download_outlined),
-              tooltip: '导入剧本 JSON',
-              onPressed: importing ? null : onImport,
-            ),
-        ],
-      ),
+    return DesktopStackScaffold(
+      title: Text(screenplay.title),
+      onBack: () => popOrGoDiscovery(context),
+      centerTitle: false,
+      actions: [
+        if (onEdit != null)
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            tooltip: '编辑剧本',
+            onPressed: onEdit,
+          ),
+        if (onExport != null)
+          IconButton(
+            icon: const Icon(Icons.upload_outlined),
+            tooltip: '导出 JSON',
+            onPressed: exporting ? null : onExport,
+          ),
+        if (onImport != null)
+          IconButton(
+            icon: const Icon(Icons.download_outlined),
+            tooltip: '导入剧本 JSON',
+            onPressed: importing ? null : onImport,
+          ),
+      ],
       body: RefreshIndicator(
         onRefresh: onRefresh ?? () async {},
         child: SingleChildScrollView(

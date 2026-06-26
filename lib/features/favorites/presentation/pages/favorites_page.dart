@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/responsive/breakpoints.dart';
+import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/image_preview.dart';
 import '../../../../shared/widgets/rc0_image.dart';
@@ -66,14 +68,16 @@ class _FavoritesPageState extends State<FavoritesPage>
     final isDesktop = Breakpoints.isDesktop(context);
     final imageRepo = ImageFavoriteRepository.instance;
 
-    return Scaffold(
+    return DesktopStackScaffold(
+      title: const Text('我的收藏'),
+      onBack: () => popOrGoDiscovery(context),
+      centerTitle: false,
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.all(isDesktop ? 32 : 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SectionHeader(title: '我的收藏'),
               const SizedBox(height: 12),
               TabBar(
                 controller: _tabController,

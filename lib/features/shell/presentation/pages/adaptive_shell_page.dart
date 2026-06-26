@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/theme/app_colors.dart';
 import '../../../../core/responsive/breakpoints.dart';
 import '../../../../shared/widgets/app_bottom_nav_bar.dart';
+import '../../../../shared/widgets/desktop/desktop_chrome.dart';
 import '../../../../shared/widgets/shell_nav_items.dart';
+import '../widgets/desktop_sidebar.dart';
 
 class AdaptiveShellPage extends StatelessWidget {
   const AdaptiveShellPage({
@@ -31,9 +34,21 @@ class AdaptiveShellPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDesktop = Breakpoints.isDesktop(context);
 
-    // Desktop: child pages (e.g. ExplorePage) own the full viewport chrome.
     if (isDesktop) {
-      return navigationShell;
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: Padding(
+          padding: const EdgeInsets.all(DesktopChrome.gap),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const DesktopSidebar(),
+              const SizedBox(width: DesktopChrome.gap),
+              Expanded(child: navigationShell),
+            ],
+          ),
+        ),
+      );
     }
 
     return Scaffold(

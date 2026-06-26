@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/data/app_catalog.dart';
+import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/primary_button.dart';
 import '../../data/ip_repository.dart';
@@ -126,10 +128,9 @@ class _IpEditPageState extends State<IpEditPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.isEditing ? '编辑 IP' : '新建 IP'),
-      ),
+    return DesktopStackScaffold(
+      title: Text(widget.isEditing ? '编辑 IP' : '新建 IP'),
+      onBack: () => popOrGoDiscovery(context),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _loadError != null && widget.isEditing

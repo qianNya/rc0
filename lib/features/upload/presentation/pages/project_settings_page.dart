@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../../../app/router/navigation_utils.dart';
 import '../../../screenplay/data/screenplay_draft.dart';
 import '../../../screenplay/domain/shoot_params.dart';
+import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../widgets/editor/editor_footer_actions.dart';
 import '../widgets/project_settings_form.dart';
 
@@ -44,8 +46,9 @@ class ProjectSettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('项目设置')),
+    return DesktopStackScaffold(
+      title: const Text('项目设置'),
+      onBack: () => popOrGoStudio(context),
       body: Column(
         children: [
           Expanded(

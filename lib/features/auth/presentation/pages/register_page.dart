@@ -110,6 +110,7 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return AuthPageScaffold(
+      desktopTitle: '创建账号',
       onBack: _goLogin,
       onHelp: () => _showPlaceholder('帮助中心即将上线'),
       header: const AuthHeader(

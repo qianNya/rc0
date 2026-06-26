@@ -1,19 +1,18 @@
-import 'dart:io' show Platform;
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/router/routes.dart';
+import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/platform/platform_features.dart';
 import '../../../../core/responsive/breakpoints.dart';
-import '../../../shell/presentation/widgets/desktop_title_bar.dart';
+import '../../../../features/shell/presentation/widgets/desktop_title_bar.dart';
+import '../../../../shared/widgets/desktop/desktop_card.dart';
+import '../../../../shared/widgets/desktop/desktop_chrome.dart';
 import '../../../../shared/widgets/shell_bar_icon_button.dart';
 
-class GalleryPageHeader extends StatelessWidget {
+class GalleryPageHeader extends StatelessWidget implements PreferredSizeWidget {
   const GalleryPageHeader({
     super.key,
     this.onUpload,
@@ -23,23 +22,14 @@ class GalleryPageHeader extends StatelessWidget {
   final VoidCallback? onUpload;
   final bool uploading;
 
-  bool get _isMacOS => !kIsWeb && Platform.isMacOS;
+  @override
+  Size get preferredSize => const Size.fromHeight(kDesktopTitleBarHeight);
 
   Widget _buildContent(BuildContext context) {
-    final isDesktop = Breakpoints.isDesktop(context);
-
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
+      padding: const EdgeInsets.symmetric(horizontal: DesktopChrome.gap),
       child: Row(
         children: [
-          if (isDesktop)
-            ShellBarIconButton(
-              icon: Icons.arrow_back,
-              tooltip: '返回',
-              onPressed: () => popOrGoDiscovery(context),
-            ),
-          if (shouldUseDesktopWindowChrome && _isMacOS)
-            const DesktopWindowControls(),
           Expanded(
             child: Center(
               child: Text('图库', style: AppTextStyles.title),
@@ -68,6 +58,8 @@ class GalleryPageHeader extends StatelessWidget {
             tooltip: '搜索',
             onPressed: () => context.push(AppRoutes.search),
           ),
+          if (Breakpoints.isDesktop(context) && shouldUseDesktopWindowChrome)
+            const SizedBox(width: DesktopChrome.gap),
         ],
       ),
     );
@@ -75,8 +67,17 @@ class GalleryPageHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (shouldUseDesktopWindowChrome) {
-      return DesktopMergedTitleBar(child: _buildContent(context));
+    final isDesktopChrome =
+        Breakpoints.isDesktop(context) && shouldUseDesktopWindowChrome;
+
+    if (isDesktopChrome) {
+      return DesktopCard(
+        clipChild: true,
+        child: DesktopMergedTitleBar(
+          decoration: const BoxDecoration(color: AppColors.surface),
+          child: _buildContent(context),
+        ),
+      );
     }
 
     return SizedBox(

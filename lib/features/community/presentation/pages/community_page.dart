@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../core/network/api_auth.dart';
 import '../../../../core/data/app_catalog.dart';
@@ -9,6 +10,7 @@ import '../../../../core/responsive/breakpoints.dart';
 import '../../../../core/responsive/responsive_builder.dart';
 import '../../../../core/utils/state_listeners.dart';
 import '../../../screenplay/data/screenplay_remote_repository.dart';
+import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/content_card_shared.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/feed_tab_bar.dart';
@@ -344,7 +346,10 @@ class _CommunityDesktopView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return DesktopStackScaffold(
+      title: const Text('模板市场'),
+      onBack: () => popOrGoDiscovery(context),
+      centerTitle: false,
       body: RefreshIndicator(
         onRefresh: onRefresh,
         child: NotificationListener<ScrollNotification>(

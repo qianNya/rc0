@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/routes.dart';
-import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../core/data/app_catalog.dart';
@@ -22,7 +21,6 @@ import '../../../../shared/widgets/rc0_widgets.dart';
 import '../widgets/explore_desktop_card.dart';
 import '../widgets/explore_desktop_header.dart';
 import '../widgets/explore_desktop_right_panel.dart';
-import '../widgets/explore_desktop_sidebar.dart';
 import '../widgets/explore_featured_carousel.dart';
 import '../widgets/explore_featured_section.dart';
 import '../widgets/explore_quick_actions.dart';
@@ -340,30 +338,22 @@ class _ExploreDesktopView extends StatelessWidget {
     final remoteOnly = feedItems.where((s) => !s.isLocal).toList();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Padding(
-        padding: const EdgeInsets.all(ExploreDesktopChrome.gap),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const ExploreDesktopSidebar(),
-            const SizedBox(width: ExploreDesktopChrome.gap),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  ExploreDesktopHeader(
-                    initialQuery: searchQuery,
-                    onSearch: onSearch,
-                    onCreate: onCreate,
-                  ),
-                  const SizedBox(height: ExploreDesktopChrome.gap),
-                  Expanded(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(
-                          child: ExploreDesktopCard(
+      backgroundColor: Colors.transparent,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ExploreDesktopHeader(
+            initialQuery: searchQuery,
+            onSearch: onSearch,
+            onCreate: onCreate,
+          ),
+          const SizedBox(height: ExploreDesktopChrome.gap),
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: ExploreDesktopCard(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
@@ -496,10 +486,6 @@ class _ExploreDesktopView extends StatelessWidget {
                   ),
                 ],
               ),
-            ),
-          ],
-        ),
-      ),
       bottomNavigationBar: ScreenplaySelectionBottomBar(
         controller: selectionController,
         onDelete: () => onDeleteSelected(),
