@@ -22,6 +22,7 @@ class ScriptEditorActions {
     required this.onToggleSceneTag,
     required this.onToggleFrameTag,
     required this.onMoveFrame,
+    required this.onMoveScene,
     required this.canRemoveScene,
     required this.onRemoveScene,
     this.onSceneFieldChanged,
@@ -64,6 +65,11 @@ class ScriptEditorActions {
     SceneDraft toScene,
     int toInsertIndex,
   ) onMoveFrame;
+  final void Function(
+    SceneDragData data,
+    int toActIndex,
+    int toInsertIndex,
+  ) onMoveScene;
   final bool Function(int actIndex, int sceneIndex) canRemoveScene;
   final Future<void> Function(int actIndex, int sceneIndex) onRemoveScene;
   final void Function(

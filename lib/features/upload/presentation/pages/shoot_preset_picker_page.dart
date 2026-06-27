@@ -14,6 +14,7 @@ import '../../../screenplay/data/shoot_preset_repository.dart';
 import '../../../screenplay/domain/shoot_preset.dart';
 import '../widgets/preset_marketplace_widgets.dart';
 import '../widgets/shoot_preset_edit_sheet.dart';
+import '../../../../shared/widgets/rc0_app_bar.dart';
 
 enum ShootPresetPickerMode { select, manage }
 

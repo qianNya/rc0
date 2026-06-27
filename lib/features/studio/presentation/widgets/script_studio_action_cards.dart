@@ -16,7 +16,7 @@ class ScriptStudioActionCards extends StatelessWidget {
       child: Column(
         children: [
           _PrimaryCreateCard(
-            onTap: () => context.push(AppRoutes.create),
+            onTap: () => context.go(AppRoutes.studioCreate),
           ),
           const SizedBox(height: AppDimensions.spacingMd),
           Row(

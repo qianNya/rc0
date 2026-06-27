@@ -14,6 +14,7 @@ import '../../../character/data/character_repository.dart';
 import '../../../character/domain/character_entry.dart';
 import '../../data/ip_repository.dart';
 import '../../domain/ip_entry.dart';
+import '../../../../shared/widgets/rc0_app_bar.dart';
 
 class IpDetailPage extends StatefulWidget {
   const IpDetailPage({super.key, required this.ipId});
@@ -253,7 +254,7 @@ class _IpDetailPageState extends State<IpDetailPage> {
                                 : null,
                             trailing: const Icon(Icons.chevron_right),
                             onTap: () => context.push(
-                              AppRoutes.character(character.id),
+                              AppRoutes.characterDetailPath(character.id),
                             ),
                           ),
                         ),

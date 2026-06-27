@@ -12,6 +12,7 @@ import '../../../../shared/widgets/inline_error_banner.dart';
 import '../../../../shared/widgets/explore_feed_tile.dart';
 import '../../../../shared/widgets/primary_button.dart';
 import '../../../../shared/widgets/profile_widgets.dart';
+import '../../../../shared/widgets/rc0_app_bar.dart';
 
 class UserProfilePage extends StatefulWidget {
   const UserProfilePage({super.key, required this.userId});

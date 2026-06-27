@@ -14,6 +14,7 @@ class ScreenplayLocalMeta {
     this.forkedFromId,
     this.forkedFromLocalId,
     this.imagesLocalized = false,
+    this.browseCache = false,
     this.createdAt,
     this.remoteScreenplayId,
     this.visibility,
@@ -29,6 +30,7 @@ class ScreenplayLocalMeta {
   final int? forkedFromId;
   final String? forkedFromLocalId;
   final bool imagesLocalized;
+  final bool browseCache;
   final DateTime? createdAt;
   final int? remoteScreenplayId;
   final int? visibility;
@@ -44,6 +46,7 @@ class ScreenplayLocalMeta {
         'forked_from_id': forkedFromId,
         'forked_from_local_id': forkedFromLocalId,
         'images_localized': imagesLocalized,
+        'browse_cache': browseCache,
         'created_at': createdAt?.toIso8601String(),
         'remote_screenplay_id': remoteScreenplayId,
         'visibility': visibility,
@@ -64,6 +67,7 @@ class ScreenplayLocalMeta {
       forkedFromId: (json['forked_from_id'] as num?)?.toInt(),
       forkedFromLocalId: json['forked_from_local_id'] as String?,
       imagesLocalized: json['images_localized'] as bool? ?? false,
+      browseCache: json['browse_cache'] as bool? ?? false,
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'] as String)
           : null,
@@ -85,6 +89,7 @@ class ScreenplayLocalMeta {
     int? forkedFromId,
     String? forkedFromLocalId,
     bool? imagesLocalized,
+    bool? browseCache,
     DateTime? createdAt,
     int? remoteScreenplayId,
     int? visibility,
@@ -100,6 +105,7 @@ class ScreenplayLocalMeta {
       forkedFromId: forkedFromId ?? this.forkedFromId,
       forkedFromLocalId: forkedFromLocalId ?? this.forkedFromLocalId,
       imagesLocalized: imagesLocalized ?? this.imagesLocalized,
+      browseCache: browseCache ?? this.browseCache,
       createdAt: createdAt ?? this.createdAt,
       remoteScreenplayId: remoteScreenplayId ?? this.remoteScreenplayId,
       visibility: visibility ?? this.visibility,

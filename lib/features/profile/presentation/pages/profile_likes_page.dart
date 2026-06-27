@@ -8,6 +8,7 @@ import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/inline_error_banner.dart';
 import '../../data/screenplay_like_repository.dart';
+import '../../../../shared/widgets/rc0_app_bar.dart';
 
 class ProfileLikesPage extends StatefulWidget {
   const ProfileLikesPage({super.key});

@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../character/presentation/widgets/character_picker_sheet.dart';
+import '../../../character/data/character_repository.dart';
+import '../../../scene/presentation/widgets/scene_picker_sheet.dart';
+import '../../../screenplay/data/screenplay_scene_binding.dart';
+import '../../../upload/presentation/widgets/editor/screenplay_characters_section.dart';
+import '../../../upload/presentation/widgets/editor/screenplay_scenes_section.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
@@ -27,11 +31,13 @@ class FrameInspectorPanel extends StatefulWidget {
     required this.actions,
     required this.selection,
     required this.onChanged,
+    this.showHeader = true,
   });
 
   final ScriptEditorActions actions;
   final ScriptEditorSelection selection;
   final VoidCallback onChanged;
+  final bool showHeader;
 
   @override
   State<FrameInspectorPanel> createState() => _FrameInspectorPanelState();
@@ -50,13 +56,26 @@ class _FrameInspectorPanelState extends State<FrameInspectorPanel> {
           actions: widget.actions,
           actIndex: widget.selection.actIndex!,
           sceneIndex: widget.selection.sceneIndex!,
+          selection: widget.selection,
           onChanged: widget.onChanged,
         );
       }
-      return const EmptyStateView(
-        icon: Icons.tune_outlined,
-        title: '选择分镜以编辑',
-        subtitle: '在左侧结构树或中间分镜列表中选择一个画面',
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          ScreenplayCharactersSection(
+            draft: widget.actions.draft,
+            onChanged: widget.onChanged,
+            selection: widget.selection,
+            actions: widget.actions,
+          ),
+          const SizedBox(height: 16),
+          const EmptyStateView(
+            icon: Icons.tune_outlined,
+            title: '选择分镜以编辑',
+            subtitle: '在左侧结构树或中间分镜列表中选择一个画面',
+          ),
+        ],
       );
     }
 
@@ -67,20 +86,26 @@ class _FrameInspectorPanelState extends State<FrameInspectorPanel> {
         .frames[frameIndex];
     final scene =
         widget.actions.draft.acts[actIndex].scenes[sceneIndex];
-    final shotLabel = '${actIndex + 1}-${frameIndex + 1}';
+    final shotLabel =
+        '${actIndex + 1}-${sceneIndex + 1}-${frameIndex + 1}';
 
     return ListView(
       key: ValueKey('inspector-$actIndex-$sceneIndex-$frameIndex'),
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(widget.showHeader ? 16 : 12),
       children: [
-        Text('画面 $shotLabel', style: AppTextStyles.title.copyWith(fontSize: 16)),
-        const SizedBox(height: 12),
+        if (widget.showHeader) ...[
+          Text(
+            '画面 $shotLabel',
+            style: AppTextStyles.title.copyWith(fontSize: 16),
+          ),
+          const SizedBox(height: 12),
+        ],
         DetailTabBar(
           tabs: _tabs,
           selectedIndex: _tabIndex,
           onChanged: (i) => setState(() => _tabIndex = i),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: widget.showHeader ? 16 : 12),
         if (_tabIndex == 0) ...[
           TextFormField(
             initialValue: frame.caption,
@@ -164,7 +189,11 @@ class _FrameInspectorPanelState extends State<FrameInspectorPanel> {
             characterName: frame.characterName,
             characterNote: frame.characterNote,
             onPickCharacter: () async {
-              final picked = await CharacterPickerSheet.show(context);
+              final picked = await pickAndLinkScreenplayCharacter(
+                context,
+                draft: widget.actions.draft,
+                selectedCharacterId: frame.characterId,
+              );
               if (!context.mounted) return;
               if (picked == null) {
                 frame.characterId = null;
@@ -189,6 +218,28 @@ class _FrameInspectorPanelState extends State<FrameInspectorPanel> {
             onNoteChanged: (v) {
               frame.characterNote = v;
               widget.onChanged();
+            },
+            onCreateCharacter: () async {
+              final createdId =
+                  await context.push<int?>(AppRoutes.characterCreate);
+              if (!context.mounted || createdId == null) return;
+              final result =
+                  await CharacterRepository.instance.fetchDetail(createdId);
+              final entry = result.character;
+              if (entry == null) return;
+              frame.characterId = entry.id;
+              frame.characterName = entry.name;
+              if (frame.characterNote.trim().isEmpty &&
+                  entry.appearance.isNotEmpty) {
+                frame.characterNote = entry.appearance;
+              }
+              ensureDraftCharacterLinked(
+                widget.actions.draft,
+                id: entry.id,
+                name: entry.name,
+              );
+              widget.onChanged();
+              setState(() {});
             },
           ),
         ] else ...[
@@ -310,12 +361,14 @@ class _SceneInspector extends StatelessWidget {
     required this.actions,
     required this.actIndex,
     required this.sceneIndex,
+    required this.selection,
     required this.onChanged,
   });
 
   final ScriptEditorActions actions;
   final int actIndex;
   final int sceneIndex;
+  final ScriptEditorSelection selection;
   final VoidCallback onChanged;
 
   @override
@@ -359,6 +412,22 @@ class _SceneInspector extends StatelessWidget {
           sceneIndex: sceneIndex,
           actions: actions,
           onChanged: onChanged,
+        ),
+        const SizedBox(height: 16),
+        ScreenplayCharactersSection(
+          draft: actions.draft,
+          onChanged: onChanged,
+          selection: selection,
+          actions: actions,
+          compact: true,
+        ),
+        const SizedBox(height: 16),
+        ScreenplayScenesSection(
+          draft: actions.draft,
+          onChanged: onChanged,
+          selection: selection,
+          actions: actions,
+          compact: true,
         ),
         const SizedBox(height: 16),
         Text(
@@ -407,6 +476,72 @@ class _SceneFieldsSection extends StatelessWidget {
             onChanged();
           },
         ),
+        const SizedBox(height: 8),
+        TextFormField(
+          initialValue: scene.location,
+          decoration: const InputDecoration(
+            labelText: '地点',
+            isDense: true,
+          ),
+          onChanged: (v) {
+            actions.onSceneFieldChanged?.call(
+              actIndex,
+              sceneIndex,
+              location: v,
+            );
+            onChanged();
+          },
+        ),
+        const SizedBox(height: 8),
+        if (scene.sceneLibraryId != null &&
+            scene.sceneLibraryTitle.trim().isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '场景库：${scene.sceneLibraryTitle}',
+                    style: AppTextStyles.bodySecondary.copyWith(fontSize: 12),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    final picked = await ScenePickerSheet.show(
+                      context,
+                      selectedSceneId: scene.sceneLibraryId,
+                    );
+                    if (picked == null || !context.mounted) return;
+                    applyLibrarySceneToSceneDraft(
+                      picked,
+                      scene,
+                      actions.draft,
+                    );
+                    onChanged();
+                  },
+                  child: const Text('更换场景'),
+                ),
+              ],
+            ),
+          )
+        else
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: () async {
+                final picked = await ScenePickerSheet.show(context);
+                if (picked == null || !context.mounted) return;
+                applyLibrarySceneToSceneDraft(
+                  picked,
+                  scene,
+                  actions.draft,
+                );
+                onChanged();
+              },
+              icon: const Icon(Icons.landscape_outlined, size: 18),
+              label: const Text('从场景库选择'),
+            ),
+          ),
         const SizedBox(height: 8),
         TextFormField(
           initialValue: scene.timeOfDay,
@@ -458,6 +593,7 @@ class _CharacterSection extends StatelessWidget {
     required this.onPickCharacter,
     required this.onClearCharacter,
     required this.onNoteChanged,
+    this.onCreateCharacter,
   });
 
   final int? characterId;
@@ -466,6 +602,7 @@ class _CharacterSection extends StatelessWidget {
   final VoidCallback onPickCharacter;
   final VoidCallback onClearCharacter;
   final ValueChanged<String> onNoteChanged;
+  final Future<void> Function()? onCreateCharacter;
 
   @override
   Widget build(BuildContext context) {
@@ -494,7 +631,7 @@ class _CharacterSection extends StatelessWidget {
                 ),
                 TextButton(
                   onPressed: () =>
-                      context.push(AppRoutes.character(characterId!)),
+                      context.push(AppRoutes.characterDetailPath(characterId!)),
                   child: const Text('Wiki'),
                 ),
                 IconButton(
@@ -517,17 +654,24 @@ class _CharacterSection extends StatelessWidget {
             onChanged: onNoteChanged,
           ),
           const SizedBox(height: 8),
-          Row(
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
               OutlinedButton(
                 onPressed: () => context.go(AppRoutes.library),
                 child: const Text('素材库'),
               ),
-              const SizedBox(width: 8),
               OutlinedButton(
                 onPressed: onPickCharacter,
                 child: Text(characterId == null ? '选择角色' : '更换角色'),
               ),
+              if (onCreateCharacter != null)
+                OutlinedButton(
+                  onPressed: onCreateCharacter,
+                  child: const Text('新建角色'),
+                ),
             ],
           ),
         ],

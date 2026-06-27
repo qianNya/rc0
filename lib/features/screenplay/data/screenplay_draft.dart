@@ -76,6 +76,8 @@ class SceneDraft {
     this.timeOfDay = '',
     this.weather = '',
     this.description = '',
+    this.sceneLibraryId,
+    this.sceneLibraryTitle = '',
     List<FrameDraft>? frames,
     this.paramOverride,
     Set<String>? tags,
@@ -87,6 +89,8 @@ class SceneDraft {
   String timeOfDay;
   String weather;
   String description;
+  String? sceneLibraryId;
+  String sceneLibraryTitle;
   final List<FrameDraft> frames;
   ShootParams? paramOverride;
   Set<String> tags;
@@ -98,6 +102,8 @@ class SceneDraft {
       timeOfDay: timeOfDay,
       weather: weather,
       description: description,
+      sceneLibraryId: sceneLibraryId,
+      sceneLibraryTitle: sceneLibraryTitle,
       frames: frames.map((f) => f.copyDeep()).toList(),
       paramOverride: paramOverride?.copyWith(),
       tags: Set<String>.from(tags),
@@ -129,6 +135,124 @@ class ActDraft {
   }
 }
 
+class ScreenplayCharacterLink {
+  const ScreenplayCharacterLink({
+    required this.id,
+    required this.name,
+  });
+
+  final int id;
+  final String name;
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+      };
+
+  factory ScreenplayCharacterLink.fromJson(Map<String, dynamic> json) {
+    return ScreenplayCharacterLink(
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      name: json['name'] as String? ?? '',
+    );
+  }
+}
+
+void ensureDraftCharacterLinked(
+  ScreenplayDraft draft, {
+  required int id,
+  required String name,
+}) {
+  if (id <= 0 || name.trim().isEmpty) return;
+  if (draft.linkedCharacters.any((c) => c.id == id)) return;
+  draft.linkedCharacters.add(ScreenplayCharacterLink(id: id, name: name.trim()));
+}
+
+List<ScreenplayCharacterLink> collectLinkedCharactersFromDraft(
+  ScreenplayDraft draft,
+) {
+  final merged = <int, ScreenplayCharacterLink>{};
+  for (final link in draft.linkedCharacters) {
+    if (link.id > 0) merged[link.id] = link;
+  }
+  for (final act in draft.acts) {
+    for (final scene in act.scenes) {
+      for (final frame in scene.frames) {
+        final id = frame.characterId;
+        final name = frame.characterName.trim();
+        if (id != null && id > 0 && name.isNotEmpty) {
+          merged.putIfAbsent(
+            id,
+            () => ScreenplayCharacterLink(id: id, name: name),
+          );
+        }
+      }
+    }
+  }
+  return merged.values.toList(growable: false);
+}
+
+class ScreenplaySceneLink {
+  const ScreenplaySceneLink({
+    required this.id,
+    required this.title,
+  });
+
+  final String id;
+  final String title;
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+      };
+
+  factory ScreenplaySceneLink.fromJson(Map<String, dynamic> json) {
+    final rawId = json['id'];
+    final id = rawId is String
+        ? rawId
+        : rawId is num
+            ? rawId.toString()
+            : '';
+    return ScreenplaySceneLink(
+      id: id,
+      title: json['title'] as String? ?? json['name'] as String? ?? '',
+    );
+  }
+}
+
+void ensureDraftSceneLinked(
+  ScreenplayDraft draft, {
+  required String id,
+  required String title,
+}) {
+  if (id.isEmpty || title.trim().isEmpty) return;
+  if (draft.linkedScenes.any((s) => s.id == id)) return;
+  draft.linkedScenes.add(
+    ScreenplaySceneLink(id: id, title: title.trim()),
+  );
+}
+
+List<ScreenplaySceneLink> collectLinkedScenesFromDraft(
+  ScreenplayDraft draft,
+) {
+  final merged = <String, ScreenplaySceneLink>{};
+  for (final link in draft.linkedScenes) {
+    if (link.id.isNotEmpty) merged[link.id] = link;
+  }
+  for (final act in draft.acts) {
+    for (final scene in act.scenes) {
+      final id = scene.sceneLibraryId;
+      final title = scene.sceneLibraryTitle.trim();
+      if (id != null && id.isNotEmpty && title.isNotEmpty) {
+        merged.putIfAbsent(
+          id,
+          () => ScreenplaySceneLink(id: id, title: title),
+        );
+      }
+    }
+  }
+  return merged.values.toList(growable: false);
+}
+
 class ScreenplayDraft {
   ScreenplayDraft({
     this.title = '',
@@ -137,9 +261,13 @@ class ScreenplayDraft {
     List<ActDraft>? acts,
     this.coverImage,
     ShootParams? defaultParams,
+    List<ScreenplayCharacterLink>? linkedCharacters,
+    List<ScreenplaySceneLink>? linkedScenes,
   })  : tags = Set<String>.from(tags ?? {'站姿'}),
         acts = acts ?? [ActDraft()],
-        defaultParams = defaultParams ?? AppCatalog.defaultShootParams;
+        defaultParams = defaultParams ?? AppCatalog.defaultShootParams,
+        linkedCharacters = linkedCharacters ?? [],
+        linkedScenes = linkedScenes ?? [];
 
   factory ScreenplayDraft.fromScreenplay(Screenplay screenplay) {
     final acts = <ActDraft>[];
@@ -221,6 +349,8 @@ class ScreenplayDraft {
   Set<String> tags;
   final List<ActDraft> acts;
   ShootParams defaultParams;
+  final List<ScreenplayCharacterLink> linkedCharacters;
+  final List<ScreenplaySceneLink> linkedScenes;
 
   /// Explicit cover; null means use the first frame/image as default.
   UploadImageFile? coverImage;
@@ -244,6 +374,12 @@ class ScreenplayDraft {
               previewPath: coverImage!.previewPath,
             ),
       defaultParams: defaultParams.copyWith(),
+      linkedCharacters: linkedCharacters
+          .map((c) => ScreenplayCharacterLink(id: c.id, name: c.name))
+          .toList(),
+      linkedScenes: linkedScenes
+          .map((s) => ScreenplaySceneLink(id: s.id, title: s.title))
+          .toList(),
     );
   }
 }
@@ -449,7 +585,8 @@ class DraftFrameRef {
   final String sceneTitle;
   final String actTitle;
 
-  String get shotLabel => '${actIndex + 1}-${frameIndex + 1}';
+  String get shotLabel =>
+      '${actIndex + 1}-${sceneIndex + 1}-${frameIndex + 1}';
 }
 
 ScriptFrame frameDraftToPreviewFrame({

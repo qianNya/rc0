@@ -7,6 +7,8 @@ import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/profile_widgets.dart';
 import '../../../screenplay/data/screenplay_draft.dart';
+import '../../../screenplay/data/screenplay_scene_binding.dart';
+import '../../../scene/presentation/widgets/scene_picker_sheet.dart';
 import '../utils/shoot_preset_navigation.dart';
 import '../widgets/editor/scene_frame_list_view.dart';
 import '../widgets/screenplay_editor_sections.dart';
@@ -15,6 +17,7 @@ import '../widgets/script_editor/script_editor_actions.dart';
 import '../widgets/script_editor/script_editor_batch_edit_sheet.dart';
 import '../widgets/script_editor/script_editor_navigation.dart';
 import '../widgets/script_editor/script_editor_timeline_tab.dart';
+import '../../../../shared/widgets/rc0_app_bar.dart';
 
 class SceneEditorDetailPage extends StatefulWidget {
   const SceneEditorDetailPage({
@@ -131,7 +134,7 @@ class _SceneEditorDetailPageState extends State<SceneEditorDetailPage> {
   }
 
   void _openTimeline() {
-    Navigator.of(context).push<void>(
+    Navigator.of(context, rootNavigator: true).push<void>(
       MaterialPageRoute(
         builder: (_) => DesktopStackScaffold(
           title: Text('$_sceneTitle · 时间线'),
@@ -190,6 +193,11 @@ class _SceneEditorDetailPageState extends State<SceneEditorDetailPage> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _SceneLibraryBanner(
+            scene: _scene,
+            draft: _draft,
+            onChanged: _refresh,
+          ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
             child: DetailTabBar(
@@ -202,12 +210,13 @@ class _SceneEditorDetailPageState extends State<SceneEditorDetailPage> {
           Expanded(child: _buildTabContent(scene, frames, isDesktop)),
         ],
       ),
-      floatingActionButton: _tabIndex == 0
+      floatingActionButton: _tabIndex == 0 && !isDesktop
           ? FloatingActionButton(
               onPressed: _pickFrames,
               child: const Icon(Icons.add),
             )
           : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: isDesktop
           ? SceneEditorBottomBar(
               onBatchEdit: _openBatchEdit,
@@ -359,8 +368,10 @@ class _SceneEditorDetailPageState extends State<SceneEditorDetailPage> {
         return SceneFrameListView(
           frames: frames,
           actIndex: widget.actIndex,
+          sceneIndex: widget.sceneIndex,
           onFrameTap: _openFrameDetail,
           onBatchEdit: _openBatchEdit,
+          bottomPadding: 128,
         );
 
       case 1:
@@ -380,7 +391,7 @@ class _SceneEditorDetailPageState extends State<SceneEditorDetailPage> {
         final captions = previewFrames.map((f) => f.caption).toList();
         final labels = [
           for (var i = 0; i < frames.length; i++)
-            '${widget.actIndex + 1}-${i + 1}',
+            '${widget.actIndex + 1}-${widget.sceneIndex + 1}-${i + 1}',
         ];
         return EditorStoryboardPanel(
           title: '$_sceneTitle（${frames.length}画）',
@@ -388,6 +399,7 @@ class _SceneEditorDetailPageState extends State<SceneEditorDetailPage> {
           galleryPaths: paths,
           galleryCaptions: captions,
           shotLabels: labels,
+          frameSources: frames,
           onFrameTap: _openFrameDetail,
           onBatchEdit: _openBatchEdit,
           onAddFrame: _pickFrames,
@@ -402,5 +414,54 @@ class _SceneEditorDetailPageState extends State<SceneEditorDetailPage> {
           filterSceneIndex: widget.sceneIndex,
         );
     }
+  }
+}
+
+class _SceneLibraryBanner extends StatelessWidget {
+  const _SceneLibraryBanner({
+    required this.scene,
+    required this.draft,
+    required this.onChanged,
+  });
+
+  final SceneDraft scene;
+  final ScreenplayDraft draft;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final bound = scene.sceneLibraryId != null &&
+        scene.sceneLibraryTitle.trim().isNotEmpty;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Material(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+        child: ListTile(
+          leading: const Icon(Icons.landscape_outlined),
+          title: Text(bound ? scene.sceneLibraryTitle : '未绑定场景库'),
+          subtitle: bound
+              ? Text(
+                  scene.location.trim().isEmpty
+                      ? '已关联场景资产'
+                      : scene.location,
+                )
+              : const Text('从场景库选择可自动填充地点与拍摄建议'),
+          trailing: TextButton(
+            onPressed: () async {
+              final picked = await ScenePickerSheet.show(
+                context,
+                selectedSceneId: scene.sceneLibraryId,
+              );
+              if (picked == null || !context.mounted) return;
+              applyLibrarySceneToSceneDraft(picked, scene, draft);
+              onChanged();
+            },
+            child: Text(bound ? '更换' : '选择'),
+          ),
+        ),
+      ),
+    );
   }
 }

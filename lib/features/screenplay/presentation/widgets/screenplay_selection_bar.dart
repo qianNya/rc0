@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
+import '../../../../shared/widgets/shell_insets.dart';
 import 'screenplay_selection_controller.dart';
 
 class ScreenplaySelectionAppBarActions extends StatelessWidget {
@@ -77,26 +78,31 @@ class ScreenplaySelectionBottomBar extends StatelessWidget {
       builder: (context, _) {
         if (!controller.selectionMode) return const SizedBox.shrink();
 
+        final shellClearance = ShellInsets.of(context);
+
         return Material(
           elevation: 8,
           color: Theme.of(context).colorScheme.surface,
-          child: SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppDimensions.spacingMd,
-                vertical: AppDimensions.spacingSm,
-              ),
-              child: SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed:
-                      controller.selectedCount > 0 ? onDelete : null,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.error,
-                    foregroundColor: Colors.white,
+          child: Padding(
+            padding: EdgeInsets.only(bottom: shellClearance),
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppDimensions.spacingMd,
+                  vertical: AppDimensions.spacingSm,
+                ),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed:
+                        controller.selectedCount > 0 ? onDelete : null,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.error,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: Text('删除 (${controller.selectedCount})'),
                   ),
-                  child: Text('删除 (${controller.selectedCount})'),
                 ),
               ),
             ),

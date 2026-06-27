@@ -44,6 +44,32 @@ ScreenplayDraft screenplayDraftFromTreeDocument(ScreenplayTreeDocument doc) {
         draft.defaultParams = parsed;
       }
     }
+
+    final linkedRaw = screenplayMap['linked_characters'];
+    if (linkedRaw is List) {
+      draft.linkedCharacters.clear();
+      for (final item in linkedRaw) {
+        if (item is Map<String, dynamic>) {
+          final link = ScreenplayCharacterLink.fromJson(item);
+          if (link.id > 0 && link.name.isNotEmpty) {
+            draft.linkedCharacters.add(link);
+          }
+        }
+      }
+    }
+
+    final linkedScenesRaw = screenplayMap['linked_scenes'];
+    if (linkedScenesRaw is List) {
+      draft.linkedScenes.clear();
+      for (final item in linkedScenesRaw) {
+        if (item is Map<String, dynamic>) {
+          final link = ScreenplaySceneLink.fromJson(item);
+          if (link.id.isNotEmpty && link.title.isNotEmpty) {
+            draft.linkedScenes.add(link);
+          }
+        }
+      }
+    }
   }
 
   final acts = tree['acts'] as List<dynamic>? ?? [];
@@ -66,6 +92,14 @@ ScreenplayDraft screenplayDraftFromTreeDocument(ScreenplayTreeDocument doc) {
       if (sceneMap != null) {
         sceneDraft.tags = parseDraftTagList(sceneMap['tags']);
         sceneDraft.weather = sceneMap['weather'] as String? ?? '';
+        final libId = sceneMap['scene_library_id'];
+        if (libId is String && libId.isNotEmpty) {
+          sceneDraft.sceneLibraryId = libId;
+        } else if (libId is num) {
+          sceneDraft.sceneLibraryId = libId.toString();
+        }
+        sceneDraft.sceneLibraryTitle =
+            sceneMap['scene_library_title'] as String? ?? '';
         final override = sceneMap['shoot_override'];
         if (override is Map<String, dynamic>) {
           final parsed = ShootParams.fromJson(override);

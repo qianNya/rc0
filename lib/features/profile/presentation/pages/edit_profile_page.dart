@@ -5,6 +5,7 @@ import '../../../../app/router/navigation_utils.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/primary_button.dart';
+import '../../../../shared/widgets/rc0_app_bar.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});

@@ -21,6 +21,8 @@ import '../../../../shared/widgets/rc0_widgets.dart';
 import '../widgets/explore_desktop_card.dart';
 import '../widgets/explore_desktop_header.dart';
 import '../widgets/explore_desktop_right_panel.dart';
+import '../../../../shared/widgets/shell_insets.dart';
+import '../../../../shared/widgets/status_bar_spacer.dart';
 import '../widgets/explore_featured_carousel.dart';
 import '../widgets/explore_featured_section.dart';
 import '../widgets/explore_quick_actions.dart';
@@ -209,6 +211,7 @@ class _ExploreMobileView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
+        top: false,
         bottom: false,
         child: RefreshIndicator(
           onRefresh: onRefreshRemote,
@@ -225,12 +228,14 @@ class _ExploreMobileView extends StatelessWidget {
             child: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
+                const SliverToBoxAdapter(child: StatusBarSpacer()),
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.only(top: 4, right: 4),
                     child: SizedBox(
                       height: AppDimensions.shellBarHeight,
                       child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Expanded(
                             child: FeedTabBar(
@@ -240,19 +245,19 @@ class _ExploreMobileView extends StatelessWidget {
                               underlineStyle: true,
                             ),
                           ),
-                          ShellBarIconButton(
-                            icon: Icons.search,
-                            onPressed: () => context.push(AppRoutes.search),
-                          ),
-                          ScreenplaySelectionAppBarActions(
-                            controller: selectionController,
-                            localIds: localIds,
-                            onSelectionChanged: onSelectionChanged,
-                          ),
-                        ],
-                      ),
+                        ShellBarIconButton(
+                          icon: Icons.search,
+                          onPressed: () => context.push(AppRoutes.search),
+                        ),
+                        ScreenplaySelectionAppBarActions(
+                          controller: selectionController,
+                          localIds: localIds,
+                          onSelectionChanged: onSelectionChanged,
+                        ),
+                      ],
                     ),
                   ),
+                ),
                 ),
                 const SliverToBoxAdapter(child: ExploreFeaturedCarousel()),
                 const SliverToBoxAdapter(child: ExploreQuickActions()),
@@ -278,6 +283,18 @@ class _ExploreMobileView extends StatelessWidget {
                   onUpload: onUpload,
                   onRefreshRemote: onRefreshRemote,
                   selectionController: selectionController,
+                ),
+                ListenableBuilder(
+                  listenable: selectionController,
+                  builder: (context, _) {
+                    final selectionExtra = selectionController.selectionMode
+                        ? AppDimensions.primaryButtonHeight +
+                            AppDimensions.spacingMd * 2
+                        : 0.0;
+                    return SliverToBoxAdapter(
+                      child: ShellBottomSpacer(extra: selectionExtra),
+                    );
+                  },
                 ),
               ],
             ),

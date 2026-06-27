@@ -225,6 +225,12 @@ class ScreenplayRemoteRepository extends ChangeNotifier {
 
   Map<String, dynamic>? rawTreeAfterRefresh(int id) => _rawTreeCache[id];
 
+  Future<bool> remoteTreeHasHierarchy(int id) async {
+    final result = await fetchRawTree(id, useCache: false);
+    if (result.tree == null) return false;
+    return ScreenplayApiMapper.rawTreeHasHierarchy(result.tree!);
+  }
+
   Future<({sp_dto.GetScreenplayTreeResp? tree, String? error})> saveScreenplayTree(
     int id,
     Map<String, dynamic> payload, {

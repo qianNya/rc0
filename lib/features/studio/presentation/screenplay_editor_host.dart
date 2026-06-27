@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/routes.dart';
 import '../../../core/data/app_catalog.dart';
+import '../../../core/utils/state_listeners.dart';
 import '../../../core/domain/screenplay/screenplay.dart';
 import '../../auth/data/auth_repository.dart';
 import '../../screenplay/data/screenplay_draft.dart';
@@ -22,6 +23,7 @@ import '../../upload/presentation/widgets/script_editor/script_editor_navigation
 import '../../upload/presentation/widgets/script_editor/script_editor_structure_mode.dart';
 import '../../upload/presentation/widgets/upload_structure_editor.dart';
 import '../domain/script_editor_selection.dart';
+import 'studio_editor_shell_bridge.dart';
 
 enum EditorSaveStatus { idle, saving, saved, error }
 
@@ -80,7 +82,7 @@ class ScreenplayEditorController {
   final VoidCallback onCancel;
   final Future<void> Function() onPickCover;
   final VoidCallback onResetCover;
-  final Future<void> Function({bool goHome}) onSaveLocal;
+  final Future<void> Function({bool goHome, bool? requireFrames}) onSaveLocal;
   final Future<void> Function() onPublishToCloud;
   final VoidCallback onUndo;
   final VoidCallback onRedo;
@@ -112,11 +114,13 @@ class ScreenplayEditorHost extends StatefulWidget {
     super.key,
     this.editScriptId,
     this.enableAutoSave = false,
+    this.registerShellBridge = false,
     required this.builder,
   });
 
   final String? editScriptId;
   final bool enableAutoSave;
+  final bool registerShellBridge;
   final Widget Function(BuildContext context, ScreenplayEditorController controller)
       builder;
 
@@ -174,6 +178,9 @@ class _ScreenplayEditorHostState extends State<ScreenplayEditorHost> {
     _titleController = TextEditingController(text: _draft.title);
     _synopsisController = TextEditingController(text: _draft.synopsis);
     _undoStack.add(_draft.copyDeep());
+    if (widget.registerShellBridge) {
+      _syncShellBridge();
+    }
   }
 
   void _loadDraft() {
@@ -197,6 +204,9 @@ class _ScreenplayEditorHostState extends State<ScreenplayEditorHost> {
 
   @override
   void dispose() {
+    if (widget.registerShellBridge) {
+      StudioEditorShellBridge.instance.clear();
+    }
     _autoSaveTimer?.cancel();
     _tagsRepo.removeListener(_onTagsRepoChanged);
     _titleController.dispose();
@@ -204,9 +214,7 @@ class _ScreenplayEditorHostState extends State<ScreenplayEditorHost> {
     super.dispose();
   }
 
-  void _onTagsRepoChanged() {
-    if (mounted) setState(() {});
-  }
+  void _onTagsRepoChanged() => scheduleSetState(this);
 
   void _pushUndoSnapshot() {
     if (_isRestoringHistory) return;
@@ -442,13 +450,20 @@ class _ScreenplayEditorHostState extends State<ScreenplayEditorHost> {
       return false;
     }
     if (!requireFrames && !_hasPersistableContent()) {
+      if (showError) _showSnackBar('请先填写标题或添加幕场内容');
       return false;
     }
     return true;
   }
 
-  Future<String?> _saveLocalDraft({bool requireFrames = true}) async {
-    if (!_validateDraft(requireFrames: requireFrames, showError: requireFrames)) {
+  Future<String?> _saveLocalDraft({
+    bool requireFrames = true,
+    bool showError = true,
+  }) async {
+    if (!_validateDraft(
+      requireFrames: requireFrames,
+      showError: showError,
+    )) {
       return null;
     }
     final repository = ScreenplayLocalRepository.instance;
@@ -463,16 +478,42 @@ class _ScreenplayEditorHostState extends State<ScreenplayEditorHost> {
     return screenplay.id;
   }
 
-  Future<void> _saveLocal({bool goHome = true, bool silent = false}) async {
-    if (_isPublishing) return;
+  void _syncShellBridge() {
+    if (!widget.registerShellBridge) return;
+    StudioEditorShellBridge.instance.register(
+      onAddAct: _addAct,
+      onAddScene: _addSceneFromShell,
+      onSaveLocal: _saveLocal,
+      saveBusy: _isPublishing || _saveStatus == EditorSaveStatus.saving,
+    );
+  }
+
+  void _addSceneFromShell() {
+    if (_draft.acts.isEmpty) {
+      _addAct();
+    }
+    final actIndex = _draft.acts.isEmpty ? 0 : _draft.acts.length - 1;
+    _addScene(actIndex);
+  }
+
+  Future<void> _saveLocal({
+    bool goHome = true,
+    bool silent = false,
+    bool? requireFrames,
+  }) async {
+    if (_isPublishing && silent) return;
     final wasCreate = _effectiveLocalId == null;
+    final framesRequired = requireFrames ?? !silent;
     setState(() {
       _isPublishing = true;
       _saveStatus = EditorSaveStatus.saving;
       _saveError = null;
     });
     try {
-      final localId = await _saveLocalDraft(requireFrames: !silent);
+      final localId = await _saveLocalDraft(
+        requireFrames: framesRequired,
+        showError: !silent || requireFrames == true,
+      );
       if (!mounted) return;
       if (localId == null) {
         setState(() => _saveStatus = EditorSaveStatus.error);
@@ -504,7 +545,7 @@ class _ScreenplayEditorHostState extends State<ScreenplayEditorHost> {
     if (!AuthRepository.instance.isLoggedIn) {
       final redirect = _effectiveLocalId != null
           ? AppRoutes.studioEdit(_effectiveLocalId!)
-          : AppRoutes.create;
+          : AppRoutes.studioCreate;
       context.go(AppRoutes.loginWithRedirect(redirect));
       return;
     }
@@ -707,6 +748,7 @@ class _ScreenplayEditorHostState extends State<ScreenplayEditorHost> {
       onToggleSceneTag: _toggleSceneTag,
       onToggleFrameTag: _toggleFrameTag,
       onMoveFrame: _moveFrame,
+      onMoveScene: _moveScene,
       canRemoveScene: (actIndex, _) => _draft.acts[actIndex].scenes.length > 1,
       onRemoveScene: _removeScene,
       onSceneFieldChanged: _onSceneFieldChanged,
@@ -858,6 +900,9 @@ class _ScreenplayEditorHostState extends State<ScreenplayEditorHost> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.registerShellBridge) {
+      _syncShellBridge();
+    }
     return widget.builder(context, _buildController());
   }
 }
@@ -871,6 +916,30 @@ extension ScreenplayEditorHostMutations on ScreenplayEditorController {
 
   void addScene(int actIndex) {
     draft.acts[actIndex].scenes.add(SceneDraft());
+    onChanged();
+  }
+
+  bool canRemoveAct() => draft.acts.length > 1;
+
+  Future<void> removeAct(int actIndex) async {
+    if (draft.acts.length <= 1) return;
+    draft.acts.removeAt(actIndex);
+    onChanged();
+  }
+
+  void reorderActs(int oldIndex, int newIndex) {
+    reorderDraftActs(draft, oldIndex, newIndex);
+    onChanged();
+  }
+
+  void moveScene(SceneDragData data, int toActIndex, int toInsertIndex) {
+    moveDraftScene(
+      draft,
+      scene: data.scene,
+      fromActIndex: data.fromActIndex,
+      toActIndex: toActIndex,
+      toInsertIndex: toInsertIndex,
+    );
     onChanged();
   }
 

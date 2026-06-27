@@ -164,4 +164,49 @@ void main() {
       expect(payload.toString().contains('local_'), isFalse);
     });
   });
+
+  group('rawTreeHasHierarchy', () {
+    test('returns false for empty tree', () {
+      expect(
+        ScreenplayApiMapper.rawTreeHasHierarchy({
+          'screenplay': {'id': 22, 'act_count': 0},
+          'acts': [],
+        }),
+        isFalse,
+      );
+    });
+
+    test('returns true when act_count is positive', () {
+      expect(
+        ScreenplayApiMapper.rawTreeHasHierarchy({
+          'screenplay': {'id': 22, 'act_count': 2},
+          'acts': [],
+        }),
+        isTrue,
+      );
+    });
+
+    test('returns true when acts list is non-empty', () {
+      expect(
+        ScreenplayApiMapper.rawTreeHasHierarchy(_sampleTree(actId: 10)),
+        isTrue,
+      );
+    });
+  });
+
+  group('stampServerNodeIds', () {
+    test('copies remote ids by structural index', () {
+      final local = _sampleTree();
+      final server = _sampleTree(actId: 101, sceneId: 202, frameId: 303);
+
+      ScreenplayApiMapper.stampServerNodeIds(local, server);
+
+      final act = (local['acts'] as List).first as Map<String, dynamic>;
+      expect((act['act'] as Map)['id'], 101);
+      final scene = (act['scenes'] as List).first as Map<String, dynamic>;
+      expect((scene['scene'] as Map)['id'], 202);
+      final frame = (scene['frames'] as List).first as Map<String, dynamic>;
+      expect(frame['id'], 303);
+    });
+  });
 }

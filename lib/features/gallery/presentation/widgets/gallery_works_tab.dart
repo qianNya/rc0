@@ -17,7 +17,9 @@ import '../../../screenplay/presentation/widgets/screenplay_visibility_sheet.dar
 import '../../../user/data/user_screenplays_repository.dart';
 
 class GalleryWorksTab extends StatefulWidget {
-  const GalleryWorksTab({super.key});
+  const GalleryWorksTab({super.key, this.onSelectionChanged});
+
+  final VoidCallback? onSelectionChanged;
 
   @override
   State<GalleryWorksTab> createState() => GalleryWorksTabState();
@@ -52,7 +54,14 @@ class GalleryWorksTabState extends State<GalleryWorksTab>
     super.dispose();
   }
 
-  void _onChanged() => scheduleSetState(this);
+  void _onChanged() {
+    scheduleSetState(this);
+    widget.onSelectionChanged?.call();
+  }
+
+  ScreenplaySelectionController get selectionController => _selectionController;
+
+  Future<void> deleteSelected() => _deleteSelected();
 
   Future<void> load() async {
     final profile = _auth.profile;
@@ -126,7 +135,7 @@ class GalleryWorksTabState extends State<GalleryWorksTab>
           title: '暂无作品',
           subtitle: error ?? '创作后会显示在这里',
           actionLabel: error != null ? '重试' : '开始创作',
-          onAction: error != null ? load : () => context.push(AppRoutes.create),
+          onAction: error != null ? load : () => context.go(AppRoutes.studioCreate),
         ),
       );
     }
@@ -218,10 +227,6 @@ class GalleryWorksTabState extends State<GalleryWorksTab>
                     child: const Text('加载更多'),
                   ),
                 ),
-              ScreenplaySelectionBottomBar(
-                controller: _selectionController,
-                onDelete: _deleteSelected,
-              ),
             ],
           ),
         ),

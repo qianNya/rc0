@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_dimensions.dart';
+import 'rc0_app_bar.dart';
 
 class AppScaffold extends StatelessWidget {
   const AppScaffold({
@@ -23,16 +24,20 @@ class AppScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasAppBar = title != null;
+
     return Scaffold(
-      appBar: title == null
-          ? null
-          : AppBar(
+      extendBodyBehindAppBar: hasAppBar,
+      appBar: hasAppBar
+          ? Rc0AppBar(
               title: Text(title!),
               actions: actions,
               bottom: bottom,
               automaticallyImplyLeading: showBackButton,
-            ),
+            )
+          : null,
       body: SafeArea(
+        top: !hasAppBar,
         child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: AppDimensions.pagePadding,

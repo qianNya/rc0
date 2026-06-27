@@ -18,7 +18,7 @@ Future<void> openSceneEditorDetail(
   int initialTabIndex = 0,
   int? initialFrameIndex,
 }) {
-  return Navigator.of(context).push<void>(
+  return Navigator.of(context, rootNavigator: true).push<void>(
     MaterialPageRoute(
       builder: (_) => SceneEditorDetailPage(
         actions: actions,
@@ -38,7 +38,7 @@ Future<void> openFrameEditorDetail(
   required int sceneIndex,
   required int frameIndex,
 }) {
-  return Navigator.of(context).push<void>(
+  return Navigator.of(context, rootNavigator: true).push<void>(
     MaterialPageRoute(
       builder: (_) => FrameEditorDetailPage(
         actions: actions,
@@ -66,7 +66,7 @@ Future<void> openProjectSettings(
   VoidCallback? onResetCover,
   VoidCallback? onSyncTitle,
 }) {
-  return Navigator.of(context).push<void>(
+  return Navigator.of(context, rootNavigator: true).push<void>(
     MaterialPageRoute(
       builder: (_) => ProjectSettingsPage(
         draft: draft,
@@ -91,7 +91,7 @@ void openAiCreationHub(BuildContext context, {String? editScriptId}) {
   if (editScriptId != null && editScriptId.isNotEmpty) {
     context.push(AppRoutes.createAiHub(editScriptId));
   } else {
-    Navigator.of(context).push<void>(
+    Navigator.of(context, rootNavigator: true).push<void>(
       MaterialPageRoute(builder: (_) => const AiCreationHubPage()),
     );
   }

@@ -4,6 +4,7 @@ abstract final class AppRoutes {
   static const String discovery = '/discovery';
   static const String library = '/library';
   static const String studio = '/studio';
+  static const String studioCreate = '/studio/create';
   static const String create = '/create';
   static const String createSettingsPath = '/create/settings';
   static const String createAiHubPath = '/create/ai';
@@ -39,9 +40,22 @@ abstract final class AppRoutes {
   static const String ipDetail = '/ip/:id';
   static const String ipEdit = '/ip/:id/edit';
 
+  static const String character = '/character';
+  static const String characterDetail = '/character/:id';
+  static const String characterCreate = '/character/create';
+  static const String characterEdit = '/character/:id/edit';
+  static const String characterAi = '/character/ai';
+  static const String myCharacters = '/my-characters';
+
+  static const String scenes = '/scenes';
+  static const String sceneDetail = '/scenes/:id';
+  static const String sceneCreate = '/scenes/create';
+  static const String sceneEdit = '/scenes/:id/edit';
+  static const String sceneAi = '/scenes/ai';
+  static const String myScenes = '/my-scenes';
+
+  /// @deprecated Use [character] instead.
   static const String characters = '/characters';
-  static const String characterDetail = '/characters/:id';
-  static const String characterCreate = '/characters/create';
 
   static const String preset = '/preset';
   static const String presetDetail = '/preset/:id';
@@ -81,13 +95,17 @@ abstract final class AppRoutes {
   static String imageAnalysisPath(String id) => '/image/$id/analysis';
   static String ip(int id) => '/ip/$id';
   static String ipEditPath(int id) => '/ip/$id/edit';
-  static String character(int id) => '/characters/$id';
+  static String characterDetailPath(int id) => '/character/$id';
+  static String characterEditPath(int id) => '/character/$id/edit';
+  static String sceneDetailPath(String id) => '/scenes/$id';
+  static String sceneEditPath(String id) => '/scenes/$id/edit';
   static String charactersForWork(int workId) =>
-      '$characters?work_id=$workId';
+      '$character?work_id=$workId';
+
   static String presetItem(String id) => '/preset/$id';
   static String user(int id) => '/user/$id';
   static String pose(String id) => '/pose/$id';
-  static String createEdit(String id) => '$create?edit=$id';
+  static String createEdit(String id) => studioEdit(id);
   static String studioEdit(String id) => '$studio?edit=${Uri.encodeComponent(id)}';
   static String createSettings(String id) =>
       '$createSettingsPath?edit=${Uri.encodeComponent(id)}';

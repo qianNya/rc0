@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
+import '../../core/services/network_image_cache_service.dart';
 import '../../core/utils/image_url_utils.dart';
 
 typedef Rc0ImageLoadingBuilder = Widget Function(
@@ -13,6 +14,10 @@ typedef Rc0ImageLoadingBuilder = Widget Function(
 );
 
 /// Local file or network image with explicit WebP decoding support.
+///
+/// Network URLs are shown immediately; after load completes the bytes are
+/// persisted under [NetworkImageCacheService] and subsequent builds prefer
+/// the local file.
 class Rc0Image extends StatefulWidget {
   const Rc0Image({
     super.key,
@@ -36,14 +41,19 @@ class Rc0Image extends StatefulWidget {
 }
 
 class _Rc0ImageState extends State<Rc0Image> {
+  final _cache = NetworkImageCacheService.instance;
+
   Uint8List? _memoryBytes;
   bool _loadingMemory = false;
   bool _memoryFailed = false;
   bool _loadScheduled = false;
+  bool _cacheScheduled = false;
+  String? _cachedLocalPath;
 
   @override
   void initState() {
     super.initState();
+    _primeCache();
     _scheduleWebpPreload();
   }
 
@@ -55,11 +65,33 @@ class _Rc0ImageState extends State<Rc0Image> {
       _loadingMemory = false;
       _memoryFailed = false;
       _loadScheduled = false;
+      _cacheScheduled = false;
+      _cachedLocalPath = null;
+      _primeCache();
       _scheduleWebpPreload();
     }
   }
 
   String get _resolved => resolveNetworkImageUrl(widget.path) ?? widget.path;
+
+  void _primeCache() {
+    final resolved = _resolved;
+    if (!isNetworkImagePath(resolved)) return;
+
+    final syncHit = _cache.cachedPathSync(resolved);
+    if (syncHit != null) {
+      _cachedLocalPath = syncHit;
+      return;
+    }
+
+    _cache.ensureReady().then((_) {
+      if (!mounted) return;
+      final hit = _cache.cachedPathSync(resolved);
+      if (hit != null && hit != _cachedLocalPath) {
+        setState(() => _cachedLocalPath = hit);
+      }
+    });
+  }
 
   void _scheduleWebpPreload() {
     if (!isWebpImagePath(_resolved)) return;
@@ -78,6 +110,16 @@ class _Rc0ImageState extends State<Rc0Image> {
     });
   }
 
+  void _scheduleNetworkCache(String url) {
+    if (_cacheScheduled) return;
+    _cacheScheduled = true;
+    _cache.downloadIfNeeded(url).then((path) {
+      if (!mounted || path == null) return;
+      if (_resolved != url) return;
+      setState(() => _cachedLocalPath = path);
+    });
+  }
+
   Future<void> _loadMemory() async {
     if (_loadingMemory || _memoryBytes != null) return;
     setState(() {
@@ -89,20 +131,30 @@ class _Rc0ImageState extends State<Rc0Image> {
       final Uint8List bytes;
       final resolved = _resolved;
       if (isNetworkImagePath(resolved)) {
-        final client = HttpClient();
-        try {
-          final request = await client.getUrl(Uri.parse(resolved));
-          final response = await request.close();
-          if (response.statusCode != 200) {
-            throw HttpException('HTTP ${response.statusCode}');
+        final cached = _cache.cachedPathSync(resolved) ??
+            await _cache.cachedPath(resolved);
+        if (cached != null) {
+          bytes = await File(cached).readAsBytes();
+        } else {
+          final client = HttpClient();
+          try {
+            final request = await client.getUrl(Uri.parse(resolved));
+            final response = await request.close();
+            if (response.statusCode != 200) {
+              throw HttpException('HTTP ${response.statusCode}');
+            }
+            final builder = BytesBuilder(copy: false);
+            await for (final chunk in response) {
+              builder.add(chunk);
+            }
+            bytes = builder.takeBytes();
+          } finally {
+            client.close();
           }
-          final builder = BytesBuilder(copy: false);
-          await for (final chunk in response) {
-            builder.add(chunk);
+          final saved = await _cache.writeFromBytes(resolved, bytes);
+          if (saved != null && mounted) {
+            _cachedLocalPath = saved;
           }
-          bytes = builder.takeBytes();
-        } finally {
-          client.close();
         }
       } else {
         bytes = await File(resolved).readAsBytes();
@@ -141,6 +193,16 @@ class _Rc0ImageState extends State<Rc0Image> {
         );
   }
 
+  Widget _buildFileImage(String path) {
+    return Image.file(
+      File(path),
+      fit: widget.fit,
+      width: widget.width,
+      height: widget.height,
+      errorBuilder: (_, _, _) => _buildFallbackError(),
+    );
+  }
+
   Widget _buildMemoryImage() {
     final bytes = _memoryBytes;
     if (bytes == null) {
@@ -163,24 +225,41 @@ class _Rc0ImageState extends State<Rc0Image> {
     return _loadingPlaceholder();
   }
 
+  Widget _buildNetworkImage(String resolved) {
+    return Image.network(
+      resolved,
+      fit: widget.fit,
+      width: widget.width,
+      height: widget.height,
+      loadingBuilder: (context, child, progress) {
+        if (progress == null) {
+          _scheduleNetworkCache(resolved);
+        }
+        if (widget.loadingBuilder != null) {
+          return widget.loadingBuilder!(context, child, progress);
+        }
+        if (progress == null) return child;
+        return _loadingPlaceholder(progress);
+      },
+      errorBuilder: (_, _, _) => _buildFallbackError(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final resolved = _resolved;
 
     if (isWebpImagePath(resolved)) {
+      final cached = _cachedLocalPath ?? _cache.cachedPathSync(resolved);
+      if (cached != null) return _buildFileImage(cached);
       return _buildMemoryImage();
     }
 
     if (isNetworkImagePath(resolved)) {
       if (!isValidNetworkImageUrl(resolved)) return _error();
-      return Image.network(
-        resolved,
-        fit: widget.fit,
-        width: widget.width,
-        height: widget.height,
-        loadingBuilder: widget.loadingBuilder,
-        errorBuilder: (_, _, _) => _buildFallbackError(),
-      );
+      final cached = _cachedLocalPath ?? _cache.cachedPathSync(resolved);
+      if (cached != null) return _buildFileImage(cached);
+      return _buildNetworkImage(resolved);
     }
 
     return Image.file(

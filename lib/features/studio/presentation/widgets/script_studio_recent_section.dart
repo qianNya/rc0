@@ -48,7 +48,7 @@ class ScriptStudioRecentSection extends StatelessWidget {
               title: '暂无项目',
               subtitle: '新建剧本后会显示在这里',
               actionLabel: '新建剧本',
-              onAction: () => context.push(AppRoutes.create),
+              onAction: () => context.go(AppRoutes.studioCreate),
             )
           else
             ...projects.map(

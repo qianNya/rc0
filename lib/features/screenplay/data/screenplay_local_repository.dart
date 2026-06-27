@@ -33,8 +33,11 @@ class ScreenplayLocalRepository extends ChangeNotifier {
   SharedPreferences? _prefs;
   final List<ScreenplayTreeDocument> _documents = [];
 
-  List<Screenplay> get localScreenplays =>
-      List.unmodifiable(_documents.map((d) => d.toScreenplay()));
+  List<Screenplay> get localScreenplays => List.unmodifiable(
+        _documents
+            .where((d) => !d.meta.browseCache)
+            .map((d) => d.toScreenplay()),
+      );
 
   ScreenplayTreeDocument? documentById(String localId) {
     for (final doc in _documents) {
@@ -479,6 +482,180 @@ class ScreenplayLocalRepository extends ChangeNotifier {
 
     if (!downloadImages) return forkResult;
     return downloadLocalCopy(forkResult.screenplay!.id);
+  }
+
+  /// Ensures a linked local document exists for browsing a remote screenplay.
+  Future<ScreenplayTreeDocument?> ensureRemoteBrowseDocument(
+    int remoteId,
+  ) async {
+    final existing = documentByRemoteId(remoteId);
+    if (existing != null) return existing;
+
+    final result = await ScreenplayRemoteRepository.instance.fetchRawTree(
+      remoteId,
+    );
+    if (result.error != null || result.tree == null) return null;
+
+    final tree = deepCopyJson(result.tree!);
+    final screenplayMap = tree['screenplay'] as Map<String, dynamic>;
+    final localId = 'script-${DateTime.now().millisecondsSinceEpoch}';
+    final visibility = (screenplayMap['visibility'] as num?)?.toInt();
+    final publishedAtRaw = screenplayMap['published_at'] as String?;
+
+    final meta = ScreenplayLocalMeta(
+      localId: localId,
+      isLocal: true,
+      tags: const [],
+      author: '我',
+      authorBio: '摄影创作者',
+      remoteScreenplayId: remoteId,
+      visibility: visibility,
+      publishedAt: publishedAtRaw != null && publishedAtRaw.isNotEmpty
+          ? DateTime.tryParse(publishedAtRaw)
+          : null,
+      imagesLocalized: false,
+      browseCache: true,
+      createdAt: DateTime.now(),
+    );
+
+    final doc = ScreenplayTreeDocument(tree: tree, meta: meta);
+    _documents.insert(0, doc);
+    await _save();
+    notifyListeners();
+    return doc;
+  }
+
+  /// Copies a global image cache file into the screenplay tree as local paths.
+  Future<bool> persistCachedNetworkImage({
+    required String localId,
+    required String remoteUrl,
+    required String cachedFilePath,
+  }) async {
+    final index = _documentIndex(localId);
+    if (index < 0) return false;
+
+    final doc = _documents[index];
+    if (doc.meta.imagesLocalized) return false;
+
+    final resolvedUrl = resolveNetworkImageUrl(remoteUrl) ?? remoteUrl;
+    if (!ScreenplayImageResolver.isNetworkUrl(resolvedUrl)) return false;
+
+    final tree = deepCopyJson(doc.tree);
+    var changed = false;
+
+    final screenplayMap = tree['screenplay'] as Map<String, dynamic>;
+    final coverRemote = ScreenplayImageResolver.coverRemoteUrl(screenplayMap);
+    if (coverRemote != null && _urlsMatch(coverRemote, resolvedUrl)) {
+      final existing = screenplayMap['local_cover_path'] as String?;
+      if (!_hasUsableLocalFile(existing)) {
+        screenplayMap['local_cover_path'] = await _copyCachedToFrameDir(
+          localId: localId,
+          cachedPath: cachedFilePath,
+          prefix: 'cover',
+        );
+        changed = true;
+      }
+    }
+
+    final acts = tree['acts'] as List<dynamic>? ?? [];
+    var frameIndex = 0;
+    for (final actNode in acts) {
+      final scenes =
+          (actNode as Map<String, dynamic>)['scenes'] as List<dynamic>? ?? [];
+      for (final sceneNode in scenes) {
+        final frames =
+            (sceneNode as Map<String, dynamic>)['frames'] as List<dynamic>? ??
+                [];
+        for (final frame in frames) {
+          final frameMap = frame as Map<String, dynamic>;
+          final frameRemote = ScreenplayImageResolver.frameRemoteUrl(frameMap);
+          if (frameRemote != null && _urlsMatch(frameRemote, resolvedUrl)) {
+            final existing = frameMap['local_image_path'] as String?;
+            if (!_hasUsableLocalFile(existing)) {
+              final localPath = await _copyCachedToFrameDir(
+                localId: localId,
+                cachedPath: cachedFilePath,
+                prefix: 'frame-$frameIndex',
+              );
+              frameMap['local_image_path'] = localPath;
+              frameMap['local_thumbnail_path'] = localPath;
+              changed = true;
+            }
+          }
+          frameIndex++;
+        }
+      }
+    }
+
+    if (!changed) return false;
+
+    _documents[index] = ScreenplayTreeDocument(
+      tree: tree,
+      meta: doc.meta.copyWith(
+        imagesLocalized: _treeImagesFullyLocalized(tree),
+      ),
+    );
+    await _save();
+    notifyListeners();
+    return true;
+  }
+
+  bool _urlsMatch(String a, String b) {
+    final left = resolveNetworkImageUrl(a) ?? a;
+    final right = resolveNetworkImageUrl(b) ?? b;
+    return left == right;
+  }
+
+  bool _hasUsableLocalFile(String? path) {
+    if (path == null || path.isEmpty) return false;
+    if (ScreenplayImageResolver.isNetworkUrl(path)) return false;
+    return File(path).existsSync();
+  }
+
+  bool _treeImagesFullyLocalized(Map<String, dynamic> tree) {
+    final screenplayMap = tree['screenplay'] as Map<String, dynamic>;
+    final coverRemote = ScreenplayImageResolver.coverRemoteUrl(screenplayMap);
+    if (coverRemote != null &&
+        !_hasUsableLocalFile(screenplayMap['local_cover_path'] as String?)) {
+      return false;
+    }
+
+    final acts = tree['acts'] as List<dynamic>? ?? [];
+    for (final actNode in acts) {
+      final scenes =
+          (actNode as Map<String, dynamic>)['scenes'] as List<dynamic>? ?? [];
+      for (final sceneNode in scenes) {
+        final frames =
+            (sceneNode as Map<String, dynamic>)['frames'] as List<dynamic>? ??
+                [];
+        for (final frame in frames) {
+          final frameMap = frame as Map<String, dynamic>;
+          final frameRemote = ScreenplayImageResolver.frameRemoteUrl(frameMap);
+          if (frameRemote == null) continue;
+          if (!_hasUsableLocalFile(frameMap['local_image_path'] as String?)) {
+            return false;
+          }
+        }
+      }
+    }
+    return true;
+  }
+
+  Future<String> _copyCachedToFrameDir({
+    required String localId,
+    required String cachedPath,
+    required String prefix,
+  }) async {
+    final appDir = await getApplicationDocumentsDirectory();
+    final frameDir = Directory('${appDir.path}/screenplays/$localId/frames');
+    if (!frameDir.existsSync()) {
+      await frameDir.create(recursive: true);
+    }
+    final ext = imageFileExtensionFromPath(cachedPath);
+    final dest = File('${frameDir.path}/$prefix$ext');
+    if (await dest.exists()) return dest.path;
+    await File(cachedPath).copy(dest.path);
+    return dest.path;
   }
 
   /// Opens the owner's published screenplay for editing by linking remote tree

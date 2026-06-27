@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
 
+import '../../core/services/network_image_cache_service.dart';
 import '../../core/utils/image_url_utils.dart';
 import '../widgets/image_preview.dart';
 
@@ -54,28 +55,7 @@ class ImageSaveService {
       return sourcePath;
     }
 
-    final tempDir = await getTemporaryDirectory();
-    final cacheDir = Directory('${tempDir.path}/rc0_image_cache');
-    await cacheDir.create(recursive: true);
-
-    final ext = imageFileExtensionFromPath(sourcePath);
-    final cacheFile = File(
-      '${cacheDir.path}/${sourcePath.hashCode.abs()}$ext',
-    );
-    if (await cacheFile.exists()) return cacheFile.path;
-
-    final client = HttpClient();
-    try {
-      final request = await client.getUrl(Uri.parse(sourcePath));
-      final response = await request.close();
-      if (response.statusCode != 200) {
-        throw HttpException('下载失败: ${response.statusCode}');
-      }
-      await response.pipe(cacheFile.openWrite());
-      return cacheFile.path;
-    } finally {
-      client.close();
-    }
+    return NetworkImageCacheService.instance.downloadIfNeeded(sourcePath);
   }
 
   Future<Directory> _destinationDirectory() async {

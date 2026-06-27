@@ -4,6 +4,7 @@ import '../../../../core/responsive/responsive_builder.dart';
 import '../../../../shared/widgets/primary_button.dart';
 import '../../../studio/presentation/screenplay_editor_host.dart';
 import '../widgets/upload_screenplay_preview_section.dart';
+import '../../../../shared/widgets/rc0_app_bar.dart';
 
 /// New screenplay creation wizard (editing redirects to `/studio?edit=`).
 class UploadPage extends StatelessWidget {
@@ -30,7 +31,8 @@ class _UploadPageContent extends StatelessWidget {
 
     return ResponsiveBuilder(
       mobile: (_) => Scaffold(
-        appBar: AppBar(
+        extendBodyBehindAppBar: true,
+        appBar: Rc0AppBar(
           title: const Text(pageTitle),
           leading: TextButton(
             onPressed: controller.onCancel,
@@ -55,7 +57,8 @@ class _UploadPageContent extends StatelessWidget {
         ),
       ),
       desktop: (_) => Scaffold(
-        appBar: AppBar(
+        extendBodyBehindAppBar: true,
+        appBar: Rc0AppBar(
           title: const Text(pageTitle),
           leading: TextButton(
             onPressed: controller.onCancel,

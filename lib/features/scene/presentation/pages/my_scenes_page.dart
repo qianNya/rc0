@@ -1,0 +1,186 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../../app/router/navigation_utils.dart';
+import '../../../../app/router/routes.dart';
+import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_dimensions.dart';
+import '../../../../core/data/app_catalog.dart';
+import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
+import '../../../../shared/widgets/empty_state_view.dart';
+import '../../../auth/data/auth_repository.dart';
+import '../../data/scene_local_store.dart';
+import '../../data/scene_repository.dart';
+import '../../domain/scene_entry.dart';
+import '../../domain/scene_utils.dart';
+import '../widgets/scene_action_sheet.dart';
+import '../widgets/scene_masonry_grid.dart';
+
+class MyScenesPage extends StatefulWidget {
+  const MyScenesPage({super.key});
+
+  @override
+  State<MyScenesPage> createState() => _MyScenesPageState();
+}
+
+class _MyScenesPageState extends State<MyScenesPage> {
+  final _repo = SceneRepository.instance;
+  final _auth = AuthRepository.instance;
+  int _tabIndex = 0;
+  Set<String> _ownedIds = {};
+  Set<String> _favorites = {};
+  Set<String> _usedIds = {};
+  final Map<String, String> _localCovers = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _repo.addListener(_onRepoChanged);
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _repo.removeListener(_onRepoChanged);
+    super.dispose();
+  }
+
+  void _onRepoChanged() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _load() async {
+    await _repo.loadFirstPage();
+    _ownedIds = await SceneLocalStore.instance.ownedIds();
+    _favorites = await SceneLocalStore.instance.favoriteIds();
+    _usedIds = _repo.items
+        .where((e) => e.useCount > 0)
+        .map((e) => e.id)
+        .toSet();
+    await _loadLocalCovers();
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _loadLocalCovers() async {
+    final covers = <String, String>{};
+    for (final entry in _repo.items) {
+      final path = await SceneLocalStore.instance.localCoverPath(entry.id);
+      if (path != null && path.isNotEmpty) covers[entry.id] = path;
+    }
+    _localCovers
+      ..clear()
+      ..addAll(covers);
+  }
+
+  List<SceneEntry> get _filtered {
+    return _repo.items
+        .where(
+          (e) => matchesMySceneTab(
+            e,
+            _tabIndex,
+            favoriteIds: _favorites,
+            ownedIds: _ownedIds,
+            usedIds: _usedIds,
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final filtered = _filtered;
+
+    return DesktopStackScaffold(
+      title: const Text('我的场景'),
+      onBack: () => popOrGoDiscovery(context),
+      actions: [
+        if (_auth.isLoggedIn)
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () async {
+              await context.push(AppRoutes.sceneCreate);
+              if (mounted) _load();
+            },
+          ),
+      ],
+      body: ColoredBox(
+        color: isDark
+            ? AppColors.characterBackgroundDark
+            : Theme.of(context).scaffoldBackgroundColor,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(AppDimensions.spacingMd),
+              child: SegmentedButton<int>(
+                segments: [
+                  for (var i = 0; i < AppCatalog.mySceneTabs.length; i++)
+                    ButtonSegment(
+                      value: i,
+                      label: Text(AppCatalog.mySceneTabs[i]),
+                    ),
+                ],
+                selected: {_tabIndex},
+                onSelectionChanged: (set) {
+                  setState(() => _tabIndex = set.first);
+                },
+              ),
+            ),
+            Expanded(
+              child: filtered.isEmpty
+                  ? EmptyStateView(
+                      icon: Icons.landscape_outlined,
+                      title: '暂无场景',
+                      actionLabel: _auth.isLoggedIn ? '新建场景' : null,
+                      onAction: _auth.isLoggedIn
+                          ? () async {
+                              await context.push(AppRoutes.sceneCreate);
+                              if (mounted) _load();
+                            }
+                          : null,
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _load,
+                      child: ListView(
+                        padding: const EdgeInsets.only(bottom: 32),
+                        children: [
+                          SceneMasonryGrid(
+                            items: filtered,
+                            localCoverFor: (e) => _localCovers[e.id],
+                            screenplayCountFor: (e) =>
+                                _repo.countScreenplaysForScene(e.id),
+                            favoriteCountFor: (e) =>
+                                _favorites.contains(e.id)
+                                    ? e.favoriteCount + 1
+                                    : e.favoriteCount,
+                            onTap: (entry) => context.push(
+                              AppRoutes.sceneDetailPath(entry.id),
+                            ),
+                            onLongPress: (entry) => showSceneActionSheet(
+                              context: context,
+                              entry: entry,
+                              repo: _repo,
+                              isLoggedIn: _auth.isLoggedIn,
+                              isFavorite: _favorites.contains(entry.id),
+                              onToggleFavorite: () async {
+                                final next =
+                                    !_favorites.contains(entry.id);
+                                await SceneLocalStore.instance.setFavorite(
+                                  entry.id,
+                                  next,
+                                );
+                                await _load();
+                              },
+                              onRefresh: _load,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

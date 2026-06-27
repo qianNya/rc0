@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_dimensions.dart';
-import '../../app/theme/app_shadows.dart';
 import 'app_brand_icon.dart';
+import 'liquid_glass_surface.dart';
 import 'shell_nav_items.dart';
 
 class AppBottomNavBar extends StatelessWidget {
@@ -11,56 +11,45 @@ class AppBottomNavBar extends StatelessWidget {
     super.key,
     required this.selectedIndex,
     required this.onItemSelected,
+    this.wrapPadding = true,
   });
 
   final int selectedIndex;
   final ValueChanged<int> onItemSelected;
+  final bool wrapPadding;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final background = isDark
-        ? theme.scaffoldBackgroundColor
-        : theme.colorScheme.surface;
-    final topBorderColor = isDark
-        ? Colors.white.withValues(alpha: 0.06)
-        : theme.dividerColor;
-
-    return Material(
-      color: background,
-      elevation: 0,
-      surfaceTintColor: Colors.transparent,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: background,
-          border: Border(
-            top: BorderSide(
-              color: topBorderColor,
-              width: isDark ? 0 : 1,
-            ),
-          ),
-          boxShadow: isDark ? null : AppShadows.bottomNav,
-        ),
-        child: SafeArea(
-          top: false,
-          child: SizedBox(
-            height: AppDimensions.bottomNavHeight,
-            child: Row(
-              children: [
-                for (var i = 0; i < mobileNavItems.length; i++)
-                  Expanded(
-                    child: _NavItem(
-                      item: mobileNavItems[i],
-                      selected: selectedIndex == i,
-                      onTap: () => onItemSelected(i),
-                    ),
-                  ),
-              ],
-            ),
-          ),
+    final bar = SafeArea(
+      top: false,
+      child: LiquidGlassSurface(
+        style: LiquidGlassStyle.navigation,
+        height: AppDimensions.bottomNavFloatingHeight,
+        child: Row(
+          children: [
+            for (var i = 0; i < mobileNavItems.length; i++)
+              Expanded(
+                child: _NavItem(
+                  item: mobileNavItems[i],
+                  selected: selectedIndex == i,
+                  onTap: () => onItemSelected(i),
+                ),
+              ),
+          ],
         ),
       ),
+    );
+
+    if (!wrapPadding) return bar;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppDimensions.floatingBarMarginHorizontal,
+        0,
+        AppDimensions.floatingBarMarginHorizontal,
+        AppDimensions.floatingBarMarginBottom,
+      ),
+      child: bar,
     );
   }
 }
@@ -76,32 +65,64 @@ class _NavItem extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
+  static const _duration = Duration(milliseconds: 260);
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = selected
-        ? AppColors.accent
-        : theme.textTheme.bodyMedium?.color ?? AppColors.textSecondary;
+    final unselectedColor =
+        theme.textTheme.bodyMedium?.color ?? AppColors.textSecondary;
 
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(AppDimensions.floatingBarRadius),
       child: Tooltip(
         message: item.label,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (item.useBrandLogo)
-              AppBrandIcon(
-                size: AppDimensions.bottomNavBrandIconSize,
-                selected: selected,
-              )
-            else
-              Icon(
-                selected ? item.selectedIcon : item.icon,
-                size: 22,
-                color: color,
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(end: selected ? 1.0 : 0.0),
+          duration: _duration,
+          curve: Curves.easeOutCubic,
+          builder: (context, t, _) {
+            final color = Color.lerp(unselectedColor, AppColors.accent, t)!;
+            final scale = 1 + 0.12 * Curves.easeOutBack.transform(t);
+
+            return SizedBox(
+              height: AppDimensions.bottomNavFloatingHeight,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Transform.scale(
+                    scale: scale,
+                    child: item.useBrandLogo
+                        ? AppBrandIcon(
+                            size: AppDimensions.bottomNavBrandIconSize,
+                            selected: selected,
+                          )
+                        : AnimatedSwitcher(
+                            duration: _duration,
+                            switchInCurve: Curves.easeOutBack,
+                            switchOutCurve: Curves.easeIn,
+                            transitionBuilder: (child, animation) {
+                              return ScaleTransition(
+                                scale: animation,
+                                child: FadeTransition(
+                                  opacity: animation,
+                                  child: child,
+                                ),
+                              );
+                            },
+                            child: Icon(
+                              selected ? item.selectedIcon : item.icon,
+                              key: ValueKey<bool>(selected),
+                              size: 22,
+                              color: color,
+                            ),
+                          ),
+                  ),
+                ],
               ),
-          ],
+            );
+          },
         ),
       ),
     );

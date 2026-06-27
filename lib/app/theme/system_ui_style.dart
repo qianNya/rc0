@@ -1,26 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'app_colors.dart';
-
 /// Unified status bar & navigation bar styling across the app.
 abstract final class AppSystemUi {
   static const SystemUiOverlayStyle lightStyle = SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.dark,
     statusBarBrightness: Brightness.light,
-    systemNavigationBarColor: AppColors.surface,
+    systemNavigationBarColor: Colors.transparent,
     systemNavigationBarIconBrightness: Brightness.dark,
-    systemNavigationBarDividerColor: AppColors.border,
+    systemNavigationBarDividerColor: Colors.transparent,
+    systemNavigationBarContrastEnforced: false,
   );
 
   static const SystemUiOverlayStyle darkStyle = SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.light,
     statusBarBrightness: Brightness.dark,
-    systemNavigationBarColor: AppColors.backgroundDark,
+    systemNavigationBarColor: Colors.transparent,
     systemNavigationBarIconBrightness: Brightness.light,
     systemNavigationBarDividerColor: Colors.transparent,
+    systemNavigationBarContrastEnforced: false,
   );
 
   @Deprecated('Use lightStyle or styleFor')

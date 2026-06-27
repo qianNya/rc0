@@ -296,6 +296,58 @@ class ScreenplayPublishService {
     required bool isRepublish,
     String? coverUrl,
   }) async {
+    var effectiveRepublish = isRepublish;
+    var treeToSave = tree;
+
+    if (!isRepublish) {
+      final hasRemoteTree = await ScreenplayRemoteRepository.instance
+          .remoteTreeHasHierarchy(remoteId);
+      if (hasRemoteTree) {
+        effectiveRepublish = true;
+        treeToSave = deepCopyJson(tree);
+        await _stampServerNodeIds(remoteId, treeToSave);
+      }
+    }
+
+    var saved = await _saveTreePayload(
+      remoteId: remoteId,
+      tree: treeToSave,
+      refToImageId: refToImageId,
+      visibility: visibility,
+      isRepublish: effectiveRepublish,
+      coverUrl: coverUrl,
+    );
+
+    if (saved.error != null &&
+        !effectiveRepublish &&
+        _isTreeAlreadyExistsError(saved.error)) {
+      effectiveRepublish = true;
+      treeToSave = deepCopyJson(tree);
+      await _stampServerNodeIds(remoteId, treeToSave);
+      saved = await _saveTreePayload(
+        remoteId: remoteId,
+        tree: treeToSave,
+        refToImageId: refToImageId,
+        visibility: visibility,
+        isRepublish: true,
+        coverUrl: coverUrl,
+      );
+    }
+
+    if (saved.error != null) {
+      return (error: saved.error);
+    }
+    return (error: null);
+  }
+
+  Future<({api.GetScreenplayTreeResp? tree, String? error})> _saveTreePayload({
+    required int remoteId,
+    required Map<String, dynamic> tree,
+    required Map<String, int> refToImageId,
+    required int visibility,
+    required bool isRepublish,
+    String? coverUrl,
+  }) {
     final payload = ScreenplayApiMapper.buildSaveTreePayload(
       tree: tree,
       visibility: visibility,
@@ -303,16 +355,33 @@ class ScreenplayPublishService {
       isRepublish: isRepublish,
       coverUrl: coverUrl,
     );
-
-    final saved = await ScreenplayRemoteRepository.instance.saveScreenplayTree(
+    return ScreenplayRemoteRepository.instance.saveScreenplayTree(
       remoteId,
       payload,
       isInitial: !isRepublish,
     );
-    if (saved.error != null) {
-      return (error: saved.error);
+  }
+
+  Future<void> _stampServerNodeIds(
+    int remoteId,
+    Map<String, dynamic> localTree,
+  ) async {
+    final serverTree = await ScreenplayRemoteRepository.instance.fetchRawTree(
+      remoteId,
+      useCache: false,
+    );
+    if (serverTree.tree != null) {
+      ScreenplayApiMapper.stampServerNodeIds(localTree, serverTree.tree!);
     }
-    return (error: null);
+  }
+
+  bool _isTreeAlreadyExistsError(String? error) {
+    if (error == null) return false;
+    final lower = error.toLowerCase();
+    return lower.contains('409') ||
+        lower.contains('conflict') ||
+        error.contains('冲突') ||
+        error.contains('已有');
   }
 
   Future<({api.Screenplay? screenplay, String? error})> _createScreenplay({

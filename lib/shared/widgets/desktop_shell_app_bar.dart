@@ -7,6 +7,9 @@ import '../../app/theme/app_colors.dart';
 import '../../core/platform/platform_features.dart';
 import '../../core/responsive/breakpoints.dart';
 import '../../features/shell/presentation/widgets/desktop_title_bar.dart';
+import 'rc0_app_bar.dart';
+import 'shell_insets.dart';
+import 'status_bar_spacer.dart';
 import 'desktop/desktop_card.dart';
 import 'desktop/desktop_chrome.dart';
 
@@ -39,7 +42,7 @@ class DesktopShellAppBar extends StatelessWidget implements PreferredSizeWidget 
   @override
   Widget build(BuildContext context) {
     if (!Breakpoints.isDesktop(context) || !shouldUseDesktopWindowChrome) {
-      return AppBar(
+      return Rc0AppBar(
         title: title,
         leading: leading,
         actions: actions,
@@ -101,8 +104,16 @@ class DesktopShellTabScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     if (!Breakpoints.isDesktop(context) || !shouldUseDesktopWindowChrome) {
       return Scaffold(
+        extendBodyBehindAppBar: true,
         appBar: appBar,
-        body: body,
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const AppBarContentInset(),
+            Expanded(child: body),
+            const ShellBottomSpacer(),
+          ],
+        ),
         floatingActionButton: floatingActionButton,
         bottomNavigationBar: bottomNavigationBar,
       );

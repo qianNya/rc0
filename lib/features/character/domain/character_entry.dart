@@ -47,4 +47,13 @@ class CharacterEntry {
     if (workId == 0) return '独立 OC';
     return '';
   }
+
+  List<String> get displayTags {
+    final tags = <String>{};
+    if (workTitle.isNotEmpty) tags.add(workTitle);
+    tags.addAll(aliases);
+    return tags.toList(growable: false);
+  }
+
+  String get effectiveCoverUrl => coverUrl;
 }

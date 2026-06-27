@@ -31,45 +31,49 @@ class EditorQuickActionRow extends StatelessWidget {
     super.key,
     required this.actions,
     this.scrollable = false,
+    this.compact = false,
   });
 
   final List<EditorQuickAction> actions;
   final bool scrollable;
+  final bool compact;
+
+  double get _itemWidth => compact ? 52 : 72;
+  double get _circleSize => compact ? 40 : 56;
+  double get _iconSize => compact ? 18 : 26;
+  double get _labelFontSize => compact ? 9 : 11;
 
   @override
   Widget build(BuildContext context) {
+    Widget buildAction(EditorQuickAction action) {
+      return QuickActionCircle(
+        label: action.label,
+        icon: action.icon,
+        onTap: action.onTap,
+        backgroundColor: action.selected ? AppColors.accent : null,
+        iconColor: action.selected ? Colors.white : null,
+        size: _circleSize,
+        iconSize: _iconSize,
+        labelFontSize: _labelFontSize,
+        showLabel: !compact,
+      );
+    }
+
     final children = [
       for (final action in actions)
         scrollable
-            ? SizedBox(
-                width: 72,
-                child: QuickActionCircle(
-                  label: action.label,
-                  icon: action.icon,
-                  onTap: action.onTap,
-                  backgroundColor:
-                      action.selected ? AppColors.accent : null,
-                  iconColor: action.selected ? Colors.white : null,
-                ),
-              )
-            : Expanded(
-                child: QuickActionCircle(
-                  label: action.label,
-                  icon: action.icon,
-                  onTap: action.onTap,
-                  backgroundColor:
-                      action.selected ? AppColors.accent : null,
-                  iconColor: action.selected ? Colors.white : null,
-                ),
-              ),
+            ? SizedBox(width: _itemWidth, child: buildAction(action))
+            : Expanded(child: buildAction(action)),
     ];
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppDimensions.spacingMd),
+      padding: EdgeInsets.symmetric(
+        vertical: compact ? 8 : AppDimensions.spacingMd,
+      ),
       child: scrollable
           ? SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: EdgeInsets.symmetric(horizontal: compact ? 4 : 8),
               child: Row(children: children),
             )
           : Row(
@@ -99,9 +103,10 @@ class EditorHubModeBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return EditorQuickActionRow(
       scrollable: true,
+      compact: true,
       actions: [
         EditorQuickAction(
-          label: 'AI 拆解',
+          label: 'AI 探索',
           icon: Icons.auto_awesome_outlined,
           onTap: onAiDecompose,
         ),
@@ -141,8 +146,6 @@ class EditorHubModeBar extends StatelessWidget {
 
 void showEditorMoreActionsSheet(
   BuildContext context, {
-  required VoidCallback onAddAct,
-  required VoidCallback onAddScene,
   required VoidCallback onBatchEdit,
   VoidCallback? onOpenShotList,
 }) {
@@ -166,22 +169,6 @@ void showEditorMoreActionsSheet(
                 onOpenShotList();
               },
             ),
-          ListTile(
-            leading: const Icon(Icons.add_box_outlined),
-            title: const Text('新建幕'),
-            onTap: () {
-              Navigator.pop(context);
-              onAddAct();
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.add_location_alt_outlined),
-            title: const Text('新建场'),
-            onTap: () {
-              Navigator.pop(context);
-              onAddScene();
-            },
-          ),
           ListTile(
             leading: const Icon(Icons.checklist_outlined),
             title: const Text('批量编辑'),

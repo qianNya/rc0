@@ -16,6 +16,7 @@ import '../../../auth/data/auth_repository.dart';
 import '../../../social/data/social_repository.dart';
 import '../../../user/data/user_profile_repository.dart';
 import '../../../screenplay/data/screenplay_bundle_service.dart';
+import '../../../screenplay/data/screenplay_image_localization_service.dart';
 import '../../../screenplay/data/screenplay_image_upload_service.dart';
 import '../../../screenplay/data/screenplay_local_repository.dart';
 import '../../../screenplay/data/screenplay_publish_service.dart';
@@ -35,6 +36,7 @@ import '../../../../shared/widgets/image_preview.dart';
 import '../../../../shared/widgets/pose_cover_image.dart';
 import '../../../../shared/widgets/primary_button.dart';
 import '../../../../shared/widgets/profile_widgets.dart';
+import '../../../../shared/widgets/rc0_app_bar.dart';
 
 class ScreenplayDetailPage extends StatefulWidget {
   const ScreenplayDetailPage({super.key, required this.scriptId});
@@ -57,11 +59,12 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
   void initState() {
     super.initState();
     _localRepository.addListener(_onDataChanged);
-    _loadScreenplay();
+    _loadScreenplay().then((_) => _startImageLocalization());
   }
 
   @override
   void dispose() {
+    ScreenplayImageLocalizationService.instance.stopTracking();
     _localRepository.removeListener(_onDataChanged);
     super.dispose();
   }
@@ -129,6 +132,24 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
     });
   }
 
+  Future<void> _startImageLocalization() async {
+    if (!mounted) return;
+
+    final local = _resolveLocalScreenplay();
+    if (local != null) {
+      final localId = _localRepository.resolveLocalId(local) ?? local.id;
+      await ScreenplayImageLocalizationService.instance
+          .trackLocalScreenplay(localId);
+      return;
+    }
+
+    final remoteId = int.tryParse(widget.scriptId);
+    if (remoteId != null) {
+      await ScreenplayImageLocalizationService.instance
+          .trackRemoteScreenplay(remoteId);
+    }
+  }
+
   Screenplay? get _screenplay => _resolveLocalScreenplay() ?? _remoteScreenplay;
 
   bool _forking = false;
@@ -144,6 +165,7 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
     final local = _resolveLocalScreenplay();
     if (local != null) {
       setState(() {});
+      await _startImageLocalization();
       return;
     }
 
@@ -167,6 +189,7 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
     });
     if (result.screenplay != null) {
       await _enrichCreatorProfile(result.screenplay!);
+      await _startImageLocalization();
     }
   }
 
@@ -657,7 +680,7 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
       }
       return Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        appBar: AppBar(
+        appBar: Rc0AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () => popOrGoDiscovery(context),
@@ -694,7 +717,7 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
       }
       return Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        appBar: AppBar(
+        appBar: Rc0AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () => popOrGoDiscovery(context),

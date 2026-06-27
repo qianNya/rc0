@@ -19,6 +19,18 @@ abstract final class Breakpoints {
   static bool isDesktop(BuildContext context) =>
       widthOf(context) >= expanded;
 
+  /// Tablet / wide layout: permanent sidebar instead of bottom tab bar.
+  static bool useSidebarShell(BuildContext context) =>
+      widthOf(context) >= medium;
+
+  /// Floating bottom tab bar (phones and narrow tablet windows).
+  static bool showsShellBottomBar(BuildContext context) =>
+      !useSidebarShell(context);
+
+  /// Wide enough to center-constrain the floating bottom bar.
+  static bool useConstrainedBottomBar(BuildContext context) =>
+      widthOf(context) >= compact;
+
   static int gridColumns(BuildContext context, {int mobile = 2, int desktop = 3}) =>
       isDesktop(context) ? desktop : mobile;
 }

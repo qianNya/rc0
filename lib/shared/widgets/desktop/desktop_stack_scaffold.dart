@@ -7,6 +7,9 @@ import '../../../app/theme/app_colors.dart';
 import '../../../core/platform/platform_features.dart';
 import '../../../core/responsive/breakpoints.dart';
 import '../../../features/shell/presentation/widgets/desktop_title_bar.dart';
+import '../rc0_app_bar.dart';
+import '../shell_insets.dart';
+import '../status_bar_spacer.dart';
 import 'desktop_card.dart';
 import 'desktop_chrome.dart';
 
@@ -23,6 +26,7 @@ class DesktopStackScaffold extends StatelessWidget {
     this.titleBarHeight = kDesktopTitleBarHeight,
     this.bodyPadding,
     this.floatingActionButton,
+    this.floatingActionButtonLocation,
     this.bottomNavigationBar,
   });
 
@@ -35,6 +39,7 @@ class DesktopStackScaffold extends StatelessWidget {
   final double titleBarHeight;
   final EdgeInsetsGeometry? bodyPadding;
   final Widget? floatingActionButton;
+  final FloatingActionButtonLocation? floatingActionButtonLocation;
   final Widget? bottomNavigationBar;
 
   bool get _isMacOS => !kIsWeb && Platform.isMacOS;
@@ -45,7 +50,8 @@ class DesktopStackScaffold extends StatelessWidget {
 
     if (!isDesktop || !shouldUseDesktopWindowChrome) {
       return Scaffold(
-        appBar: AppBar(
+        extendBodyBehindAppBar: true,
+        appBar: Rc0AppBar(
           title: title,
           leading: leading ??
               (onBack != null
@@ -58,8 +64,16 @@ class DesktopStackScaffold extends StatelessWidget {
           actions: actions,
           centerTitle: centerTitle,
         ),
-        body: body,
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const AppBarContentInset(),
+            Expanded(child: body),
+            const ShellBottomSpacer(),
+          ],
+        ),
         floatingActionButton: floatingActionButton,
+        floatingActionButtonLocation: floatingActionButtonLocation,
         bottomNavigationBar: bottomNavigationBar,
       );
     }
@@ -77,6 +91,7 @@ class DesktopStackScaffold extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       floatingActionButton: floatingActionButton,
+      floatingActionButtonLocation: floatingActionButtonLocation,
       bottomNavigationBar: bottomNavigationBar,
       body: Padding(
         padding: const EdgeInsets.all(DesktopChrome.gap),

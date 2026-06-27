@@ -13,9 +13,9 @@ class ScriptStudioQuickStart extends StatelessWidget {
   void _onTap(BuildContext context, String label) {
     switch (label) {
       case '角色库':
-        context.push(AppRoutes.comingSoon('角色库'));
+        context.push(AppRoutes.character);
       case '场景库':
-        context.push(AppRoutes.comingSoon('场景库'));
+        context.push(AppRoutes.scenes);
       case '摄影预设':
         context.push(AppRoutes.shootPresetPicker(mode: 'manage'));
       case '我的素材':

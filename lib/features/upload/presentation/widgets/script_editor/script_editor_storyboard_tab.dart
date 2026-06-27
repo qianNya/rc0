@@ -4,6 +4,9 @@ import '../../../../../core/domain/screenplay/script_frame_display.dart';
 import '../../../../../core/responsive/breakpoints.dart';
 import '../../../../screenplay/data/cine_params_draft.dart';
 import '../../../../screenplay/data/screenplay_draft.dart';
+import '../../../../../app/theme/app_dimensions.dart';
+import '../../../../../shared/widgets/shell_insets.dart';
+import '../editor/editor_compact_dropdown.dart';
 import '../editor/scene_frame_list_view.dart';
 import 'script_editor_actions.dart';
 import 'script_editor_batch_edit_sheet.dart';
@@ -15,10 +18,12 @@ class ScriptEditorStoryboardTab extends StatefulWidget {
     super.key,
     required this.draft,
     required this.actions,
+    this.embeddedInHub = false,
   });
 
   final ScreenplayDraft draft;
   final ScriptEditorActions actions;
+  final bool embeddedInHub;
 
   @override
   State<ScriptEditorStoryboardTab> createState() =>
@@ -46,10 +51,12 @@ class _ScriptEditorStoryboardTabState extends State<ScriptEditorStoryboardTab> {
   }
 
   String get _playbackLabel {
-    if (_filterActIndex != null && _filterSceneIndex != null) {
+    final filter = _effectiveFilter;
+    if (filter.actIndex != null && filter.sceneIndex != null) {
       final opt = _sceneOptions.firstWhere(
         (o) =>
-            o.actIndex == _filterActIndex && o.sceneIndex == _filterSceneIndex,
+            o.actIndex == filter.actIndex &&
+            o.sceneIndex == filter.sceneIndex,
         orElse: () => (actIndex: 0, sceneIndex: 0, title: '场次'),
       );
       return '${opt.title}（${_refs.length}画）';
@@ -57,11 +64,14 @@ class _ScriptEditorStoryboardTabState extends State<ScriptEditorStoryboardTab> {
     return '全部场次（${_refs.length}画）';
   }
 
-  List<DraftFrameRef> get _refs => draftAllFrameRefs(
-        widget.draft,
-        filterActIndex: _filterActIndex,
-        filterSceneIndex: _filterSceneIndex,
-      );
+  List<DraftFrameRef> get _refs {
+    final filter = _effectiveFilter;
+    return draftAllFrameRefs(
+      widget.draft,
+      filterActIndex: filter.actIndex,
+      filterSceneIndex: filter.sceneIndex,
+    );
+  }
 
   void _openBatchEdit() {
     ScriptEditorBatchEditSheet.show(
@@ -80,10 +90,11 @@ class _ScriptEditorStoryboardTabState extends State<ScriptEditorStoryboardTab> {
   }
 
   FramePickTarget? _resolveAddTarget() {
-    if (_filterActIndex != null && _filterSceneIndex != null) {
+    final filter = _effectiveFilter;
+    if (filter.actIndex != null && filter.sceneIndex != null) {
       return FramePickTarget(
-        actIndex: _filterActIndex!,
-        sceneIndex: _filterSceneIndex!,
+        actIndex: filter.actIndex!,
+        sceneIndex: filter.sceneIndex!,
       );
     }
     for (var actIndex = 0; actIndex < widget.draft.acts.length; actIndex++) {
@@ -94,74 +105,123 @@ class _ScriptEditorStoryboardTabState extends State<ScriptEditorStoryboardTab> {
     return null;
   }
 
+  ({int? actIndex, int? sceneIndex}) get _effectiveFilter {
+    if (_filterActIndex == null || _filterSceneIndex == null) {
+      return (actIndex: null, sceneIndex: null);
+    }
+    final valid = _sceneOptions.any(
+      (o) =>
+          o.actIndex == _filterActIndex && o.sceneIndex == _filterSceneIndex,
+    );
+    if (!valid) return (actIndex: null, sceneIndex: null);
+    return (actIndex: _filterActIndex, sceneIndex: _filterSceneIndex);
+  }
+
+  String _filterDropdownValue(
+    List<({int actIndex, int sceneIndex, String title})> sceneOptions,
+  ) {
+    final filter = _effectiveFilter;
+    if (filter.actIndex == null || filter.sceneIndex == null) {
+      return 'all';
+    }
+    return '${filter.actIndex}-${filter.sceneIndex}';
+  }
+
   @override
   Widget build(BuildContext context) {
-    final refs = _refs;
+    final sceneOptions = _sceneOptions;
+    final filter = _effectiveFilter;
+    final refs = draftAllFrameRefs(
+      widget.draft,
+      filterActIndex: filter.actIndex,
+      filterSceneIndex: filter.sceneIndex,
+    );
     final frames = refs.map((r) => r.preview).toList();
     final paths = frames.map((f) => f.effectiveDisplayPath).toList();
     final captions = frames.map((f) => f.caption).toList();
     final shotLabels = refs.map((r) => r.shotLabel).toList();
-    final sceneOptions = _sceneOptions;
     final totalSec = draftTotalDurationSec(
       widget.draft,
-      filterActIndex: _filterActIndex,
-      filterSceneIndex: _filterSceneIndex,
+      filterActIndex: filter.actIndex,
+      filterSceneIndex: filter.sceneIndex,
     );
     final isMobile = Breakpoints.isMobile(context);
-    final filterTitle = _filterActIndex == null
+    final showPanelActions = widget.embeddedInHub || isMobile;
+    final filterTitle = filter.actIndex == null
         ? '全部场次'
         : sceneOptions
             .where(
               (o) =>
-                  o.actIndex == _filterActIndex &&
-                  o.sceneIndex == _filterSceneIndex,
+                  o.actIndex == filter.actIndex &&
+                  o.sceneIndex == filter.sceneIndex,
             )
             .map((o) => o.title)
             .firstOrNull ?? '场次';
+    final dropdownValue = _filterDropdownValue(sceneOptions);
 
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-          child: Row(
-            children: [
-              const Text('场次筛选', style: TextStyle(fontWeight: FontWeight.w600)),
-              const SizedBox(width: 12),
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  initialValue: _filterActIndex == null
-                      ? 'all'
-                      : '$_filterActIndex-$_filterSceneIndex',
-                  decoration: const InputDecoration(isDense: true),
-                  items: [
-                    const DropdownMenuItem(
-                      value: 'all',
-                      child: Text('全部场次'),
+          padding: const EdgeInsets.fromLTRB(
+            AppDimensions.spacingMd,
+            6,
+            AppDimensions.spacingMd,
+            0,
+          ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              const filterLabelStyle = TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              );
+              final dropdown = EditorCompactDropdown<String>(
+                key: ValueKey(dropdownValue),
+                value: dropdownValue,
+                items: [
+                  const DropdownMenuEntry(
+                    value: 'all',
+                    label: '全部场次',
+                  ),
+                  for (final opt in sceneOptions)
+                    DropdownMenuEntry(
+                      value: '${opt.actIndex}-${opt.sceneIndex}',
+                      label: opt.title,
                     ),
-                    for (final opt in sceneOptions)
-                      DropdownMenuItem(
-                        value: '${opt.actIndex}-${opt.sceneIndex}',
-                        child: Text(
-                          opt.title,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    if (value == null || value == 'all') {
+                      _filterActIndex = null;
+                      _filterSceneIndex = null;
+                    } else {
+                      final parts = value.split('-');
+                      _filterActIndex = int.parse(parts[0]);
+                      _filterSceneIndex = int.parse(parts[1]);
+                    }
+                  });
+                },
+              );
+
+              if (constraints.maxWidth < 480 ||
+                  Breakpoints.isCompact(context)) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text('场次筛选', style: filterLabelStyle),
+                    const SizedBox(height: 6),
+                    dropdown,
                   ],
-                  onChanged: (value) {
-                    setState(() {
-                      if (value == null || value == 'all') {
-                        _filterActIndex = null;
-                        _filterSceneIndex = null;
-                      } else {
-                        final parts = value.split('-');
-                        _filterActIndex = int.parse(parts[0]);
-                        _filterSceneIndex = int.parse(parts[1]);
-                      }
-                    });
-                  },
-                ),
-              ),
-            ],
+                );
+              }
+
+              return Row(
+                children: [
+                  const Text('场次筛选', style: filterLabelStyle),
+                  const SizedBox(width: AppDimensions.spacingSm),
+                  Expanded(child: dropdown),
+                ],
+              );
+            },
           ),
         ),
         Expanded(
@@ -171,6 +231,7 @@ class _ScriptEditorStoryboardTabState extends State<ScriptEditorStoryboardTab> {
             galleryPaths: paths,
             galleryCaptions: captions,
             shotLabels: shotLabels,
+            frameSources: refs.map((r) => r.frame).toList(),
             onFrameTap: (index) {
               final ref = refs[index];
               openFrameEditorDetail(
@@ -181,17 +242,20 @@ class _ScriptEditorStoryboardTabState extends State<ScriptEditorStoryboardTab> {
                 frameIndex: ref.frameIndex,
               );
             },
-            onBatchEdit: isMobile ? _openBatchEdit : null,
-            onAddFrame: isMobile ? _addFrame : null,
-            showBottomBar: isMobile,
+            onBatchEdit: showPanelActions ? _openBatchEdit : null,
+            onAddFrame: showPanelActions ? _addFrame : null,
+            showBottomBar: showPanelActions && !widget.embeddedInHub,
+            shellBottomPadding:
+                widget.embeddedInHub ? ShellInsets.of(context) : 0,
           ),
         ),
-        StoryboardPlaybackBar(
-          sceneLabel: _playbackLabel,
-          frameCount: refs.length,
-          totalDurationSec: totalSec,
-          onPlay: () => showPlaybackComingSoon(context),
-        ),
+        if (!widget.embeddedInHub)
+          StoryboardPlaybackBar(
+            sceneLabel: _playbackLabel,
+            frameCount: refs.length,
+            totalDurationSec: totalSec,
+            onPlay: () => showPlaybackComingSoon(context),
+          ),
       ],
     );
   }

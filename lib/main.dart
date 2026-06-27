@@ -1,5 +1,8 @@
 import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'core/network/api_auth.dart';
@@ -14,10 +17,15 @@ import 'features/gallery/data/image_gallery_repository.dart';
 import 'features/gallery/data/image_tags_repository.dart';
 import 'features/screenplay/data/screenplay_tags_repository.dart';
 import 'features/screenplay/data/shoot_preset_repository.dart';
+import 'features/screenplay/data/screenplay_image_localization_service.dart';
 import 'features/screenplay/data/screenplay_local_repository.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  if (!kIsWeb && !isDesktopOperatingSystem) {
+    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  }
 
   if (shouldUseDesktopWindowChrome) {
     await windowManager.ensureInitialized();
@@ -36,6 +44,7 @@ Future<void> main() async {
   }
 
   await ScreenplayLocalRepository.instance.initialize();
+  ScreenplayImageLocalizationService.instance.initialize();
   await ThemeModeNotifier.instance.initialize();
   await AuthRepository.instance.initialize();
   onApiUnauthorized = AuthRepository.instance.handleUnauthorized;

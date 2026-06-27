@@ -10,6 +10,7 @@ import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/primary_button.dart';
 import '../../data/ip_repository.dart';
+import '../../../../shared/widgets/rc0_app_bar.dart';
 
 class IpEditPage extends StatefulWidget {
   const IpEditPage({super.key, this.ipId});

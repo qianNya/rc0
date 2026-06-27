@@ -255,6 +255,8 @@ class ProfileGradientHeader extends StatelessWidget {
           Text(
             bio,
             textAlign: TextAlign.center,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(color: Colors.white70, fontSize: 13),
           ),
           if (footer != null) ...[
@@ -292,7 +294,7 @@ class StatBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
@@ -355,6 +357,10 @@ class QuickActionCircle extends StatelessWidget {
     this.onTap,
     this.backgroundColor,
     this.iconColor,
+    this.size = 56,
+    this.iconSize = 26,
+    this.labelFontSize = 11,
+    this.showLabel = true,
   });
 
   final String label;
@@ -362,6 +368,10 @@ class QuickActionCircle extends StatelessWidget {
   final VoidCallback? onTap;
   final Color? backgroundColor;
   final Color? iconColor;
+  final double size;
+  final double iconSize;
+  final double labelFontSize;
+  final bool showLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -373,22 +383,29 @@ class QuickActionCircle extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 56,
-            height: 56,
+            width: size,
+            height: size,
             decoration: BoxDecoration(
               color: bg,
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: fg, size: 26),
+            child: Icon(icon, color: fg, size: iconSize),
           ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: AppTextStyles.bodySecondary.copyWith(fontSize: 11),
-            textAlign: TextAlign.center,
-          ),
+          if (showLabel) ...[
+            SizedBox(height: size >= 48 ? 8 : 4),
+            Text(
+              label,
+              style: AppTextStyles.bodySecondary.copyWith(
+                fontSize: labelFontSize,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ],
       ),
     );
@@ -428,11 +445,15 @@ class FeaturedBanner extends StatelessWidget {
               children: [
                 Text(
                   title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: AppTextStyles.title.copyWith(color: Colors.white),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(color: Colors.white70, fontSize: 13),
                 ),
                 const SizedBox(height: 12),

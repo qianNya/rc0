@@ -39,10 +39,21 @@ class StructureInsertDropTarget<T extends Object> extends StatelessWidget {
     super.key,
     required this.onAccept,
     this.canAccept,
+    this.axis = Axis.vertical,
+    this.inactiveExtent = 6,
+    this.activeExtent = 20,
+    this.activeExtentForData,
+    this.crossExtent,
   });
 
   final ValueChanged<T> onAccept;
   final bool Function(T data)? canAccept;
+  final Axis axis;
+  final double inactiveExtent;
+  final double activeExtent;
+  final double Function(T data)? activeExtentForData;
+  /// Fixed size on the axis perpendicular to [axis] (e.g. track height).
+  final double? crossExtent;
 
   @override
   Widget build(BuildContext context) {
@@ -52,17 +63,28 @@ class StructureInsertDropTarget<T extends Object> extends StatelessWidget {
       onAcceptWithDetails: (details) => onAccept(details.data),
       builder: (context, candidate, rejected) {
         final active = candidate.isNotEmpty;
+        final dragged = candidate.isNotEmpty ? candidate.first : null;
+        final mainExtent = active
+            ? (dragged != null && activeExtentForData != null
+                ? activeExtentForData!(dragged)
+                : activeExtent)
+            : inactiveExtent;
+
         return AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
-          height: active ? 20 : 6,
-          margin: const EdgeInsets.symmetric(vertical: 2),
+          duration: const Duration(milliseconds: 150),
+          curve: Curves.easeOutCubic,
+          width: axis == Axis.horizontal ? mainExtent : crossExtent,
+          height: axis == Axis.vertical ? mainExtent : crossExtent,
+          margin: axis == Axis.horizontal
+              ? const EdgeInsets.symmetric(horizontal: 1)
+              : const EdgeInsets.symmetric(vertical: 2),
           decoration: BoxDecoration(
             color: active
-                ? AppColors.accent.withValues(alpha: 0.2)
+                ? AppColors.accent.withValues(alpha: 0.18)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
             border: active
-                ? Border.all(color: AppColors.accent.withValues(alpha: 0.5))
+                ? Border.all(color: AppColors.accent.withValues(alpha: 0.45))
                 : null,
           ),
         );

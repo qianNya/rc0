@@ -18,6 +18,8 @@ import '../../../../shared/widgets/inline_error_banner.dart';
 import '../../../../shared/widgets/profile_widgets.dart';
 import '../../../../shared/widgets/rc0_widgets.dart';
 import '../../../../shared/widgets/screenplay_card.dart';
+import '../../../../shared/widgets/shell_insets.dart';
+import '../../../../shared/widgets/status_bar_spacer.dart';
 import '../utils/community_screenplay_filters.dart';
 import '../widgets/community_category_chips.dart';
 import '../widgets/community_featured_banner.dart';
@@ -147,6 +149,8 @@ class _CommunityMobileView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
+        top: false,
+        bottom: false,
         child: RefreshIndicator(
           onRefresh: onRefresh,
           child: NotificationListener<ScrollNotification>(
@@ -162,6 +166,7 @@ class _CommunityMobileView extends StatelessWidget {
             child: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
+                const SliverToBoxAdapter(child: StatusBarSpacer()),
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
@@ -191,7 +196,7 @@ class _CommunityMobileView extends StatelessWidget {
                 const SliverToBoxAdapter(child: CommunityFeaturedBanner()),
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.only(top: 16, bottom: 8),
+                    padding: const EdgeInsets.only(top: 8, bottom: 8),
                     child: FeedTabBar(
                       tabs: AppCatalog.communitySortTabs,
                       selectedIndex: sortTabIndex,
@@ -214,7 +219,7 @@ class _CommunityMobileView extends StatelessWidget {
                       ),
                     ),
                   ),
-                const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                const SliverToBoxAdapter(child: ShellBottomSpacer()),
               ],
             ),
           ),
@@ -401,8 +406,10 @@ class _CommunityDesktopView extends StatelessWidget {
                 const SizedBox(height: 20),
                 const FeaturedBanner(),
                 const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                Wrap(
+                  alignment: WrapAlignment.spaceAround,
+                  spacing: 8,
+                  runSpacing: 12,
                   children: [
                     for (var i = 0; i < AppCatalog.marketQuickActions.length; i++)
                       QuickActionCircle(

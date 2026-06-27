@@ -39,7 +39,7 @@ class ProfileGridTile extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
             boxShadow: AppShadows.card,
           ),
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           child: Row(
             children: [
               Container(

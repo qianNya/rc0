@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../app/theme/system_ui_style.dart';
 import '../../../../core/responsive/breakpoints.dart';
+import '../../../../shared/widgets/glass_app_bar_background.dart';
 import '../../../screenplay/data/screenplay_bundle_service.dart';
 import '../../../screenplay/data/screenplay_local_repository.dart';
 import '../screenplay_editor_host.dart';
@@ -132,11 +134,18 @@ class ScriptStudioWorkspaceAppBar extends StatelessWidget
     final projects = ScreenplayLocalRepository.instance.localScreenplays;
     final isMobile = Breakpoints.isMobile(context);
     final title = controller.titleController.text.trim().isEmpty
-        ? 'Script Studio'
+        ? '脚本工坊'
         : controller.titleController.text.trim();
     final scriptId = controller.editScriptId ?? '';
 
     return AppBar(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      surfaceTintColor: Colors.transparent,
+      flexibleSpace: const GlassAppBarBackground(),
+      systemOverlayStyle:
+          AppSystemUi.styleFor(Theme.of(context).brightness),
       leading: TextButton(
         onPressed: controller.onCancel,
         child: Text(controller.isCreateMode ? '返回' : '取消'),
@@ -151,7 +160,7 @@ class ScriptStudioWorkspaceAppBar extends StatelessWidget
             children: [
               if (!isMobile) ...[
                 Text(
-                  'Script Studio',
+                  '脚本工坊',
                   style: AppTextStyles.bodySecondary.copyWith(
                     fontSize: 11,
                     color: AppColors.accent,

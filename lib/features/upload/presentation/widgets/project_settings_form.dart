@@ -8,6 +8,8 @@ import '../../../screenplay/data/screenplay_draft.dart';
 import '../../../screenplay/data/screenplay_draft_tags.dart';
 import '../../../screenplay/domain/shoot_params.dart';
 import '../utils/shoot_preset_navigation.dart';
+import 'editor/screenplay_characters_section.dart';
+import 'editor/screenplay_scenes_section.dart';
 import 'collapsible_tag_picker.dart';
 import 'upload_shoot_param_cards.dart';
 
@@ -40,6 +42,7 @@ class ProjectSettingsForm extends StatelessWidget {
     this.onRetryTags,
     this.onPickCover,
     this.onResetCover,
+    this.onCharactersChanged,
   });
 
   final ScreenplayDraft draft;
@@ -54,6 +57,7 @@ class ProjectSettingsForm extends StatelessWidget {
   final VoidCallback? onRetryTags;
   final VoidCallback? onPickCover;
   final VoidCallback? onResetCover;
+  final VoidCallback? onCharactersChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -114,6 +118,16 @@ class ProjectSettingsForm extends StatelessWidget {
           style: AppTextStyles.body,
           maxLines: 4,
           decoration: _settingsFieldDecoration('项目简介'),
+        ),
+        const SizedBox(height: 16),
+        ScreenplayCharactersSection(
+          draft: draft,
+          onChanged: onCharactersChanged ?? () {},
+        ),
+        const SizedBox(height: 16),
+        ScreenplayScenesSection(
+          draft: draft,
+          onChanged: onCharactersChanged ?? () {},
         ),
         const SizedBox(height: 16),
         CollapsibleTagPicker(

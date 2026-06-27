@@ -11,6 +11,8 @@ import '../../../../core/responsive/breakpoints.dart';
 import '../../../../shared/widgets/desktop_shell_app_bar.dart';
 import '../../../../shared/widgets/profile_widgets.dart';
 import '../../../../shared/widgets/rc0_widgets.dart';
+import '../../../../shared/widgets/shell_insets.dart';
+import '../../../../shared/widgets/status_bar_spacer.dart';
 import '../../../../shared/widgets/theme_mode_selector.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../favorites/data/image_favorite_repository.dart';
@@ -21,6 +23,7 @@ import '../../data/screenplay_favorite_repository.dart';
 import '../widgets/profile_grid_tile.dart';
 import '../widgets/profile_header_card.dart';
 import '../widgets/profile_settings_tile.dart';
+import '../../../../shared/widgets/rc0_app_bar.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -214,7 +217,6 @@ class _ProfilePageState extends State<ProfilePage> {
     final body = RefreshIndicator(
         onRefresh: _refresh,
         child: ListView(
-          padding: const EdgeInsets.only(bottom: 24),
           children: [
             ProfileHeaderCard(
               name: displayName,
@@ -251,7 +253,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
             _section(
               title: '我的资产',
               actionLabel: '全部',
@@ -300,7 +302,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   icon: Icons.add_circle_outline,
                   iconColor: const Color(0xFF7C4DFF),
                   iconBackground: const Color(0xFFEDE7F6),
-                  onTap: () => context.push(AppRoutes.create),
+                  onTap: () => context.go(AppRoutes.studioCreate),
                 ),
                 ProfileGridTile(
                   title: '使用模板',
@@ -316,7 +318,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   icon: Icons.upload_file_outlined,
                   iconColor: const Color(0xFF2196F3),
                   iconBackground: const Color(0xFFE3F2FD),
-                  onTap: () => context.push(AppRoutes.create),
+                  onTap: () => context.go(AppRoutes.studioCreate),
                 ),
                 ProfileGridTile(
                   title: 'AI 工具',
@@ -370,11 +372,11 @@ class _ProfilePageState extends State<ProfilePage> {
               ],
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
               child: SectionHeader(
                 title: '设置',
                 titleStyle: AppTextStyles.title.copyWith(fontSize: 16),
-                padding: const EdgeInsets.fromLTRB(4, 8, 4, 12),
+                padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
               ),
             ),
             Padding(
@@ -390,21 +392,21 @@ class _ProfilePageState extends State<ProfilePage> {
                       onTap: () => _showThemeSheet(context),
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   ProfileSettingsTile(
                     title: '缓存管理',
                     subtitle: '清理缓存释放空间',
                     icon: Icons.delete_outline,
                     onTap: _clearCache,
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   ProfileSettingsTile(
                     title: '版本更新',
                     subtitle: _appVersion.isEmpty ? '检查更新' : 'v$_appVersion',
                     icon: Icons.system_update_alt_outlined,
                     onTap: _manualUpdate,
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   ProfileSettingsTile(
                     title: '关于 rc0',
                     subtitle: '了解更多关于我们',
@@ -414,6 +416,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ],
               ),
             ),
+            const ShellBottomSpacer(),
           ],
         ),
     );
@@ -432,7 +435,7 @@ class _ProfilePageState extends State<ProfilePage> {
     VoidCallback? onAction,
   }) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -443,15 +446,15 @@ class _ProfilePageState extends State<ProfilePage> {
             showChevron: true,
             titleStyle: AppTextStyles.title.copyWith(fontSize: 16),
             actionStyle: AppTextStyles.bodySecondary.copyWith(fontSize: 13),
-            padding: const EdgeInsets.fromLTRB(4, 8, 4, 12),
+            padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
           ),
           GridView.count(
             crossAxisCount: 2,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
-            childAspectRatio: 2.4,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            childAspectRatio: 2.45,
             children: children,
           ),
         ],

@@ -5,12 +5,19 @@ import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
-import '../../../../app/theme/app_text_styles.dart';
+import '../../../../core/data/app_catalog.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
+import '../../../../shared/widgets/rc0_widgets.dart';
 import '../../../auth/data/auth_repository.dart';
+import '../../../studio/presentation/widgets/studio_editor_shell_glass_button.dart';
+import '../../data/character_local_store.dart';
 import '../../data/character_repository.dart';
 import '../../domain/character_entry.dart';
+import '../../domain/character_utils.dart';
+import '../widgets/character_action_sheet.dart';
+import '../widgets/character_category_chips.dart';
+import '../widgets/character_masonry_grid.dart';
 
 class CharacterListPage extends StatefulWidget {
   const CharacterListPage({super.key, this.workId});
@@ -26,12 +33,16 @@ class _CharacterListPageState extends State<CharacterListPage> {
   final _auth = AuthRepository.instance;
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
+  int _categoryIndex = 0;
+  Set<int> _favorites = {};
+  final Map<int, String> _localCovers = {};
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
     _load();
+    _loadFavorites();
   }
 
   @override
@@ -48,6 +59,12 @@ class _CharacterListPageState extends State<CharacterListPage> {
     }
   }
 
+  Future<void> _loadFavorites() async {
+    final ids = await CharacterLocalStore.instance.favoriteIds();
+    if (!mounted) return;
+    setState(() => _favorites = ids);
+  }
+
   Future<void> _load() async {
     await _repo.loadFirstPage(
       workId: widget.workId,
@@ -55,6 +72,36 @@ class _CharacterListPageState extends State<CharacterListPage> {
           ? null
           : _searchController.text.trim(),
     );
+    await _loadLocalCovers();
+  }
+
+  Future<void> _loadLocalCovers() async {
+    final covers = <int, String>{};
+    for (final entry in _repo.items) {
+      final path = await CharacterLocalStore.instance.localCoverPath(entry.id);
+      if (path != null && path.isNotEmpty) {
+        covers[entry.id] = path;
+      }
+    }
+    if (!mounted) return;
+    setState(() => _localCovers
+      ..clear()
+      ..addAll(covers));
+  }
+
+  List<CharacterEntry> get _filteredItems {
+    final category = AppCatalog.characterCategoryChips[_categoryIndex];
+    return filterCharactersByCategory(_repo.items, category);
+  }
+
+  Future<void> _toggleFavorite(CharacterEntry entry) async {
+    final next = !_favorites.contains(entry.id);
+    await CharacterLocalStore.instance.setFavorite(entry.id, next);
+    await _loadFavorites();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(next ? '已收藏' : '已取消收藏')));
   }
 
   @override
@@ -62,45 +109,87 @@ class _CharacterListPageState extends State<CharacterListPage> {
     return AnimatedBuilder(
       animation: Listenable.merge([_repo, _auth]),
       builder: (context, _) {
+        final filtered = _filteredItems;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+
         return DesktopStackScaffold(
           title: Text(widget.workId != null ? 'IP 角色' : '角色库'),
           onBack: () => popOrGoDiscovery(context),
           actions: [
-              if (_auth.isLoggedIn)
-                IconButton(
-                  tooltip: '新建角色',
-                  icon: const Icon(Icons.add),
-                  onPressed: () async {
-                    await context.push(AppRoutes.characterCreate);
-                    if (mounted) _load();
-                  },
-                ),
+            IconButton(
+              tooltip: '我的角色',
+              icon: const Icon(Icons.folder_outlined),
+              onPressed: () => context.push(AppRoutes.myCharacters),
+            ),
+            if (_auth.isLoggedIn)
+              IconButton(
+                tooltip: '新建角色',
+                icon: const Icon(Icons.add),
+                onPressed: () async {
+                  await context.push(AppRoutes.characterCreate);
+                  if (mounted) _load();
+                },
+              ),
           ],
-          body: Column(
+          floatingActionButton: Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: StudioEditorShellGlassButton(
+              label: 'AI 角色',
+              icon: Icons.auto_awesome,
+              minWidth: 120,
+              onPressed: () => context.push(AppRoutes.characterAi),
+            ),
+          ),
+          body: ColoredBox(
+            color: isDark
+                ? AppColors.characterBackgroundDark
+                : Theme.of(context).scaffoldBackgroundColor,
+            child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.all(AppDimensions.spacingMd),
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: '搜索角色名或别名',
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        _searchController.clear();
-                        _load();
-                      },
+                padding: const EdgeInsets.fromLTRB(
+                  AppDimensions.spacingMd,
+                  AppDimensions.spacingSm,
+                  AppDimensions.spacingMd,
+                  AppDimensions.spacingSm,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        height: 48,
+                        child: AppSearchField(
+                          hint: '搜索角色名称、标签、关键词',
+                          controller: _searchController,
+                          onSubmitted: (_) => _load(),
+                        ),
+                      ),
                     ),
-                    isDense: true,
-                  ),
-                  onSubmitted: (_) => _load(),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      tooltip: '筛选',
+                      onPressed: () {
+                        ScaffoldMessenger.of(context)
+                          ..hideCurrentSnackBar()
+                          ..showSnackBar(
+                            const SnackBar(content: Text('筛选功能即将上线')),
+                          );
+                      },
+                      icon: const Icon(Icons.tune),
+                    ),
+                  ],
                 ),
               ),
+              CharacterCategoryChips(
+                chips: AppCatalog.characterCategoryChips,
+                selectedIndex: _categoryIndex,
+                onChanged: (index) => setState(() => _categoryIndex = index),
+              ),
+              const SizedBox(height: AppDimensions.spacingSm),
               Expanded(
                 child: _repo.loading && _repo.items.isEmpty
                     ? const Center(child: CircularProgressIndicator())
-                    : _repo.items.isEmpty
+                    : filtered.isEmpty
                         ? ListView(
                             physics: const AlwaysScrollableScrollPhysics(),
                             children: [
@@ -111,8 +200,10 @@ class _CharacterListPageState extends State<CharacterListPage> {
                               EmptyStateView(
                                 icon: Icons.person_outline,
                                 title: _repo.error ?? '暂无角色',
-                                subtitle: _repo.error != null ? null : '创建第一个角色',
-                                actionLabel: _auth.isLoggedIn ? '新建角色' : null,
+                                subtitle:
+                                    _repo.error != null ? null : '创建第一个角色',
+                                actionLabel:
+                                    _auth.isLoggedIn ? '新建角色' : null,
                                 onAction: _auth.isLoggedIn
                                     ? () async {
                                         await context
@@ -125,74 +216,52 @@ class _CharacterListPageState extends State<CharacterListPage> {
                           )
                         : RefreshIndicator(
                             onRefresh: _load,
-                            child: ListView.separated(
+                            child: ListView(
                               controller: _scrollController,
                               physics: const AlwaysScrollableScrollPhysics(),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AppDimensions.spacingMd,
+                              padding: const EdgeInsets.only(
+                                bottom: AppDimensions.spacingXl * 2,
                               ),
-                              itemCount: _repo.items.length +
-                                  (_repo.loadingMore ? 1 : 0),
-                              separatorBuilder: (_, __) =>
-                                  const SizedBox(height: 8),
-                              itemBuilder: (context, index) {
-                                if (index >= _repo.items.length) {
-                                  return const Padding(
+                              children: [
+                                CharacterMasonryGrid(
+                                  items: filtered,
+                                  localCoverFor: (e) => _localCovers[e.id],
+                                  screenplayCountFor: (e) =>
+                                      _repo.countScreenplaysForCharacter(e.id),
+                                  favoriteCountFor: (e) =>
+                                      _favorites.contains(e.id) ? 1 : null,
+                                  onTap: (entry) => context.push(
+                                    AppRoutes.characterDetailPath(entry.id),
+                                  ),
+                                  onLongPress: (entry) =>
+                                      showCharacterActionSheet(
+                                    context: context,
+                                    entry: entry,
+                                    repo: _repo,
+                                    isLoggedIn: _auth.isLoggedIn,
+                                    isFavorite:
+                                        _favorites.contains(entry.id),
+                                    onToggleFavorite: () =>
+                                        _toggleFavorite(entry),
+                                    onRefresh: _load,
+                                  ),
+                                ),
+                                if (_repo.loadingMore)
+                                  const Padding(
                                     padding: EdgeInsets.all(16),
                                     child: Center(
                                       child: CircularProgressIndicator(),
                                     ),
-                                  );
-                                }
-                                return _CharacterListTile(
-                                  entry: _repo.items[index],
-                                  onTap: () => context.push(
-                                    AppRoutes.character(_repo.items[index].id),
                                   ),
-                                );
-                              },
+                              ],
                             ),
                           ),
               ),
             ],
           ),
+          ),
         );
       },
-    );
-  }
-}
-
-class _CharacterListTile extends StatelessWidget {
-  const _CharacterListTile({required this.entry, required this.onTap});
-
-  final CharacterEntry entry;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      onTap: onTap,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-        side: const BorderSide(color: AppColors.border),
-      ),
-      leading: CircleAvatar(
-        backgroundColor: AppColors.surfaceSecondary,
-        child: Text(
-          entry.name.isNotEmpty ? entry.name.characters.first : '?',
-          style: AppTextStyles.label,
-        ),
-      ),
-      title: Text(entry.name, style: AppTextStyles.body),
-      subtitle: Text(
-        [
-          if (entry.displaySubtitle.isNotEmpty) entry.displaySubtitle,
-          if (entry.summary.isNotEmpty) entry.summary,
-        ].join(' · '),
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-      ),
-      trailing: Text(entry.genderLabel, style: AppTextStyles.bodySecondary),
     );
   }
 }

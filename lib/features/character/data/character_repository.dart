@@ -5,6 +5,8 @@ import '../../../api/character/data/character-api.dart';
 import '../../../core/network/api_callback.dart';
 import '../../auth/data/auth_repository.dart';
 import '../domain/character_entry.dart';
+import '../domain/character_utils.dart';
+import 'character_local_store.dart';
 
 class CharacterRepository extends ChangeNotifier {
   CharacterRepository._();
@@ -29,6 +31,14 @@ class CharacterRepository extends ChangeNotifier {
   int? get filterWorkId => _filterWorkId;
   String get searchQuery => _searchQuery;
   bool get hasMore => _items.length < _total.toInt();
+
+  List<CharacterEntry> filterByCategory(String category) {
+    return filterCharactersByCategory(_items, category);
+  }
+
+  int countScreenplaysForCharacter(int characterId) {
+    return screenplayCountForCharacter(characterId);
+  }
 
   CharacterEntry _fromDto(CharacterItem dto) {
     return CharacterEntry(
@@ -209,6 +219,7 @@ class CharacterRepository extends ChangeNotifier {
     if (resp == null) return (character: null, error: '创建失败');
 
     final entry = _fromDto(resp);
+    await CharacterLocalStore.instance.markOwned(entry.id);
     _items.insert(0, entry);
     _total = _total + 1;
     notifyListeners();

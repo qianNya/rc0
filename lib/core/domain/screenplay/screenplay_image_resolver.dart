@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import '../../services/network_image_cache_service.dart';
 import '../../utils/image_url_utils.dart';
 
 /// Resolves local vs remote image paths for screenplay tree frames and covers.
@@ -36,10 +37,19 @@ abstract final class ScreenplayImageResolver {
       if (File(localPath).existsSync()) return localPath;
     }
     final remote = _safeRemoteUrl(remoteUrl);
-    if (remote != null) return remote;
+    if (remote != null) {
+      final cached = NetworkImageCacheService.instance.cachedPathSync(remote);
+      if (cached != null) return cached;
+      return remote;
+    }
     if (legacyPath != null && legacyPath.isNotEmpty) {
       final legacyRemote = _safeRemoteUrl(legacyPath);
-      if (legacyRemote != null && isNetworkUrl(legacyRemote)) return legacyRemote;
+      if (legacyRemote != null && isNetworkUrl(legacyRemote)) {
+        final cached =
+            NetworkImageCacheService.instance.cachedPathSync(legacyRemote);
+        if (cached != null) return cached;
+        return legacyRemote;
+      }
       if (!isNetworkUrl(legacyPath) && File(legacyPath).existsSync()) {
         return legacyPath;
       }

@@ -6,6 +6,7 @@ import '../../../screenplay/domain/shoot_params.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../widgets/editor/editor_footer_actions.dart';
 import '../widgets/project_settings_form.dart';
+import '../../../../shared/widgets/rc0_app_bar.dart';
 
 class ProjectSettingsPage extends StatelessWidget {
   const ProjectSettingsPage({
@@ -46,38 +47,43 @@ class ProjectSettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DesktopStackScaffold(
-      title: const Text('项目设置'),
-      onBack: () => popOrGoStudio(context),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                ProjectSettingsForm(
-                  draft: draft,
-                  titleController: titleController,
-                  synopsisController: synopsisController,
-                  onShootParamsChanged: onShootParamsChanged,
-                  poolTags: poolTags,
-                  onToggleScreenplayTag: onToggleScreenplayTag,
-                  onAddScreenplayTag: onAddScreenplayTag,
-                  tagsLoading: tagsLoading,
-                  tagsError: tagsError,
-                  onRetryTags: onRetryTags,
-                  onPickCover: onPickCover,
-                  onResetCover: onResetCover,
+    return StatefulBuilder(
+      builder: (context, setLocalState) {
+        return DesktopStackScaffold(
+          title: const Text('项目设置'),
+          onBack: () => popOrGoStudio(context),
+          body: Column(
+            children: [
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    ProjectSettingsForm(
+                      draft: draft,
+                      titleController: titleController,
+                      synopsisController: synopsisController,
+                      onShootParamsChanged: onShootParamsChanged,
+                      poolTags: poolTags,
+                      onToggleScreenplayTag: onToggleScreenplayTag,
+                      onAddScreenplayTag: onAddScreenplayTag,
+                      tagsLoading: tagsLoading,
+                      tagsError: tagsError,
+                      onRetryTags: onRetryTags,
+                      onPickCover: onPickCover,
+                      onResetCover: onResetCover,
+                      onCharactersChanged: () => setLocalState(() {}),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              EditorFooterActions(
+                saveLabel: '保存设置',
+                onSave: () => _save(context),
+              ),
+            ],
           ),
-          EditorFooterActions(
-            saveLabel: '保存设置',
-            onSave: () => _save(context),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

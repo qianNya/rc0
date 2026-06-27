@@ -705,6 +705,66 @@ abstract final class ScreenplayApiMapper {
     return existingId > 0 ? existingId : 0;
   }
 
+  /// Whether GET `/tree` already contains act/scene/frame hierarchy.
+  static bool rawTreeHasHierarchy(Map<String, dynamic> rawTree) {
+    final screenplay = rawTree['screenplay'] as Map<String, dynamic>?;
+    if (screenplay != null) {
+      final actCount = (screenplay['act_count'] as num?)?.toInt() ?? 0;
+      if (actCount > 0) return true;
+    }
+    final acts = rawTree['acts'] as List<dynamic>? ?? [];
+    return acts.isNotEmpty;
+  }
+
+  /// Copies remote act/scene/frame ids onto a local tree by structural index.
+  static void stampServerNodeIds(
+    Map<String, dynamic> localTree,
+    Map<String, dynamic> serverTree,
+  ) {
+    final localActs = localTree['acts'] as List<dynamic>? ?? [];
+    final serverActs = serverTree['acts'] as List<dynamic>? ?? [];
+    for (var actIdx = 0;
+        actIdx < localActs.length && actIdx < serverActs.length;
+        actIdx++) {
+      final localActNode = localActs[actIdx] as Map<String, dynamic>;
+      final serverActNode = serverActs[actIdx] as Map<String, dynamic>;
+      final localAct = localActNode['act'] as Map<String, dynamic>;
+      final serverAct = serverActNode['act'] as Map<String, dynamic>;
+      final serverActId = (serverAct['id'] as num?)?.toInt() ?? 0;
+      if (serverActId > 0) {
+        localAct['id'] = serverActId;
+      }
+
+      final localScenes = localActNode['scenes'] as List<dynamic>? ?? [];
+      final serverScenes = serverActNode['scenes'] as List<dynamic>? ?? [];
+      for (var sceneIdx = 0;
+          sceneIdx < localScenes.length && sceneIdx < serverScenes.length;
+          sceneIdx++) {
+        final localSceneNode = localScenes[sceneIdx] as Map<String, dynamic>;
+        final serverSceneNode = serverScenes[sceneIdx] as Map<String, dynamic>;
+        final localScene = localSceneNode['scene'] as Map<String, dynamic>;
+        final serverScene = serverSceneNode['scene'] as Map<String, dynamic>;
+        final serverSceneId = (serverScene['id'] as num?)?.toInt() ?? 0;
+        if (serverSceneId > 0) {
+          localScene['id'] = serverSceneId;
+        }
+
+        final localFrames = localSceneNode['frames'] as List<dynamic>? ?? [];
+        final serverFrames = serverSceneNode['frames'] as List<dynamic>? ?? [];
+        for (var frameIdx = 0;
+            frameIdx < localFrames.length && frameIdx < serverFrames.length;
+            frameIdx++) {
+          final localFrame = localFrames[frameIdx] as Map<String, dynamic>;
+          final serverFrame = serverFrames[frameIdx] as Map<String, dynamic>;
+          final serverFrameId = (serverFrame['id'] as num?)?.toInt() ?? 0;
+          if (serverFrameId > 0) {
+            localFrame['id'] = serverFrameId;
+          }
+        }
+      }
+    }
+  }
+
   /// Merges save-tree response into a local document, preserving local paths.
   static ScreenplayTreeDocument applySaveTreeResponse({
     required api.GetScreenplayTreeResp response,
@@ -818,6 +878,18 @@ abstract final class ScreenplayApiMapper {
     final copy = deepCopyJson(tree);
     final screenplayMap = copy['screenplay'] as Map<String, dynamic>;
     screenplayMap['shoot_defaults'] = draft.defaultParams.toJson();
+    if (draft.linkedCharacters.isEmpty) {
+      screenplayMap.remove('linked_characters');
+    } else {
+      screenplayMap['linked_characters'] =
+          draft.linkedCharacters.map((c) => c.toJson()).toList();
+    }
+    if (draft.linkedScenes.isEmpty) {
+      screenplayMap.remove('linked_scenes');
+    } else {
+      screenplayMap['linked_scenes'] =
+          draft.linkedScenes.map((s) => s.toJson()).toList();
+    }
 
     final acts = copy['acts'] as List<dynamic>? ?? [];
     for (var actIndex = 0;
@@ -832,6 +904,15 @@ abstract final class ScreenplayApiMapper {
         final sceneNode = scenes[sceneIndex] as Map<String, dynamic>;
         final sceneMap = sceneNode['scene'] as Map<String, dynamic>;
         final sceneDraft = draft.acts[actIndex].scenes[sceneIndex];
+
+        if (sceneDraft.sceneLibraryId != null &&
+            sceneDraft.sceneLibraryId!.isNotEmpty) {
+          sceneMap['scene_library_id'] = sceneDraft.sceneLibraryId;
+          sceneMap['scene_library_title'] = sceneDraft.sceneLibraryTitle;
+        } else {
+          sceneMap.remove('scene_library_id');
+          sceneMap.remove('scene_library_title');
+        }
 
         if (sceneHasParamOverride(sceneDraft)) {
           sceneMap['shoot_override'] = sceneDraft.paramOverride!.toJson();

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/utils/state_listeners.dart';
 import '../../../screenplay/data/screenplay_local_repository.dart';
+import '../../../../shared/widgets/status_bar_spacer.dart';
+import '../../../../shared/widgets/shell_insets.dart';
 import '../widgets/script_studio_action_cards.dart';
 import '../widgets/script_studio_app_bar.dart';
 import '../widgets/script_studio_quick_start.dart';
@@ -45,9 +47,11 @@ class _ScriptStudioPageState extends State<ScriptStudioPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: const ScriptStudioAppBar(),
       body: ListView(
         children: [
+          const StatusBarSpacer(),
           const SizedBox(height: 8),
           const ScriptStudioActionCards(),
           ScriptStudioRecentSection(
@@ -55,6 +59,7 @@ class _ScriptStudioPageState extends State<ScriptStudioPage> {
             onDataChanged: _onChanged,
           ),
           const ScriptStudioQuickStart(),
+          const ShellBottomSpacer(),
         ],
       ),
     );

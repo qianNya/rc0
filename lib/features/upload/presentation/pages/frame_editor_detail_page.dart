@@ -11,6 +11,7 @@ import '../../../studio/domain/script_editor_selection.dart';
 import '../../../studio/presentation/widgets/frame_inspector_panel.dart';
 import '../widgets/editor/editor_footer_actions.dart';
 import '../widgets/script_editor/script_editor_actions.dart';
+import '../../../../shared/widgets/rc0_app_bar.dart';
 
 class FrameEditorDetailPage extends StatefulWidget {
   const FrameEditorDetailPage({
@@ -68,7 +69,8 @@ class _FrameEditorDetailPageState extends State<FrameEditorDetailPage> {
     final sceneFrames = widget.actions.draft.acts[widget.actIndex]
         .scenes[widget.sceneIndex].frames;
     final paths = sceneFrames.map((f) => f.image.displayPath).toList();
-    final shotLabel = '${widget.actIndex + 1}-${widget.frameIndex + 1}';
+    final shotLabel =
+        '${widget.actIndex + 1}-${widget.sceneIndex + 1}-${widget.frameIndex + 1}';
     final selection = ScriptEditorSelection().selectFrame(
       widget.actIndex,
       widget.sceneIndex,
@@ -108,6 +110,7 @@ class _FrameEditorDetailPageState extends State<FrameEditorDetailPage> {
               actions: widget.actions,
               selection: selection,
               onChanged: () => setState(() {}),
+              showHeader: false,
             ),
           ),
           EditorFooterActions(

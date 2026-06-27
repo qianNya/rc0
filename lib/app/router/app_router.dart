@@ -7,9 +7,18 @@ import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/community/presentation/pages/community_page.dart';
 import '../../features/explore/presentation/pages/explore_page.dart';
 import '../../features/gallery/presentation/pages/my_gallery_page.dart';
+import '../../features/character/presentation/pages/character_ai_page.dart';
 import '../../features/character/presentation/pages/character_create_page.dart';
 import '../../features/character/presentation/pages/character_detail_page.dart';
+import '../../features/character/presentation/pages/character_edit_page.dart';
 import '../../features/character/presentation/pages/character_list_page.dart';
+import '../../features/character/presentation/pages/my_characters_page.dart';
+import '../../features/scene/presentation/pages/my_scenes_page.dart';
+import '../../features/scene/presentation/pages/scene_ai_page.dart';
+import '../../features/scene/presentation/pages/scene_create_page.dart';
+import '../../features/scene/presentation/pages/scene_detail_page.dart';
+import '../../features/scene/presentation/pages/scene_edit_page.dart';
+import '../../features/scene/presentation/pages/scene_list_page.dart';
 import '../../features/ip/presentation/pages/ip_detail_page.dart';
 import '../../features/ip/presentation/pages/ip_edit_page.dart';
 import '../../features/favorites/presentation/pages/favorites_page.dart';
@@ -21,7 +30,8 @@ import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/profile/presentation/pages/profile_works_page.dart';
 import '../../features/screenplay/presentation/pages/screenplay_detail_page.dart';
 import '../../features/shell/presentation/pages/adaptive_shell_page.dart';
-import '../../features/studio/presentation/pages/script_studio_workspace_page.dart';
+import '../../features/studio/presentation/pages/script_studio_create_page.dart';
+import '../../features/studio/presentation/pages/script_studio_page.dart';
 import '../../features/tasks/presentation/pages/tasks_page.dart';
 import '../../features/user/presentation/pages/user_profile_page.dart';
 import '../../features/upload/presentation/pages/ai_creation_hub_page.dart';
@@ -88,7 +98,7 @@ abstract final class AppRouter {
           if (edit != null && edit.isNotEmpty) {
             return AppRoutes.studioEdit(edit);
           }
-          return AppRoutes.create;
+          return AppRoutes.studioCreate;
         },
       ),
       GoRoute(
@@ -191,8 +201,47 @@ abstract final class AppRouter {
         },
       ),
       GoRoute(
-        path: AppRoutes.characters,
-        name: 'characters',
+        path: '/characters',
+        redirect: (context, state) {
+          final uri = state.uri;
+          if (uri.path == '/characters/create') {
+            final workId = uri.queryParameters['work_id'];
+            if (workId != null && workId.isNotEmpty) {
+              return '${AppRoutes.characterCreate}?work_id=$workId';
+            }
+            return AppRoutes.characterCreate;
+          }
+          final segments = uri.pathSegments;
+          if (segments.length == 2) {
+            return AppRoutes.characterDetailPath(int.parse(segments[1]));
+          }
+          final workId = uri.queryParameters['work_id'];
+          if (workId != null && workId.isNotEmpty) {
+            return '${AppRoutes.character}?work_id=$workId';
+          }
+          return AppRoutes.character;
+        },
+      ),
+      GoRoute(
+        path: '/characters/create',
+        redirect: (context, state) {
+          final workId = state.uri.queryParameters['work_id'];
+          if (workId != null && workId.isNotEmpty) {
+            return '${AppRoutes.characterCreate}?work_id=$workId';
+          }
+          return AppRoutes.characterCreate;
+        },
+      ),
+      GoRoute(
+        path: '/characters/:id',
+        redirect: (context, state) {
+          final id = state.pathParameters['id'] ?? '';
+          return AppRoutes.characterDetailPath(int.parse(id));
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.character,
+        name: 'character',
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) {
           final workId = int.tryParse(state.uri.queryParameters['work_id'] ?? '');
@@ -202,14 +251,39 @@ abstract final class AppRouter {
         },
       ),
       GoRoute(
+        path: AppRoutes.myCharacters,
+        name: 'my-characters',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const MyCharactersPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.characterAi,
+        name: 'character-ai',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const CharacterAiPage(),
+      ),
+      GoRoute(
         path: AppRoutes.characterCreate,
         name: 'character-create',
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) {
           final workId = int.tryParse(state.uri.queryParameters['work_id'] ?? '');
+          final summary = state.uri.queryParameters['summary'];
+          final cover = state.uri.queryParameters['cover'];
           return CharacterCreatePage(
             workId: workId != null && workId > 0 ? workId : null,
+            initialSummary: summary,
+            initialCoverPath: cover,
           );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.characterEdit,
+        name: 'character-edit',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+          return CharacterEditPage(characterId: id);
         },
       ),
       GoRoute(
@@ -219,6 +293,55 @@ abstract final class AppRouter {
         builder: (context, state) {
           final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
           return CharacterDetailPage(characterId: id);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.scenes,
+        name: 'scenes',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const SceneListPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.myScenes,
+        name: 'my-scenes',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const MyScenesPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.sceneAi,
+        name: 'scene-ai',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const SceneAiPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.sceneCreate,
+        name: 'scene-create',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) {
+          final description = state.uri.queryParameters['description'];
+          final cover = state.uri.queryParameters['cover'];
+          return SceneCreatePage(
+            initialDescription: description,
+            initialCoverPath: cover,
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.sceneEdit,
+        name: 'scene-edit',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) {
+          final id = state.pathParameters['id'] ?? '';
+          return SceneEditPage(sceneId: id);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.sceneDetail,
+        name: 'scene-detail',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) {
+          final id = state.pathParameters['id'] ?? '';
+          return SceneDetailPage(sceneId: id);
         },
       ),
       GoRoute(
@@ -326,17 +449,13 @@ abstract final class AppRouter {
       GoRoute(
         path: AppRoutes.create,
         name: 'create',
-        parentNavigatorKey: rootNavigatorKey,
         redirect: (context, state) {
           final edit = state.uri.queryParameters['edit'];
           if (edit != null && edit.isNotEmpty) {
             return AppRoutes.studioEdit(edit);
           }
-          return null;
+          return AppRoutes.studioCreate;
         },
-        builder: (context, state) => const ScriptStudioWorkspacePage(
-          createMode: true,
-        ),
       ),
       GoRoute(
         path: AppRoutes.createAiHubPath,
@@ -380,11 +499,24 @@ abstract final class AppRouter {
                 name: 'studio',
                 pageBuilder: (context, state) {
                   final editId = state.uri.queryParameters['edit'];
+                  final child = editId != null && editId.isNotEmpty
+                      ? ScriptStudioCreatePage(editScriptId: editId)
+                      : const ScriptStudioPage();
                   return NoTransitionPage(
                     key: state.pageKey,
-                    child: ScriptStudioWorkspacePage(editScriptId: editId),
+                    child: child,
                   );
                 },
+                routes: [
+                  GoRoute(
+                    path: 'create',
+                    name: 'studio-create',
+                    pageBuilder: (context, state) => NoTransitionPage(
+                      key: state.pageKey,
+                      child: const ScriptStudioCreatePage(),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

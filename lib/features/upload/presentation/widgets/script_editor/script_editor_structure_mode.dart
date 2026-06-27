@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../../shared/widgets/shell_insets.dart';
 import '../../../../screenplay/data/screenplay_draft.dart';
 import '../../../../screenplay/domain/shoot_params.dart';
 import '../upload_structure_editor.dart';
@@ -67,7 +68,12 @@ class ScriptEditorStructureMode extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        16,
+        16,
+        ShellInsets.scrollBottom(context, extra: 16),
+      ),
       child: UploadStructureEditor(
         draft: draft,
         frameCount: frameCount,

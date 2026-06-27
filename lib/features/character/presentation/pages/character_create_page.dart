@@ -6,12 +6,21 @@ import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/primary_button.dart';
+import '../../data/character_local_store.dart';
 import '../../data/character_repository.dart';
+import '../widgets/character_form_sections.dart';
 
 class CharacterCreatePage extends StatefulWidget {
-  const CharacterCreatePage({super.key, this.workId});
+  const CharacterCreatePage({
+    super.key,
+    this.workId,
+    this.initialSummary,
+    this.initialCoverPath,
+  });
 
   final int? workId;
+  final String? initialSummary;
+  final String? initialCoverPath;
 
   @override
   State<CharacterCreatePage> createState() => _CharacterCreatePageState();
@@ -25,8 +34,20 @@ class _CharacterCreatePageState extends State<CharacterCreatePage> {
   final _summaryController = TextEditingController();
   final _appearanceController = TextEditingController();
   final _personalityController = TextEditingController();
+  final _formData = CharacterFormData();
   int _gender = 0;
   bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialSummary != null) {
+      _summaryController.text = widget.initialSummary!;
+    }
+    if (widget.initialCoverPath != null) {
+      _formData.coverPath = widget.initialCoverPath!;
+    }
+  }
 
   @override
   void dispose() {
@@ -37,6 +58,21 @@ class _CharacterCreatePageState extends State<CharacterCreatePage> {
     _appearanceController.dispose();
     _personalityController.dispose();
     super.dispose();
+  }
+
+  Future<void> _saveLocalExtras(int characterId) async {
+    if (_formData.coverPath.isNotEmpty) {
+      await CharacterLocalStore.instance.setLocalCoverPath(
+        characterId,
+        _formData.coverPath,
+      );
+    }
+    if (_formData.referencePaths.isNotEmpty) {
+      await CharacterLocalStore.instance.setReferenceImageUrls(
+        characterId,
+        _formData.referencePaths,
+      );
+    }
   }
 
   Future<void> _save() async {
@@ -58,6 +94,7 @@ class _CharacterCreatePageState extends State<CharacterCreatePage> {
       summary: _summaryController.text.trim(),
       appearance: _appearanceController.text.trim(),
       personality: _personalityController.text.trim(),
+      aliases: buildAliasesFromForm(_formData),
     );
     if (!mounted) return;
     setState(() => _saving = false);
@@ -69,7 +106,12 @@ class _CharacterCreatePageState extends State<CharacterCreatePage> {
       return;
     }
 
-    context.pop(result.character?.id);
+    final id = result.character?.id;
+    if (id != null) {
+      await _saveLocalExtras(id);
+    }
+    if (!mounted) return;
+    context.pop(id);
   }
 
   @override
@@ -77,62 +119,29 @@ class _CharacterCreatePageState extends State<CharacterCreatePage> {
     return DesktopStackScaffold(
       title: const Text('新建角色'),
       onBack: () => popOrGoDiscovery(context),
+      actions: [
+        TextButton(
+          onPressed: _saving ? null : _save,
+          child: Text(
+            _saving ? '保存中…' : '保存',
+            style: AppTextStyles.label.copyWith(color: Theme.of(context).colorScheme.primary),
+          ),
+        ),
+      ],
       body: ListView(
         padding: const EdgeInsets.all(AppDimensions.spacingMd),
         children: [
-          TextField(
-            controller: _nameController,
-            decoration: const InputDecoration(labelText: '角色名 *'),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _nameOrigController,
-            decoration: const InputDecoration(labelText: '原名 / 英文名'),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _slugController,
-            decoration: const InputDecoration(labelText: 'Slug（URL 标识）'),
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<int>(
-            value: _gender,
-            decoration: const InputDecoration(labelText: '性别'),
-            items: const [
-              DropdownMenuItem(value: 0, child: Text('未知')),
-              DropdownMenuItem(value: 1, child: Text('男')),
-              DropdownMenuItem(value: 2, child: Text('女')),
-              DropdownMenuItem(value: 3, child: Text('其他')),
-            ],
-            onChanged: (v) => setState(() => _gender = v ?? 0),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _summaryController,
-            maxLines: 3,
-            decoration: const InputDecoration(
-              labelText: '简介',
-              alignLabelWithHint: true,
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _appearanceController,
-            maxLines: 3,
-            decoration: const InputDecoration(
-              labelText: '外观设定',
-              hintText: '发色、服装等，供 AI 生图参考',
-              alignLabelWithHint: true,
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _personalityController,
-            maxLines: 3,
-            decoration: const InputDecoration(
-              labelText: '性格 / 人设',
-              alignLabelWithHint: true,
-            ),
+          CharacterFormSections(
+            nameController: _nameController,
+            nameOrigController: _nameOrigController,
+            slugController: _slugController,
+            summaryController: _summaryController,
+            appearanceController: _appearanceController,
+            personalityController: _personalityController,
+            data: _formData,
+            gender: _gender,
+            onGenderChanged: (v) => setState(() => _gender = v),
+            onChanged: () => setState(() {}),
           ),
           const SizedBox(height: 24),
           PrimaryButton(

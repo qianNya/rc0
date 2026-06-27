@@ -51,6 +51,101 @@ abstract final class AppCatalog {
 
   static const galleryTabs = ['图片', 'IP', '作品', '标签'];
 
+  static const characterCategoryChips = [
+    '全部',
+    '热门',
+    '原神',
+    '崩坏星穹铁道',
+    '鸣潮',
+    '绝区零',
+    '明日方舟',
+    '原创',
+    'JK',
+    '女仆',
+    '御姐',
+    '校园',
+    '古风',
+  ];
+
+  static const characterDetailTabs = ['剧本', '姿势', '作品', '服装', '资料'];
+
+  static const myCharacterTabs = ['官方角色', '我的角色', '下载角色'];
+
+  static const characterAiStyles = [
+    '写实',
+    '二次元',
+    '国风',
+    '赛博朋克',
+    '摄影参考',
+    'Cosplay',
+  ];
+
+  static const characterAiCounts = [1, 4, 8];
+
+  static const sceneCategoryChips = [
+    '全部',
+    '热门',
+    '自然风光',
+    '城市建筑',
+    '室内场景',
+    '特色场景',
+    '海边',
+    '森林',
+    '古镇',
+    '校园',
+    '天台',
+    '咖啡馆',
+    '地铁站',
+    '酒店',
+    '教堂',
+    '商业街',
+    '摄影棚',
+  ];
+
+  static const sceneDetailTabs = [
+    '灵感图',
+    '拍摄建议',
+    '相关场景',
+    '使用作品',
+    '关联剧本',
+  ];
+
+  static const mySceneTabs = ['收藏', '使用过', '创建'];
+
+  static const sceneAiStyles = [
+    '写实',
+    '电影感',
+    '日系',
+    '赛博朋克',
+    '古风',
+    '情绪片',
+  ];
+
+  static const sceneSortTabs = ['最新', '热门', '收藏最多', '使用最多'];
+
+  static const sceneThemeTags = [
+    'JK',
+    '汉服',
+    'Cosplay',
+    '婚纱',
+    '电影感',
+    '情绪片',
+    '少女写真',
+    '情侣',
+    '日常',
+    '御姐',
+    '赛博',
+  ];
+
+  static const sceneFilterStyles = [
+    '全部风格',
+    '写实',
+    '电影感',
+    '日系',
+    '赛博朋克',
+    '古风',
+  ];
+
   /// IP `work_type` presets aligned with POST /works.
   static const ipWorkTypePresets = <({String label, int value})>[
     (label: '动漫', value: 2),
