@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../app/theme/app_colors.dart';
+import '../../app/theme/app_dimensions.dart';
 import 'primary_button.dart';
 
 class EmptyStateView extends StatelessWidget {
@@ -28,7 +29,7 @@ class EmptyStateView extends StatelessWidget {
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(AppDimensions.spacingXl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

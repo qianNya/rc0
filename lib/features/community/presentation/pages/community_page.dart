@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/router/routes.dart';
+import '../../../../app/theme/app_dimensions.dart';
 import '../../../../core/network/api_auth.dart';
 import '../../../../core/data/app_catalog.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
@@ -17,7 +18,7 @@ import '../../../../shared/widgets/feed_tab_bar.dart';
 import '../../../../shared/widgets/inline_error_banner.dart';
 import '../../../../shared/widgets/profile_widgets.dart';
 import '../../../../shared/widgets/rc0_widgets.dart';
-import '../../../../shared/widgets/screenplay_card.dart';
+import '../../../../shared/widgets/template_grid_card.dart';
 import '../../../../shared/widgets/shell_insets.dart';
 import '../../../../shared/widgets/status_bar_spacer.dart';
 import '../utils/community_screenplay_filters.dart';
@@ -209,7 +210,7 @@ class _CommunityMobileView extends StatelessWidget {
                 if (loadingMore)
                   const SliverToBoxAdapter(
                     child: Padding(
-                      padding: EdgeInsets.all(16),
+                      padding: EdgeInsets.all(AppDimensions.spacingMd),
                       child: Center(
                         child: SizedBox(
                           width: 24,
@@ -369,7 +370,7 @@ class _CommunityDesktopView extends StatelessWidget {
           },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(32),
+            padding: const EdgeInsets.all(AppDimensions.spacingXl),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -480,7 +481,7 @@ class _CommunityDesktopView extends StatelessWidget {
                     itemCount: scripts.length,
                     itemBuilder: (_, index) {
                       final script = scripts[index];
-                      return ScreenplayCard(
+                      return TemplateGridCard(
                         screenplay: script,
                         compact: true,
                         showBadge: index == 0
@@ -493,7 +494,7 @@ class _CommunityDesktopView extends StatelessWidget {
                   ),
                 if (loadingMore)
                   const Padding(
-                    padding: EdgeInsets.all(16),
+                    padding: EdgeInsets.all(AppDimensions.spacingMd),
                     child: Center(
                       child: SizedBox(
                         width: 24,

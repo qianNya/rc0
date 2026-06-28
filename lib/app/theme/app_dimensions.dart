@@ -19,14 +19,18 @@ abstract final class AppDimensions {
   static const double primaryButtonHeight = 48;
 
   static const double glassBlurSigma = 24;
-  static const double glassNavBlurSigma = 36;
+  static const double glassNavBlurSigma = 42;
   static const double floatingBarRadius = 28;
   static const double floatingBarMarginHorizontal = 16;
-  static const double floatingBarMarginBottom = 8;
+  static const double floatingBarMarginBottom = 0;
   static const double bottomNavFloatingHeight = 56;
+  static const double bottomNavSecondaryTabSize = bottomNavFloatingHeight;
+  static const double bottomNavSecondaryTabGap = spacingSm;
+  static const double bottomNavIndicatorInsetH = 6;
+  static const double bottomNavIndicatorInsetV = 6;
   /// Max width for centered floating bottom nav on tablet / wide phones.
-  static const double floatingBottomNavMaxWidth = 560;
-  static const double floatingBottomNavEditorMaxWidth = 680;
+  static const double floatingBottomNavMaxWidth = 420;
+  static const double floatingBottomNavEditorMaxWidth = 560;
   static const double floatingBottomClearance = 72;
   static const double feedTabBarHeight = 40;
   static const double titleBarHeight = 40;

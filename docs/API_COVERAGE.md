@@ -79,8 +79,23 @@
 |------|------|------|
 | `getFrame` | GET `/frames/{id}` | Available |
 | `getFrameDownloadUrl` | GET `/frames/{id}/download` | Available |
-| `listSceneFrames` | GET `/scenes/{id}/frames` | Available |
+| `listSceneFrames` | GET `/screenplay-scenes/{id}/frames` | Available |
 | `applyFramePreset` | POST `/frames/{id}/apply-preset` | — |
+
+---
+
+## scene
+
+| 函数 | 路径 | 状态 |
+|------|------|------|
+| `listScenes` | GET `/scenes` | Available |
+| `getScene` | GET `/scenes/{id}` | Available |
+| `createScene` | POST `/scenes` | Available |
+| `updateScene` | PUT `/scenes/{id}` | Available |
+| `deleteScene` | DELETE `/scenes/{id}` | Available |
+| `listImageScenes` | GET `/images/{id}/scenes` | Available |
+| `linkImageScene` | POST `/images/{id}/scenes` | Available |
+| `unlinkImageScene` | DELETE `/images/{id}/scenes/{scene_id}` | Available |
 
 ---
 

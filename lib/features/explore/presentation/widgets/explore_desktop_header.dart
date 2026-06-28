@@ -184,7 +184,7 @@ class _ExploreDesktopHeaderState extends State<ExploreDesktopHeader> {
             Tooltip(
               message: nickname,
               child: InkWell(
-                onTap: () => context.push(AppRoutes.profile),
+                onTap: () => context.go(AppRoutes.profile),
                 borderRadius: BorderRadius.circular(20),
                 child: CircleAvatar(
                   radius: 16,

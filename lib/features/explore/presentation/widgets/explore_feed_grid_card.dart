@@ -97,7 +97,7 @@ class ExploreFeedGridCard extends StatelessWidget {
                       top: 8,
                       right: 8,
                       child: Container(
-                        padding: const EdgeInsets.all(4),
+                        padding: const EdgeInsets.all(AppDimensions.spacingXs),
                         decoration: BoxDecoration(
                           color: AppColors.scrim,
                           borderRadius: BorderRadius.circular(6),

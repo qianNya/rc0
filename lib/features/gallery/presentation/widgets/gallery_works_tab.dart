@@ -7,7 +7,7 @@ import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/utils/state_listeners.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/inline_error_banner.dart';
-import '../../../../shared/widgets/screenplay_card.dart';
+import '../../../../shared/widgets/template_grid_card.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../screenplay/data/screenplay_local_repository.dart';
 import '../../../screenplay/presentation/widgets/screenplay_delete_actions.dart';
@@ -187,7 +187,7 @@ class GalleryWorksTabState extends State<GalleryWorksTab>
                 itemBuilder: (_, index) {
                   final script = works[index];
                   final isLocal = script.isLocal;
-                  return ScreenplayCard(
+                  return TemplateGridCard(
                     screenplay: script,
                     compact: true,
                     showVisibilityBadge: _canEditVisibility(script),
@@ -211,7 +211,7 @@ class GalleryWorksTabState extends State<GalleryWorksTab>
               ),
               if (loadingMore)
                 const Padding(
-                  padding: EdgeInsets.all(16),
+                  padding: EdgeInsets.all(AppDimensions.spacingMd),
                   child: Center(
                     child: SizedBox(
                       width: 24,

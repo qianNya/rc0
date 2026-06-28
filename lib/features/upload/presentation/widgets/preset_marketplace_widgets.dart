@@ -14,21 +14,23 @@ class PresetSectionHeader extends StatelessWidget {
     this.trailingLabel,
     this.onTrailingTap,
     this.leadingIcon,
+    this.compact = false,
   });
 
   final String title;
   final String? trailingLabel;
   final VoidCallback? onTrailingTap;
   final IconData? leadingIcon;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppDimensions.spacingMd,
-        AppDimensions.spacingMd,
-        AppDimensions.spacingMd,
-        AppDimensions.spacingSm,
+      padding: EdgeInsets.fromLTRB(
+        compact ? 0 : AppDimensions.spacingMd,
+        compact ? AppDimensions.spacingXs : AppDimensions.spacingMd,
+        compact ? 0 : AppDimensions.spacingMd,
+        compact ? 4 : AppDimensions.spacingSm,
       ),
       child: Row(
         children: [
@@ -236,22 +238,34 @@ class PresetRecentCard extends StatelessWidget {
     super.key,
     required this.preset,
     required this.onTap,
+    this.selected = false,
   });
 
   final ShootPreset preset;
   final VoidCallback onTap;
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: 168,
       child: Material(
-        color: Theme.of(context).colorScheme.surface,
+        color: selected
+            ? AppColors.accent.withValues(alpha: 0.08)
+            : Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
-          child: Column(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+              border: Border.all(
+                color: selected ? AppColors.accent : AppColors.border,
+                width: selected ? 1.5 : 1,
+              ),
+            ),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               SizedBox(
@@ -300,6 +314,7 @@ class PresetRecentCard extends StatelessWidget {
                 ),
               ),
             ],
+          ),
           ),
         ),
       ),
@@ -451,11 +466,13 @@ class PresetOfficialCard extends StatelessWidget {
     required this.preset,
     required this.onTap,
     this.compact = false,
+    this.selected = false,
   });
 
   final ShootPreset preset;
   final VoidCallback onTap;
   final bool compact;
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
@@ -463,12 +480,22 @@ class PresetOfficialCard extends StatelessWidget {
     return SizedBox(
       width: width,
       child: Material(
-        color: Theme.of(context).colorScheme.surface,
+        color: selected
+            ? AppColors.accent.withValues(alpha: 0.08)
+            : Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
-          child: Column(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+              border: Border.all(
+                color: selected ? AppColors.accent : AppColors.border,
+                width: selected ? 1.5 : 1,
+              ),
+            ),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               SizedBox(
@@ -516,6 +543,7 @@ class PresetOfficialCard extends StatelessWidget {
                 ),
               ),
             ],
+          ),
           ),
         ),
       ),

@@ -20,9 +20,10 @@ import '../widgets/character_category_chips.dart';
 import '../widgets/character_masonry_grid.dart';
 
 class CharacterListPage extends StatefulWidget {
-  const CharacterListPage({super.key, this.workId});
+  const CharacterListPage({super.key, this.workId, this.embeddedInHub = false});
 
   final int? workId;
+  final bool embeddedInHub;
 
   @override
   State<CharacterListPage> createState() => _CharacterListPageState();
@@ -111,6 +112,30 @@ class _CharacterListPageState extends State<CharacterListPage> {
       builder: (context, _) {
         final filtered = _filteredItems;
         final isDark = Theme.of(context).brightness == Brightness.dark;
+        final body = _buildBody(context, filtered, isDark);
+
+        if (widget.embeddedInHub) {
+          return ColoredBox(
+            color: isDark
+                ? AppColors.characterBackgroundDark
+                : Theme.of(context).scaffoldBackgroundColor,
+            child: Stack(
+              children: [
+                body,
+                Positioned(
+                  right: AppDimensions.spacingMd,
+                  bottom: AppDimensions.spacingMd,
+                  child: StudioEditorShellGlassButton(
+                    label: 'AI 角色',
+                    icon: Icons.auto_awesome,
+                    minWidth: 120,
+                    onPressed: () => context.push(AppRoutes.characterAi),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
 
         return DesktopStackScaffold(
           title: Text(widget.workId != null ? 'IP 角色' : '角色库'),
@@ -140,128 +165,145 @@ class _CharacterListPageState extends State<CharacterListPage> {
               onPressed: () => context.push(AppRoutes.characterAi),
             ),
           ),
-          body: ColoredBox(
-            color: isDark
-                ? AppColors.characterBackgroundDark
-                : Theme.of(context).scaffoldBackgroundColor,
-            child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppDimensions.spacingMd,
-                  AppDimensions.spacingSm,
-                  AppDimensions.spacingMd,
-                  AppDimensions.spacingSm,
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: SizedBox(
-                        height: 48,
-                        child: AppSearchField(
-                          hint: '搜索角色名称、标签、关键词',
-                          controller: _searchController,
-                          onSubmitted: (_) => _load(),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      tooltip: '筛选',
-                      onPressed: () {
-                        ScaffoldMessenger.of(context)
-                          ..hideCurrentSnackBar()
-                          ..showSnackBar(
-                            const SnackBar(content: Text('筛选功能即将上线')),
-                          );
-                      },
-                      icon: const Icon(Icons.tune),
-                    ),
-                  ],
-                ),
-              ),
-              CharacterCategoryChips(
-                chips: AppCatalog.characterCategoryChips,
-                selectedIndex: _categoryIndex,
-                onChanged: (index) => setState(() => _categoryIndex = index),
-              ),
-              const SizedBox(height: AppDimensions.spacingSm),
-              Expanded(
-                child: _repo.loading && _repo.items.isEmpty
-                    ? const Center(child: CircularProgressIndicator())
-                    : filtered.isEmpty
-                        ? ListView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            children: [
-                              SizedBox(
-                                height:
-                                    MediaQuery.sizeOf(context).height * 0.15,
-                              ),
-                              EmptyStateView(
-                                icon: Icons.person_outline,
-                                title: _repo.error ?? '暂无角色',
-                                subtitle:
-                                    _repo.error != null ? null : '创建第一个角色',
-                                actionLabel:
-                                    _auth.isLoggedIn ? '新建角色' : null,
-                                onAction: _auth.isLoggedIn
-                                    ? () async {
-                                        await context
-                                            .push(AppRoutes.characterCreate);
-                                        if (mounted) _load();
-                                      }
-                                    : null,
-                              ),
-                            ],
-                          )
-                        : RefreshIndicator(
-                            onRefresh: _load,
-                            child: ListView(
-                              controller: _scrollController,
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              padding: const EdgeInsets.only(
-                                bottom: AppDimensions.spacingXl * 2,
-                              ),
-                              children: [
-                                CharacterMasonryGrid(
-                                  items: filtered,
-                                  localCoverFor: (e) => _localCovers[e.id],
-                                  screenplayCountFor: (e) =>
-                                      _repo.countScreenplaysForCharacter(e.id),
-                                  favoriteCountFor: (e) =>
-                                      _favorites.contains(e.id) ? 1 : null,
-                                  onTap: (entry) => context.push(
-                                    AppRoutes.characterDetailPath(entry.id),
-                                  ),
-                                  onLongPress: (entry) =>
-                                      showCharacterActionSheet(
-                                    context: context,
-                                    entry: entry,
-                                    repo: _repo,
-                                    isLoggedIn: _auth.isLoggedIn,
-                                    isFavorite:
-                                        _favorites.contains(entry.id),
-                                    onToggleFavorite: () =>
-                                        _toggleFavorite(entry),
-                                    onRefresh: _load,
-                                  ),
-                                ),
-                                if (_repo.loadingMore)
-                                  const Padding(
-                                    padding: EdgeInsets.all(16),
-                                    child: Center(
-                                      child: CircularProgressIndicator(),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-              ),
-            ],
-          ),
-          ),
+          body: body,
         );
       },
+    );
+  }
+
+  Widget _buildBody(
+    BuildContext context,
+    List<CharacterEntry> filtered,
+    bool isDark,
+  ) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppDimensions.spacingMd,
+            AppDimensions.spacingSm,
+            AppDimensions.spacingMd,
+            AppDimensions.spacingSm,
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 48,
+                  child: AppSearchField(
+                    hint: '搜索角色名称、标签、关键词',
+                    controller: _searchController,
+                    onSubmitted: (_) => _load(),
+                  ),
+                ),
+              ),
+              if (widget.embeddedInHub) ...[
+                const SizedBox(width: 4),
+                IconButton(
+                  tooltip: '我的角色',
+                  onPressed: () => context.push(AppRoutes.myCharacters),
+                  icon: const Icon(Icons.folder_outlined),
+                ),
+                if (_auth.isLoggedIn)
+                  IconButton(
+                    tooltip: '新建角色',
+                    onPressed: () async {
+                      await context.push(AppRoutes.characterCreate);
+                      if (mounted) _load();
+                    },
+                    icon: const Icon(Icons.add),
+                  ),
+              ] else ...[
+                const SizedBox(width: 8),
+                IconButton(
+                  tooltip: '筛选',
+                  onPressed: () {
+                    ScaffoldMessenger.of(context)
+                      ..hideCurrentSnackBar()
+                      ..showSnackBar(
+                        const SnackBar(content: Text('筛选功能即将上线')),
+                      );
+                  },
+                  icon: const Icon(Icons.tune),
+                ),
+              ],
+            ],
+          ),
+        ),
+        CharacterCategoryChips(
+          chips: AppCatalog.characterCategoryChips,
+          selectedIndex: _categoryIndex,
+          onChanged: (index) => setState(() => _categoryIndex = index),
+        ),
+        const SizedBox(height: AppDimensions.spacingSm),
+        Expanded(
+          child: _repo.loading && _repo.items.isEmpty
+              ? const Center(child: CircularProgressIndicator())
+              : filtered.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        SizedBox(
+                          height: MediaQuery.sizeOf(context).height * 0.15,
+                        ),
+                        EmptyStateView(
+                          icon: Icons.person_outline,
+                          title: _repo.error ?? '暂无角色',
+                          subtitle: _repo.error != null ? null : '创建第一个角色',
+                          actionLabel: _auth.isLoggedIn ? '新建角色' : null,
+                          onAction: _auth.isLoggedIn
+                              ? () async {
+                                  await context.push(AppRoutes.characterCreate);
+                                  if (mounted) _load();
+                                }
+                              : null,
+                        ),
+                      ],
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _load,
+                      child: ListView(
+                        controller: _scrollController,
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: EdgeInsets.only(
+                          bottom: widget.embeddedInHub
+                              ? AppDimensions.spacingXl * 3
+                              : AppDimensions.spacingXl * 2,
+                        ),
+                        children: [
+                          CharacterMasonryGrid(
+                            items: filtered,
+                            localCoverFor: (e) => _localCovers[e.id],
+                            screenplayCountFor: (e) =>
+                                _repo.countScreenplaysForCharacter(e.id),
+                            favoriteCountFor: (e) =>
+                                _favorites.contains(e.id) ? 1 : null,
+                            onTap: (entry) => context.push(
+                              AppRoutes.characterDetailPath(entry.id),
+                            ),
+                            onLongPress: (entry) => showCharacterActionSheet(
+                              context: context,
+                              entry: entry,
+                              repo: _repo,
+                              isLoggedIn: _auth.isLoggedIn,
+                              isFavorite: _favorites.contains(entry.id),
+                              onToggleFavorite: () => _toggleFavorite(entry),
+                              onRefresh: _load,
+                            ),
+                          ),
+                          if (_repo.loadingMore)
+                            const Padding(
+                              padding:
+                                  EdgeInsets.all(AppDimensions.spacingMd),
+                              child: Center(
+                                child: CircularProgressIndicator(),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+        ),
+      ],
     );
   }
 }

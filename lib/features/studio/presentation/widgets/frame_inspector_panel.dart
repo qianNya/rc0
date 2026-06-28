@@ -61,7 +61,7 @@ class _FrameInspectorPanelState extends State<FrameInspectorPanel> {
         );
       }
       return ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppDimensions.spacingMd),
         children: [
           ScreenplayCharactersSection(
             draft: widget.actions.draft,
@@ -379,7 +379,7 @@ class _SceneInspector extends StatelessWidget {
         : scene.title.trim();
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppDimensions.spacingMd),
       children: [
         Text('场次信息', style: AppTextStyles.title.copyWith(fontSize: 16)),
         const SizedBox(height: 12),
@@ -660,7 +660,7 @@ class _CharacterSection extends StatelessWidget {
             runSpacing: 8,
             children: [
               OutlinedButton(
-                onPressed: () => context.go(AppRoutes.library),
+                onPressed: () => context.push(AppRoutes.library),
                 child: const Text('素材库'),
               ),
               OutlinedButton(

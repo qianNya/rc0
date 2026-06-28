@@ -13,7 +13,7 @@ Accept: application/json
 ###
 
 ### @name listSceneFrames
-GET {{baseUrl}}/scenes/{{sceneId}}/frames
+GET {{baseUrl}}/screenplay-scenes/{{sceneId}}/frames
 Accept: application/json
 
 ###

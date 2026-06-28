@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 
 import '../../../../../app/theme/app_colors.dart';
 import '../../../../../app/theme/app_dimensions.dart';
+import '../../../../../shared/widgets/glass/glass_sheet.dart';
 import '../../../../../shared/widgets/profile_widgets.dart';
 
 /// In-page content modes for the script editor hub (mobile + desktop tab 0).
 enum EditorHubMode {
   outline,
   script,
-  storyboard,
-  timeline,
+  frames,
 }
 
 class EditorQuickAction {
@@ -123,16 +123,10 @@ class EditorHubModeBar extends StatelessWidget {
           onTap: () => onModeSelected(EditorHubMode.script),
         ),
         EditorQuickAction(
-          label: '故事板',
-          icon: Icons.grid_view_outlined,
-          selected: selectedMode == EditorHubMode.storyboard,
-          onTap: () => onModeSelected(EditorHubMode.storyboard),
-        ),
-        EditorQuickAction(
-          label: '时间线',
-          icon: Icons.timeline_outlined,
-          selected: selectedMode == EditorHubMode.timeline,
-          onTap: () => onModeSelected(EditorHubMode.timeline),
+          label: '分镜',
+          icon: Icons.view_comfy_outlined,
+          selected: selectedMode == EditorHubMode.frames,
+          onTap: () => onModeSelected(EditorHubMode.frames),
         ),
         EditorQuickAction(
           label: '更多',
@@ -144,41 +138,43 @@ class EditorHubModeBar extends StatelessWidget {
   }
 }
 
+void _popSheetThen(BuildContext context, VoidCallback action) {
+  final navigator = Navigator.of(context, rootNavigator: true);
+  navigator.pop();
+  WidgetsBinding.instance.addPostFrameCallback((_) => action());
+}
+
 void showEditorMoreActionsSheet(
   BuildContext context, {
   required VoidCallback onBatchEdit,
   VoidCallback? onOpenShotList,
+  VoidCallback? onOpenProjectSettings,
 }) {
-  showModalBottomSheet<void>(
-    context: context,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(
-        top: Radius.circular(AppDimensions.radiusLg),
-      ),
-    ),
-    builder: (context) => SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (onOpenShotList != null)
-            ListTile(
-              leading: const Icon(Icons.movie_outlined),
-              title: const Text('分镜列表'),
-              onTap: () {
-                Navigator.pop(context);
-                onOpenShotList();
-              },
-            ),
+  showGlassSheet<void>(
+    context,
+    useRootNavigator: true,
+    padding: kGlassSheetMenuPadding,
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (onOpenProjectSettings != null)
           ListTile(
-            leading: const Icon(Icons.checklist_outlined),
-            title: const Text('批量编辑'),
-            onTap: () {
-              Navigator.pop(context);
-              onBatchEdit();
-            },
+            leading: const Icon(Icons.tune_outlined),
+            title: const Text('项目设置'),
+            onTap: () => _popSheetThen(context, onOpenProjectSettings),
           ),
-        ],
-      ),
+        if (onOpenShotList != null)
+          ListTile(
+            leading: const Icon(Icons.movie_outlined),
+            title: const Text('分镜列表'),
+            onTap: () => _popSheetThen(context, onOpenShotList),
+          ),
+        ListTile(
+          leading: const Icon(Icons.checklist_outlined),
+          title: const Text('批量编辑'),
+          onTap: () => _popSheetThen(context, onBatchEdit),
+        ),
+      ],
     ),
   );
 }

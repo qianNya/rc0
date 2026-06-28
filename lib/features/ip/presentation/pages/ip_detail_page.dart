@@ -14,8 +14,6 @@ import '../../../character/data/character_repository.dart';
 import '../../../character/domain/character_entry.dart';
 import '../../data/ip_repository.dart';
 import '../../domain/ip_entry.dart';
-import '../../../../shared/widgets/rc0_app_bar.dart';
-
 class IpDetailPage extends StatefulWidget {
   const IpDetailPage({super.key, required this.ipId});
 

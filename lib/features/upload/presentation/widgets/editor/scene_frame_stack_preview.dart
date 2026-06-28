@@ -101,7 +101,7 @@ class SceneFrameStackPreview extends StatelessWidget {
         boxShadow: isTop
             ? const [
                 BoxShadow(
-                  color: Color(0x1A000000),
+                  color: AppColors.shadowStrong,
                   blurRadius: 4,
                   offset: Offset(0, 1),
                 ),

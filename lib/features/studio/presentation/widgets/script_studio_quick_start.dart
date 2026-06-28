@@ -15,11 +15,11 @@ class ScriptStudioQuickStart extends StatelessWidget {
       case '角色库':
         context.push(AppRoutes.character);
       case '场景库':
-        context.push(AppRoutes.scenes);
+        context.go(AppRoutes.scenes);
       case '摄影预设':
         context.push(AppRoutes.shootPresetPicker(mode: 'manage'));
       case '我的素材':
-        context.go(AppRoutes.library);
+        context.push(AppRoutes.library);
     }
   }
 

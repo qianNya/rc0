@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/routes.dart';
+import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/data/app_catalog.dart';
@@ -64,8 +65,8 @@ class _ExploreFeaturedCarouselState extends State<ExploreFeaturedCarousel> {
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                                 colors: [
-                                  Color(0xFF3B4A6B),
-                                  Color(0xFF1A1F2E),
+                                  AppColors.explorePlaceholderStart,
+                                  AppColors.explorePlaceholderEnd,
                                 ],
                               ),
                             ),
@@ -87,7 +88,7 @@ class _ExploreFeaturedCarouselState extends State<ExploreFeaturedCarousel> {
                                 end: Alignment.bottomCenter,
                                 colors: [
                                   Colors.transparent,
-                                  Color(0xCC000000),
+                                  AppColors.scrimStrong,
                                 ],
                               ),
                             ),

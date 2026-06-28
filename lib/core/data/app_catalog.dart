@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../app/router/routes.dart';
 import 'preset_catalog.dart';
 import '../domain/screenplay/screenplay.dart';
 
@@ -31,6 +32,27 @@ class DiscoveryQuickActionItem {
   final Color iconColor;
 }
 
+/// Wiki 子页快捷入口（剧本 / 社区 / 技法等）。
+class WikiRelatedLinkItem {
+  const WikiRelatedLinkItem({
+    required this.label,
+    required this.subtitle,
+    required this.icon,
+    required this.route,
+    required this.iconColor,
+    required this.backgroundColor,
+    this.usePush = true,
+  });
+
+  final String label;
+  final String subtitle;
+  final IconData icon;
+  final String route;
+  final Color iconColor;
+  final Color backgroundColor;
+  final bool usePush;
+}
+
 /// 应用静态配置与剧本列表工具
 abstract final class AppCatalog {
   static const suggestedUploadTags = ['站姿', '坐姿', '街头', '海边', '柔光', '日常'];
@@ -49,6 +71,61 @@ abstract final class AppCatalog {
 
   static const feedTabs = ['发现', '关注', '推荐'];
 
+  static const wikiHubTabs = ['IP', '角色', '相关'];
+
+  static final wikiRelatedLinks = [
+    WikiRelatedLinkItem(
+      label: '剧本 Wiki',
+      subtitle: '社区剧本与模板参考',
+      icon: Icons.auto_stories_outlined,
+      route: AppRoutes.scriptList,
+      iconColor: Color(0xFF4A90D9),
+      backgroundColor: Color(0xFFE8F4FF),
+    ),
+    WikiRelatedLinkItem(
+      label: '社区作品',
+      subtitle: '热门创作与互动',
+      icon: Icons.groups_outlined,
+      route: AppRoutes.community,
+      iconColor: Color(0xFF6B4FE0),
+      backgroundColor: Color(0xFFF0EBFF),
+    ),
+    WikiRelatedLinkItem(
+      label: '场景库',
+      subtitle: '可复用空间与氛围资产',
+      icon: Icons.landscape_outlined,
+      route: AppRoutes.scenes,
+      iconColor: Color(0xFF3B9EFF),
+      backgroundColor: Color(0xFFE3F0FF),
+      usePush: false,
+    ),
+    WikiRelatedLinkItem(
+      label: '动作 Wiki',
+      subtitle: '景别、运镜与姿态参考',
+      icon: Icons.accessibility_new_outlined,
+      route: AppRoutes.action,
+      iconColor: Color(0xFF34C759),
+      backgroundColor: Color(0xFFE6F7EE),
+      usePush: false,
+    ),
+    WikiRelatedLinkItem(
+      label: '拍摄预设',
+      subtitle: '打光、设备与参数模板',
+      icon: Icons.tune_outlined,
+      route: AppRoutes.shootPresetPicker(mode: 'manage'),
+      iconColor: Color(0xFFFFB020),
+      backgroundColor: Color(0xFFFFF4E0),
+    ),
+    WikiRelatedLinkItem(
+      label: '素材图库',
+      subtitle: '参考图与灵感收藏',
+      icon: Icons.photo_library_outlined,
+      route: AppRoutes.library,
+      iconColor: Color(0xFF3B9EFF),
+      backgroundColor: Color(0xFFE3F0FF),
+    ),
+  ];
+
   static const galleryTabs = ['图片', 'IP', '作品', '标签'];
 
   static const characterCategoryChips = [
@@ -65,6 +142,19 @@ abstract final class AppCatalog {
     '御姐',
     '校园',
     '古风',
+  ];
+
+  /// Wiki 角色库顶部分类（对齐产品设计稿）。
+  static const wikiCharacterCategoryChips = [
+    '全部',
+    '热门',
+    '推荐',
+    '星穹铁道',
+    '崩坏',
+    '原神',
+    '鸣潮',
+    '绝区零',
+    '原创',
   ];
 
   static const characterDetailTabs = ['剧本', '姿势', '作品', '服装', '资料'];

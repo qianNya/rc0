@@ -44,7 +44,7 @@ class IpGridCard extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(AppDimensions.spacingSm),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

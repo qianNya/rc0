@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
 
 import '../../../../app/router/navigation_utils.dart';
+import '../../../../app/theme/app_dimensions.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../social/data/social_repository.dart';
 import '../../../user/data/user_profile_repository.dart';
 import '../../../user/data/user_screenplays_repository.dart';
-import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/inline_error_banner.dart';
 import '../../../../shared/widgets/explore_feed_tile.dart';
 import '../../../../shared/widgets/primary_button.dart';
 import '../../../../shared/widgets/profile_widgets.dart';
-import '../../../../shared/widgets/rc0_app_bar.dart';
 
 class UserProfilePage extends StatefulWidget {
   const UserProfilePage({super.key, required this.userId});
@@ -130,7 +129,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
       body: RefreshIndicator(
         onRefresh: _load,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppDimensions.spacingMd),
           children: [
             ProfileGradientHeader(
               name: name,

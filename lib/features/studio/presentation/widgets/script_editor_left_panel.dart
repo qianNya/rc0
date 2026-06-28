@@ -4,6 +4,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_scaffold.dart';
+import '../../../../shared/widgets/glass/glass_sheet.dart';
 import '../../../../shared/widgets/pose_cover_image.dart';
 import '../../../screenplay/data/screenplay_draft.dart';
 import '../../../upload/presentation/widgets/script_editor/script_editor_actions.dart';
@@ -516,41 +517,40 @@ class _SceneSection extends StatelessWidget {
   }
 
   void _showSceneMenu(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.add),
-              title: const Text('添加分镜'),
-              onTap: () {
-                Navigator.pop(context);
-                onAddFrame();
-              },
+    showGlassSheet<void>(
+      context,
+      padding: kGlassSheetMenuPadding,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.add),
+            title: const Text('添加分镜'),
+            onTap: () {
+              Navigator.pop(context);
+              onAddFrame();
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.edit_outlined),
+            title: const Text('重命名场次'),
+            onTap: () {
+              Navigator.pop(context);
+              onRename();
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.delete_outline, color: AppColors.error),
+            title: const Text(
+              '删除场次',
+              style: TextStyle(color: AppColors.error),
             ),
-            ListTile(
-              leading: const Icon(Icons.edit_outlined),
-              title: const Text('重命名场次'),
-              onTap: () {
-                Navigator.pop(context);
-                onRename();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_outline, color: AppColors.error),
-              title: const Text(
-                '删除场次',
-                style: TextStyle(color: AppColors.error),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                onDelete();
-              },
-            ),
-          ],
-        ),
+            onTap: () {
+              Navigator.pop(context);
+              onDelete();
+            },
+          ),
+        ],
       ),
     );
   }
@@ -584,28 +584,27 @@ class _FrameRow extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           onLongPress: () {
-            showModalBottomSheet<void>(
-              context: context,
-              builder: (context) => SafeArea(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ListTile(
-                      leading: const Icon(
-                        Icons.delete_outline,
-                        color: AppColors.error,
-                      ),
-                      title: const Text(
-                        '删除分镜',
-                        style: TextStyle(color: AppColors.error),
-                      ),
-                      onTap: () {
-                        Navigator.pop(context);
-                        onDelete();
-                      },
+            showGlassSheet<void>(
+              context,
+              padding: kGlassSheetMenuPadding,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ListTile(
+                    leading: const Icon(
+                      Icons.delete_outline,
+                      color: AppColors.error,
                     ),
-                  ],
-                ),
+                    title: const Text(
+                      '删除分镜',
+                      style: TextStyle(color: AppColors.error),
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      onDelete();
+                    },
+                  ),
+                ],
               ),
             );
           },

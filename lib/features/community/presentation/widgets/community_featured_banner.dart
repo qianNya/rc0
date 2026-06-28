@@ -30,7 +30,7 @@ class CommunityFeaturedBanner extends StatelessWidget {
         AppDimensions.spacingMd,
         0,
       ),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppDimensions.spacingMd),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.centerLeft,

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/domain/screenplay/script_frame_display.dart';
@@ -30,8 +31,8 @@ import '../widgets/screenplay_delete_actions.dart';
 import '../widgets/screenplay_detail_hero.dart';
 import '../widgets/screenplay_info_header.dart';
 import '../widgets/screenplay_structure_tree.dart';
-import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
+import '../../../../shared/widgets/glass/glass_sheet.dart';
 import '../../../../shared/widgets/image_preview.dart';
 import '../../../../shared/widgets/pose_cover_image.dart';
 import '../../../../shared/widgets/primary_button.dart';
@@ -473,78 +474,74 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
     bool exporting = false,
     bool downloading = false,
   }) {
-    showModalBottomSheet<void>(
-      context: context,
-      builder: (ctx) => Material(
-        color: Theme.of(ctx).canvasColor,
-        child: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (onPublish != null)
-              ListTile(
-                leading: const Icon(Icons.publish_outlined),
-                title: const Text('发布'),
-                enabled: !publishing,
-                onTap: () {
-                  Navigator.pop(ctx);
-                  onPublish();
-                },
-              ),
-            if (onSync != null)
-              ListTile(
-                leading: const Icon(Icons.cloud_upload_outlined),
-                title: const Text('同步到服务器'),
-                enabled: !publishing,
-                onTap: () {
-                  Navigator.pop(ctx);
-                  onSync();
-                },
-              ),
-            if (onDownloadCopy != null)
-              ListTile(
-                leading: const Icon(Icons.download_outlined),
-                title: const Text('下载副本'),
-                enabled: !downloading,
-                onTap: () {
-                  Navigator.pop(ctx);
-                  onDownloadCopy();
-                },
-              ),
-            if (onExport != null)
-              ListTile(
-                leading: const Icon(Icons.upload_outlined),
-                title: const Text('导出 JSON'),
-                enabled: !exporting,
-                onTap: () {
-                  Navigator.pop(ctx);
-                  onExport();
-                },
-              ),
+    showGlassSheet<void>(
+      context,
+      padding: kGlassSheetMenuPadding,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (onPublish != null)
             ListTile(
-              leading: const Icon(Icons.download_outlined),
-              title: const Text('导入剧本 JSON'),
-              enabled: !_importing,
+              leading: const Icon(Icons.publish_outlined),
+              title: const Text('发布'),
+              enabled: !publishing,
               onTap: () {
-                Navigator.pop(ctx);
-                _onImport();
+                Navigator.pop(context);
+                onPublish();
               },
             ),
-            if (isOwner)
-              ListTile(
-                leading: const Icon(Icons.delete_outline, color: AppColors.error),
-                title: const Text('删除剧本', style: TextStyle(color: AppColors.error)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  deleteScreenplayAndPop(
-                    context,
-                    script: script,
-                  );
-                },
-              ),
-          ],
-        ),
-        ),
+          if (onSync != null)
+            ListTile(
+              leading: const Icon(Icons.cloud_upload_outlined),
+              title: const Text('同步到服务器'),
+              enabled: !publishing,
+              onTap: () {
+                Navigator.pop(context);
+                onSync();
+              },
+            ),
+          if (onDownloadCopy != null)
+            ListTile(
+              leading: const Icon(Icons.download_outlined),
+              title: const Text('下载副本'),
+              enabled: !downloading,
+              onTap: () {
+                Navigator.pop(context);
+                onDownloadCopy();
+              },
+            ),
+          if (onExport != null)
+            ListTile(
+              leading: const Icon(Icons.upload_outlined),
+              title: const Text('导出 JSON'),
+              enabled: !exporting,
+              onTap: () {
+                Navigator.pop(context);
+                onExport();
+              },
+            ),
+          ListTile(
+            leading: const Icon(Icons.download_outlined),
+            title: const Text('导入剧本 JSON'),
+            enabled: !_importing,
+            onTap: () {
+              Navigator.pop(context);
+              _onImport();
+            },
+          ),
+          if (isOwner)
+            ListTile(
+              leading: const Icon(Icons.delete_outline, color: AppColors.error),
+              title: const Text('删除剧本', style: TextStyle(color: AppColors.error)),
+              onTap: () {
+                Navigator.pop(context);
+                deleteScreenplayAndPop(
+                  context,
+                  script: script,
+                );
+              },
+            ),
+        ],
       ),
     );
   }
@@ -998,7 +995,7 @@ class _ScreenplayDetailMobileState extends State<_ScreenplayDetailMobile> {
       ),
       bottomNavigationBar: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppDimensions.spacingMd),
           child: PrimaryButton(
             label: primaryLabel,
             isLoading: primaryLoading,
@@ -1134,7 +1131,7 @@ class _ScreenplayDetailDesktop extends StatelessWidget {
         onRefresh: onRefresh ?? () async {},
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(32),
+          padding: const EdgeInsets.all(AppDimensions.spacingXl),
           child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

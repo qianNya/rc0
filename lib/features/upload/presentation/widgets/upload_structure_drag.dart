@@ -103,7 +103,7 @@ Widget sceneDragFeedback(SceneDraft scene, int sceneIndex) {
       border: Border.all(color: AppColors.accent),
       boxShadow: const [
         BoxShadow(
-          color: Color(0x22000000),
+          color: AppColors.shadowDrag,
           blurRadius: 8,
           offset: Offset(0, 2),
         ),
@@ -112,6 +112,44 @@ Widget sceneDragFeedback(SceneDraft scene, int sceneIndex) {
     child: Text(
       '第${sceneIndex + 1}场 ${title.isEmpty ? '场' : title}',
       style: const TextStyle(fontSize: 13),
+    ),
+  );
+}
+
+/// Drag feedback matching the outline scene card chrome.
+Widget sceneOutlineCardDragFeedback(SceneDraft scene, int sceneIndex) {
+  final title = scene.title.trim();
+  return Material(
+    color: AppColors.surfaceSecondary,
+    borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+    child: Container(
+      width: 280,
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+        border: Border.all(color: AppColors.accent),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadowDrag,
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.drag_handle, size: 20, color: AppColors.textSecondary),
+          const SizedBox(width: 4),
+          Expanded(
+            child: Text(
+              '第${sceneIndex + 1}场 · ${title.isEmpty ? '场' : title}',
+              style: const TextStyle(fontSize: 13),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
     ),
   );
 }
@@ -126,7 +164,7 @@ Widget frameDragFeedback(FrameDraft frame) {
       border: Border.all(color: AppColors.accent),
       boxShadow: const [
         BoxShadow(
-          color: Color(0x22000000),
+          color: AppColors.shadowDrag,
           blurRadius: 8,
           offset: Offset(0, 2),
         ),

@@ -1,0 +1,52 @@
+import 'package:flutter/material.dart';
+
+import '../../app/theme/app_dimensions.dart';
+import '../../core/responsive/breakpoints.dart';
+
+/// Frosted fade from the shell tab bar midline down to the screen bottom.
+///
+/// Sits above scrollable shell content (see [AdaptiveShellPage]) and does not
+/// intercept pointer events.
+class ShellBottomFadeOverlay extends StatelessWidget {
+  const ShellBottomFadeOverlay({super.key});
+
+  /// Height from tab bar vertical center to the physical screen bottom.
+  static double heightOf(BuildContext context) {
+    if (!Breakpoints.showsShellBottomBar(context)) return 0;
+    final safeBottom = MediaQuery.paddingOf(context).bottom;
+    return safeBottom +
+        AppDimensions.floatingBarMarginBottom +
+        AppDimensions.bottomNavFloatingHeight / 2;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final height = heightOf(context);
+    if (height <= 0) return const SizedBox.shrink();
+
+    final background = Theme.of(context).scaffoldBackgroundColor;
+
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: 0,
+      height: height,
+      child: IgnorePointer(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              stops: const [0, 0.55, 1],
+              colors: [
+                background.withValues(alpha: 0),
+                background.withValues(alpha: 0.72),
+                background,
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

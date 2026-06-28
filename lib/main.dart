@@ -9,6 +9,7 @@ import 'core/network/api_auth.dart';
 import 'app/app.dart';
 import 'core/platform/platform_features.dart';
 import 'core/services/image_favorite_store.dart';
+import 'core/services/shell_nav_config_store.dart';
 import 'core/theme/theme_mode_notifier.dart';
 import 'features/auth/data/auth_repository.dart';
 import 'features/favorites/data/image_favorite_repository.dart';
@@ -46,6 +47,7 @@ Future<void> main() async {
   await ScreenplayLocalRepository.instance.initialize();
   ScreenplayImageLocalizationService.instance.initialize();
   await ThemeModeNotifier.instance.initialize();
+  await ShellNavConfigStore.instance.initialize();
   await AuthRepository.instance.initialize();
   onApiUnauthorized = AuthRepository.instance.handleUnauthorized;
   runApp(const Rc0App());

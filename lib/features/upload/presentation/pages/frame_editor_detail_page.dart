@@ -11,8 +11,6 @@ import '../../../studio/domain/script_editor_selection.dart';
 import '../../../studio/presentation/widgets/frame_inspector_panel.dart';
 import '../widgets/editor/editor_footer_actions.dart';
 import '../widgets/script_editor/script_editor_actions.dart';
-import '../../../../shared/widgets/rc0_app_bar.dart';
-
 class FrameEditorDetailPage extends StatefulWidget {
   const FrameEditorDetailPage({
     super.key,

@@ -5,7 +5,6 @@ import '../../../../../app/router/routes.dart';
 import '../../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../../shared/widgets/rc0_app_bar.dart';
 import '../../../../screenplay/data/screenplay_draft.dart';
-import '../../../../screenplay/domain/shoot_params.dart';
 import 'script_editor_actions.dart';
 import 'script_editor_shot_list_tab.dart';
 import 'script_editor_timeline_tab.dart';
@@ -46,42 +45,6 @@ Future<void> openFrameEditorDetail(
       'actIndex': actIndex,
       'sceneIndex': sceneIndex,
       'frameIndex': frameIndex,
-    },
-  );
-}
-
-Future<void> openProjectSettings(
-  BuildContext context, {
-  required ScreenplayDraft draft,
-  required TextEditingController titleController,
-  required TextEditingController synopsisController,
-  required ValueChanged<ShootParams> onShootParamsChanged,
-  required List<String> poolTags,
-  required ValueChanged<String> onToggleScreenplayTag,
-  required Future<void> Function(String) onAddScreenplayTag,
-  bool tagsLoading = false,
-  String? tagsError,
-  VoidCallback? onRetryTags,
-  VoidCallback? onPickCover,
-  VoidCallback? onResetCover,
-  VoidCallback? onSyncTitle,
-}) {
-  return context.push(
-    AppRoutes.studioSettings('draft'),
-    extra: <String, dynamic>{
-      'draft': draft,
-      'titleController': titleController,
-      'synopsisController': synopsisController,
-      'onShootParamsChanged': onShootParamsChanged,
-      'poolTags': poolTags,
-      'onToggleScreenplayTag': onToggleScreenplayTag,
-      'onAddScreenplayTag': onAddScreenplayTag,
-      'tagsLoading': tagsLoading,
-      'tagsError': tagsError,
-      'onRetryTags': onRetryTags,
-      'onPickCover': onPickCover,
-      'onResetCover': onResetCover,
-      'onSyncTitle': onSyncTitle,
     },
   );
 }

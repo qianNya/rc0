@@ -37,7 +37,7 @@ Future listSceneFrames(
   Function? eventually,
 }) async {
   await apiGet(
-    '/scenes/$sceneId/frames',
+    '/screenplay-scenes/$sceneId/frames',
     ok: (data) => ok?.call(ListSceneFramesResp.fromJson(data)),
     fail: fail,
     eventually: eventually,

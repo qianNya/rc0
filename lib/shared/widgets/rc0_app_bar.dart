@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../app/theme/system_ui_style.dart';
 import 'glass_app_bar_background.dart';
@@ -19,6 +20,8 @@ class Rc0AppBar extends StatelessWidget implements PreferredSizeWidget {
     this.titleTextStyle,
     this.iconTheme,
     this.actionsIconTheme,
+    this.frosted = true,
+    this.systemOverlayStyle,
   });
 
   final Widget? title;
@@ -33,6 +36,8 @@ class Rc0AppBar extends StatelessWidget implements PreferredSizeWidget {
   final TextStyle? titleTextStyle;
   final IconThemeData? iconTheme;
   final IconThemeData? actionsIconTheme;
+  final bool frosted;
+  final SystemUiOverlayStyle? systemOverlayStyle;
 
   @override
   Size get preferredSize {
@@ -62,8 +67,9 @@ class Rc0AppBar extends StatelessWidget implements PreferredSizeWidget {
       elevation: 0,
       scrolledUnderElevation: 0,
       surfaceTintColor: Colors.transparent,
-      flexibleSpace: const GlassAppBarBackground(),
-      systemOverlayStyle: AppSystemUi.styleFor(brightness),
+      flexibleSpace: frosted ? const GlassAppBarBackground() : null,
+      systemOverlayStyle:
+          systemOverlayStyle ?? AppSystemUi.styleFor(brightness),
     );
   }
 }

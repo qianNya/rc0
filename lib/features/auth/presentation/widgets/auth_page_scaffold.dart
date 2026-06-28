@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
-import '../../../../app/theme/app_shadows.dart';
 import '../../../../core/platform/platform_features.dart';
 import '../../../../core/responsive/breakpoints.dart';
 import '../../../../shared/widgets/desktop/desktop_card.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
+import '../../../../shared/widgets/glass/glass_card.dart';
 
 class AuthPageScaffold extends StatelessWidget {
   const AuthPageScaffold({
@@ -32,7 +32,7 @@ class AuthPageScaffold extends StatelessWidget {
       children: [
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(AppDimensions.pagePadding),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
@@ -47,13 +47,8 @@ class AuthPageScaffold extends StatelessWidget {
           child: header,
         ),
         const SizedBox(height: 20),
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
-            boxShadow: AppShadows.card,
-          ),
+        GlassCard(
+          padding: const EdgeInsets.all(AppDimensions.pagePadding),
           child: form,
         ),
         if (footer != null) ...[
@@ -61,6 +56,28 @@ class AuthPageScaffold extends StatelessWidget {
           footer!,
         ],
       ],
+    );
+  }
+
+  /// A soft accent-tinted backdrop so the frosted [GlassCard] form has
+  /// something to blur, producing the liquid-glass effect.
+  Widget _withBackdrop(BuildContext context, Widget child) {
+    final base = Theme.of(context).scaffoldBackgroundColor;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color.alphaBlend(
+              AppColors.accent.withValues(alpha: 0.14),
+              base,
+            ),
+            base,
+          ],
+        ),
+      ),
+      child: child,
     );
   }
 
@@ -80,15 +97,18 @@ class AuthPageScaffold extends StatelessWidget {
             child: const Text('帮助'),
           ),
         ],
-        body: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 440),
-              child: DesktopCard(
-                clipChild: false,
-                padding: const EdgeInsets.all(20),
-                child: _buildContent(),
+        body: _withBackdrop(
+          context,
+          Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(AppDimensions.spacingLg),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 440),
+                child: DesktopCard(
+                  clipChild: false,
+                  padding: const EdgeInsets.all(AppDimensions.pagePadding),
+                  child: _buildContent(),
+                ),
               ),
             ),
           ),
@@ -97,32 +117,37 @@ class AuthPageScaffold extends StatelessWidget {
     }
 
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back),
-                    onPressed: onBack ?? () => Navigator.of(context).maybePop(),
-                  ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: onHelp,
-                    child: const Text('帮助'),
-                  ),
-                ],
+      backgroundColor: Colors.transparent,
+      body: _withBackdrop(
+        context,
+        SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed:
+                          onBack ?? () => Navigator.of(context).maybePop(),
+                    ),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: onHelp,
+                      child: const Text('帮助'),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                child: _buildContent(),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                  child: _buildContent(),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

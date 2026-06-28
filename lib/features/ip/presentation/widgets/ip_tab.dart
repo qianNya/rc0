@@ -122,7 +122,7 @@ class IpTabState extends State<IpTab> with AutomaticKeepAliveClientMixin {
                     if (index >= items.length) {
                       return const Center(
                         child: Padding(
-                          padding: EdgeInsets.all(16),
+                          padding: EdgeInsets.all(AppDimensions.spacingMd),
                           child: SizedBox(
                             width: 24,
                             height: 24,

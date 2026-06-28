@@ -9,6 +9,7 @@ import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/data/app_catalog.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
+import '../../../../shared/widgets/glass/glass_sheet.dart';
 import '../../../../shared/widgets/rc0_widgets.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../studio/presentation/widgets/studio_editor_shell_glass_button.dart';
@@ -21,7 +22,9 @@ import '../widgets/scene_category_chips.dart';
 import '../widgets/scene_masonry_grid.dart';
 
 class SceneListPage extends StatefulWidget {
-  const SceneListPage({super.key});
+  const SceneListPage({super.key, this.embeddedInHub = false});
+
+  final bool embeddedInHub;
 
   @override
   State<SceneListPage> createState() => _SceneListPageState();
@@ -113,7 +116,7 @@ class _SceneListPageState extends State<SceneListPage> {
 
     return DesktopStackScaffold(
       title: const Text('场景库'),
-      onBack: () => popOrGoDiscovery(context),
+      onBack: widget.embeddedInHub ? null : () => popOrGoDiscovery(context),
       actions: [
         IconButton(
           tooltip: '我的场景',
@@ -328,55 +331,47 @@ class _SceneListPageState extends State<SceneListPage> {
   }
 
   void _showFilterSheet(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(AppDimensions.spacingMd),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text('筛选', style: AppTextStyles.title),
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final style in AppCatalog.sceneFilterStyles)
-                      ActionChip(label: Text(style), onPressed: () {}),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('重置'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: FilledButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('已应用本地筛选')),
-                          );
-                        },
-                        child: const Text('应用'),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+    showGlassSheet<void>(
+      context,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text('筛选', style: AppTextStyles.title),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final style in AppCatalog.sceneFilterStyles)
+                ActionChip(label: Text(style), onPressed: () {}),
+            ],
           ),
-        );
-      },
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('重置'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('已应用本地筛选')),
+                    );
+                  },
+                  child: const Text('应用'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

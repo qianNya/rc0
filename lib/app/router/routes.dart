@@ -2,11 +2,15 @@
 abstract final class AppRoutes {
   // Primary shell routes (L1)
   static const String discovery = '/discovery';
+  static const String discoveryCharacterWiki = '/discovery?hubTab=1';
   static const String library = '/library';
+  /// @deprecated Use [scenes] shell tab instead.
+  static const String screenplays = '/screenplays';
   static const String studio = '/studio';
   static const String studioCreate = '/studio/create';
+  /// Full-screen editor on root stack (avoids shell route key clashes).
+  static const String studioEditorCreate = '/studio-editor/create';
   static const String create = '/create';
-  static const String createSettingsPath = '/create/settings';
   static const String createAiHubPath = '/create/ai';
   static const String messages = '/messages';
   static const String profile = '/profile';
@@ -51,6 +55,7 @@ abstract final class AppRoutes {
   static const String myCharacters = '/my-characters';
 
   static const String scenes = '/scenes';
+  static const String action = '/action';
   static const String sceneDetail = '/scenes/:id';
   static const String sceneCreate = '/scenes/create';
   static const String sceneEdit = '/scenes/:id/edit';
@@ -67,7 +72,6 @@ abstract final class AppRoutes {
   static const String studioEditScene = '/studio/edit/:scriptId/scene/:sceneId';
   static const String studioEditFrame =
       '/studio/edit/:scriptId/scene/:sceneId/frame/:frameId';
-  static const String studioSettingsPath = '/studio/edit/:scriptId/settings';
 
   static String shootPresetPicker({
     String mode = 'select',
@@ -118,6 +122,29 @@ abstract final class AppRoutes {
   static String pose(String id) => '/pose/$id';
   static String createEdit(String id) => studioEdit(id);
   static String studioEdit(String id) => '$studio?edit=${Uri.encodeComponent(id)}';
+  static String studioCreateWithCharacter(
+    int characterId, {
+    String? name,
+  }) {
+    final params = <String, String>{'characterId': '$characterId'};
+    final trimmed = name?.trim();
+    if (trimmed != null && trimmed.isNotEmpty) {
+      params['characterName'] = trimmed;
+    }
+    return Uri(path: studioCreate, queryParameters: params).toString();
+  }
+
+  static String studioEditorCreateWithCharacter(
+    int characterId, {
+    String? name,
+  }) {
+    final params = <String, String>{'characterId': '$characterId'};
+    final trimmed = name?.trim();
+    if (trimmed != null && trimmed.isNotEmpty) {
+      params['characterName'] = trimmed;
+    }
+    return Uri(path: studioEditorCreate, queryParameters: params).toString();
+  }
   static String studioEditScriptPath(String scriptId) =>
       '/studio/edit/${Uri.encodeComponent(scriptId)}';
   static String studioEditScenePath(String scriptId, String sceneId) =>
@@ -128,15 +155,13 @@ abstract final class AppRoutes {
     String frameId,
   ) =>
       '/studio/edit/${Uri.encodeComponent(scriptId)}/scene/${Uri.encodeComponent(sceneId)}/frame/${Uri.encodeComponent(frameId)}';
-  static String studioSettings(String scriptId) =>
-      '/studio/edit/${Uri.encodeComponent(scriptId)}/settings';
-  static String createSettings(String id) =>
-      '$createSettingsPath?edit=${Uri.encodeComponent(id)}';
   static String createAiHub(String id) =>
       '$createAiHubPath?edit=${Uri.encodeComponent(id)}';
 
   /// @deprecated Use [createEdit] instead.
   static String uploadEdit(String id) => createEdit(id);
+
+  static String discoveryHubTab(int tab) => '$discovery?hubTab=$tab';
 
   static String favoritesTab(int tab) => '$favorites?tab=$tab';
   static String comingSoon(String title) =>

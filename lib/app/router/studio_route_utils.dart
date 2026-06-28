@@ -8,7 +8,11 @@ bool isStudioEditorRoute(GoRouterState state) {
   if (path.startsWith('/studio/edit/') || matched.startsWith('/studio/edit/')) {
     return true;
   }
-  if (path == AppRoutes.studioCreate || matched == AppRoutes.studioCreate) {
+  if (path == AppRoutes.studioCreate ||
+      matched == AppRoutes.studioCreate ||
+      path.endsWith('/studio/create') ||
+      path == AppRoutes.studioEditorCreate ||
+      path.startsWith('${AppRoutes.studioEditorCreate}?')) {
     return true;
   }
   if (path == AppRoutes.studio || matched == AppRoutes.studio) {

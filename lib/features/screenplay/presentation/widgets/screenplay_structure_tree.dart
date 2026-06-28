@@ -6,6 +6,7 @@ import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/domain/screenplay/script_act.dart';
 import '../../../../core/domain/screenplay/script_scene.dart';
+import '../../../../shared/widgets/glass/glass_sheet.dart';
 import '../../../../shared/widgets/image_preview.dart';
 import 'frame_thumbnail_grid.dart';
 import 'frame_thumbnail_strip.dart';
@@ -279,42 +280,37 @@ class _SceneTreeRowState extends State<_SceneTreeRow> {
         return;
       }
 
-      await showModalBottomSheet<void>(
-        context: context,
-        backgroundColor: AppColors.surface,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-        ),
-        builder: (ctx) => SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.cloud_upload_outlined),
-                title: const Text('上传此图'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  widget.onUploadFrame!(
-                    widget.actIndex,
-                    widget.sceneIndex,
-                    frameIndex,
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.delete_outline),
-                title: const Text('删除画格'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  widget.onDeleteFrame!(
-                    widget.actIndex,
-                    widget.sceneIndex,
-                    frameIndex,
-                  );
-                },
-              ),
-            ],
-          ),
+      await showGlassSheet<void>(
+        context,
+        padding: kGlassSheetMenuPadding,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.cloud_upload_outlined),
+              title: const Text('上传此图'),
+              onTap: () {
+                Navigator.pop(context);
+                widget.onUploadFrame!(
+                  widget.actIndex,
+                  widget.sceneIndex,
+                  frameIndex,
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline),
+              title: const Text('删除画格'),
+              onTap: () {
+                Navigator.pop(context);
+                widget.onDeleteFrame!(
+                  widget.actIndex,
+                  widget.sceneIndex,
+                  frameIndex,
+                );
+              },
+            ),
+          ],
         ),
       );
     }

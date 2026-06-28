@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/navigation_utils.dart';
+import '../../../../app/theme/app_dimensions.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/primary_button.dart';
-import '../../../../shared/widgets/rc0_app_bar.dart';
-
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
 
@@ -73,7 +72,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       title: const Text('编辑资料'),
       onBack: () => popOrGoDiscovery(context),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppDimensions.spacingMd),
         children: [
           TextField(
             controller: _nickname,

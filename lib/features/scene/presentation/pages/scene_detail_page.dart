@@ -17,11 +17,7 @@ import '../../data/scene_local_store.dart';
 import '../../data/scene_repository.dart';
 import '../../domain/scene_entry.dart';
 import '../../domain/scene_utils.dart';
-import '../widgets/detail/scene_inspiration_tab.dart';
-import '../widgets/detail/scene_related_tab.dart';
-import '../widgets/detail/scene_scripts_tab.dart';
-import '../widgets/detail/scene_shooting_tips_tab.dart';
-import '../widgets/detail/scene_works_tab.dart';
+import '../widgets/scene_detail_tabs.dart';
 import '../widgets/scene_action_sheet.dart';
 
 class SceneDetailPage extends StatefulWidget {

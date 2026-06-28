@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../../app/theme/app_dimensions.dart';
 import '../../../../../app/theme/app_text_styles.dart';
 import '../../../../screenplay/data/screenplay_draft.dart';
 import '../frame_editor/shot_list_card.dart';
@@ -31,7 +32,7 @@ class ScriptEditorShotListTab extends StatelessWidget {
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppDimensions.spacingMd),
       itemCount: refs.length,
       separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (context, index) {

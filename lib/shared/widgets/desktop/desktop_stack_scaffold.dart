@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../../app/theme/app_colors.dart';
+import '../../../app/theme/system_ui_style.dart';
 import '../../../core/platform/platform_features.dart';
 import '../../../core/responsive/breakpoints.dart';
 import '../../../features/shell/presentation/widgets/desktop_title_bar.dart';
@@ -28,6 +29,8 @@ class DesktopStackScaffold extends StatelessWidget {
     this.floatingActionButton,
     this.floatingActionButtonLocation,
     this.bottomNavigationBar,
+    this.overlayAppBar = false,
+    this.appBarForegroundColor,
   });
 
   final Widget title;
@@ -41,6 +44,10 @@ class DesktopStackScaffold extends StatelessWidget {
   final Widget? floatingActionButton;
   final FloatingActionButtonLocation? floatingActionButtonLocation;
   final Widget? bottomNavigationBar;
+
+  /// Immersive hero pages: transparent app bar over body, no top inset.
+  final bool overlayAppBar;
+  final Color? appBarForegroundColor;
 
   bool get _isMacOS => !kIsWeb && Platform.isMacOS;
 
@@ -63,11 +70,22 @@ class DesktopStackScaffold extends StatelessWidget {
           automaticallyImplyLeading: onBack != null && leading == null,
           actions: actions,
           centerTitle: centerTitle,
+          frosted: !overlayAppBar,
+          foregroundColor: appBarForegroundColor,
+          iconTheme: appBarForegroundColor != null
+              ? IconThemeData(color: appBarForegroundColor)
+              : null,
+          actionsIconTheme: appBarForegroundColor != null
+              ? IconThemeData(color: appBarForegroundColor)
+              : null,
+          systemOverlayStyle: overlayAppBar
+              ? AppSystemUi.darkStyle
+              : null,
         ),
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const AppBarContentInset(),
+            if (!overlayAppBar) const AppBarContentInset(),
             Expanded(child: body),
             const ShellBottomSpacer(),
           ],

@@ -6,6 +6,7 @@ import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_dimensions.dart';
 import '../../core/data/app_catalog.dart';
 import '../../core/domain/screenplay/screenplay.dart';
+import 'glass/glass_sheet.dart';
 import 'profile_widgets.dart';
 
 enum FeedTypeBadgeKind { script, template }
@@ -159,7 +160,7 @@ class FeedEngagementRow extends StatelessWidget {
             onTap: onMore,
             borderRadius: BorderRadius.circular(16),
             child: Padding(
-              padding: const EdgeInsets.all(4),
+              padding: const EdgeInsets.all(AppDimensions.spacingXs),
               child: Icon(Icons.more_horiz, size: 20, color: iconColor),
             ),
           ),
@@ -355,51 +356,39 @@ Future<void> showFeedMoreSheet(
   VoidCallback? onFork,
   VoidCallback? onDelete,
 }) {
-  return showModalBottomSheet<void>(
-    context: context,
-    backgroundColor: AppColors.surface,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(
-        top: Radius.circular(AppDimensions.radiusLg),
-      ),
+  return showGlassSheet<void>(
+    context,
+    padding: kGlassSheetMenuPadding,
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ListTile(
+          leading: const Icon(Icons.open_in_new),
+          title: const Text('查看详情'),
+          onTap: () {
+            Navigator.pop(context);
+            context.push(AppRoutes.script(screenplay.detailRouteId));
+          },
+        ),
+        if (onFork != null)
+          ListTile(
+            leading: const Icon(Icons.call_split),
+            title: const Text('Fork'),
+            onTap: () {
+              Navigator.pop(context);
+              onFork();
+            },
+          ),
+        if (onDelete != null)
+          ListTile(
+            leading: const Icon(Icons.delete_outline, color: AppColors.error),
+            title: const Text('删除', style: TextStyle(color: AppColors.error)),
+            onTap: () {
+              Navigator.pop(context);
+              onDelete();
+            },
+          ),
+      ],
     ),
-    builder: (ctx) {
-      return Material(
-        color: AppColors.surface,
-        child: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.open_in_new),
-              title: const Text('查看详情'),
-              onTap: () {
-                Navigator.pop(ctx);
-                context.push(AppRoutes.script(screenplay.detailRouteId));
-              },
-            ),
-            if (onFork != null)
-              ListTile(
-                leading: const Icon(Icons.call_split),
-                title: const Text('Fork'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  onFork();
-                },
-              ),
-            if (onDelete != null)
-              ListTile(
-                leading: const Icon(Icons.delete_outline, color: AppColors.error),
-                title: const Text('删除', style: TextStyle(color: AppColors.error)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  onDelete();
-                },
-              ),
-          ],
-        ),
-        ),
-      );
-    },
   );
 }

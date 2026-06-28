@@ -18,7 +18,10 @@ import '../../screenplay/domain/shoot_params.dart';
 import '../../screenplay/presentation/widgets/publish_visibility_dialog.dart';
 import '../../upload/data/image_pick_service.dart';
 import '../../upload/domain/upload_image_file.dart';
+import '../../upload/presentation/widgets/project_settings_sheet.dart';
+import '../../upload/presentation/widgets/editor/editor_quick_action_row.dart';
 import '../../upload/presentation/widgets/script_editor/script_editor_actions.dart';
+import '../../upload/presentation/widgets/script_editor/script_editor_batch_edit_sheet.dart';
 import '../../upload/presentation/widgets/script_editor/script_editor_navigation.dart';
 import '../../upload/presentation/widgets/script_editor/script_editor_structure_mode.dart';
 import '../../upload/presentation/widgets/upload_structure_editor.dart';
@@ -113,12 +116,16 @@ class ScreenplayEditorHost extends StatefulWidget {
   const ScreenplayEditorHost({
     super.key,
     this.editScriptId,
+    this.initialCharacterId,
+    this.initialCharacterName,
     this.enableAutoSave = false,
     this.registerShellBridge = false,
     required this.builder,
   });
 
   final String? editScriptId;
+  final int? initialCharacterId;
+  final String? initialCharacterName;
   final bool enableAutoSave;
   final bool registerShellBridge;
   final Widget Function(BuildContext context, ScreenplayEditorController controller)
@@ -179,6 +186,7 @@ class _ScreenplayEditorHostState extends State<ScreenplayEditorHost> {
     _synopsisController = TextEditingController(text: _draft.synopsis);
     _undoStack.add(_draft.copyDeep());
     if (widget.registerShellBridge) {
+      StudioEditorShellBridge.instance.beginEditorSession();
       _syncShellBridge();
     }
   }
@@ -199,6 +207,34 @@ class _ScreenplayEditorHostState extends State<ScreenplayEditorHost> {
       _draft = ScreenplayDraft();
       _editingScript = null;
       _localScriptId = null;
+    }
+    _applyInitialCharacter();
+  }
+
+  void _applyInitialCharacter() {
+    final id = widget.initialCharacterId;
+    if (id == null || id <= 0) return;
+    final name = widget.initialCharacterName?.trim() ?? '';
+    ensureDraftCharacterLinked(
+      _draft,
+      id: id,
+      name: name.isNotEmpty ? name : '角色$id',
+    );
+    _bindCharacterToFirstOpenFrame(id, name);
+  }
+
+  void _bindCharacterToFirstOpenFrame(int id, String name) {
+    for (final act in _draft.acts) {
+      for (final scene in act.scenes) {
+        for (final frame in scene.frames) {
+          if (frame.characterId != null) continue;
+          frame.characterId = id;
+          if (name.isNotEmpty) {
+            frame.characterName = name;
+          }
+          return;
+        }
+      }
     }
   }
 
@@ -485,6 +521,36 @@ class _ScreenplayEditorHostState extends State<ScreenplayEditorHost> {
       onAddScene: _addSceneFromShell,
       onSaveLocal: _saveLocal,
       saveBusy: _isPublishing || _saveStatus == EditorSaveStatus.saving,
+    );
+  }
+
+  void _syncHubBridge(BuildContext context) {
+    if (!widget.registerShellBridge) return;
+    StudioEditorShellBridge.instance.attachHubCallbacks(
+      owner: this,
+      onAiDecompose: () => openAiCreationHub(
+        context,
+        editScriptId: _effectiveLocalId,
+      ),
+      onMore: () => _openEditorMoreSheet(context),
+    );
+  }
+
+  void _openEditorMoreSheet(BuildContext context) {
+    showEditorMoreActionsSheet(
+      context,
+      onOpenProjectSettings: _openProjectSettings,
+      onBatchEdit: () => ScriptEditorBatchEditSheet.show(
+        context,
+        draft: _draft,
+        scope: BatchEditScope.entireScript,
+        onApply: _refresh,
+      ),
+      onOpenShotList: () => openShotList(
+        context,
+        draft: _draft,
+        actions: _buildEditorActions(),
+      ),
     );
   }
 
@@ -838,7 +904,7 @@ class _ScreenplayEditorHostState extends State<ScreenplayEditorHost> {
   }
 
   Future<void> _openProjectSettings() async {
-    await openProjectSettings(
+    await showProjectSettingsSheet(
       context,
       draft: _draft,
       titleController: _titleController,
@@ -902,6 +968,7 @@ class _ScreenplayEditorHostState extends State<ScreenplayEditorHost> {
   Widget build(BuildContext context) {
     if (widget.registerShellBridge) {
       _syncShellBridge();
+      _syncHubBridge(context);
     }
     return widget.builder(context, _buildController());
   }

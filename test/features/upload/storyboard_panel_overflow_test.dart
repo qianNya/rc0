@@ -6,7 +6,10 @@ import 'package:rc0/features/screenplay/domain/cine_params.dart';
 import 'package:rc0/features/upload/domain/upload_image_file.dart';
 import 'package:rc0/features/upload/presentation/widgets/editor/scene_frame_list_view.dart';
 import 'package:rc0/features/upload/presentation/widgets/script_editor/script_editor_actions.dart';
+import 'package:rc0/features/studio/presentation/studio_editor_shell_bridge.dart';
+import 'package:rc0/features/upload/presentation/widgets/editor/editor_quick_action_row.dart';
 import 'package:rc0/features/upload/presentation/widgets/script_editor/script_editor_outline_tab.dart';
+import 'package:rc0/features/upload/presentation/widgets/script_editor/script_editor_frames_tab.dart';
 import 'package:rc0/features/upload/presentation/widgets/script_editor/script_editor_storyboard_tab.dart';
 import 'package:rc0/shared/widgets/shell_insets.dart';
 
@@ -79,6 +82,7 @@ Widget _hubOutlineTab(ScreenplayDraft draft) {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  tearDown(StudioEditorShellBridge.instance.clear);
 
   Future<void> pumpStoryboard(
     WidgetTester tester, {
@@ -221,7 +225,31 @@ void main() {
     }
   });
 
-  group('ScriptEditorOutlineTab hub storyboard mode', () {
+  group('ScriptEditorFramesTab hub layout', () {
+    for (final width in [320.0, 390.0, 600.0]) {
+      testWidgets('does not overflow at ${width.toInt()}px', (tester) async {
+        final draft = _draftWithFrames(8);
+        await expectNoOverflow(
+          tester,
+          width: width,
+          withShellInsets: true,
+          child: Column(
+            children: [
+              Expanded(
+                child: ScriptEditorFramesTab(
+                  draft: draft,
+                  actions: _noopActions(draft),
+                  embeddedInHub: true,
+                ),
+              ),
+            ],
+          ),
+        );
+      });
+    }
+  });
+
+  group('ScriptEditorOutlineTab hub frames mode', () {
     for (final width in [390.0, 600.0]) {
       testWidgets('does not overflow at ${width.toInt()}px', (tester) async {
         final draft = _draftWithFrames(8);
@@ -231,7 +259,7 @@ void main() {
           withShellInsets: true,
           child: _hubOutlineTab(draft),
         );
-        await tester.tap(find.byIcon(Icons.grid_view_outlined));
+        StudioEditorShellBridge.instance.setHubMode(EditorHubMode.frames);
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
       });

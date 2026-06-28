@@ -9,6 +9,8 @@
 | `lib/api/http/api_client.dart` | 统一传输层（GET/POST/PUT/DELETE/multipart + 信封解析） |
 | `lib/api/auth/` | 注册 / 登录 / 刷新令牌 / Token 持久化 |
 | `lib/api/user/` | 当前用户、公开资料、关注、用户剧本/收藏/点赞列表 |
+| `lib/api/character/` | 角色库 CRUD、作品/图片关联 |
+| `lib/api/scene/` | 场景库 CRUD、图片关联 |
 | `lib/api/screenplay/` | 剧本 CRUD、层级树、分步 act/scene/frame、发布 |
 | `lib/api/community/` | 点赞 / 收藏切换 |
 | `lib/api/feed/` | 发现 Feed、全局搜索 |

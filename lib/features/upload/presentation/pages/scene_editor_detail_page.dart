@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../app/router/navigation_utils.dart';
+import '../../../../app/theme/app_dimensions.dart';
 import '../../../../core/domain/screenplay/script_frame_display.dart';
 import '../../../../core/responsive/breakpoints.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
@@ -17,8 +18,6 @@ import '../widgets/script_editor/script_editor_actions.dart';
 import '../widgets/script_editor/script_editor_batch_edit_sheet.dart';
 import '../widgets/script_editor/script_editor_navigation.dart';
 import '../widgets/script_editor/script_editor_timeline_tab.dart';
-import '../../../../shared/widgets/rc0_app_bar.dart';
-
 class SceneEditorDetailPage extends StatefulWidget {
   const SceneEditorDetailPage({
     super.key,
@@ -134,19 +133,13 @@ class _SceneEditorDetailPageState extends State<SceneEditorDetailPage> {
   }
 
   void _openTimeline() {
-    Navigator.of(context, rootNavigator: true).push<void>(
-      MaterialPageRoute(
-        builder: (_) => DesktopStackScaffold(
-          title: Text('$_sceneTitle · 时间线'),
-          onBack: () => Navigator.of(context).pop(),
-          body: ScriptEditorTimelineTab(
-            draft: _draft,
-            actions: widget.actions,
-            filterActIndex: widget.actIndex,
-            filterSceneIndex: widget.sceneIndex,
-          ),
-        ),
-      ),
+    openSceneTimeline(
+      context,
+      draft: _draft,
+      actions: widget.actions,
+      sceneTitle: _sceneTitle,
+      filterActIndex: widget.actIndex,
+      filterSceneIndex: widget.sceneIndex,
     );
   }
 
@@ -259,7 +252,7 @@ class _SceneEditorDetailPageState extends State<SceneEditorDetailPage> {
       case 0:
         if (isDesktop) {
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppDimensions.spacingMd),
             children: [
               SceneEditorSection(
                 scene: scene,

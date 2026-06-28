@@ -5,8 +5,6 @@ import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../widgets/editor/ai_hub_section.dart';
-import '../../../../shared/widgets/rc0_app_bar.dart';
-
 class AiCreationHubPage extends StatelessWidget {
   const AiCreationHubPage({super.key});
 

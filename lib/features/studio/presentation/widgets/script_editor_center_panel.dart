@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/routes.dart';
+import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../shared/widgets/profile_widgets.dart';
 import '../../../screenplay/data/screenplay_draft.dart';
@@ -202,7 +203,7 @@ class _ScriptEditorCenterPanelState extends State<ScriptEditorCenterPanel> {
         ),
         Expanded(child: _buildTabBody()),
         Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppDimensions.spacingMd),
           child: OutlinedButton.icon(
             onPressed: widget.onAddShot,
             icon: const Icon(Icons.add),
@@ -293,7 +294,7 @@ class _ScriptEditorCenterPanelState extends State<ScriptEditorCenterPanel> {
 
     return ListView.separated(
       controller: _scrollController,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppDimensions.spacingMd),
       itemCount: refs.length,
       separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (context, index) {

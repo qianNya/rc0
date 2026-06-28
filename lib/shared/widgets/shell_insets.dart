@@ -35,7 +35,7 @@ class ShellInsets extends InheritedWidget {
     return safeBottom +
         AppDimensions.floatingBarMarginBottom +
         AppDimensions.bottomNavFloatingHeight +
-        AppDimensions.spacingSm;
+        AppDimensions.spacingXs;
   }
 
   @override

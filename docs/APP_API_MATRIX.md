@@ -40,6 +40,10 @@
 | 角色创建 / 更新 / 删除 | `CharacterRepository.create` / `update` / `delete` | `createCharacter` / `updateCharacter` / `deleteCharacter` | POST `/characters` · PUT/DELETE `/characters/{id}` |
 | IP 下角色列表 | `CharacterRepository.fetchWorkCharacters` · IP 详情页 | `listWorkCharacters` / `createWorkCharacter` | GET/POST `/works/{id}/characters` |
 | 图片关联角色 | — | `character-api.dart`（待 UI） | GET/POST `/images/{id}/characters` · DELETE `/images/{id}/characters/{character_id}` |
+| 场景库 / 详情 | —（本地 `SceneRepository`） | `scene/api/scene-api.dart` → `listScenes` / `getScene` | GET `/scenes` · GET `/scenes/{id}` |
+| 场景创建 / 更新 / 删除 | — | `createScene` / `updateScene` / `deleteScene` | POST `/scenes` · PUT/DELETE `/scenes/{id}` |
+| 图片关联场景 | — | `scene-api.dart`（待 UI） | GET/POST `/images/{id}/scenes` · DELETE `/images/{id}/scenes/{scene_id}` |
+| 剧本场景帧列表 | — | `frame/api/frame-api.dart` → `listSceneFrames` | GET `/screenplay-scenes/{id}/frames` |
 | 分镜绑定角色 | Studio Inspector · tree sync | `FrameDraft.characterId` → `acgn_character_id` | PUT tree / PUT `.../frames/{id}` |
 | 剧本标签同步 | `ScreenplayTagsRepository.applyTagsToScreenplay` · `syncTags` | `listScreenplayTags` / `createScreenplayTag` / `tagScreenplay` / `untagScreenplay` | GET/POST `/tags` · POST `/tags/{screenplayId}` · DELETE `/tags/{screenplayId}/{tagId}` |
 | 拍摄参数预设 | `ShootPresetRepository` | `cine-preset/api/cine-preset-api.dart` → `listCinePresets` / `listMyCinePresets` / `createCinePreset` / `updateCinePreset` / `deleteCinePreset` | GET `/cine-presets?scope=0\|1` · GET `/cine-presets/mine` · POST `/cine-presets` · PUT/DELETE `/cine-presets/{id}` |

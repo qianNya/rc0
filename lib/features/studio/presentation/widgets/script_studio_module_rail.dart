@@ -95,7 +95,7 @@ class _RailButton extends StatelessWidget {
             ? null
             : () {
                 if (item.route != null) {
-                  context.go(item.route!);
+                  context.push(item.route!);
                 } else if (item.comingSoonTitle != null) {
                   context.push(AppRoutes.comingSoon(item.comingSoonTitle!));
                 }

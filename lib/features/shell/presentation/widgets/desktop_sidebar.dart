@@ -16,10 +16,10 @@ import 'desktop_title_bar.dart';
 /// Shell tab routes — use [context.go] so branch state stays in sync.
 const shellTabRoutes = {
   AppRoutes.discovery,
-  AppRoutes.library,
   AppRoutes.studio,
-  AppRoutes.messages,
+  AppRoutes.scenes,
   AppRoutes.profile,
+  AppRoutes.action,
 };
 
 String desktopSidebarActiveId(String location) {
@@ -40,6 +40,7 @@ String desktopSidebarActiveId(String location) {
       location.startsWith('/my-scenes')) {
     return 'scene_library';
   }
+  if (location.startsWith(AppRoutes.action)) return 'action_wiki';
   if (location.startsWith(AppRoutes.library)) return 'library';
   if (location.startsWith(AppRoutes.community)) return 'community';
   if (location.startsWith(AppRoutes.profile)) return 'profile';
@@ -85,6 +86,18 @@ const desktopSidebarSections = [
         route: AppRoutes.discovery,
       ),
       DesktopSidebarItem(
+        id: 'action_wiki',
+        label: '动作 Wiki',
+        icon: Icons.accessibility_new_outlined,
+        route: AppRoutes.action,
+      ),
+      DesktopSidebarItem(
+        id: 'scene_library',
+        label: '场景库',
+        icon: Icons.landscape_outlined,
+        route: AppRoutes.scenes,
+      ),
+      DesktopSidebarItem(
         id: 'scene_flow',
         label: '场景摄影流程',
         icon: Icons.movie_creation_outlined,
@@ -98,15 +111,15 @@ const desktopSidebarSections = [
       ),
       DesktopSidebarItem(
         id: 'character_wiki',
-        label: '角色库 Wiki',
+        label: '角色 Wiki',
         icon: Icons.group_outlined,
-        route: AppRoutes.character,
+        route: AppRoutes.discoveryCharacterWiki,
       ),
       DesktopSidebarItem(
         id: 'ip_wiki',
         label: 'IP 参考',
         icon: Icons.bookmarks_outlined,
-        route: AppRoutes.library,
+        route: AppRoutes.discovery,
       ),
     ],
   ),

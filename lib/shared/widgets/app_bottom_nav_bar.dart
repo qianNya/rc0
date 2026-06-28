@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_dimensions.dart';
-import 'app_brand_icon.dart';
+import '../../app/theme/app_motion.dart';
+import '../../app/theme/app_text_styles.dart';
 import 'liquid_glass_surface.dart';
+import 'liquid_tab_indicator.dart';
 import 'shell_nav_items.dart';
 
 class AppBottomNavBar extends StatelessWidget {
@@ -11,30 +13,54 @@ class AppBottomNavBar extends StatelessWidget {
     super.key,
     required this.selectedIndex,
     required this.onItemSelected,
+    this.items = const [],
     this.wrapPadding = true,
+    this.onItemLongPress,
+    this.onBarLongPress,
   });
 
+  /// Selected slot in [items], or `-1` when no primary tab is active.
   final int selectedIndex;
   final ValueChanged<int> onItemSelected;
+  final List<ShellNavItem> items;
   final bool wrapPadding;
+  final ValueChanged<int>? onItemLongPress;
+  final VoidCallback? onBarLongPress;
 
   @override
   Widget build(BuildContext context) {
-    final bar = SafeArea(
-      top: false,
+    final count = items.length;
+    final showIndicator = selectedIndex >= 0 && selectedIndex < count;
+
+    final bar = GestureDetector(
+      onLongPress: onBarLongPress,
+      behavior: HitTestBehavior.translucent,
       child: LiquidGlassSurface(
         style: LiquidGlassStyle.navigation,
         height: AppDimensions.bottomNavFloatingHeight,
-        child: Row(
+        child: Stack(
+          fit: StackFit.expand,
           children: [
-            for (var i = 0; i < mobileNavItems.length; i++)
-              Expanded(
-                child: _NavItem(
-                  item: mobileNavItems[i],
-                  selected: selectedIndex == i,
-                  onTap: () => onItemSelected(i),
-                ),
+            if (showIndicator)
+              LiquidTabIndicator(
+                selectedIndex: selectedIndex,
+                itemCount: count,
               ),
+            Row(
+              children: [
+                for (var i = 0; i < count; i++)
+                  Expanded(
+                    child: _NavSlot(
+                      item: items[i],
+                      selected: selectedIndex == i,
+                      onTap: () => onItemSelected(i),
+                      onLongPress: onItemLongPress == null
+                          ? null
+                          : () => onItemLongPress!(i),
+                    ),
+                  ),
+              ],
+            ),
           ],
         ),
       ),
@@ -49,81 +75,75 @@ class AppBottomNavBar extends StatelessWidget {
         AppDimensions.floatingBarMarginHorizontal,
         AppDimensions.floatingBarMarginBottom,
       ),
-      child: bar,
+      child: SafeArea(
+        top: false,
+        child: bar,
+      ),
     );
   }
 }
 
-class _NavItem extends StatelessWidget {
-  const _NavItem({
+class _NavSlot extends StatelessWidget {
+  const _NavSlot({
     required this.item,
     required this.selected,
     required this.onTap,
+    this.onLongPress,
   });
 
   final ShellNavItem item;
   final bool selected;
   final VoidCallback onTap;
-
-  static const _duration = Duration(milliseconds: 260);
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final unselectedColor =
-        theme.textTheme.bodyMedium?.color ?? AppColors.textSecondary;
+        isDark ? AppColors.glassNavIconDark : AppColors.glassNavIconLight;
+    final selectedColor = isDark
+        ? AppColors.glassNavIconSelectedDark
+        : AppColors.glassNavIconSelectedLight;
 
-    return InkWell(
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AppDimensions.floatingBarRadius),
-      child: Tooltip(
-        message: item.label,
-        child: TweenAnimationBuilder<double>(
-          tween: Tween(end: selected ? 1.0 : 0.0),
-          duration: _duration,
-          curve: Curves.easeOutCubic,
-          builder: (context, t, _) {
-            final color = Color.lerp(unselectedColor, AppColors.accent, t)!;
-            final scale = 1 + 0.12 * Curves.easeOutBack.transform(t);
+      onLongPress: onLongPress,
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(end: selected ? 1.0 : 0.0),
+        duration: AppMotion.normal,
+        curve: AppMotion.standard,
+        builder: (context, t, _) {
+          final color = Color.lerp(unselectedColor, selectedColor, t)!;
 
-            return SizedBox(
-              height: AppDimensions.bottomNavFloatingHeight,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Transform.scale(
-                    scale: scale,
-                    child: item.useBrandLogo
-                        ? AppBrandIcon(
-                            size: AppDimensions.bottomNavBrandIconSize,
-                            selected: selected,
-                          )
-                        : AnimatedSwitcher(
-                            duration: _duration,
-                            switchInCurve: Curves.easeOutBack,
-                            switchOutCurve: Curves.easeIn,
-                            transitionBuilder: (child, animation) {
-                              return ScaleTransition(
-                                scale: animation,
-                                child: FadeTransition(
-                                  opacity: animation,
-                                  child: child,
-                                ),
-                              );
-                            },
-                            child: Icon(
-                              selected ? item.selectedIcon : item.icon,
-                              key: ValueKey<bool>(selected),
-                              size: 22,
-                              color: color,
-                            ),
-                          ),
+          return SizedBox(
+            height: AppDimensions.bottomNavFloatingHeight,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  selected ? item.selectedIcon : item.icon,
+                  size: 22,
+                  color: color,
+                ),
+                if (!item.hideLabel) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    item.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.caption.copyWith(
+                      fontSize: 10,
+                      fontWeight:
+                          selected ? FontWeight.w600 : FontWeight.w400,
+                      color: color,
+                    ),
                   ),
                 ],
-              ),
-            );
-          },
-        ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

@@ -36,7 +36,7 @@ class ScriptStudioAppBar extends StatelessWidget implements PreferredSizeWidget 
         IconButton(
           icon: const Icon(Icons.notifications_outlined),
           tooltip: '消息',
-          onPressed: () => context.go(AppRoutes.messages),
+          onPressed: () => context.push(AppRoutes.messages),
         ),
       ],
     );

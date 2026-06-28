@@ -4,6 +4,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_dimensions.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 
 class ProfileAboutPage extends StatefulWidget {
@@ -34,7 +35,7 @@ class _ProfileAboutPageState extends State<ProfileAboutPage> {
       title: const Text('关于 rc0'),
       onBack: () => popOrGoDiscovery(context),
       body: ListView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppDimensions.spacingLg),
         children: [
           const Icon(Icons.movie_filter_outlined, size: 64, color: AppColors.accent),
           const SizedBox(height: 16),

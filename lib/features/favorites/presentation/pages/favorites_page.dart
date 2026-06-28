@@ -12,8 +12,6 @@ import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/image_preview.dart';
 import '../../../../shared/widgets/rc0_image.dart';
-import '../../../../shared/widgets/rc0_widgets.dart';
-import '../../../../shared/widgets/status_bar_spacer.dart';
 import '../../../profile/data/screenplay_favorite_repository.dart';
 import '../../data/favorite_image_item.dart';
 import '../../data/image_favorite_repository.dart';
@@ -320,7 +318,7 @@ class _FavoriteImageTile extends StatelessWidget {
                     child: InkWell(
                       onTap: onRemove,
                       child: const Padding(
-                        padding: EdgeInsets.all(4),
+                        padding: EdgeInsets.all(AppDimensions.spacingXs),
                         child: Icon(
                           Icons.close,
                           size: 16,

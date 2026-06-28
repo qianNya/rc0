@@ -2,18 +2,19 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 import '../../../../shared/widgets/pose_cover_image.dart';
 import '../../../../shared/widgets/rc0_widgets.dart';
 import '../../../screenplay/data/screenplay_draft.dart';
 import '../../../screenplay/data/screenplay_draft_tags.dart';
 import '../../../screenplay/domain/shoot_params.dart';
-import '../utils/shoot_preset_navigation.dart';
+import 'collapsible_tag_picker.dart';
 import 'editor/screenplay_characters_section.dart';
 import 'editor/screenplay_scenes_section.dart';
-import 'collapsible_tag_picker.dart';
-import 'upload_shoot_param_cards.dart';
+import 'project_default_preset_section.dart';
 
 const _coverAspectRatio = 16 / 9;
+const _settingsTabs = ['基础设置', '参数设置'];
 
 InputDecoration _settingsFieldDecoration(String hintText) {
   return InputDecoration(
@@ -26,8 +27,8 @@ InputDecoration _settingsFieldDecoration(String hintText) {
   );
 }
 
-/// Full project settings form (cover, title, synopsis, tags, default params).
-class ProjectSettingsForm extends StatelessWidget {
+/// Project settings with switchable basic / params tabs.
+class ProjectSettingsForm extends StatefulWidget {
   const ProjectSettingsForm({
     super.key,
     required this.draft,
@@ -43,6 +44,9 @@ class ProjectSettingsForm extends StatelessWidget {
     this.onPickCover,
     this.onResetCover,
     this.onCharactersChanged,
+    this.useGlassFields = false,
+    this.tabIndex,
+    this.onTabChanged,
   });
 
   final ScreenplayDraft draft;
@@ -58,23 +62,75 @@ class ProjectSettingsForm extends StatelessWidget {
   final VoidCallback? onPickCover;
   final VoidCallback? onResetCover;
   final VoidCallback? onCharactersChanged;
+  final bool useGlassFields;
+  final int? tabIndex;
+  final ValueChanged<int>? onTabChanged;
+
+  @override
+  State<ProjectSettingsForm> createState() => _ProjectSettingsFormState();
+}
+
+class _ProjectSettingsFormState extends State<ProjectSettingsForm> {
+  late int _tabIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabIndex = widget.tabIndex ?? 0;
+  }
+
+  @override
+  void didUpdateWidget(covariant ProjectSettingsForm oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.tabIndex != null && widget.tabIndex != oldWidget.tabIndex) {
+      _tabIndex = widget.tabIndex!;
+    }
+  }
+
+  void _setTab(int index) {
+    if (_tabIndex == index) return;
+    setState(() => _tabIndex = index);
+    widget.onTabChanged?.call(index);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final coverPath = draftCoverDisplayPath(draft);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        GlassSegmentedControl(
+          segments: _settingsTabs,
+          selectedIndex: _tabIndex,
+          onChanged: _setTab,
+          margin: EdgeInsets.zero,
+        ),
+        const SizedBox(height: AppDimensions.spacingSm),
+        Expanded(
+          child: IndexedStack(
+            index: _tabIndex,
+            children: [
+              _SettingsTabScroll(child: _buildBasicTab()),
+              _SettingsTabScroll(child: _buildParamsTab()),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBasicTab() {
+    final coverPath = draftCoverDisplayPath(widget.draft);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('基础设置', style: AppTextStyles.title),
-        const SizedBox(height: 12),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
               child: SizedBox(
-                width: 120,
+                width: 108,
                 child: AspectRatio(
                   aspectRatio: _coverAspectRatio,
                   child: coverPath != null
@@ -92,75 +148,93 @@ class ProjectSettingsForm extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            if (onPickCover != null)
+            if (widget.onPickCover != null)
               OutlinedButton(
-                onPressed: onPickCover,
+                onPressed: widget.onPickCover,
                 child: const Text('更换封面'),
               ),
-            if (!draft.usesDefaultCover && onResetCover != null) ...[
+            if (!widget.draft.usesDefaultCover && widget.onResetCover != null) ...[
               const SizedBox(width: 8),
               TextButton(
-                onPressed: onResetCover,
+                onPressed: widget.onResetCover,
                 child: const Text('恢复默认'),
               ),
             ],
           ],
         ),
-        const SizedBox(height: 16),
-        TextField(
-          controller: titleController,
-          style: AppTextStyles.title,
-          decoration: _settingsFieldDecoration('项目名称'),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: synopsisController,
-          style: AppTextStyles.body,
-          maxLines: 4,
-          decoration: _settingsFieldDecoration('项目简介'),
-        ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 14),
+        if (widget.useGlassFields) ...[
+          GlassTextField(
+            controller: widget.titleController,
+            hintText: '项目名称',
+          ),
+          const SizedBox(height: 10),
+          GlassTextField(
+            controller: widget.synopsisController,
+            hintText: '项目简介',
+            maxLines: 4,
+            minLines: 2,
+          ),
+        ] else ...[
+          TextField(
+            controller: widget.titleController,
+            style: AppTextStyles.title,
+            decoration: _settingsFieldDecoration('项目名称'),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: widget.synopsisController,
+            style: AppTextStyles.body,
+            maxLines: 4,
+            decoration: _settingsFieldDecoration('项目简介'),
+          ),
+        ],
+        const SizedBox(height: 14),
         ScreenplayCharactersSection(
-          draft: draft,
-          onChanged: onCharactersChanged ?? () {},
+          draft: widget.draft,
+          onChanged: widget.onCharactersChanged ?? () {},
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 14),
         ScreenplayScenesSection(
-          draft: draft,
-          onChanged: onCharactersChanged ?? () {},
+          draft: widget.draft,
+          onChanged: widget.onCharactersChanged ?? () {},
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 14),
         CollapsibleTagPicker(
           title: '标签',
-          poolTags: poolTags,
-          selectedTags: draft.tags,
-          badgeCount: poolTags.length,
-          collapsedSummaryTags: draftTagPoolSorted(draft),
-          onToggle: onToggleScreenplayTag,
-          onAdd: onAddScreenplayTag,
-          loading: tagsLoading,
-          error: tagsError,
-          onRetry: onRetryTags,
-        ),
-        const SizedBox(height: 24),
-        const Text('默认参数', style: AppTextStyles.title),
-        const SizedBox(height: 12),
-        ShootParamPresetCards(
-          params: draft.defaultParams,
-          onChanged: onShootParamsChanged,
-        ),
-        const SizedBox(height: 8),
-        TextButton(
-          onPressed: () async {
-            final params = await openShootPresetPicker(
-              context,
-              scope: 'screenplay',
-            );
-            if (params != null) onShootParamsChanged(params);
-          },
-          child: const Text('从预设库选择'),
+          poolTags: widget.poolTags,
+          selectedTags: widget.draft.tags,
+          badgeCount: widget.poolTags.length,
+          collapsedSummaryTags: draftTagPoolSorted(widget.draft),
+          onToggle: widget.onToggleScreenplayTag,
+          onAdd: widget.onAddScreenplayTag,
+          loading: widget.tagsLoading,
+          error: widget.tagsError,
+          onRetry: widget.onRetryTags,
         ),
       ],
+    );
+  }
+
+  Widget _buildParamsTab() {
+    return ProjectDefaultPresetSection(
+      params: widget.draft.defaultParams,
+      onChanged: widget.onShootParamsChanged,
+      compact: true,
+    );
+  }
+}
+
+class _SettingsTabScroll extends StatelessWidget {
+  const _SettingsTabScroll({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(top: 4, bottom: AppDimensions.spacingSm),
+      child: child,
     );
   }
 }

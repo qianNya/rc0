@@ -8,7 +8,7 @@ import '../../../../../shared/widgets/pose_cover_image.dart';
 import '../../../../../shared/widgets/rc0_widgets.dart';
 import '../../../../screenplay/data/screenplay_draft.dart'
     show ScreenplayDraft, draftCoverDisplayPath;
-import '../../../../screenplay/data/screenplay_draft_tags.dart';
+import 'draft_meta_chip_row.dart';
 
 enum ProjectHeroLayout { card, summary }
 
@@ -63,48 +63,10 @@ class ProjectHeroCard extends StatelessWidget {
   }
 
   Widget _buildTagsRow() {
-    final tags = draftTagPoolSorted(draft).take(4).toList();
-    if (tags.isEmpty && onAddTagTap == null) return const SizedBox.shrink();
-
-    return Wrap(
-      spacing: 4,
-      runSpacing: 4,
-      children: [
-        for (final tag in tags)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-            decoration: BoxDecoration(
-              color: AppColors.accentLight,
-              borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-            ),
-            child: Text(
-              tag,
-              style: AppTextStyles.bodySecondary.copyWith(
-                fontSize: 10,
-                color: AppColors.accent,
-              ),
-            ),
-          ),
-        if (onAddTagTap != null)
-          GestureDetector(
-            onTap: onAddTagTap,
-            child: Container(
-              width: 22,
-              height: 18,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: AppColors.surfaceSecondary,
-                borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: const Icon(
-                Icons.add,
-                size: 12,
-                color: AppColors.accent,
-              ),
-            ),
-          ),
-      ],
+    return DraftMetaChipRow(
+      draft: draft,
+      maxTags: 6,
+      fontSize: 10,
     );
   }
 
@@ -205,7 +167,32 @@ class ProjectHeroCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   _buildSynopsis(maxLines: 2),
                   const SizedBox(height: 6),
-                  _buildTagsRow(),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: _buildTagsRow()),
+                      if (onAddTagTap != null)
+                        GestureDetector(
+                          onTap: onAddTagTap,
+                          child: Container(
+                            width: 22,
+                            height: 18,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceSecondary,
+                              borderRadius:
+                                  BorderRadius.circular(AppDimensions.radiusSm),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: const Icon(
+                              Icons.add,
+                              size: 12,
+                              color: AppColors.accent,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ],
               ),
             ),

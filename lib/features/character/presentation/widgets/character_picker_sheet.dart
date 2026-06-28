@@ -154,7 +154,7 @@ class _CharacterPickerSheetState extends State<CharacterPickerSheet> {
                     : _items.isEmpty
                         ? const Center(child: Text('暂无角色'))
                         : ListView.separated(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(AppDimensions.spacingMd),
                             itemCount: _items.length + 1,
                             separatorBuilder: (_, __) =>
                                 const SizedBox(height: 8),

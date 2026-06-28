@@ -182,14 +182,18 @@ class _MembershipChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFFFFF3E0), Color(0xFFFFE0B2)],
+            colors: [
+              AppColors.membershipGradientStart,
+              AppColors.membershipGradientEnd,
+            ],
           ),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.workspace_premium, color: Color(0xFFFF9800), size: 22),
+            const Icon(Icons.workspace_premium,
+                color: AppColors.membershipIcon, size: 22),
             const SizedBox(height: 4),
             Text(
               '开通会员',

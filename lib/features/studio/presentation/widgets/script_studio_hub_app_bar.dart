@@ -2,13 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/routes.dart';
-import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_text_styles.dart';
 import '../../../../app/theme/system_ui_style.dart';
 import '../../../../shared/widgets/glass_app_bar_background.dart';
 import '../../../screenplay/data/screenplay_draft.dart';
 import '../../../screenplay/data/screenplay_local_repository.dart';
 import '../screenplay_editor_host.dart';
+import 'script_studio_hub_info_strip.dart';
 
 class ScriptStudioHubAppBar extends StatelessWidget
     implements PreferredSizeWidget {
@@ -27,7 +26,7 @@ class ScriptStudioHubAppBar extends StatelessWidget
   final String hubFallbackTitle;
   final String statusLabel;
 
-  static const toolbarHeight = 52.0;
+  static const toolbarHeight = ScriptStudioHubInfoStrip.stripHeight;
 
   @override
   Size get preferredSize => const Size.fromHeight(toolbarHeight);
@@ -58,93 +57,43 @@ class ScriptStudioHubAppBar extends StatelessWidget
         icon: const Icon(Icons.arrow_back, size: 22),
         onPressed: onBack,
       ),
+      leadingWidth: 48,
+      titleSpacing: 0,
       title: ListenableBuilder(
         listenable: controller.titleController,
         builder: (context, _) {
           final rawTitle = controller.titleController.text.trim();
           final displayTitle = _bookTitle(rawTitle);
+          final subtitle =
+              '$statusLabel · ${draftHierarchySummary(draft)}';
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.end,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              PopupMenuButton<String>(
-                tooltip: '切换剧本',
-                offset: const Offset(0, 40),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        displayTitle,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+          return Align(
+            alignment: Alignment.centerLeft,
+            child: ScriptStudioHubInfoStrip(
+              height: toolbarHeight,
+              draft: draft,
+              title: displayTitle,
+              subtitle: subtitle,
+              onEditTap: onOpenSettings,
+              scriptMenuItems: [
+                for (final script in projects)
+                  PopupMenuItem<String>(
+                    value: script.id,
+                    child: Text(
+                      script.title,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const Icon(
-                      Icons.keyboard_arrow_down,
-                      size: 20,
-                      color: AppColors.textSecondary,
-                    ),
-                  ],
-                ),
-                itemBuilder: (context) => [
-                  for (final script in projects)
-                    PopupMenuItem<String>(
-                      value: script.id,
-                      child: Text(
-                        script.title,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                ],
-                onSelected: (id) {
-                  if (id != scriptId) {
-                    context.go(AppRoutes.studioEdit(id));
-                  }
-                },
-              ),
-              Text(
-                '$statusLabel · ${draftHierarchySummary(draft)}',
-                style: AppTextStyles.bodySecondary.copyWith(fontSize: 12),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+                  ),
+              ],
+              onScriptSelected: (id) {
+                if (id != scriptId) {
+                  context.go(AppRoutes.studioEdit(id));
+                }
+              },
+            ),
           );
         },
       ),
-      actions: [
-        Padding(
-          padding: const EdgeInsets.only(right: 8),
-          child: Center(
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: onOpenSettings,
-                customBorder: const CircleBorder(),
-                child: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: const Icon(
-                    Icons.edit_outlined,
-                    size: 16,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

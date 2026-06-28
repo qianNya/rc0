@@ -5,6 +5,7 @@ import '../../../../../app/theme/app_colors.dart';
 import '../../../../../app/theme/app_dimensions.dart';
 import '../../../../../app/theme/app_text_styles.dart';
 import '../../../../../core/domain/screenplay/script_frame.dart';
+import '../../../../../shared/widgets/glass/glass_sheet.dart';
 import '../../../../screenplay/presentation/widgets/frame_thumbnail_grid.dart';
 import '../frame_editor/shot_list_card.dart';
 import '../../../../screenplay/data/screenplay_draft.dart';
@@ -58,34 +59,27 @@ void showSceneFrameFilterSheet(
   required SceneFrameFilter current,
   required ValueChanged<SceneFrameFilter> onSelected,
 }) {
-  showModalBottomSheet<void>(
-    context: context,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(
-        top: Radius.circular(AppDimensions.radiusLg),
-      ),
-    ),
-    builder: (context) => SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text('筛选', style: AppTextStyles.title),
+  showGlassSheet<void>(
+    context,
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(bottom: AppDimensions.spacingSm),
+          child: Text('筛选', style: AppTextStyles.title),
+        ),
+        for (final option in SceneFrameFilter.values)
+          ListTile(
+            title: Text(_filterLabel(option)),
+            trailing: current == option
+                ? const Icon(Icons.check, color: AppColors.accent)
+                : null,
+            onTap: () {
+              onSelected(option);
+              Navigator.pop(context);
+            },
           ),
-          for (final option in SceneFrameFilter.values)
-            ListTile(
-              title: Text(_filterLabel(option)),
-              trailing: current == option
-                  ? const Icon(Icons.check, color: AppColors.accent)
-                  : null,
-              onTap: () {
-                onSelected(option);
-                Navigator.pop(context);
-              },
-            ),
-        ],
-      ),
+      ],
     ),
   );
 }
@@ -95,34 +89,27 @@ void showSceneFrameSortSheet(
   required SceneFrameSort current,
   required ValueChanged<SceneFrameSort> onSelected,
 }) {
-  showModalBottomSheet<void>(
-    context: context,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(
-        top: Radius.circular(AppDimensions.radiusLg),
-      ),
-    ),
-    builder: (context) => SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text('排序', style: AppTextStyles.title),
+  showGlassSheet<void>(
+    context,
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(bottom: AppDimensions.spacingSm),
+          child: Text('排序', style: AppTextStyles.title),
+        ),
+        for (final option in SceneFrameSort.values)
+          ListTile(
+            title: Text(_sortLabel(option)),
+            trailing: current == option
+                ? const Icon(Icons.check, color: AppColors.accent)
+                : null,
+            onTap: () {
+              onSelected(option);
+              Navigator.pop(context);
+            },
           ),
-          for (final option in SceneFrameSort.values)
-            ListTile(
-              title: Text(_sortLabel(option)),
-              trailing: current == option
-                  ? const Icon(Icons.check, color: AppColors.accent)
-                  : null,
-              onTap: () {
-                onSelected(option);
-                Navigator.pop(context);
-              },
-            ),
-        ],
-      ),
+      ],
     ),
   );
 }

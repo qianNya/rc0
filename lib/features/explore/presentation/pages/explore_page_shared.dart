@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/routes.dart';
+import '../../../../app/theme/app_dimensions.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/network/api_auth.dart';
 import '../../../../core/responsive/breakpoints.dart';
@@ -40,7 +41,7 @@ List<Widget> buildDiscoverySlivers({
     if (remoteLoadingMore)
       const SliverToBoxAdapter(
         child: Padding(
-          padding: EdgeInsets.all(16),
+          padding: EdgeInsets.all(AppDimensions.spacingMd),
           child: Center(
             child: SizedBox(
               width: 24,

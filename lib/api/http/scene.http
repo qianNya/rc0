@@ -1,0 +1,109 @@
+### Scene library API
+
+@baseUrl = http://localhost:8080
+@accessToken = {{login.response.body.data.access_token}}
+@sceneId = 1
+@imageId = 1
+
+### @name listScenes
+GET {{baseUrl}}/scenes?page=1&page_size=20
+Accept: application/json
+
+###
+
+### @name listScenesByCategory
+GET {{baseUrl}}/scenes?category=海边
+Accept: application/json
+
+###
+
+### @name searchScenes
+GET {{baseUrl}}/scenes?q=礁石
+Accept: application/json
+
+###
+
+### @name createScene
+POST {{baseUrl}}/scenes
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "title": "海边礁石",
+  "category": "海边",
+  "location": "海岸礁石区",
+  "city": "厦门",
+  "description": "黑色礁石与海浪交织，日落时分色调层次丰富。",
+  "cover_url": "",
+  "tags": ["自然风光", "海边", "日落"],
+  "themes": ["电影感", "情绪片"],
+  "image_urls": [],
+  "shooting_tips": {
+    "最佳时间": "日落前1小时",
+    "推荐焦段": "35mm / 50mm / 85mm"
+  },
+  "sort": 100
+}
+
+> {%
+    if (response.body.data && response.body.data.id) {
+        client.global.set("sceneId", response.body.data.id);
+    }
+%}
+
+###
+
+### @name getScene
+GET {{baseUrl}}/scenes/{{sceneId}}
+Accept: application/json
+
+###
+
+### @name updateScene
+PUT {{baseUrl}}/scenes/{{sceneId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "title": "海边礁石（更新）",
+  "category": "海边",
+  "location": "海岸礁石区",
+  "city": "厦门",
+  "description": "更新后的描述",
+  "tags": ["自然风光", "海边"],
+  "themes": ["电影感"],
+  "shooting_tips": { "最佳时间": "日落前1小时" },
+  "sort": 100
+}
+
+###
+
+### @name deleteScene
+DELETE {{baseUrl}}/scenes/{{sceneId}}
+Authorization: Bearer {{accessToken}}
+
+###
+
+### @name listImageScenes
+GET {{baseUrl}}/images/{{imageId}}/scenes
+Accept: application/json
+
+###
+
+### @name linkImageScene
+POST {{baseUrl}}/images/{{imageId}}/scenes
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "scene_id": 1,
+  "relation_type": 0
+}
+
+###
+
+### @name unlinkImageScene
+DELETE {{baseUrl}}/images/{{imageId}}/scenes/{{sceneId}}
+Authorization: Bearer {{accessToken}}
+
+###

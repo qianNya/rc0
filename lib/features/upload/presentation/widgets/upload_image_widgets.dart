@@ -183,7 +183,7 @@ class _ImageThumb extends StatelessWidget {
               onTap: onRemove,
               borderRadius: BorderRadius.circular(12),
               child: const Padding(
-                padding: EdgeInsets.all(4),
+                padding: EdgeInsets.all(AppDimensions.spacingXs),
                 child: Icon(Icons.close, size: 16, color: Colors.white),
               ),
             ),

@@ -4,12 +4,11 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_dimensions.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/inline_error_banner.dart';
 import '../../data/screenplay_like_repository.dart';
-import '../../../../shared/widgets/rc0_app_bar.dart';
-
 class ProfileLikesPage extends StatefulWidget {
   const ProfileLikesPage({super.key});
 
@@ -71,7 +70,7 @@ class _ProfileLikesPageState extends State<ProfileLikesPage> {
                   )
                 : ListView.separated(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(AppDimensions.spacingMd),
                     itemCount: items.length + (_error != null ? 1 : 0),
                     separatorBuilder: (_, _) => const SizedBox(height: 8),
                     itemBuilder: (_, i) {

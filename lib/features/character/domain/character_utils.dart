@@ -60,6 +60,37 @@ List<CharacterEntry> filterCharactersByCategory(
       .toList(growable: false);
 }
 
+/// Wiki 角色库分类筛选（含「推荐」与 IP 简称）。
+List<CharacterEntry> filterWikiCharactersByCategory(
+  List<CharacterEntry> items,
+  String category, {
+  int Function(int characterId)? screenplayCountFor,
+}) {
+  if (category == '推荐') {
+    final countFor = screenplayCountFor ?? screenplayCountForCharacter;
+    final sorted = List<CharacterEntry>.from(items)
+      ..sort(
+        (a, b) => countFor(b.id).compareTo(countFor(a.id)),
+      );
+    return sorted;
+  }
+  if (category == '星穹铁道') {
+    return filterCharactersByCategory(items, '崩坏星穹铁道');
+  }
+  if (category == '崩坏') {
+    return items
+        .where((e) => e.workTitle.contains('崩坏'))
+        .toList(growable: false);
+  }
+  return filterCharactersByCategory(items, category);
+}
+
+String wikiCharacterSourceTag(CharacterEntry entry) {
+  if (entry.workTitle.isNotEmpty) return entry.workTitle;
+  if (entry.workId == 0) return '原创';
+  return '官方';
+}
+
 bool matchesMyCharacterTab(
   CharacterEntry entry,
   int tabIndex, {

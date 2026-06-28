@@ -8,7 +8,7 @@ class ThemeModeNotifier extends ChangeNotifier {
 
   static final ThemeModeNotifier instance = ThemeModeNotifier._();
 
-  ThemeMode _themeMode = ThemeMode.dark;
+  ThemeMode _themeMode = ThemeMode.light;
   bool _initialized = false;
 
   ThemeMode get themeMode => _themeMode;
@@ -18,7 +18,7 @@ class ThemeModeNotifier extends ChangeNotifier {
     if (_initialized) return;
     final prefs = await SharedPreferences.getInstance();
     final stored = prefs.getString(_prefKey);
-    _themeMode = _parseThemeMode(stored) ?? ThemeMode.dark;
+    _themeMode = _parseThemeMode(stored) ?? ThemeMode.light;
     _initialized = true;
     notifyListeners();
   }
@@ -32,8 +32,18 @@ class ThemeModeNotifier extends ChangeNotifier {
   }
 
   Future<void> toggleDarkLight() async {
-    final next = _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+    final next =
+        _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
     await setThemeMode(next);
+  }
+
+  /// User-facing label for settings subtitles.
+  static String labelFor(ThemeMode mode) {
+    return switch (mode) {
+      ThemeMode.light => '浅色',
+      ThemeMode.dark => '深色',
+      ThemeMode.system => '跟随系统',
+    };
   }
 
   ThemeMode? _parseThemeMode(String? value) {

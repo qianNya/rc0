@@ -3,16 +3,18 @@ import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../../../app/router/routes.dart';
+import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/services/app_update_service.dart';
 import '../../../../core/theme/theme_mode_notifier.dart';
 import '../../../../core/utils/state_listeners.dart';
 import '../../../../core/responsive/breakpoints.dart';
 import '../../../../shared/widgets/desktop_shell_app_bar.dart';
+import '../../../../shared/widgets/glass/glass_sheet.dart';
 import '../../../../shared/widgets/profile_widgets.dart';
 import '../../../../shared/widgets/rc0_widgets.dart';
 import '../../../../shared/widgets/shell_insets.dart';
-import '../../../../shared/widgets/status_bar_spacer.dart';
 import '../../../../shared/widgets/theme_mode_selector.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../favorites/data/image_favorite_repository.dart';
@@ -23,10 +25,11 @@ import '../../data/screenplay_favorite_repository.dart';
 import '../widgets/profile_grid_tile.dart';
 import '../widgets/profile_header_card.dart';
 import '../widgets/profile_settings_tile.dart';
-import '../../../../shared/widgets/rc0_app_bar.dart';
 
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+  const ProfilePage({super.key, this.embeddedInHub = false});
+
+  final bool embeddedInHub;
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -263,32 +266,32 @@ class _ProfilePageState extends State<ProfilePage> {
                   title: '作品库',
                   subtitle: '$worksCount 个作品',
                   icon: Icons.video_library_outlined,
-                  iconColor: const Color(0xFF7C4DFF),
-                  iconBackground: const Color(0xFFEDE7F6),
+                  iconColor: AppColors.catPurple,
+                  iconBackground: AppColors.catPurpleBg,
                   onTap: () => context.push(AppRoutes.profileWorks),
                 ),
                 ProfileGridTile(
                   title: '收藏夹',
                   subtitle: '$favoriteCount 个收藏',
                   icon: Icons.star_outline,
-                  iconColor: const Color(0xFFE91E63),
-                  iconBackground: const Color(0xFFFCE4EC),
+                  iconColor: AppColors.catPink,
+                  iconBackground: AppColors.catPinkBg,
                   onTap: () => context.go(AppRoutes.favoritesTab(1)),
                 ),
                 ProfileGridTile(
                   title: '模板库',
                   subtitle: '快速制作视频',
                   icon: Icons.dashboard_outlined,
-                  iconColor: const Color(0xFF2196F3),
-                  iconBackground: const Color(0xFFE3F2FD),
+                  iconColor: AppColors.catBlue,
+                  iconBackground: AppColors.catBlueBg,
                   onTap: () => context.push(AppRoutes.community),
                 ),
                 ProfileGridTile(
                   title: 'LUT 调色',
                   subtitle: '电影感预设',
                   icon: Icons.tune,
-                  iconColor: const Color(0xFF4CAF50),
-                  iconBackground: const Color(0xFFE8F5E9),
+                  iconColor: AppColors.catGreen,
+                  iconBackground: AppColors.catGreenBg,
                   onTap: () => _comingSoon('LUT 调色'),
                 ),
               ],
@@ -300,32 +303,32 @@ class _ProfilePageState extends State<ProfilePage> {
                   title: '创建作品',
                   subtitle: '开始你的创作',
                   icon: Icons.add_circle_outline,
-                  iconColor: const Color(0xFF7C4DFF),
-                  iconBackground: const Color(0xFFEDE7F6),
+                  iconColor: AppColors.catPurple,
+                  iconBackground: AppColors.catPurpleBg,
                   onTap: () => context.go(AppRoutes.studioCreate),
                 ),
                 ProfileGridTile(
                   title: '使用模板',
                   subtitle: '快速制作视频',
                   icon: Icons.auto_awesome_mosaic_outlined,
-                  iconColor: const Color(0xFF9C27B0),
-                  iconBackground: const Color(0xFFF3E5F5),
+                  iconColor: AppColors.catViolet,
+                  iconBackground: AppColors.catVioletBg,
                   onTap: () => context.push(AppRoutes.community),
                 ),
                 ProfileGridTile(
                   title: '导入素材',
                   subtitle: '导入本地文件',
                   icon: Icons.upload_file_outlined,
-                  iconColor: const Color(0xFF2196F3),
-                  iconBackground: const Color(0xFFE3F2FD),
+                  iconColor: AppColors.catBlue,
+                  iconBackground: AppColors.catBlueBg,
                   onTap: () => context.go(AppRoutes.studioCreate),
                 ),
                 ProfileGridTile(
                   title: 'AI 工具',
                   subtitle: '智能创作助手',
                   icon: Icons.auto_fix_high_outlined,
-                  iconColor: const Color(0xFFE91E63),
-                  iconBackground: const Color(0xFFFCE4EC),
+                  iconColor: AppColors.catPink,
+                  iconBackground: AppColors.catPinkBg,
                   onTap: () => _comingSoon('AI 工具'),
                 ),
               ],
@@ -337,16 +340,16 @@ class _ProfilePageState extends State<ProfilePage> {
                   title: '消息中心',
                   subtitle: '评论、点赞和通知',
                   icon: Icons.chat_bubble_outline,
-                  iconColor: const Color(0xFF7C4DFF),
-                  iconBackground: const Color(0xFFEDE7F6),
+                  iconColor: AppColors.catPurple,
+                  iconBackground: AppColors.catPurpleBg,
                   onTap: () => _comingSoon('消息中心'),
                 ),
                 ProfileGridTile(
                   title: '点赞记录',
                   subtitle: '查看你点赞的内容',
                   icon: Icons.favorite_outline,
-                  iconColor: const Color(0xFFE91E63),
-                  iconBackground: const Color(0xFFFCE4EC),
+                  iconColor: AppColors.catPink,
+                  iconBackground: AppColors.catPinkBg,
                   onTap: loggedIn
                       ? () => context.push(AppRoutes.profileLikes)
                       : () => context.go(
@@ -357,16 +360,16 @@ class _ProfilePageState extends State<ProfilePage> {
                   title: '关注动态',
                   subtitle: '关注用户的最新动态',
                   icon: Icons.people_outline,
-                  iconColor: const Color(0xFF2196F3),
-                  iconBackground: const Color(0xFFE3F2FD),
+                  iconColor: AppColors.catBlue,
+                  iconBackground: AppColors.catBlueBg,
                   onTap: () => context.push(AppRoutes.community),
                 ),
                 ProfileGridTile(
                   title: '帮助与反馈',
                   subtitle: '问题反馈与建议',
                   icon: Icons.headset_mic_outlined,
-                  iconColor: const Color(0xFFFF9800),
-                  iconBackground: const Color(0xFFFFF3E0),
+                  iconColor: AppColors.catOrange,
+                  iconBackground: AppColors.catOrangeBg,
                   onTap: () => _comingSoon('帮助与反馈'),
                 ),
               ],
@@ -387,7 +390,9 @@ class _ProfilePageState extends State<ProfilePage> {
                     listenable: ThemeModeNotifier.instance,
                     builder: (context, _) => ProfileSettingsTile(
                       title: '外观设置',
-                      subtitle: '深色 / 浅色 / 跟随系统',
+                      subtitle: ThemeModeNotifier.labelFor(
+                        ThemeModeNotifier.instance.themeMode,
+                      ),
                       icon: Icons.dark_mode_outlined,
                       onTap: () => _showThemeSheet(context),
                     ),
@@ -423,6 +428,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
     if (Breakpoints.isDesktop(context)) {
       return DesktopShellTabScaffold(appBar: appBar, body: body);
+    }
+
+    if (widget.embeddedInHub) {
+      return Scaffold(body: body);
     }
 
     return Scaffold(appBar: appBar, body: body);
@@ -463,23 +472,30 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _showThemeSheet(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              '外观设置',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 16),
-            const ThemeModeSelector(),
-            const SizedBox(height: 8),
-          ],
-        ),
+    showGlassSheet<void>(
+      context,
+      padding: const EdgeInsets.fromLTRB(
+        AppDimensions.spacingLg,
+        AppDimensions.spacingSm,
+        AppDimensions.spacingLg,
+        AppDimensions.spacingLg,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            '外观设置',
+            style: AppTextStyles.title.copyWith(fontSize: 16),
+          ),
+          const SizedBox(height: AppDimensions.spacingXs),
+          Text(
+            '选择应用的颜色主题',
+            style: AppTextStyles.bodySecondary.copyWith(fontSize: 13),
+          ),
+          const SizedBox(height: AppDimensions.spacingMd),
+          const ThemeModeSelector(),
+        ],
       ),
     );
   }

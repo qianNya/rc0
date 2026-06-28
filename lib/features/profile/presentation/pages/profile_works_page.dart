@@ -3,12 +3,13 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/router/routes.dart';
+import '../../../../app/theme/app_dimensions.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/utils/state_listeners.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/inline_error_banner.dart';
-import '../../../../shared/widgets/screenplay_card.dart';
+import '../../../../shared/widgets/template_grid_card.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../screenplay/data/screenplay_local_repository.dart';
 import '../../../screenplay/presentation/widgets/screenplay_delete_actions.dart';
@@ -104,7 +105,7 @@ class _ProfileWorksPageState extends State<ProfileWorksPage> {
       itemCount: drafts.length,
       itemBuilder: (_, i) {
         final script = drafts[i];
-        return ScreenplayCard(
+        return TemplateGridCard(
           screenplay: script,
           compact: true,
           onDelete: () => _deleteLocal(script),
@@ -169,7 +170,7 @@ class _ProfileWorksPageState extends State<ProfileWorksPage> {
                           ],
                         )
                       : ListView(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(AppDimensions.spacingMd),
                           children: [
                             if (error != null)
                               InlineErrorBanner(
@@ -196,7 +197,7 @@ class _ProfileWorksPageState extends State<ProfileWorksPage> {
                                 itemCount: remote.length,
                                 itemBuilder: (_, i) {
                                   final script = remote[i];
-                                  return ScreenplayCard(
+                                  return TemplateGridCard(
                                     screenplay: script,
                                     compact: true,
                                     showVisibilityBadge: true,
@@ -207,7 +208,7 @@ class _ProfileWorksPageState extends State<ProfileWorksPage> {
                               ),
                               if (loadingMore)
                                 const Padding(
-                                  padding: EdgeInsets.all(16),
+                                  padding: EdgeInsets.all(AppDimensions.spacingMd),
                                   child: Center(
                                     child: SizedBox(
                                       width: 24,

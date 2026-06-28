@@ -88,6 +88,12 @@ abstract final class ApiResponseInterceptor {
       if (data is Map<String, dynamic>) {
         return ApiInterceptResult(isSuccess: true, data: data);
       }
+      if (data is List) {
+        return ApiInterceptResult(
+          isSuccess: true,
+          data: {'items': data},
+        );
+      }
       return ApiInterceptResult(isSuccess: true, data: const {});
     }
 

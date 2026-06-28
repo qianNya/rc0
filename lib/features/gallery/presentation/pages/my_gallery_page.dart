@@ -491,7 +491,7 @@ class _MyGalleryPageState extends State<MyGalleryPage> {
         if (_gallery.loadingMore)
           const SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.all(16),
+              padding: EdgeInsets.all(AppDimensions.spacingMd),
               child: Center(
                 child: SizedBox(
                   width: 24,

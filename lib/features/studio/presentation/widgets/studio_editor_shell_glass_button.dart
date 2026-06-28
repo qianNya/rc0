@@ -12,17 +12,19 @@ class StudioEditorShellGlassButton extends StatefulWidget {
     required this.onPressed,
     this.icon,
     this.label,
+    this.child,
     this.loading = false,
     this.visible = true,
     this.minWidth = AppDimensions.bottomNavFloatingHeight,
     this.animationDelay = Duration.zero,
     this.exitDelay = Duration.zero,
     this.tooltip,
-  }) : assert(icon != null || label != null);
+  }) : assert(icon != null || label != null || child != null);
 
   final VoidCallback? onPressed;
   final IconData? icon;
   final String? label;
+  final Widget? child;
   final bool loading;
   final bool visible;
   final double minWidth;
@@ -67,7 +69,11 @@ class _StudioEditorShellGlassButtonState extends State<StudioEditorShellGlassBut
     ).animate(curve);
 
     if (widget.visible) {
-      _playEntrance();
+      if (widget.animationDelay == Duration.zero) {
+        _motionController.value = 1;
+      } else {
+        _playEntrance();
+      }
     }
   }
 
@@ -139,31 +145,32 @@ class _StudioEditorShellGlassButtonState extends State<StudioEditorShellGlassBut
                     scale: animation,
                     child: FadeTransition(opacity: animation, child: child),
                   ),
-                  child: widget.loading
-                      ? SizedBox(
-                          key: const ValueKey('loading'),
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: color,
-                          ),
-                        )
-                      : widget.icon != null
-                          ? Icon(
-                              widget.icon,
-                              key: ValueKey(widget.icon),
-                              size: 22,
-                              color: color,
-                            )
-                          : Text(
-                              widget.label!,
-                              key: ValueKey(widget.label),
-                              style: AppTextStyles.label.copyWith(
-                                fontSize: 13,
+                  child: widget.child ??
+                      (widget.loading
+                          ? SizedBox(
+                              key: const ValueKey('loading'),
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
                                 color: color,
                               ),
-                            ),
+                            )
+                          : widget.icon != null
+                              ? Icon(
+                                  widget.icon,
+                                  key: ValueKey(widget.icon),
+                                  size: 22,
+                                  color: color,
+                                )
+                              : Text(
+                                  widget.label!,
+                                  key: ValueKey(widget.label),
+                                  style: AppTextStyles.label.copyWith(
+                                    fontSize: 13,
+                                    color: color,
+                                  ),
+                                )),
                 ),
               ),
             ),

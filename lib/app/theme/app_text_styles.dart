@@ -37,4 +37,12 @@ abstract final class AppTextStyles {
     height: 1.2,
     color: AppColors.textPrimary,
   );
+
+  /// Smallest text level — metadata, badges, helper captions.
+  static const TextStyle caption = TextStyle(
+    fontSize: 12,
+    fontWeight: FontWeight.w400,
+    height: 1.3,
+    color: AppColors.textSecondary,
+  );
 }

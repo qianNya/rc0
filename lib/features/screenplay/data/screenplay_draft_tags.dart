@@ -48,3 +48,33 @@ List<String> mergeTagSuggestions({
 }) {
   return {...pool, ...remoteSuggestions}.toList()..sort();
 }
+
+/// Whether [ref] carries [tag] on the frame or any ancestor node in the draft.
+bool draftFrameMatchesTag(
+  ScreenplayDraft draft,
+  DraftFrameRef ref,
+  String tag,
+) {
+  if (tag.isEmpty) return true;
+  if (draft.tags.contains(tag)) return true;
+  if (ref.actIndex < 0 || ref.actIndex >= draft.acts.length) return false;
+  final act = draft.acts[ref.actIndex];
+  if (act.tags.contains(tag)) return true;
+  if (ref.sceneIndex < 0 || ref.sceneIndex >= act.scenes.length) return false;
+  final scene = act.scenes[ref.sceneIndex];
+  if (scene.tags.contains(tag)) return true;
+  return ref.frame.tags.contains(tag);
+}
+
+/// Whether [ref] matches any tag in [tags] (OR semantics).
+bool draftFrameMatchesAnyTag(
+  ScreenplayDraft draft,
+  DraftFrameRef ref,
+  Set<String> tags,
+) {
+  if (tags.isEmpty) return true;
+  for (final tag in tags) {
+    if (draftFrameMatchesTag(draft, ref, tag)) return true;
+  }
+  return false;
+}

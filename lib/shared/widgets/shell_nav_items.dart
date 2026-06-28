@@ -29,8 +29,8 @@ class ShellNavItem {
   final bool useBrandLogo;
 }
 
-/// Mobile bottom-nav items (首页 / 图库 / 创作 / 消息 / 我的).
-const List<ShellNavItem> mobileNavItems = [
+/// Primary mobile bottom-nav slots (Wiki / 场景 / 我的).
+const List<ShellNavItem> mobilePrimaryNavItems = [
   ShellNavItem(
     branchIndex: 0,
     label: 'Wiki',
@@ -38,32 +38,36 @@ const List<ShellNavItem> mobileNavItems = [
     selectedIcon: Icons.menu_book,
   ),
   ShellNavItem(
-    branchIndex: 1,
-    label: '图库',
-    icon: Icons.grid_view_outlined,
-    selectedIcon: Icons.grid_view,
-  ),
-  ShellNavItem(
     branchIndex: 2,
-    label: '创作',
-    icon: Icons.movie_creation_outlined,
-    selectedIcon: Icons.movie_creation,
-    hideLabel: true,
-    useBrandLogo: true,
-    mobileOnly: true,
+    label: '场景',
+    icon: Icons.landscape_outlined,
+    selectedIcon: Icons.landscape,
   ),
   ShellNavItem(
     branchIndex: 3,
-    label: '通知',
-    icon: Icons.notifications_outlined,
-    selectedIcon: Icons.notifications,
-  ),
-  ShellNavItem(
-    branchIndex: 4,
     label: '我的',
     icon: Icons.person_outline,
     selectedIcon: Icons.person,
   ),
+];
+
+/// Detached create entry — rendered as a trailing glass capsule on mobile.
+const ShellNavItem mobileCreateNavItem = ShellNavItem(
+  branchIndex: 1,
+  label: '创作',
+  icon: Icons.movie_creation_outlined,
+  selectedIcon: Icons.movie_creation,
+  hideLabel: true,
+  useBrandLogo: true,
+  mobileOnly: true,
+);
+
+/// Legacy combined list (primary slots + detached create) for branch lookup.
+final List<ShellNavItem> mobileNavItems = [
+  mobilePrimaryNavItems[0],
+  mobilePrimaryNavItems[1],
+  mobileCreateNavItem,
+  mobilePrimaryNavItems[2],
 ];
 
 /// Desktop sidebar items.

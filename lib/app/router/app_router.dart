@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/action/presentation/pages/action_wiki_page.dart';
 import '../../features/auth/data/auth_repository.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
-import '../../features/community/presentation/pages/community_page.dart';
-import '../../features/explore/presentation/pages/explore_page.dart';
 import '../../features/gallery/presentation/pages/my_gallery_page.dart';
+import '../../features/community/presentation/pages/community_page.dart';
 import '../../features/character/presentation/pages/character_ai_page.dart';
 import '../../features/character/presentation/pages/character_create_page.dart';
 import '../../features/character/presentation/pages/character_detail_page.dart';
@@ -30,18 +30,16 @@ import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/profile/presentation/pages/profile_works_page.dart';
 import '../../features/screenplay/presentation/pages/screenplay_detail_page.dart';
 import '../../features/shell/presentation/pages/adaptive_shell_page.dart';
+import '../../features/shell/presentation/pages/wiki_hub_page.dart';
 import '../../features/studio/presentation/pages/script_studio_create_page.dart';
 import '../../features/studio/presentation/pages/script_studio_page.dart';
 import '../../features/tasks/presentation/pages/tasks_page.dart';
 import '../../features/user/presentation/pages/user_profile_page.dart';
 import '../../features/upload/presentation/pages/ai_creation_hub_page.dart';
 import '../../features/upload/presentation/pages/frame_editor_detail_page.dart';
-import '../../features/upload/presentation/pages/project_settings_page.dart';
 import '../../features/upload/presentation/pages/scene_editor_detail_page.dart';
 import '../../features/upload/presentation/pages/shoot_preset_picker_page.dart';
 import '../../features/upload/presentation/widgets/script_editor/script_editor_actions.dart';
-import '../../features/screenplay/data/screenplay_draft.dart';
-import '../../features/screenplay/domain/shoot_params.dart';
 import 'routes.dart';
 
 abstract final class AppRouter {
@@ -90,6 +88,18 @@ abstract final class AppRouter {
     final extra = state.extra;
     if (extra is Map<String, dynamic>) return extra;
     return null;
+  }
+
+  static ScriptStudioCreatePage _scriptStudioCreatePage(GoRouterState state) {
+    final characterId =
+        int.tryParse(state.uri.queryParameters['characterId'] ?? '');
+    final characterName = state.uri.queryParameters['characterName'];
+    final editId = state.uri.queryParameters['edit'];
+    return ScriptStudioCreatePage(
+      editScriptId: editId,
+      initialCharacterId: characterId,
+      initialCharacterName: characterName,
+    );
   }
 
   static final GoRouter router = GoRouter(
@@ -321,10 +331,14 @@ abstract final class AppRouter {
         },
       ),
       GoRoute(
-        path: AppRoutes.scenes,
-        name: 'scenes',
+        path: AppRoutes.studioEditorCreate,
+        name: 'studio-editor-create',
         parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) => const SceneListPage(),
+        builder: (context, state) => _scriptStudioCreatePage(state),
+      ),
+      GoRoute(
+        path: AppRoutes.screenplays,
+        redirect: (_, _) => AppRoutes.scenes,
       ),
       GoRoute(
         path: AppRoutes.myScenes,
@@ -446,6 +460,19 @@ abstract final class AppRouter {
         },
       ),
       GoRoute(
+        path: AppRoutes.library,
+        name: 'library',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const MyGalleryPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.messages,
+        name: 'messages',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) =>
+            const ProfileComingSoonPage(title: '消息'),
+      ),
+      GoRoute(
         path: AppRoutes.favorites,
         name: 'favorites',
         parentNavigatorKey: rootNavigatorKey,
@@ -469,15 +496,6 @@ abstract final class AppRouter {
           final id = state.pathParameters['id'];
           if (id == null) return AppRoutes.discovery;
           return AppRoutes.script(id);
-        },
-      ),
-      GoRoute(
-        path: AppRoutes.createSettingsPath,
-        name: 'create-settings',
-        redirect: (context, state) {
-          final edit = state.uri.queryParameters['edit'];
-          if (edit == null || edit.isEmpty) return AppRoutes.studioCreate;
-          return AppRoutes.studioSettings(edit);
         },
       ),
       GoRoute(
@@ -555,53 +573,6 @@ abstract final class AppRouter {
         },
       ),
       GoRoute(
-        path: AppRoutes.studioSettingsPath,
-        name: 'studio-settings',
-        parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) {
-          final map = _asMapExtra(state);
-          final draft = map?['draft'] as ScreenplayDraft?;
-          final titleController =
-              map?['titleController'] as TextEditingController?;
-          final synopsisController =
-              map?['synopsisController'] as TextEditingController?;
-          final onShootParamsChanged =
-              map?['onShootParamsChanged'] as ValueChanged<ShootParams>?;
-          final poolTags =
-              (map?['poolTags'] as List<String>?) ?? const <String>[];
-          final onToggleScreenplayTag =
-              map?['onToggleScreenplayTag'] as ValueChanged<String>?;
-          final onAddScreenplayTag =
-              map?['onAddScreenplayTag'] as Future<void> Function(String)?;
-          if (draft == null ||
-              titleController == null ||
-              synopsisController == null ||
-              onShootParamsChanged == null ||
-              onToggleScreenplayTag == null ||
-              onAddScreenplayTag == null) {
-            final scriptId = state.pathParameters['scriptId'] ?? '';
-            return ScriptStudioCreatePage(
-              editScriptId: scriptId.isEmpty ? null : scriptId,
-            );
-          }
-          return ProjectSettingsPage(
-            draft: draft,
-            titleController: titleController,
-            synopsisController: synopsisController,
-            onShootParamsChanged: onShootParamsChanged,
-            poolTags: poolTags,
-            onToggleScreenplayTag: onToggleScreenplayTag,
-            onAddScreenplayTag: onAddScreenplayTag,
-            tagsLoading: map?['tagsLoading'] as bool? ?? false,
-            tagsError: map?['tagsError'] as String?,
-            onRetryTags: map?['onRetryTags'] as VoidCallback?,
-            onPickCover: map?['onPickCover'] as VoidCallback?,
-            onResetCover: map?['onResetCover'] as VoidCallback?,
-            onSyncTitle: map?['onSyncTitle'] as VoidCallback?,
-          );
-        },
-      ),
-      GoRoute(
         path: AppRoutes.createAiHubPath,
         name: 'create-ai-hub',
         parentNavigatorKey: rootNavigatorKey,
@@ -617,22 +588,15 @@ abstract final class AppRouter {
               GoRoute(
                 path: AppRoutes.discovery,
                 name: 'discovery',
-                pageBuilder: (context, state) => NoTransitionPage(
-                  key: state.pageKey,
-                  child: const ExplorePage(),
-                ),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: AppRoutes.library,
-                name: 'library',
-                pageBuilder: (context, state) => NoTransitionPage(
-                  key: state.pageKey,
-                  child: const MyGalleryPage(),
-                ),
+                pageBuilder: (context, state) {
+                  final hubTab =
+                      int.tryParse(state.uri.queryParameters['hubTab'] ?? '') ??
+                          0;
+                  return NoTransitionPage(
+                    key: state.pageKey,
+                    child: WikiHubPage(initialTabIndex: hubTab),
+                  );
+                },
               ),
             ],
           ),
@@ -657,7 +621,7 @@ abstract final class AppRouter {
                     name: 'studio-create',
                     pageBuilder: (context, state) => NoTransitionPage(
                       key: state.pageKey,
-                      child: const ScriptStudioCreatePage(),
+                      child: _scriptStudioCreatePage(state),
                     ),
                   ),
                 ],
@@ -667,11 +631,11 @@ abstract final class AppRouter {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: AppRoutes.messages,
-                name: 'messages',
+                path: AppRoutes.scenes,
+                name: 'scenes',
                 pageBuilder: (context, state) => NoTransitionPage(
                   key: state.pageKey,
-                  child: const ProfileComingSoonPage(title: '消息'),
+                  child: const SceneListPage(embeddedInHub: true),
                 ),
               ),
             ],
@@ -684,6 +648,18 @@ abstract final class AppRouter {
                 pageBuilder: (context, state) => NoTransitionPage(
                   key: state.pageKey,
                   child: const ProfilePage(),
+                ),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.action,
+                name: 'action',
+                pageBuilder: (context, state) => NoTransitionPage(
+                  key: state.pageKey,
+                  child: const ActionWikiPage(embeddedInHub: true),
                 ),
               ),
             ],

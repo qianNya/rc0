@@ -10,12 +10,11 @@ import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/data/preset_catalog.dart';
 import '../../../../core/utils/state_listeners.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
+import '../../../../shared/widgets/glass/glass_sheet.dart';
 import '../../../screenplay/data/shoot_preset_repository.dart';
 import '../../../screenplay/domain/shoot_preset.dart';
 import '../widgets/preset_marketplace_widgets.dart';
 import '../widgets/shoot_preset_edit_sheet.dart';
-import '../../../../shared/widgets/rc0_app_bar.dart';
-
 enum ShootPresetPickerMode { select, manage }
 
 enum _MarketTab { mine, official, community }
@@ -154,42 +153,38 @@ class _ShootPresetPickerPageState extends State<ShootPresetPickerPage> {
   }
 
   Future<void> _showMyPresetMenu(ShootPreset preset) async {
-    final action = await showModalBottomSheet<String>(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.edit_outlined),
-              title: const Text('编辑'),
-              onTap: () => Navigator.pop(ctx, 'edit'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.copy_outlined),
-              title: const Text('复制'),
-              onTap: () => Navigator.pop(ctx, 'duplicate'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.share_outlined),
-              title: const Text('分享'),
-              onTap: () => Navigator.pop(ctx, 'share'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.cloud_upload_outlined),
-              title: const Text('上传社区'),
-              onTap: () => Navigator.pop(ctx, 'upload'),
-            ),
-            ListTile(
-              leading: Icon(Icons.delete_outline, color: AppColors.error),
-              title: Text('删除', style: TextStyle(color: AppColors.error)),
-              onTap: () => Navigator.pop(ctx, 'delete'),
-            ),
-          ],
-        ),
+    final action = await showGlassSheet<String>(
+      context,
+      padding: kGlassSheetMenuPadding,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.edit_outlined),
+            title: const Text('编辑'),
+            onTap: () => Navigator.pop(context, 'edit'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.copy_outlined),
+            title: const Text('复制'),
+            onTap: () => Navigator.pop(context, 'duplicate'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.share_outlined),
+            title: const Text('分享'),
+            onTap: () => Navigator.pop(context, 'share'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.cloud_upload_outlined),
+            title: const Text('上传社区'),
+            onTap: () => Navigator.pop(context, 'upload'),
+          ),
+          ListTile(
+            leading: Icon(Icons.delete_outline, color: AppColors.error),
+            title: Text('删除', style: TextStyle(color: AppColors.error)),
+            onTap: () => Navigator.pop(context, 'delete'),
+          ),
+        ],
       ),
     );
     if (!mounted || action == null) return;

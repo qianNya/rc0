@@ -59,6 +59,13 @@ class ShootPresetRepository extends ChangeNotifier {
     return null;
   }
 
+  ShootPreset? findByParams(ShootParams params) {
+    for (final p in allPresets) {
+      if (p.params == params) return p;
+    }
+    return null;
+  }
+
   Future<void> load() async {
     await Future.wait([_loadCache(), _loadRecent()]);
     if (_builtin.isEmpty) {

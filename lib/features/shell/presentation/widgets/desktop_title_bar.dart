@@ -63,19 +63,19 @@ class _DesktopWindowControlsState extends State<DesktopWindowControls>
           mainAxisSize: MainAxisSize.min,
           children: [
             _MacWindowButton(
-              color: const Color(0xFFFF5F57),
+              color: AppColors.macWindowClose,
               onPressed: windowManager.close,
               tooltip: '关闭',
             ),
             const SizedBox(width: 8),
             _MacWindowButton(
-              color: const Color(0xFFFEBC2E),
+              color: AppColors.macWindowMinimize,
               onPressed: windowManager.minimize,
               tooltip: '最小化',
             ),
             const SizedBox(width: 8),
             _MacWindowButton(
-              color: const Color(0xFF28C840),
+              color: AppColors.macWindowZoom,
               onPressed: _toggleMaximize,
               tooltip: _isMaximized ? '还原' : '最大化',
             ),

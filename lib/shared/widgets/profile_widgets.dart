@@ -430,7 +430,7 @@ class FeaturedBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: AppDimensions.spacingMd),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppDimensions.pagePadding),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [AppColors.accent, AppColors.profileGradientEnd],

@@ -110,9 +110,28 @@ abstract final class AppTheme {
         elevation: 0,
         shadowColor: brightness == Brightness.dark
             ? Colors.black54
-            : const Color(0x0F000000),
+            : AppColors.shadowSoft,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+        ),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: surface,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusXl),
+        ),
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: surface,
+        modalBackgroundColor: surface,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppDimensions.floatingBarRadius),
+          ),
         ),
       ),
       dividerTheme: DividerThemeData(

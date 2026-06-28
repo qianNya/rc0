@@ -27,7 +27,7 @@ class CharacterScriptListTile extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppDimensions.spacingSm),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Material(
         color: isDark ? AppColors.characterCardDark : theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(AppDimensions.radiusXl),
@@ -73,7 +73,7 @@ class CharacterScriptListTile extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${formatCharacterCount(screenplay.favorites)}收藏',
+                          '${screenplay.frameCount}动作 · ${formatCharacterCount(screenplay.favorites)}收藏',
                           style: AppTextStyles.bodySecondary.copyWith(
                             fontSize: 11,
                             color: AppColors.accent,
