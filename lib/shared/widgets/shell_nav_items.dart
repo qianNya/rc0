@@ -33,9 +33,9 @@ class ShellNavItem {
 const List<ShellNavItem> mobileNavItems = [
   ShellNavItem(
     branchIndex: 0,
-    label: '首页',
-    icon: Icons.home_outlined,
-    selectedIcon: Icons.home,
+    label: 'Wiki',
+    icon: Icons.menu_book_outlined,
+    selectedIcon: Icons.menu_book,
   ),
   ShellNavItem(
     branchIndex: 1,
@@ -54,7 +54,7 @@ const List<ShellNavItem> mobileNavItems = [
   ),
   ShellNavItem(
     branchIndex: 3,
-    label: '消息',
+    label: '通知',
     icon: Icons.notifications_outlined,
     selectedIcon: Icons.notifications,
   ),
@@ -70,9 +70,9 @@ const List<ShellNavItem> mobileNavItems = [
 const List<ShellNavItem> desktopNavItems = [
   ShellNavItem(
     branchIndex: 0,
-    label: '首页',
-    icon: Icons.home_outlined,
-    selectedIcon: Icons.home,
+    label: 'Wiki',
+    icon: Icons.menu_book_outlined,
+    selectedIcon: Icons.menu_book,
     desktopOnly: true,
   ),
   ShellNavItem(

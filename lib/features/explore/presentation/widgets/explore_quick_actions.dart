@@ -14,13 +14,13 @@ class ExploreQuickActions extends StatelessWidget {
       case '图片':
         context.go(AppRoutes.library);
       case '剧本':
-        context.push(AppRoutes.community);
+        context.push(AppRoutes.wikiScriptPath());
       case '分镜':
         context.push(AppRoutes.comingSoon('分镜'));
       case '预设':
         context.push(AppRoutes.shootPresetPicker(mode: 'manage'));
       case '用户':
-        context.push(AppRoutes.search);
+        context.push(AppRoutes.wikiCharacterPath());
     }
   }
 

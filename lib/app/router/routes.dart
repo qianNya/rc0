@@ -1,6 +1,6 @@
 /// Central route paths — shared across mobile & desktop shells.
 abstract final class AppRoutes {
-  // Primary tab routes
+  // Primary shell routes (L1)
   static const String discovery = '/discovery';
   static const String library = '/library';
   static const String studio = '/studio';
@@ -18,7 +18,7 @@ abstract final class AppRoutes {
   /// @deprecated Use [discovery] instead.
   static const String explore = '/';
 
-  // Stack routes
+  // Utility / stack routes
   static const String community = '/community';
   static const String settings = '/settings';
   static const String search = '/search';
@@ -28,6 +28,9 @@ abstract final class AppRoutes {
   /// @deprecated Use [create] instead.
   static const String upload = '/upload';
 
+  // Wiki domain routes (剧本 + 角色 + IP)
+  static const String wikiScript = '/wiki/script';
+  static const String wikiCharacter = '/wiki/character';
   static const String scriptList = '/script';
   static const String scriptDetail = '/script/:id';
   static const String scriptSceneDetail = '/script/:id/scene/:sid';
@@ -57,8 +60,14 @@ abstract final class AppRoutes {
   /// @deprecated Use [character] instead.
   static const String characters = '/characters';
 
+  // Photo flow routes (场景摄影流程)
   static const String preset = '/preset';
   static const String presetDetail = '/preset/:id';
+  static const String studioEditScript = '/studio/edit/:scriptId';
+  static const String studioEditScene = '/studio/edit/:scriptId/scene/:sceneId';
+  static const String studioEditFrame =
+      '/studio/edit/:scriptId/scene/:sceneId/frame/:frameId';
+  static const String studioSettingsPath = '/studio/edit/:scriptId/settings';
 
   static String shootPresetPicker({
     String mode = 'select',
@@ -86,6 +95,8 @@ abstract final class AppRoutes {
   static const String poseDetail = '/pose/:id';
 
   static String script(String id) => '/script/$id';
+  static String wikiScriptPath() => wikiScript;
+  static String wikiCharacterPath() => wikiCharacter;
   static String scriptScene(String scriptId, String sceneId) =>
       '/script/$scriptId/scene/$sceneId';
   static String scriptShot(String scriptId, String sceneId, String shotId) =>
@@ -107,6 +118,18 @@ abstract final class AppRoutes {
   static String pose(String id) => '/pose/$id';
   static String createEdit(String id) => studioEdit(id);
   static String studioEdit(String id) => '$studio?edit=${Uri.encodeComponent(id)}';
+  static String studioEditScriptPath(String scriptId) =>
+      '/studio/edit/${Uri.encodeComponent(scriptId)}';
+  static String studioEditScenePath(String scriptId, String sceneId) =>
+      '/studio/edit/${Uri.encodeComponent(scriptId)}/scene/${Uri.encodeComponent(sceneId)}';
+  static String studioEditFramePath(
+    String scriptId,
+    String sceneId,
+    String frameId,
+  ) =>
+      '/studio/edit/${Uri.encodeComponent(scriptId)}/scene/${Uri.encodeComponent(sceneId)}/frame/${Uri.encodeComponent(frameId)}';
+  static String studioSettings(String scriptId) =>
+      '/studio/edit/${Uri.encodeComponent(scriptId)}/settings';
   static String createSettings(String id) =>
       '$createSettingsPath?edit=${Uri.encodeComponent(id)}';
   static String createAiHub(String id) =>

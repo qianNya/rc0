@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../../app/router/routes.dart';
-import '../../pages/ai_creation_hub_page.dart';
-import '../../pages/project_settings_page.dart';
+import '../../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
+import '../../../../../shared/widgets/rc0_app_bar.dart';
 import '../../../../screenplay/data/screenplay_draft.dart';
 import '../../../../screenplay/domain/shoot_params.dart';
 import 'script_editor_actions.dart';
-import '../../pages/scene_editor_detail_page.dart';
-import '../../pages/frame_editor_detail_page.dart';
+import 'script_editor_shot_list_tab.dart';
+import 'script_editor_timeline_tab.dart';
 
 Future<void> openSceneEditorDetail(
   BuildContext context, {
@@ -18,16 +18,16 @@ Future<void> openSceneEditorDetail(
   int initialTabIndex = 0,
   int? initialFrameIndex,
 }) {
-  return Navigator.of(context, rootNavigator: true).push<void>(
-    MaterialPageRoute(
-      builder: (_) => SceneEditorDetailPage(
-        actions: actions,
-        actIndex: actIndex,
-        sceneIndex: sceneIndex,
-        initialTabIndex: initialTabIndex,
-        initialFrameIndex: initialFrameIndex,
-      ),
-    ),
+  const scriptId = 'draft';
+  return context.push(
+    AppRoutes.studioEditScenePath(scriptId, '$sceneIndex'),
+    extra: <String, dynamic>{
+      'actions': actions,
+      'actIndex': actIndex,
+      'sceneIndex': sceneIndex,
+      'initialTabIndex': initialTabIndex,
+      'initialFrameIndex': initialFrameIndex,
+    },
   );
 }
 
@@ -38,15 +38,15 @@ Future<void> openFrameEditorDetail(
   required int sceneIndex,
   required int frameIndex,
 }) {
-  return Navigator.of(context, rootNavigator: true).push<void>(
-    MaterialPageRoute(
-      builder: (_) => FrameEditorDetailPage(
-        actions: actions,
-        actIndex: actIndex,
-        sceneIndex: sceneIndex,
-        frameIndex: frameIndex,
-      ),
-    ),
+  const scriptId = 'draft';
+  return context.push(
+    AppRoutes.studioEditFramePath(scriptId, '$sceneIndex', '$frameIndex'),
+    extra: <String, dynamic>{
+      'actions': actions,
+      'actIndex': actIndex,
+      'sceneIndex': sceneIndex,
+      'frameIndex': frameIndex,
+    },
   );
 }
 
@@ -66,22 +66,63 @@ Future<void> openProjectSettings(
   VoidCallback? onResetCover,
   VoidCallback? onSyncTitle,
 }) {
+  return context.push(
+    AppRoutes.studioSettings('draft'),
+    extra: <String, dynamic>{
+      'draft': draft,
+      'titleController': titleController,
+      'synopsisController': synopsisController,
+      'onShootParamsChanged': onShootParamsChanged,
+      'poolTags': poolTags,
+      'onToggleScreenplayTag': onToggleScreenplayTag,
+      'onAddScreenplayTag': onAddScreenplayTag,
+      'tagsLoading': tagsLoading,
+      'tagsError': tagsError,
+      'onRetryTags': onRetryTags,
+      'onPickCover': onPickCover,
+      'onResetCover': onResetCover,
+      'onSyncTitle': onSyncTitle,
+    },
+  );
+}
+
+Future<void> openSceneTimeline(
+  BuildContext context, {
+  required ScreenplayDraft draft,
+  required ScriptEditorActions actions,
+  required String sceneTitle,
+  int? filterActIndex,
+  int? filterSceneIndex,
+}) {
   return Navigator.of(context, rootNavigator: true).push<void>(
     MaterialPageRoute(
-      builder: (_) => ProjectSettingsPage(
-        draft: draft,
-        titleController: titleController,
-        synopsisController: synopsisController,
-        onShootParamsChanged: onShootParamsChanged,
-        poolTags: poolTags,
-        onToggleScreenplayTag: onToggleScreenplayTag,
-        onAddScreenplayTag: onAddScreenplayTag,
-        tagsLoading: tagsLoading,
-        tagsError: tagsError,
-        onRetryTags: onRetryTags,
-        onPickCover: onPickCover,
-        onResetCover: onResetCover,
-        onSyncTitle: onSyncTitle,
+      builder: (ctx) => DesktopStackScaffold(
+        title: Text('$sceneTitle · 时间线'),
+        onBack: () => Navigator.of(ctx).pop(),
+        body: ScriptEditorTimelineTab(
+          draft: draft,
+          actions: actions,
+          filterActIndex: filterActIndex,
+          filterSceneIndex: filterSceneIndex,
+        ),
+      ),
+    ),
+  );
+}
+
+Future<void> openShotList(
+  BuildContext context, {
+  required ScreenplayDraft draft,
+  required ScriptEditorActions actions,
+}) {
+  return Navigator.of(context, rootNavigator: true).push<void>(
+    MaterialPageRoute(
+      builder: (_) => Scaffold(
+        appBar: Rc0AppBar(title: const Text('分镜列表')),
+        body: ScriptEditorShotListTab(
+          draft: draft,
+          actions: actions,
+        ),
       ),
     ),
   );
@@ -91,8 +132,6 @@ void openAiCreationHub(BuildContext context, {String? editScriptId}) {
   if (editScriptId != null && editScriptId.isNotEmpty) {
     context.push(AppRoutes.createAiHub(editScriptId));
   } else {
-    Navigator.of(context, rootNavigator: true).push<void>(
-      MaterialPageRoute(builder: (_) => const AiCreationHubPage()),
-    );
+    context.push(AppRoutes.createAiHubPath);
   }
 }

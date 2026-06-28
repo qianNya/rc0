@@ -35,7 +35,13 @@ import '../../features/studio/presentation/pages/script_studio_page.dart';
 import '../../features/tasks/presentation/pages/tasks_page.dart';
 import '../../features/user/presentation/pages/user_profile_page.dart';
 import '../../features/upload/presentation/pages/ai_creation_hub_page.dart';
+import '../../features/upload/presentation/pages/frame_editor_detail_page.dart';
+import '../../features/upload/presentation/pages/project_settings_page.dart';
+import '../../features/upload/presentation/pages/scene_editor_detail_page.dart';
 import '../../features/upload/presentation/pages/shoot_preset_picker_page.dart';
+import '../../features/upload/presentation/widgets/script_editor/script_editor_actions.dart';
+import '../../features/screenplay/data/screenplay_draft.dart';
+import '../../features/screenplay/domain/shoot_params.dart';
 import 'routes.dart';
 
 abstract final class AppRouter {
@@ -80,6 +86,12 @@ abstract final class AppRouter {
     );
   }
 
+  static Map<String, dynamic>? _asMapExtra(GoRouterState state) {
+    final extra = state.extra;
+    if (extra is Map<String, dynamic>) return extra;
+    return null;
+  }
+
   static final GoRouter router = GoRouter(
     navigatorKey: rootNavigatorKey,
     initialLocation: AppRoutes.discovery,
@@ -116,6 +128,14 @@ abstract final class AppRouter {
         redirect: (_, _) => AppRoutes.discovery,
       ),
       GoRoute(
+        path: AppRoutes.wikiScript,
+        redirect: (_, _) => AppRoutes.scriptList,
+      ),
+      GoRoute(
+        path: AppRoutes.wikiCharacter,
+        redirect: (_, _) => AppRoutes.character,
+      ),
+      GoRoute(
         path: AppRoutes.login,
         name: 'login',
         parentNavigatorKey: rootNavigatorKey,
@@ -131,7 +151,12 @@ abstract final class AppRouter {
           redirectFrom: state.uri.queryParameters['from'],
         ),
       ),
-      _comingSoonRoute(AppRoutes.scriptList, '我的脚本', name: 'script-list'),
+      GoRoute(
+        path: AppRoutes.scriptList,
+        name: 'script-list',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const CommunityPage(),
+      ),
       GoRoute(
         path: AppRoutes.scriptExport,
         name: 'script-export',
@@ -447,6 +472,15 @@ abstract final class AppRouter {
         },
       ),
       GoRoute(
+        path: AppRoutes.createSettingsPath,
+        name: 'create-settings',
+        redirect: (context, state) {
+          final edit = state.uri.queryParameters['edit'];
+          if (edit == null || edit.isEmpty) return AppRoutes.studioCreate;
+          return AppRoutes.studioSettings(edit);
+        },
+      ),
+      GoRoute(
         path: AppRoutes.create,
         name: 'create',
         redirect: (context, state) {
@@ -455,6 +489,116 @@ abstract final class AppRouter {
             return AppRoutes.studioEdit(edit);
           }
           return AppRoutes.studioCreate;
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.studioEditScript,
+        name: 'studio-edit-script',
+        parentNavigatorKey: rootNavigatorKey,
+        redirect: (context, state) {
+          final scriptId = state.pathParameters['scriptId'] ?? '';
+          if (scriptId.isEmpty) return AppRoutes.studioCreate;
+          return AppRoutes.studioEdit(scriptId);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.studioEditScene,
+        name: 'studio-edit-scene',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) {
+          final map = _asMapExtra(state);
+          final actions = map?['actions'] as ScriptEditorActions?;
+          final actIndex = map?['actIndex'] as int?;
+          final sceneIndex = map?['sceneIndex'] as int?;
+          final initialTabIndex = map?['initialTabIndex'] as int? ?? 0;
+          final initialFrameIndex = map?['initialFrameIndex'] as int?;
+          if (actions == null || actIndex == null || sceneIndex == null) {
+            final scriptId = state.pathParameters['scriptId'] ?? '';
+            return ScriptStudioCreatePage(
+              editScriptId: scriptId.isEmpty ? null : scriptId,
+            );
+          }
+          return SceneEditorDetailPage(
+            actions: actions,
+            actIndex: actIndex,
+            sceneIndex: sceneIndex,
+            initialTabIndex: initialTabIndex,
+            initialFrameIndex: initialFrameIndex,
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.studioEditFrame,
+        name: 'studio-edit-frame',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) {
+          final map = _asMapExtra(state);
+          final actions = map?['actions'] as ScriptEditorActions?;
+          final actIndex = map?['actIndex'] as int?;
+          final sceneIndex = map?['sceneIndex'] as int?;
+          final frameIndex = map?['frameIndex'] as int?;
+          if (actions == null ||
+              actIndex == null ||
+              sceneIndex == null ||
+              frameIndex == null) {
+            final scriptId = state.pathParameters['scriptId'] ?? '';
+            return ScriptStudioCreatePage(
+              editScriptId: scriptId.isEmpty ? null : scriptId,
+            );
+          }
+          return FrameEditorDetailPage(
+            actions: actions,
+            actIndex: actIndex,
+            sceneIndex: sceneIndex,
+            frameIndex: frameIndex,
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.studioSettingsPath,
+        name: 'studio-settings',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) {
+          final map = _asMapExtra(state);
+          final draft = map?['draft'] as ScreenplayDraft?;
+          final titleController =
+              map?['titleController'] as TextEditingController?;
+          final synopsisController =
+              map?['synopsisController'] as TextEditingController?;
+          final onShootParamsChanged =
+              map?['onShootParamsChanged'] as ValueChanged<ShootParams>?;
+          final poolTags =
+              (map?['poolTags'] as List<String>?) ?? const <String>[];
+          final onToggleScreenplayTag =
+              map?['onToggleScreenplayTag'] as ValueChanged<String>?;
+          final onAddScreenplayTag =
+              map?['onAddScreenplayTag'] as Future<void> Function(String)?;
+          if (draft == null ||
+              titleController == null ||
+              synopsisController == null ||
+              onShootParamsChanged == null ||
+              onToggleScreenplayTag == null ||
+              onAddScreenplayTag == null) {
+            final scriptId = state.pathParameters['scriptId'] ?? '';
+            return ScriptStudioCreatePage(
+              editScriptId: scriptId.isEmpty ? null : scriptId,
+            );
+          }
+          return ProjectSettingsPage(
+            draft: draft,
+            titleController: titleController,
+            synopsisController: synopsisController,
+            onShootParamsChanged: onShootParamsChanged,
+            poolTags: poolTags,
+            onToggleScreenplayTag: onToggleScreenplayTag,
+            onAddScreenplayTag: onAddScreenplayTag,
+            tagsLoading: map?['tagsLoading'] as bool? ?? false,
+            tagsError: map?['tagsError'] as String?,
+            onRetryTags: map?['onRetryTags'] as VoidCallback?,
+            onPickCover: map?['onPickCover'] as VoidCallback?,
+            onResetCover: map?['onResetCover'] as VoidCallback?,
+            onSyncTitle: map?['onSyncTitle'] as VoidCallback?,
+          );
         },
       ),
       GoRoute(

@@ -23,12 +23,28 @@ const shellTabRoutes = {
 };
 
 String desktopSidebarActiveId(String location) {
+  if (location.startsWith(AppRoutes.studio) ||
+      location.startsWith('/studio/edit/')) {
+    return 'scene_flow';
+  }
+  if (location.startsWith(AppRoutes.scriptList) ||
+      location.startsWith('/script/')) {
+    return 'script_wiki';
+  }
+  if (location.startsWith(AppRoutes.character) ||
+      location.startsWith(AppRoutes.characters)) {
+    return 'character_wiki';
+  }
+  if (location.startsWith('/ip/')) return 'ip_wiki';
+  if (location.startsWith(AppRoutes.scenes) ||
+      location.startsWith('/my-scenes')) {
+    return 'scene_library';
+  }
   if (location.startsWith(AppRoutes.library)) return 'library';
-  if (location.startsWith(AppRoutes.studio)) return 'create_screenplay';
-  if (location.startsWith(AppRoutes.profile)) return 'profile';
   if (location.startsWith(AppRoutes.community)) return 'community';
+  if (location.startsWith(AppRoutes.profile)) return 'profile';
   if (location.startsWith(AppRoutes.favorites)) return 'my_favorites';
-  return 'explore';
+  return 'wiki_hub';
 }
 
 @Deprecated('Use desktopSidebarActiveId')
@@ -60,20 +76,66 @@ class DesktopSidebarItem {
 
 const desktopSidebarSections = [
   DesktopSidebarSection(
-    title: '发现',
+    title: '产品主线',
     items: [
       DesktopSidebarItem(
-        id: 'explore',
-        label: '探索首页',
-        icon: Icons.explore_outlined,
+        id: 'wiki_hub',
+        label: 'Wiki 首页',
+        icon: Icons.menu_book_outlined,
         route: AppRoutes.discovery,
       ),
       DesktopSidebarItem(
-        id: 'library',
-        label: '素材库',
-        icon: Icons.grid_view_outlined,
+        id: 'scene_flow',
+        label: '场景摄影流程',
+        icon: Icons.movie_creation_outlined,
+        route: AppRoutes.studio,
+      ),
+      DesktopSidebarItem(
+        id: 'script_wiki',
+        label: '剧本 Wiki',
+        icon: Icons.auto_stories_outlined,
+        route: AppRoutes.scriptList,
+      ),
+      DesktopSidebarItem(
+        id: 'character_wiki',
+        label: '角色库 Wiki',
+        icon: Icons.group_outlined,
+        route: AppRoutes.character,
+      ),
+      DesktopSidebarItem(
+        id: 'ip_wiki',
+        label: 'IP 参考',
+        icon: Icons.bookmarks_outlined,
         route: AppRoutes.library,
       ),
+    ],
+  ),
+  DesktopSidebarSection(
+    title: '摄影流程',
+    items: [
+      DesktopSidebarItem(
+        id: 'scene_library',
+        label: '场景库',
+        icon: Icons.landscape_outlined,
+        route: AppRoutes.scenes,
+      ),
+      DesktopSidebarItem(
+        id: 'my_scenes',
+        label: '我的场景',
+        icon: Icons.folder_open_outlined,
+        route: AppRoutes.myScenes,
+      ),
+      DesktopSidebarItem(
+        id: 'preset_flow',
+        label: '打光与参数',
+        icon: Icons.tune_outlined,
+        route: AppRoutes.preset,
+      ),
+    ],
+  ),
+  DesktopSidebarSection(
+    title: '探索与社区',
+    items: [
       DesktopSidebarItem(
         id: 'community',
         label: '社区作品',
@@ -81,32 +143,9 @@ const desktopSidebarSections = [
         route: AppRoutes.community,
       ),
       DesktopSidebarItem(
-        id: 'template_market',
-        label: '模板市场',
-        icon: Icons.dashboard_customize_outlined,
-        route: AppRoutes.community,
-      ),
-      DesktopSidebarItem(
-        id: 'trending_templates',
-        label: '热门模板',
-        icon: Icons.local_fire_department_outlined,
-        route: AppRoutes.community,
-      ),
-    ],
-  ),
-  DesktopSidebarSection(
-    title: '标签',
-    items: [
-      DesktopSidebarItem(
-        id: 'tag_explore',
-        label: '标签探索',
-        icon: Icons.label_outline,
-        route: AppRoutes.library,
-      ),
-      DesktopSidebarItem(
-        id: 'pose_tags',
-        label: '姿势标签',
-        icon: Icons.accessibility_new_outlined,
+        id: 'library',
+        label: '素材图库',
+        icon: Icons.grid_view_outlined,
         route: AppRoutes.library,
       ),
       DesktopSidebarItem(
@@ -114,23 +153,6 @@ const desktopSidebarSections = [
         label: '全局搜索',
         icon: Icons.search,
         route: AppRoutes.search,
-      ),
-    ],
-  ),
-  DesktopSidebarSection(
-    title: '我的内容',
-    items: [
-      DesktopSidebarItem(
-        id: 'my_screenplays',
-        label: '我的剧本',
-        icon: Icons.movie_creation_outlined,
-        route: AppRoutes.profileWorks,
-      ),
-      DesktopSidebarItem(
-        id: 'my_templates',
-        label: '我的模板',
-        icon: Icons.copy_all_outlined,
-        route: AppRoutes.profileWorks,
       ),
       DesktopSidebarItem(
         id: 'my_favorites',
@@ -147,24 +169,24 @@ const desktopSidebarSections = [
     ],
   ),
   DesktopSidebarSection(
-    title: '创建',
+    title: '我的内容',
     items: [
       DesktopSidebarItem(
+        id: 'my_screenplays',
+        label: '我的剧本',
+        icon: Icons.movie_creation_outlined,
+        route: AppRoutes.profileWorks,
+      ),
+      DesktopSidebarItem(
+        id: 'my_characters',
+        label: '我的角色',
+        icon: Icons.person_pin_outlined,
+        route: AppRoutes.myCharacters,
+      ),
+      DesktopSidebarItem(
         id: 'create_screenplay',
-        label: '创建剧本',
+        label: '进入创作',
         icon: Icons.add_circle_outline,
-        route: AppRoutes.studio,
-      ),
-      DesktopSidebarItem(
-        id: 'create_template',
-        label: '创建模板',
-        icon: Icons.layers_outlined,
-        route: AppRoutes.create,
-      ),
-      DesktopSidebarItem(
-        id: 'upload_frame_pack',
-        label: '上传 Frame Pack',
-        icon: Icons.collections_outlined,
         route: AppRoutes.studio,
       ),
     ],
@@ -280,12 +302,6 @@ class DesktopSidebar extends StatelessWidget {
     );
   }
 }
-
-@Deprecated('Use DesktopSidebar')
-typedef ExploreDesktopSidebar = DesktopSidebar;
-
-@Deprecated('Use DesktopSidebarItem')
-typedef ExploreSidebarItem = DesktopSidebarItem;
 
 class _SidebarNavTile extends StatefulWidget {
   const _SidebarNavTile({
