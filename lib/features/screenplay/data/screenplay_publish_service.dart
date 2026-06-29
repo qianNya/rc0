@@ -75,7 +75,7 @@ class ScreenplayPublishService {
       if (uploads.error != null) {
         return (result: null, error: uploads.error);
       }
-      ScreenplayApiMapper.stampUploadedImageIds(tree, uploads.refToImageId!);
+      ScreenplayApiMapper.stampUploadedImages(tree, uploads.refToUploaded!);
 
       final coverUrl = await _uploadCoverIfNeeded(
         remoteId: remoteId,
@@ -90,7 +90,7 @@ class ScreenplayPublishService {
       final synced = await _syncTreeBulk(
         remoteId: remoteId,
         tree: tree,
-        refToImageId: uploads.refToImageId!,
+        refToUploaded: uploads.refToUploaded!,
         visibility: visibility,
         isRepublish: false,
         coverUrl: coverUrl.url,
@@ -166,7 +166,7 @@ class ScreenplayPublishService {
       if (uploads.error != null) {
         return (result: null, error: uploads.error);
       }
-      ScreenplayApiMapper.stampUploadedImageIds(tree, uploads.refToImageId!);
+      ScreenplayApiMapper.stampUploadedImages(tree, uploads.refToUploaded!);
 
       final coverUrl = await _uploadCoverIfNeeded(
         remoteId: remoteId,
@@ -181,7 +181,7 @@ class ScreenplayPublishService {
       final synced = await _syncTreeBulk(
         remoteId: remoteId,
         tree: tree,
-        refToImageId: uploads.refToImageId!,
+        refToUploaded: uploads.refToUploaded!,
         visibility: effectiveVisibility,
         isRepublish: true,
         coverUrl: coverUrl.url,
@@ -226,7 +226,7 @@ class ScreenplayPublishService {
   }
 
   Future<({
-    Map<String, int>? refToImageId,
+    Map<String, UploadedImage>? refToUploaded,
     File? coverFile,
     String? error,
   })> _uploadLocalAssets(
@@ -238,7 +238,7 @@ class ScreenplayPublishService {
 
     if (refToFile.isEmpty) {
       return (
-        refToImageId: <String, int>{},
+        refToUploaded: <String, UploadedImage>{},
         coverFile: coverFile,
         error: null,
       );
@@ -254,16 +254,16 @@ class ScreenplayPublishService {
       },
     );
 
-    if (result.error != null || result.refToImageId == null) {
+    if (result.error != null || result.refToUploaded == null) {
       return (
-        refToImageId: null,
+        refToUploaded: null,
         coverFile: null,
         error: result.error ?? '图片上传失败',
       );
     }
 
     return (
-      refToImageId: result.refToImageId,
+      refToUploaded: result.refToUploaded,
       coverFile: coverFile,
       error: null,
     );
@@ -291,7 +291,7 @@ class ScreenplayPublishService {
   Future<({String? error})> _syncTreeBulk({
     required int remoteId,
     required Map<String, dynamic> tree,
-    required Map<String, int> refToImageId,
+    required Map<String, UploadedImage> refToUploaded,
     required int visibility,
     required bool isRepublish,
     String? coverUrl,
@@ -312,7 +312,7 @@ class ScreenplayPublishService {
     var saved = await _saveTreePayload(
       remoteId: remoteId,
       tree: treeToSave,
-      refToImageId: refToImageId,
+      refToUploaded: refToUploaded,
       visibility: visibility,
       isRepublish: effectiveRepublish,
       coverUrl: coverUrl,
@@ -327,7 +327,7 @@ class ScreenplayPublishService {
       saved = await _saveTreePayload(
         remoteId: remoteId,
         tree: treeToSave,
-        refToImageId: refToImageId,
+        refToUploaded: refToUploaded,
         visibility: visibility,
         isRepublish: true,
         coverUrl: coverUrl,
@@ -343,7 +343,7 @@ class ScreenplayPublishService {
   Future<({api.GetScreenplayTreeResp? tree, String? error})> _saveTreePayload({
     required int remoteId,
     required Map<String, dynamic> tree,
-    required Map<String, int> refToImageId,
+    required Map<String, UploadedImage> refToUploaded,
     required int visibility,
     required bool isRepublish,
     String? coverUrl,
@@ -351,7 +351,7 @@ class ScreenplayPublishService {
     final payload = ScreenplayApiMapper.buildSaveTreePayload(
       tree: tree,
       visibility: visibility,
-      refToImageId: refToImageId,
+      refToUploaded: refToUploaded,
       isRepublish: isRepublish,
       coverUrl: coverUrl,
     );

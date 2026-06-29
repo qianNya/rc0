@@ -10,6 +10,7 @@ import 'screenplay_draft.dart';
 import 'cine_params_draft.dart';
 import 'shoot_params_draft.dart';
 import 'screenplay_tree_document.dart';
+import 'data_upload_repository.dart';
 
 abstract final class ScreenplayApiMapper {
   static Screenplay fromFeedItem(api.FeedItemDto item) {
@@ -502,22 +503,31 @@ abstract final class ScreenplayApiMapper {
     return refToFile;
   }
 
-  static Map<String, dynamic> _frameAssetEntry(int imageId) => {
+  static Map<String, dynamic> _frameAssetEntry(UploadedImage uploaded) => {
         'kind': 'frame_image',
-        'remote_url': '',
-        'remote_image_id': imageId,
-        'remote_image_file_id': null,
+        'remote_url': uploaded.displayUrl,
+        'remote_image_id': uploaded.imageId,
+        'remote_image_file_id': uploaded.displayFileId,
       };
+
+  static Map<String, dynamic> _thumbAssetEntry(UploadedImage uploaded) => {
+        'kind': 'frame_thumbnail',
+        'remote_url': uploaded.thumbUrl,
+        'remote_image_id': uploaded.imageId,
+        'remote_image_file_id': uploaded.thumbFileId,
+      };
+
+  static String thumbRef(String frameRef) => '${frameRef}_thumb';
 
   static int? _existingFrameImageId(Map<String, dynamic> frameMap) {
     final imageId = (frameMap['acgn_image_id'] as num?)?.toInt() ?? 0;
     return imageId > 0 ? imageId : null;
   }
 
-  /// Writes freshly uploaded image ids into the local tree before tree sync.
-  static void stampUploadedImageIds(
+  /// Writes freshly uploaded image metadata into the local tree before tree sync.
+  static void stampUploadedImages(
     Map<String, dynamic> tree,
-    Map<String, int> refToImageId,
+    Map<String, UploadedImage> refToUploaded,
   ) {
     final acts = tree['acts'] as List<dynamic>? ?? [];
     for (var actIdx = 0; actIdx < acts.length; actIdx++) {
@@ -530,19 +540,49 @@ abstract final class ScreenplayApiMapper {
             [];
         for (var frameIdx = 0; frameIdx < frames.length; frameIdx++) {
           final ref = frameRef(actIdx, sceneIdx, frameIdx);
-          final imageId = refToImageId[ref];
-          if (imageId == null) continue;
-          (frames[frameIdx] as Map<String, dynamic>)['acgn_image_id'] = imageId;
+          final uploaded = refToUploaded[ref];
+          if (uploaded == null) continue;
+          final frameMap = frames[frameIdx] as Map<String, dynamic>;
+          frameMap['acgn_image_id'] = uploaded.imageId;
+          if (uploaded.displayUrl.isNotEmpty) {
+            frameMap['image_url'] = uploaded.displayUrl;
+          }
+          if (uploaded.thumbUrl.isNotEmpty) {
+            frameMap['thumbnail_url'] = uploaded.thumbUrl;
+          }
+          if (uploaded.displayFileId != null) {
+            frameMap['acgn_image_file_id'] = uploaded.displayFileId;
+          }
         }
       }
     }
+  }
+
+  @Deprecated('Use stampUploadedImages')
+  static void stampUploadedImageIds(
+    Map<String, dynamic> tree,
+    Map<String, int> refToImageId,
+  ) {
+    stampUploadedImages(
+      tree,
+      refToImageId.map(
+        (ref, id) => MapEntry(
+          ref,
+          UploadedImage(
+            imageId: id,
+            displayUrl: '',
+            thumbUrl: '',
+          ),
+        ),
+      ),
+    );
   }
 
   /// Builds POST/PUT `/screenplays/{id}/tree` body (`SaveScreenplayTreeReq`).
   static Map<String, dynamic> buildSaveTreePayload({
     required Map<String, dynamic> tree,
     required int visibility,
-    required Map<String, int> refToImageId,
+    required Map<String, UploadedImage> refToUploaded,
     required bool isRepublish,
     String? coverUrl,
   }) {
@@ -647,7 +687,7 @@ abstract final class ScreenplayApiMapper {
             framePayload['action_note'] = actionNote;
           }
 
-          final uploadedId = refToImageId[ref];
+          final uploaded = refToUploaded[ref];
           final existingId = _existingFrameImageId(frameMap);
           final remoteUrl = ScreenplayImageResolver.frameRemoteUrl(frameMap);
           final thumbnailUrl =
@@ -655,8 +695,13 @@ abstract final class ScreenplayApiMapper {
                   ? frameMap['thumbnail_url'] as String
                   : '';
 
-          if (uploadedId != null) {
-            assetMap.putIfAbsent(ref, () => _frameAssetEntry(uploadedId));
+          if (uploaded != null) {
+            assetMap.putIfAbsent(ref, () => _frameAssetEntry(uploaded));
+            final tRef = thumbRef(ref);
+            if (uploaded.thumbUrl.isNotEmpty) {
+              assetMap.putIfAbsent(tRef, () => _thumbAssetEntry(uploaded));
+              framePayload['thumbnail_ref'] = tRef;
+            }
             framePayload['image_ref'] = ref;
           } else if (remoteUrl != null && existingId != null) {
             framePayload['image_url'] = remoteUrl;
@@ -669,7 +714,14 @@ abstract final class ScreenplayApiMapper {
               framePayload['acgn_image_file_id'] = fileId;
             }
           } else if (existingId != null) {
-            assetMap.putIfAbsent(ref, () => _frameAssetEntry(existingId));
+            final fallback = UploadedImage(
+              imageId: existingId,
+              displayUrl: remoteUrl ?? '',
+              thumbUrl: thumbnailUrl,
+              displayFileId:
+                  (frameMap['acgn_image_file_id'] as num?)?.toInt(),
+            );
+            assetMap.putIfAbsent(ref, () => _frameAssetEntry(fallback));
             framePayload['image_ref'] = ref;
           }
 

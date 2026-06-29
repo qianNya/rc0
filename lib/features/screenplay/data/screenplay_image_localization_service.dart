@@ -29,10 +29,8 @@ class ScreenplayImageLocalizationService {
   }
 
   Future<void> trackRemoteScreenplay(int remoteId) async {
-    initialize();
-    final doc = await _local.ensureRemoteBrowseDocument(remoteId);
-    if (doc == null) return;
-    await _activateDocument(doc);
+    // Remote browse: use CDN URLs only; never write local_* into tree.
+    stopTracking();
   }
 
   Future<void> trackLocalScreenplay(String localId) async {

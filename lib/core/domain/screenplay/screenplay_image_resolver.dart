@@ -12,13 +12,17 @@ abstract final class ScreenplayImageResolver {
     return resolveNetworkImageUrl(raw);
   }
 
-  /// UI / edit preview: prefer local file when available.
+  /// UI / edit preview: prefer local file when [allowLocal] and available.
   static String? displayPath({
     String? localPath,
     String? remoteUrl,
     String? legacyPath,
+    bool allowLocal = true,
   }) {
-    if (localPath != null && localPath.isNotEmpty && !isNetworkUrl(localPath)) {
+    if (allowLocal &&
+        localPath != null &&
+        localPath.isNotEmpty &&
+        !isNetworkUrl(localPath)) {
       return localPath;
     }
     final remote = _safeRemoteUrl(remoteUrl);
@@ -32,8 +36,12 @@ abstract final class ScreenplayImageResolver {
     String? localPath,
     String? remoteUrl,
     String? legacyPath,
+    bool allowLocal = true,
   }) {
-    if (localPath != null && localPath.isNotEmpty && !isNetworkUrl(localPath)) {
+    if (allowLocal &&
+        localPath != null &&
+        localPath.isNotEmpty &&
+        !isNetworkUrl(localPath)) {
       if (File(localPath).existsSync()) return localPath;
     }
     final remote = _safeRemoteUrl(remoteUrl);
@@ -50,25 +58,56 @@ abstract final class ScreenplayImageResolver {
         if (cached != null) return cached;
         return legacyRemote;
       }
-      if (!isNetworkUrl(legacyPath) && File(legacyPath).existsSync()) {
+      if (allowLocal &&
+          !isNetworkUrl(legacyPath) &&
+          File(legacyPath).existsSync()) {
         return legacyPath;
       }
     }
     return null;
   }
 
-  static String? frameEffectivePath(Map<String, dynamic> frame) =>
+  static String? frameEffectivePath(
+    Map<String, dynamic> frame, {
+    bool allowLocal = true,
+  }) =>
       effectiveDisplayPath(
         localPath: frameLocalPath(frame),
-        remoteUrl: frameRemoteUrl(frame),
+        remoteUrl: frameDisplayRemoteUrl(frame),
         legacyPath: _legacyFramePath(frame),
+        allowLocal: allowLocal,
       );
 
-  static String? coverEffectivePath(Map<String, dynamic> screenplayMap) =>
+  static String? frameThumbPath(
+    Map<String, dynamic> frame, {
+    bool allowLocal = true,
+  }) {
+    final thumbLocal = frame['local_thumbnail_path'] as String?;
+    if (allowLocal &&
+        thumbLocal != null &&
+        thumbLocal.isNotEmpty &&
+        !isNetworkUrl(thumbLocal) &&
+        File(thumbLocal).existsSync()) {
+      return thumbLocal;
+    }
+    final thumbRemote = _safeRemoteUrl(frame['thumbnail_url'] as String?);
+    if (thumbRemote != null) {
+      final cached =
+          NetworkImageCacheService.instance.cachedPathSync(thumbRemote);
+      return cached ?? thumbRemote;
+    }
+    return frameEffectivePath(frame, allowLocal: allowLocal);
+  }
+
+  static String? coverEffectivePath(
+    Map<String, dynamic> screenplayMap, {
+    bool allowLocal = true,
+  }) =>
       effectiveDisplayPath(
         localPath: screenplayMap['local_cover_path'] as String?,
         remoteUrl: coverRemoteUrl(screenplayMap),
         legacyPath: legacyCoverPath(screenplayMap),
+        allowLocal: allowLocal,
       );
 
   /// Local file path eligible for upload (local_* fields only).
@@ -93,20 +132,25 @@ abstract final class ScreenplayImageResolver {
   static bool hasRemoteUrl(String? url) =>
       url != null && url.isNotEmpty && isNetworkUrl(url);
 
-  static String? frameDisplayPath(Map<String, dynamic> frame) => displayPath(
+  static String? frameDisplayPath(
+    Map<String, dynamic> frame, {
+    bool allowLocal = true,
+  }) =>
+      displayPath(
         localPath: frameLocalPath(frame),
-        remoteUrl: frameRemoteUrl(frame),
+        remoteUrl: frameDisplayRemoteUrl(frame),
         legacyPath: _legacyFramePath(frame),
+        allowLocal: allowLocal,
       );
 
-  static String? frameRemoteUrl(Map<String, dynamic> frame) {
-    for (final key in ['image_url', 'thumbnail_url']) {
-      final raw = frame[key] as String? ?? '';
-      final url = _safeRemoteUrl(raw);
-      if (url != null) return url;
-    }
-    return null;
+  static String? frameDisplayRemoteUrl(Map<String, dynamic> frame) {
+    final imageUrl = _safeRemoteUrl(frame['image_url'] as String?);
+    if (imageUrl != null) return imageUrl;
+    return _safeRemoteUrl(frame['thumbnail_url'] as String?);
   }
+
+  static String? frameRemoteUrl(Map<String, dynamic> frame) =>
+      frameDisplayRemoteUrl(frame);
 
   static String? frameLocalPath(Map<String, dynamic> frame) {
     final local = frame['local_image_path'] as String?;
@@ -122,11 +166,15 @@ abstract final class ScreenplayImageResolver {
     return null;
   }
 
-  static String? coverDisplayPath(Map<String, dynamic> screenplayMap) =>
+  static String? coverDisplayPath(
+    Map<String, dynamic> screenplayMap, {
+    bool allowLocal = true,
+  }) =>
       displayPath(
         localPath: screenplayMap['local_cover_path'] as String?,
         remoteUrl: coverRemoteUrl(screenplayMap),
         legacyPath: legacyCoverPath(screenplayMap),
+        allowLocal: allowLocal,
       );
 
   static String? coverRemoteUrl(Map<String, dynamic> screenplayMap) {

@@ -7,9 +7,19 @@ import '../../../api/image/data/image-api.dart';
 import '../../../api/screenplay/api/screenplay-api.dart' as screenplay_api;
 
 class UploadedImage {
-  const UploadedImage({required this.imageId});
+  const UploadedImage({
+    required this.imageId,
+    required this.displayUrl,
+    required this.thumbUrl,
+    this.displayFileId,
+    this.thumbFileId,
+  });
 
   final int imageId;
+  final String displayUrl;
+  final String thumbUrl;
+  final int? displayFileId;
+  final int? thumbFileId;
 }
 
 class DataUploadRepository {
@@ -22,10 +32,7 @@ class DataUploadRepository {
     if (upload.error != null || upload.resp == null) {
       return (object: null, error: upload.error ?? '上传失败');
     }
-    return (
-      object: UploadedImage(imageId: upload.resp!.id.toInt()),
-      error: null,
-    );
+    return _resolveUploadedImage(upload.resp!.id.toInt());
   }
 
   Future<({UploadedImage? object, String? error})> uploadBytes(
@@ -36,10 +43,7 @@ class DataUploadRepository {
     if (upload.error != null || upload.resp == null) {
       return (object: null, error: upload.error ?? '上传失败');
     }
-    return (
-      object: UploadedImage(imageId: upload.resp!.id.toInt()),
-      error: null,
-    );
+    return _resolveUploadedImage(upload.resp!.id.toInt());
   }
 
   Future<({String? coverUrl, String? error})> uploadScreenplayCover(
@@ -83,7 +87,41 @@ class DataUploadRepository {
     return completer.future;
   }
 
-  Future<({Map<String, int>? refToImageId, String? error})> uploadBatchForScreenplay(
+  Future<({UploadedImage? object, String? error})> _resolveUploadedImage(
+    int imageId,
+  ) async {
+    final completer = Completer<({ImageDetailResp? resp, String? error})>();
+    await image_api.getImageDetail(
+      imageId,
+      ok: (resp) => completer.complete((resp: resp, error: null)),
+      fail: (msg) => completer.complete((resp: null, error: msg)),
+    );
+    final detail = await completer.future;
+    if (detail.error != null || detail.resp == null) {
+      return (
+        object: UploadedImage(
+          imageId: imageId,
+          displayUrl: '',
+          thumbUrl: '',
+        ),
+        error: null,
+      );
+    }
+    final bundle = detail.resp!.filesBundle;
+    return (
+      object: UploadedImage(
+        imageId: imageId,
+        displayUrl: bundle.displayUrl,
+        thumbUrl: bundle.thumbUrl,
+        displayFileId: bundle.displayFileId,
+        thumbFileId: bundle.thumbFileId,
+      ),
+      error: null,
+    );
+  }
+
+  Future<({Map<String, UploadedImage>? refToUploaded, String? error})>
+      uploadBatchForScreenplay(
     int screenplayId,
     Map<String, File> refToFile, {
     void Function(int done, int total)? onProgress,
@@ -91,26 +129,27 @@ class DataUploadRepository {
     return uploadBatch(refToFile, onProgress: onProgress);
   }
 
-  Future<({Map<String, int>? refToImageId, String? error})> uploadBatch(
+  Future<({Map<String, UploadedImage>? refToUploaded, String? error})>
+      uploadBatch(
     Map<String, File> refToFile, {
     void Function(int done, int total)? onProgress,
   }) async {
     if (refToFile.isEmpty) {
-      return (refToImageId: <String, int>{}, error: null);
+      return (refToUploaded: <String, UploadedImage>{}, error: null);
     }
 
-    final refToImageId = <String, int>{};
+    final refToUploaded = <String, UploadedImage>{};
     var index = 0;
     for (final entry in refToFile.entries) {
       final uploaded = await uploadImage(entry.value);
       if (uploaded.error != null || uploaded.object == null) {
-        return (refToImageId: null, error: uploaded.error);
+        return (refToUploaded: null, error: uploaded.error);
       }
-      refToImageId[entry.key] = uploaded.object!.imageId;
+      refToUploaded[entry.key] = uploaded.object!;
       index++;
       onProgress?.call(index, refToFile.length);
     }
 
-    return (refToImageId: refToImageId, error: null);
+    return (refToUploaded: refToUploaded, error: null);
   }
 }

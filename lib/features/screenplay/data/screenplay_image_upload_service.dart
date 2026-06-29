@@ -42,8 +42,15 @@ class ScreenplayImageUploadService {
     }
 
     frameMap['acgn_image_id'] = uploaded.object!.imageId;
-    frameMap.remove('image_url');
-    frameMap.remove('thumbnail_url');
+    if (uploaded.object!.displayUrl.isNotEmpty) {
+      frameMap['image_url'] = uploaded.object!.displayUrl;
+    }
+    if (uploaded.object!.thumbUrl.isNotEmpty) {
+      frameMap['thumbnail_url'] = uploaded.object!.thumbUrl;
+    }
+    if (uploaded.object!.displayFileId != null) {
+      frameMap['acgn_image_file_id'] = uploaded.object!.displayFileId;
+    }
 
     return _persistAndMaybeSync(
       ScreenplayTreeDocument(tree: tree, meta: document.meta),

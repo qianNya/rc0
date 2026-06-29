@@ -1,5 +1,89 @@
-/// Rust `ImageResponse.files[].file_role`: 1 = original.
-const _kImageFileRoleOriginal = 1;
+/// Rust `ImageResponse.files[].file_role` values.
+const kImageFileRoleOriginal = 1;
+const kImageFileRoleDisplay = 2;
+const kImageFileRoleFeed = 3;
+const kImageFileRoleThumb = 4;
+
+class ImageFileInfo {
+  const ImageFileInfo({
+    required this.id,
+    required this.fileRole,
+    required this.url,
+  });
+
+  final int id;
+  final int fileRole;
+  final String url;
+
+  factory ImageFileInfo.fromJson(Map<String, dynamic> m) {
+    return ImageFileInfo(
+      id: (m['id'] as num?)?.toInt() ?? 0,
+      fileRole: (m['file_role'] as num?)?.toInt() ?? kImageFileRoleOriginal,
+      url: m['url'] as String? ?? '',
+    );
+  }
+}
+
+List<ImageFileInfo> parseImageFiles(dynamic raw) {
+  if (raw is! List) return const [];
+  return raw
+      .whereType<Map<String, dynamic>>()
+      .map(ImageFileInfo.fromJson)
+      .where((f) => f.url.isNotEmpty)
+      .toList();
+}
+
+/// Resolved URLs/ids from `files[]` (display / feed / thumb), with legacy original fallback.
+class ImageFilesBundle {
+  const ImageFilesBundle({
+    required this.displayUrl,
+    required this.thumbUrl,
+    required this.feedUrl,
+    this.displayFileId,
+    this.thumbFileId,
+  });
+
+  final String displayUrl;
+  final String thumbUrl;
+  final String feedUrl;
+  final int? displayFileId;
+  final int? thumbFileId;
+
+  factory ImageFilesBundle.fromFiles(List<ImageFileInfo> files) {
+    String? urlFor(int role) {
+      for (final f in files) {
+        if (f.fileRole == role && f.url.isNotEmpty) return f.url;
+      }
+      return null;
+    }
+
+    int? idFor(int role) {
+      for (final f in files) {
+        if (f.fileRole == role && f.id > 0) return f.id;
+      }
+      return null;
+    }
+
+    final display = urlFor(kImageFileRoleDisplay) ??
+        urlFor(kImageFileRoleOriginal) ??
+        (files.isNotEmpty ? files.first.url : '');
+    final thumb = urlFor(kImageFileRoleThumb) ?? display;
+    final feed = urlFor(kImageFileRoleFeed) ?? display;
+
+    return ImageFilesBundle(
+      displayUrl: display,
+      thumbUrl: thumb,
+      feedUrl: feed,
+      displayFileId:
+          idFor(kImageFileRoleDisplay) ?? idFor(kImageFileRoleOriginal),
+      thumbFileId: idFor(kImageFileRoleThumb),
+    );
+  }
+
+  factory ImageFilesBundle.fromApiJson(Map<String, dynamic> m) {
+    return ImageFilesBundle.fromFiles(parseImageFiles(m['files']));
+  }
+}
 
 List<String> parseImageTagNames(dynamic raw) {
   if (raw is! List) return const [];
@@ -46,6 +130,9 @@ String? imageUrlFromApiJson(Map<String, dynamic> m, {int? fileRole}) {
       final url = entry['url'] as String? ?? '';
       if (url.isNotEmpty) return url;
     }
+    if (fileRole == kImageFileRoleDisplay) {
+      return imageUrlFromApiJson(m, fileRole: kImageFileRoleOriginal);
+    }
   }
 
   for (final entry in files) {
@@ -78,16 +165,15 @@ class GalleryImageItem {
   });
 
   factory GalleryImageItem.fromJson(Map<String, dynamic> m) {
-    final fileUrl = imageUrlFromApiJson(m, fileRole: _kImageFileRoleOriginal);
-    final thumbFromFiles = imageUrlFromApiJson(m);
+    final bundle = ImageFilesBundle.fromApiJson(m);
     final rawTags = m['tags'];
     return GalleryImageItem(
       id: m['id'] ?? 0,
       title: m['title'] ?? '',
       description: m['description'] ?? '',
-      imageUrl: m['image_url'] ?? fileUrl ?? m['url'] ?? '',
+      imageUrl: m['image_url'] as String? ?? bundle.displayUrl,
       thumbnailUrl:
-          m['thumbnail_url'] ?? m['image_url'] ?? thumbFromFiles ?? m['url'] ?? '',
+          m['thumbnail_url'] as String? ?? bundle.thumbUrl,
       createAt: m['create_at']?.toString() ?? '',
       tags: parseImageTagNames(rawTags),
       tagIds: parseImageTagIds(rawTags),
@@ -130,6 +216,8 @@ class ImageDetailResp {
   final String createAt;
   final List<String> tags;
   final List<int> tagIds;
+  final List<ImageFileInfo> files;
+  final ImageFilesBundle filesBundle;
 
   ImageDetailResp({
     required this.id,
@@ -140,22 +228,25 @@ class ImageDetailResp {
     required this.createAt,
     this.tags = const [],
     this.tagIds = const [],
-  });
+    this.files = const [],
+    ImageFilesBundle? filesBundle,
+  }) : filesBundle = filesBundle ??
+            ImageFilesBundle.fromFiles(files);
 
   factory ImageDetailResp.fromJson(Map<String, dynamic> m) {
-    final fileUrl = imageUrlFromApiJson(m, fileRole: _kImageFileRoleOriginal);
-    final thumbFromFiles = imageUrlFromApiJson(m);
+    final bundle = ImageFilesBundle.fromApiJson(m);
     final rawTags = m['tags'];
     return ImageDetailResp(
       id: m['id'] ?? 0,
       title: m['title'] ?? '',
       description: m['description'] ?? '',
-      imageUrl: m['image_url'] ?? fileUrl ?? m['url'] ?? '',
-      thumbnailUrl:
-          m['thumbnail_url'] ?? m['image_url'] ?? thumbFromFiles ?? m['url'] ?? '',
+      imageUrl: m['image_url'] as String? ?? bundle.displayUrl,
+      thumbnailUrl: m['thumbnail_url'] as String? ?? bundle.thumbUrl,
       createAt: m['create_at']?.toString() ?? '',
       tags: parseImageTagNames(rawTags),
       tagIds: parseImageTagIds(rawTags),
+      files: parseImageFiles(m['files']),
+      filesBundle: bundle,
     );
   }
 }
