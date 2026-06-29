@@ -10,13 +10,13 @@ import '../../core/responsive/breakpoints.dart';
 class ShellBottomFadeOverlay extends StatelessWidget {
   const ShellBottomFadeOverlay({super.key});
 
-  /// Height from tab bar vertical center to the physical screen bottom.
+  /// Height from just below the tab bar center to the physical screen bottom.
   static double heightOf(BuildContext context) {
     if (!Breakpoints.showsShellBottomBar(context)) return 0;
     final safeBottom = MediaQuery.paddingOf(context).bottom;
     return safeBottom +
         AppDimensions.floatingBarMarginBottom +
-        AppDimensions.bottomNavFloatingHeight / 2;
+        AppDimensions.bottomNavFloatingHeight * 0.35;
   }
 
   @override
@@ -37,11 +37,11 @@ class ShellBottomFadeOverlay extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              stops: const [0, 0.55, 1],
+              stops: const [0, 0.72, 1],
               colors: [
                 background.withValues(alpha: 0),
-                background.withValues(alpha: 0.72),
-                background,
+                background.withValues(alpha: 0.18),
+                background.withValues(alpha: 0.55),
               ],
             ),
           ),

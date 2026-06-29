@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_dimensions.dart';
+import '../../app/theme/app_motion.dart';
+import '../../app/theme/app_shadows.dart';
+import '../../app/theme/app_text_styles.dart';
 import '../../core/data/app_catalog.dart';
 import 'liquid_glass_surface.dart';
 
@@ -29,116 +32,260 @@ class FeedTabBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final secondary =
-        theme.textTheme.bodyMedium?.color ?? AppColors.textSecondary;
-    final surfaceSecondary = isDark
-        ? AppColors.surfaceSecondaryDark
-        : AppColors.surfaceSecondary;
-    final border = isDark
-        ? Colors.transparent
-        : theme.dividerColor;
+    final textColor =
+        isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
+    final selectedTextColor =
+        isDark ? AppColors.glassNavIconSelectedDark : AppColors.accent;
+    final unselectedFill = isDark
+        ? AppColors.glassNavSurfaceDark.withValues(alpha: 0.45)
+        : AppColors.glassNavSurfaceLight.withValues(alpha: 0.45);
+    final selectedFill = isDark
+        ? AppColors.glassNavIndicatorDark.withValues(alpha: 0.9)
+        : AppColors.glassNavIndicatorLight.withValues(alpha: 0.95);
+    final chipBorder = isDark
+        ? AppColors.glassNavBorderDark
+        : AppColors.glassNavBorderLight;
 
     final tabList = _buildTabList(
-      secondary: secondary,
-      surfaceSecondary: surfaceSecondary,
-      border: border,
+      textColor: textColor,
+      selectedTextColor: selectedTextColor,
+      unselectedFill: unselectedFill,
+      selectedFill: selectedFill,
+      border: chipBorder,
     );
 
     final barHeight = underlineStyle
-        ? AppDimensions.primaryButtonHeight
+        ? AppDimensions.tabFloatingHeight
         : AppDimensions.feedTabBarHeight;
 
     if (embedded) {
-      return Padding(
-        padding: margin ?? EdgeInsets.zero,
-        child: SizedBox(height: barHeight, child: tabList),
+      return SizedBox(
+        height: barHeight,
+        child: Padding(
+          padding: margin ?? EdgeInsets.zero,
+          child: _buildGlassTrack(tabList),
+        ),
       );
     }
 
     return LiquidGlassSurface(
+      style: LiquidGlassStyle.navigation,
       margin: margin ??
           const EdgeInsets.symmetric(
             horizontal: AppDimensions.floatingBarMarginHorizontal,
           ),
+      borderRadius: BorderRadius.circular(AppDimensions.tabFloatingRadius),
       height: barHeight,
-      child: tabList,
+      child: _buildGlassTrack(tabList),
+    );
+  }
+
+  Widget _buildGlassTrack(Widget child) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppDimensions.tabFloatingRadius),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white.withValues(alpha: 0.12),
+                  Colors.white.withValues(alpha: 0.02),
+                ],
+                stops: const [0, 0.75],
+              ),
+            ),
+          ),
+        ),
+        child,
+      ],
     );
   }
 
   Widget _buildTabList({
-    required Color secondary,
-    required Color surfaceSecondary,
+    required Color textColor,
+    required Color selectedTextColor,
+    required Color unselectedFill,
+    required Color selectedFill,
     required Color border,
   }) {
     return ListView.separated(
-        scrollDirection: Axis.horizontal,
-        clipBehavior: Clip.hardEdge,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppDimensions.spacingMd,
-        ),
-        itemCount: tabs.length,
-        separatorBuilder: (_, _) =>
-            const SizedBox(width: AppDimensions.spacingSm),
-        itemBuilder: (context, index) {
-          final selected = selectedIndex == index;
-          if (underlineStyle) {
-            return GestureDetector(
-              onTap: () => onChanged(index),
-              behavior: HitTestBehavior.opaque,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    tabs[index],
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight:
-                          selected ? FontWeight.w600 : FontWeight.w400,
-                      color: selected ? AppColors.accent : secondary,
+      scrollDirection: Axis.horizontal,
+      clipBehavior: Clip.hardEdge,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimensions.spacingMd,
+        vertical: AppDimensions.spacingSm,
+      ),
+      itemCount: tabs.length,
+      separatorBuilder: (_, _) => const SizedBox(width: AppDimensions.spacingSm),
+      itemBuilder: (context, index) {
+        final selected = selectedIndex == index;
+        return _LiquidTabChip(
+          label: tabs[index],
+          selected: selected,
+          underlineStyle: underlineStyle,
+          textColor: textColor,
+          selectedTextColor: selectedTextColor,
+          unselectedFill: unselectedFill,
+          selectedFill: selectedFill,
+          border: border,
+          onTap: () => onChanged(index),
+        );
+      },
+    );
+  }
+}
+
+class _LiquidTabChip extends StatelessWidget {
+  const _LiquidTabChip({
+    required this.label,
+    required this.selected,
+    required this.underlineStyle,
+    required this.textColor,
+    required this.selectedTextColor,
+    required this.unselectedFill,
+    required this.selectedFill,
+    required this.border,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final bool underlineStyle;
+  final Color textColor;
+  final Color selectedTextColor;
+  final Color unselectedFill;
+  final Color selectedFill;
+  final Color border;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(AppDimensions.tabFloatingRadius);
+    final glow = selected
+        ? [
+            ...AppShadows.floatingBarNav,
+            BoxShadow(
+              color: selectedTextColor.withValues(alpha: 0.22),
+              blurRadius: 18,
+              spreadRadius: -6,
+              offset: const Offset(0, 3),
+            ),
+          ]
+        : AppShadows.floatingBarNav;
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween(end: selected ? 1 : 0),
+      duration: AppMotion.normal,
+      curve: AppMotion.liquidTab,
+      builder: (context, t, _) {
+        final refractionHighlight = Color.lerp(
+          Colors.white.withValues(alpha: 0.06),
+          Colors.white.withValues(alpha: 0.22),
+          t,
+        )!;
+        final edgeAlpha = Color.lerp(
+          border.withValues(alpha: 0.65),
+          selectedTextColor.withValues(alpha: 0.5),
+          t,
+        )!;
+        final sheenAlignment = Alignment.lerp(
+          const Alignment(-0.9, -0.55),
+          const Alignment(0.9, -0.15),
+          t,
+        )!;
+
+        return AnimatedScale(
+          duration: AppMotion.fast,
+          curve: AppMotion.liquidTab,
+          scale: selected ? 1.0 : 0.975,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: radius,
+              child: AnimatedContainer(
+                duration: AppMotion.normal,
+                curve: AppMotion.standard,
+                padding: EdgeInsets.symmetric(
+                  horizontal: underlineStyle
+                      ? AppDimensions.spacingLg
+                      : AppDimensions.spacingMd,
+                  vertical: underlineStyle
+                      ? AppDimensions.spacingSm + 2
+                      : AppDimensions.spacingSm,
+                ),
+                decoration: BoxDecoration(
+                  color: Color.lerp(unselectedFill, selectedFill, t),
+                  borderRadius: radius,
+                  border: Border.all(color: edgeAlpha, width: selected ? 1.1 : 0.8),
+                  boxShadow: glow,
+                ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            borderRadius: radius,
+                            gradient: RadialGradient(
+                              center: sheenAlignment,
+                              radius: 1.0,
+                              colors: [
+                                refractionHighlight,
+                                Colors.white.withValues(alpha: 0),
+                              ],
+                              stops: const [0, 1],
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    height: 2,
-                    width: selected ? 24 : 0,
-                    decoration: BoxDecoration(
-                      color: selected ? AppColors.accent : Colors.transparent,
-                      borderRadius: BorderRadius.circular(1),
+                    Positioned(
+                      left: 10,
+                      right: 10,
+                      bottom: 1,
+                      child: IgnorePointer(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            borderRadius: radius,
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.white.withValues(alpha: 0),
+                                selectedTextColor.withValues(alpha: 0.12 * t),
+                              ],
+                            ),
+                          ),
+                          child: const SizedBox(height: 6),
+                        ),
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            );
-          }
-          return GestureDetector(
-            onTap: () => onChanged(index),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: selected
-                    ? AppColors.accent
-                    : surfaceSecondary.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(20),
-                border: selected
-                    ? Border.all(color: AppColors.accent)
-                    : Border.all(color: border),
-              ),
-              child: Text(
-                tabs[index],
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                  color: selected ? Colors.white : secondary,
+                    AnimatedDefaultTextStyle(
+                      duration: AppMotion.fast,
+                      curve: AppMotion.standard,
+                      style: AppTextStyles.label.copyWith(
+                        fontSize: underlineStyle ? 14 : 13,
+                        fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                        color: Color.lerp(textColor, selectedTextColor, t),
+                      ),
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          );
-        },
-      );
+          ),
+        );
+      },
+    );
   }
 }
 
@@ -157,7 +304,7 @@ class PinnedFeedTabBarDelegate extends SliverPersistentHeaderDelegate {
   final Color backgroundColor;
 
   @override
-  double get minExtent => AppDimensions.primaryButtonHeight;
+  double get minExtent => AppDimensions.tabFloatingHeight;
 
   @override
   double get maxExtent => minExtent;

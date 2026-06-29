@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/theme/app_colors.dart';
+import '../../app/theme/app_dimensions.dart';
 import '../../core/platform/platform_features.dart';
 import '../../core/responsive/breakpoints.dart';
 import '../../features/shell/presentation/widgets/desktop_title_bar.dart';
@@ -36,7 +37,9 @@ class DesktopShellAppBar extends StatelessWidget implements PreferredSizeWidget 
 
   @override
   Size get preferredSize => Size.fromHeight(
-        shouldUseDesktopWindowChrome ? titleBarHeight : kToolbarHeight,
+        shouldUseDesktopWindowChrome
+            ? titleBarHeight
+            : AppDimensions.bottomNavFloatingHeight,
       );
 
   @override

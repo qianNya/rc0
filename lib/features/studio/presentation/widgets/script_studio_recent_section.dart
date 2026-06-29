@@ -4,14 +4,13 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
-import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/domain/screenplay/screenplay_display.dart';
 import '../../../../core/utils/relative_time.dart';
 import '../../../screenplay/presentation/widgets/screenplay_delete_actions.dart';
-import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/pose_cover_image.dart';
-import '../../../../shared/widgets/rc0_widgets.dart';
+import 'script_studio_glass_widgets.dart';
+import 'script_studio_theme.dart';
 
 class ScriptStudioRecentSection extends StatelessWidget {
   const ScriptStudioRecentSection({
@@ -35,28 +34,103 @@ class ScriptStudioRecentSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionHeader(
+          _StudioSectionHeader(
             title: '最近项目',
             action: '全部',
-            showChevron: true,
             onActionTap: () => context.push(AppRoutes.profileWorks),
           ),
-          const SizedBox(height: AppDimensions.spacingSm),
+          const SizedBox(height: AppDimensions.spacingMd),
           if (projects.isEmpty)
-            EmptyStateView(
-              icon: Icons.movie_creation_outlined,
-              title: '暂无项目',
-              subtitle: '新建剧本后会显示在这里',
-              actionLabel: '新建剧本',
-              onAction: () => context.go(AppRoutes.studioCreate),
+            _EmptyRecentCard(
+              onCreate: () => context.go(AppRoutes.studioCreate),
             )
           else
             ...projects.map(
-              (script) => _RecentProjectTile(
-                screenplay: script,
-                onDataChanged: onDataChanged,
+              (script) => Padding(
+                padding: const EdgeInsets.only(bottom: AppDimensions.spacingSm),
+                child: _RecentProjectTile(
+                  screenplay: script,
+                  onDataChanged: onDataChanged,
+                ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StudioSectionHeader extends StatelessWidget {
+  const _StudioSectionHeader({
+    required this.title,
+    required this.action,
+    required this.onActionTap,
+  });
+
+  final String title;
+  final String action;
+  final VoidCallback onActionTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(title, style: ScriptStudioColors.sectionTitle),
+        const Spacer(),
+        GestureDetector(
+          onTap: onActionTap,
+          behavior: HitTestBehavior.opaque,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(action, style: ScriptStudioColors.sectionAction),
+              const Icon(
+                Icons.chevron_right,
+                size: 18,
+                color: AppColors.accent,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _EmptyRecentCard extends StatelessWidget {
+  const _EmptyRecentCard({required this.onCreate});
+
+  final VoidCallback onCreate;
+
+  @override
+  Widget build(BuildContext context) {
+    return StudioGlassCard(
+      minHeight: 220,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimensions.spacingLg,
+        vertical: AppDimensions.spacingXl,
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.movie_creation_outlined,
+            size: 56,
+            color: ScriptStudioColors.textPrimary.withValues(alpha: 0.35),
+          ),
+          const SizedBox(height: AppDimensions.spacingMd),
+          const Text('暂无项目', style: ScriptStudioColors.cardTitle),
+          const SizedBox(height: 6),
+          const Text(
+            '新建剧本后会显示在这里',
+            style: ScriptStudioColors.cardSubtitle,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppDimensions.spacingLg),
+          StudioGlowPillButton(
+            label: '新建剧本',
+            onPressed: onCreate,
+          ),
         ],
       ),
     );
@@ -98,80 +172,76 @@ class _RecentProjectTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final secondary =
-        theme.textTheme.bodyMedium?.color ?? AppColors.textSecondary;
-    final tertiary = theme.brightness == Brightness.dark
-        ? AppColors.textTertiaryDark
-        : AppColors.textTertiary;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => _openProject(context),
-        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          child: Row(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-                child: SizedBox(
-                  width: 56,
-                  height: 56,
-                  child: PoseCoverImage(
-                    imagePath: screenplay.effectiveCoverImagePath,
-                    expand: true,
-                    borderRadius: 0,
-                  ),
-                ),
+    return StudioGlassCard(
+      onTap: () => _openProject(context),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimensions.spacingMd,
+        vertical: 10,
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+            child: SizedBox(
+              width: 56,
+              height: 56,
+              child: PoseCoverImage(
+                imagePath: screenplay.effectiveCoverImagePath,
+                expand: true,
+                borderRadius: 0,
               ),
-              const SizedBox(width: AppDimensions.spacingMd),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      screenplay.title.isEmpty ? '未命名剧本' : screenplay.title,
-                      style: AppTextStyles.label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _statusLabel,
-                      style: TextStyle(fontSize: 12, color: secondary),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (_timeLabel.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        _timeLabel,
-                        style: TextStyle(fontSize: 12, color: tertiary),
-                      ),
-                    ],
-                  ],
+            ),
+          ),
+          const SizedBox(width: AppDimensions.spacingMd),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  screenplay.title.isEmpty ? '未命名剧本' : screenplay.title,
+                  style: ScriptStudioColors.cardTitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              PopupMenuButton<String>(
-                icon: Icon(Icons.more_horiz, color: secondary),
-                onSelected: (value) {
-                  if (value == 'delete') _delete(context);
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Text(
-                      '删除',
-                      style: TextStyle(color: AppColors.error),
+                const SizedBox(height: 4),
+                Text(
+                  _statusLabel,
+                  style: ScriptStudioColors.cardSubtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (_timeLabel.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    _timeLabel,
+                    style: ScriptStudioColors.cardSubtitle.copyWith(
+                      color: ScriptStudioColors.textTertiary,
                     ),
                   ),
                 ],
+              ],
+            ),
+          ),
+          PopupMenuButton<String>(
+            icon: const Icon(
+              Icons.more_horiz,
+              color: ScriptStudioColors.textSecondary,
+            ),
+            color: ScriptStudioColors.nebulaDeep,
+            onSelected: (value) {
+              if (value == 'delete') _delete(context);
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'delete',
+                child: Text(
+                  '删除',
+                  style: TextStyle(color: AppColors.error),
+                ),
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }

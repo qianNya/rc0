@@ -4,7 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
-import '../../../../app/theme/app_text_styles.dart';
+import 'script_studio_glass_widgets.dart';
+import 'script_studio_theme.dart';
 
 class ScriptStudioActionCards extends StatelessWidget {
   const ScriptStudioActionCards({super.key});
@@ -20,11 +21,12 @@ class ScriptStudioActionCards extends StatelessWidget {
           ),
           const SizedBox(height: AppDimensions.spacingMd),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: _SecondaryActionCard(
-                  icon: Icons.auto_awesome_outlined,
-                  iconColor: AppColors.accent,
+                  icon: Icons.auto_awesome,
+                  glowColor: AppColors.accent,
                   title: 'AI 导入剧本',
                   subtitle: '智能拆解剧本内容',
                   onTap: () =>
@@ -35,7 +37,7 @@ class ScriptStudioActionCards extends StatelessWidget {
               Expanded(
                 child: _SecondaryActionCard(
                   icon: Icons.folder_copy_outlined,
-                  iconColor: AppColors.badgeHot,
+                  glowColor: AppColors.badgeHot,
                   title: '模板中心',
                   subtitle: '使用优质模板创作',
                   onTap: () => context.go(AppRoutes.community),
@@ -56,65 +58,29 @@ class _PrimaryCreateCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Ink(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
-            gradient: const LinearGradient(
-              colors: [AppColors.accent, AppColors.accentDark],
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppDimensions.spacingLg,
-              vertical: 20,
-            ),
-            child: Row(
+    return StudioGlassCard(
+      onTap: onTap,
+      glowColor: const Color(0xFF6366F1),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimensions.spacingMd,
+        vertical: AppDimensions.spacingMd,
+      ),
+      child: Row(
+        children: [
+          const StudioGlowIconBox(icon: Icons.add),
+          const SizedBox(width: AppDimensions.spacingMd),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.add, color: Colors.white, size: 28),
-                ),
-                const SizedBox(width: AppDimensions.spacingMd),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '新建剧本',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        '从空白开始创作',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                Text('新建剧本', style: ScriptStudioColors.cardTitle),
+                const SizedBox(height: 4),
+                Text('从空白开始创作', style: ScriptStudioColors.cardSubtitle),
               ],
             ),
           ),
-        ),
+          const StudioChevronBadge(),
+        ],
       ),
     );
   }
@@ -123,48 +89,45 @@ class _PrimaryCreateCard extends StatelessWidget {
 class _SecondaryActionCard extends StatelessWidget {
   const _SecondaryActionCard({
     required this.icon,
-    required this.iconColor,
+    required this.glowColor,
     required this.title,
     required this.subtitle,
     required this.onTap,
   });
 
   final IconData icon;
-  final Color iconColor;
+  final Color glowColor;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final bg = theme.brightness == Brightness.dark
-        ? AppColors.surfaceSecondaryDark
-        : AppColors.surfaceSecondary;
-
-    return Material(
-      color: bg,
-      borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(AppDimensions.spacingMd),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(icon, color: iconColor, size: 26),
-              const SizedBox(height: 12),
-              Text(title, style: AppTextStyles.label),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: AppTextStyles.bodySecondary.copyWith(fontSize: 12),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
+    return StudioGlassCard(
+      onTap: onTap,
+      glowColor: glowColor,
+      padding: const EdgeInsets.all(AppDimensions.spacingMd),
+      child: SizedBox(
+        height: 128,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: glowColor, size: 28),
+            const Spacer(),
+            Text(title, style: ScriptStudioColors.cardTitle),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: ScriptStudioColors.cardSubtitle,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 8),
+            const Align(
+              alignment: Alignment.centerRight,
+              child: StudioChevronBadge(),
+            ),
+          ],
         ),
       ),
     );

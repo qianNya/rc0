@@ -47,11 +47,6 @@ class LiquidGlassSurface extends StatelessWidget {
     final blurSigma =
         isNav ? AppDimensions.glassNavBlurSigma : AppDimensions.glassBlurSigma;
     final shadows = isNav ? AppShadows.floatingBarNav : AppShadows.floatingBar;
-    final highlight = isNav
-        ? (isDark
-            ? AppColors.glassNavHighlightDark
-            : AppColors.glassNavHighlightLight)
-        : null;
 
     return Padding(
       padding: margin ?? EdgeInsets.zero,
@@ -75,23 +70,6 @@ class LiquidGlassSurface extends StatelessWidget {
             child: Stack(
               fit: StackFit.passthrough,
               children: [
-                if (highlight != null)
-                  Positioned.fill(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        borderRadius: radius,
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            highlight,
-                            highlight.withValues(alpha: 0),
-                          ],
-                          stops: const [0, 0.55],
-                        ),
-                      ),
-                    ),
-                  ),
                 SizedBox(
                   height: height,
                   width: width,
