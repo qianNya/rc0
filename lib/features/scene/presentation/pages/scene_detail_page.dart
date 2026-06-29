@@ -9,6 +9,8 @@ import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/data/app_catalog.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
+import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
+import '../../../../shared/widgets/feed_tab_bar.dart';
 import '../../../../shared/widgets/primary_button.dart';
 import '../../../../shared/widgets/rc0_image.dart';
 import '../../../../shared/widgets/rc0_widgets.dart';
@@ -29,8 +31,7 @@ class SceneDetailPage extends StatefulWidget {
   State<SceneDetailPage> createState() => _SceneDetailPageState();
 }
 
-class _SceneDetailPageState extends State<SceneDetailPage>
-    with SingleTickerProviderStateMixin {
+class _SceneDetailPageState extends State<SceneDetailPage> {
   final _repo = SceneRepository.instance;
   final _auth = AuthRepository.instance;
   bool _loading = true;
@@ -38,22 +39,12 @@ class _SceneDetailPageState extends State<SceneDetailPage>
   bool _favorite = false;
   String? _localCover;
   List<String> _referenceUrls = const [];
-  late final TabController _tabController;
+  int _tabIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(
-      length: AppCatalog.sceneDetailTabs.length,
-      vsync: this,
-    );
     _load();
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
   }
 
   Future<void> _load() async {
@@ -176,8 +167,8 @@ class _SceneDetailPageState extends State<SceneDetailPage>
                     ),
                   ],
                 )
-              : NestedScrollView(
-                  headerSliverBuilder: (context, _) => [
+              : CustomScrollView(
+                  slivers: [
                     SliverToBoxAdapter(
                       child: _SceneHero(entry: entry, coverPath: coverPath),
                     ),
@@ -193,39 +184,32 @@ class _SceneDetailPageState extends State<SceneDetailPage>
                     SliverToBoxAdapter(child: _SceneDescription(entry: entry)),
                     SliverPersistentHeader(
                       pinned: true,
-                      delegate: _TabBarDelegate(
-                        TabBar(
-                          controller: _tabController,
-                          isScrollable: true,
-                          tabAlignment: TabAlignment.start,
-                          labelColor: AppColors.accent,
-                          unselectedLabelColor: isDark
-                              ? AppColors.textSecondaryDark
-                              : AppColors.textSecondary,
-                          indicatorColor: AppColors.accent,
-                          tabs: [
-                            for (final tab in AppCatalog.sceneDetailTabs)
-                              Tab(text: tab),
-                          ],
-                        ),
-                        isDark: isDark,
+                      delegate: PinnedFeedTabBarDelegate(
+                        tabs: AppCatalog.sceneDetailTabs,
+                        selectedIndex: _tabIndex,
+                        onChanged: (index) => setState(() => _tabIndex = index),
+                        backgroundColor: isDark
+                            ? AppColors.characterBackgroundDark
+                            : Theme.of(context).scaffoldBackgroundColor,
+                      ),
+                    ),
+                    SliverFillRemaining(
+                      child: FadeSlideIndexedStack(
+                        index: _tabIndex,
+                        children: [
+                          SceneInspirationTab(
+                            entry: entry,
+                            localCover: _localCover,
+                            referenceUrls: _referenceUrls,
+                          ),
+                          SceneShootingTipsTab(entry: entry),
+                          SceneRelatedTab(sceneId: entry.id),
+                          const SceneWorksTab(),
+                          SceneScriptsTab(sceneId: entry.id),
+                        ],
                       ),
                     ),
                   ],
-                  body: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      SceneInspirationTab(
-                        entry: entry,
-                        localCover: _localCover,
-                        referenceUrls: _referenceUrls,
-                      ),
-                      SceneShootingTipsTab(entry: entry),
-                      SceneRelatedTab(sceneId: entry.id),
-                      const SceneWorksTab(),
-                      SceneScriptsTab(sceneId: entry.id),
-                    ],
-                  ),
                 ),
     );
   }
@@ -370,35 +354,4 @@ class _SceneDescription extends StatelessWidget {
       ),
     );
   }
-}
-
-class _TabBarDelegate extends SliverPersistentHeaderDelegate {
-  _TabBarDelegate(this.tabBar, {required this.isDark});
-
-  final TabBar tabBar;
-  final bool isDark;
-
-  @override
-  double get minExtent => tabBar.preferredSize.height;
-
-  @override
-  double get maxExtent => tabBar.preferredSize.height;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    return Material(
-      color: isDark
-          ? AppColors.characterBackgroundDark
-          : Theme.of(context).scaffoldBackgroundColor,
-      child: tabBar,
-    );
-  }
-
-  @override
-  bool shouldRebuild(covariant _TabBarDelegate oldDelegate) =>
-      tabBar != oldDelegate.tabBar || isDark != oldDelegate.isDark;
 }

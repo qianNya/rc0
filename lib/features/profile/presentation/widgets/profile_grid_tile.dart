@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
-import '../../../../app/theme/app_shadows.dart';
 import '../../../../app/theme/app_text_styles.dart';
 
 class ProfileGridTile extends StatelessWidget {
@@ -14,6 +13,7 @@ class ProfileGridTile extends StatelessWidget {
     required this.iconColor,
     required this.iconBackground,
     this.onTap,
+    this.nested = false,
   });
 
   final String title;
@@ -22,24 +22,33 @@ class ProfileGridTile extends StatelessWidget {
   final Color iconColor;
   final Color iconBackground;
   final VoidCallback? onTap;
+  final bool nested;
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final innerBorder = isDark
+        ? AppColors.glassBorderDark
+        : AppColors.glassBorderLight;
+    final innerSurface = isDark
+        ? AppColors.glassSurfaceDark.withValues(alpha: 0.45)
+        : AppColors.glassSurfaceLight.withValues(alpha: 0.55);
+
     return Material(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-      elevation: 0,
-      shadowColor: Colors.transparent,
+      color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
         child: Ink(
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: nested ? innerSurface : AppColors.surface,
             borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-            boxShadow: AppShadows.card,
+            border: nested ? Border.all(color: innerBorder) : null,
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppDimensions.spacingSm + 4,
+            vertical: AppDimensions.spacingSm + 4,
+          ),
           child: Row(
             children: [
               Container(
@@ -51,7 +60,7 @@ class ProfileGridTile extends StatelessWidget {
                 ),
                 child: Icon(icon, color: iconColor, size: 22),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppDimensions.spacingSm + 4),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

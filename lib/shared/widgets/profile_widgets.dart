@@ -5,6 +5,7 @@ import '../../app/theme/app_dimensions.dart';
 import '../../app/theme/app_shadows.dart';
 import '../../app/theme/app_text_styles.dart';
 import '../../core/data/app_catalog.dart';
+import 'feed_tab_bar.dart';
 import 'primary_button.dart';
 
 class AuthorRow extends StatelessWidget {
@@ -74,41 +75,12 @@ class DetailTabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: AppDimensions.shellBarHeight,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: tabs.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 20),
-        itemBuilder: (context, index) {
-          final selected = selectedIndex == index;
-          return GestureDetector(
-            onTap: () => onChanged(index),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  tabs[index],
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                    color: selected ? AppColors.accent : AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  height: 2,
-                  width: selected ? 28 : 0,
-                  decoration: BoxDecoration(
-                    color: AppColors.accent,
-                    borderRadius: BorderRadius.circular(1),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
+    return FeedTabBar(
+      tabs: tabs,
+      selectedIndex: selectedIndex,
+      onChanged: onChanged,
+      underlineStyle: true,
+      embedded: true,
     );
   }
 }

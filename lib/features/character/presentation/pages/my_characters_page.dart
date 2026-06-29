@@ -8,6 +8,8 @@ import '../../../../app/theme/app_dimensions.dart';
 import '../../../../core/data/app_catalog.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
+import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
+import '../../../../shared/widgets/feed_tab_bar.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../data/character_local_store.dart';
 import '../../data/character_repository.dart';
@@ -71,23 +73,84 @@ class _MyCharactersPageState extends State<MyCharactersPage> {
       ..addAll(covers);
   }
 
-  List<CharacterEntry> get _filtered {
-    if (_tabIndex == 2) return const [];
+  List<CharacterEntry> _filteredForTab(int tabIndex) {
+    if (tabIndex == 2) return const [];
     return _repo.items
         .where(
           (e) => matchesMyCharacterTab(
             e,
-            _tabIndex,
+            tabIndex,
             ownedIds: _ownedIds,
           ),
         )
         .toList(growable: false);
   }
 
+  Widget _buildCharacterTabBody(int tabIndex) {
+    if (tabIndex == 2) {
+      return const EmptyStateView(
+        icon: Icons.download_outlined,
+        title: '暂无下载角色',
+        subtitle: '从社区下载的角色将展示在这里',
+      );
+    }
+
+    final filtered = _filteredForTab(tabIndex);
+    if (_repo.loading && filtered.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (filtered.isEmpty) {
+      return EmptyStateView(
+        icon: Icons.person_outline,
+        title: '暂无角色',
+        actionLabel: _auth.isLoggedIn ? '新建角色' : null,
+        onAction: _auth.isLoggedIn
+            ? () async {
+                await context.push(AppRoutes.characterCreate);
+                if (mounted) _load();
+              }
+            : null,
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: ListView(
+        controller: tabIndex == _tabIndex ? _scrollController : null,
+        padding: const EdgeInsets.only(bottom: AppDimensions.spacingXl),
+        children: [
+          CharacterMasonryGrid(
+            items: filtered,
+            localCoverFor: (e) => _localCovers[e.id],
+            screenplayCountFor: (e) =>
+                _repo.countScreenplaysForCharacter(e.id),
+            favoriteCountFor: (e) =>
+                _favorites.contains(e.id) ? 1 : null,
+            onTap: (entry) => context.push(
+              AppRoutes.characterDetailPath(entry.id),
+            ),
+            onLongPress: (entry) => showCharacterActionSheet(
+              context: context,
+              entry: entry,
+              repo: _repo,
+              isLoggedIn: _auth.isLoggedIn,
+              isFavorite: _favorites.contains(entry.id),
+              onToggleFavorite: () async {
+                final next = !_favorites.contains(entry.id);
+                await CharacterLocalStore.instance.setFavorite(entry.id, next);
+                await _load();
+              },
+              onRefresh: _load,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final filtered = _filtered;
 
     return AnimatedBuilder(
       animation: Listenable.merge([_repo, _auth]),
@@ -112,88 +175,30 @@ class _MyCharactersPageState extends State<MyCharactersPage> {
             child: Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.all(AppDimensions.spacingMd),
-                  child: SegmentedButton<int>(
-                    segments: [
-                      for (var i = 0; i < AppCatalog.myCharacterTabs.length; i++)
-                        ButtonSegment(
-                          value: i,
-                          label: Text(AppCatalog.myCharacterTabs[i]),
-                        ),
-                    ],
-                    selected: {_tabIndex},
-                    onSelectionChanged: (value) {
-                      setState(() => _tabIndex = value.first);
-                    },
+                  padding: const EdgeInsets.fromLTRB(
+                    AppDimensions.spacingMd,
+                    AppDimensions.spacingMd,
+                    AppDimensions.spacingMd,
+                    0,
+                  ),
+                  child: FeedTabBar(
+                    tabs: AppCatalog.myCharacterTabs,
+                    selectedIndex: _tabIndex,
+                    onChanged: (index) => setState(() => _tabIndex = index),
+                    underlineStyle: true,
+                    embedded: true,
                   ),
                 ),
                 Expanded(
-                  child: _tabIndex == 2
-                      ? const EmptyStateView(
-                          icon: Icons.download_outlined,
-                          title: '暂无下载角色',
-                          subtitle: '从社区下载的角色将展示在这里',
-                        )
-                      : _repo.loading && filtered.isEmpty
-                          ? const Center(child: CircularProgressIndicator())
-                          : filtered.isEmpty
-                              ? EmptyStateView(
-                                  icon: Icons.person_outline,
-                                  title: '暂无角色',
-                                  actionLabel:
-                                      _auth.isLoggedIn ? '新建角色' : null,
-                                  onAction: _auth.isLoggedIn
-                                      ? () async {
-                                          await context
-                                              .push(AppRoutes.characterCreate);
-                                          if (mounted) _load();
-                                        }
-                                      : null,
-                                )
-                              : RefreshIndicator(
-                                  onRefresh: _load,
-                                  child: ListView(
-                                    controller: _scrollController,
-                                    padding: const EdgeInsets.only(
-                                      bottom: AppDimensions.spacingXl,
-                                    ),
-                                    children: [
-                                      CharacterMasonryGrid(
-                                        items: filtered,
-                                        localCoverFor: (e) =>
-                                            _localCovers[e.id],
-                                        screenplayCountFor: (e) => _repo
-                                            .countScreenplaysForCharacter(e.id),
-                                        favoriteCountFor: (e) =>
-                                            _favorites.contains(e.id)
-                                                ? 1
-                                                : null,
-                                        onTap: (entry) => context.push(
-                                          AppRoutes.characterDetailPath(
-                                            entry.id,
-                                          ),
-                                        ),
-                                        onLongPress: (entry) =>
-                                            showCharacterActionSheet(
-                                          context: context,
-                                          entry: entry,
-                                          repo: _repo,
-                                          isLoggedIn: _auth.isLoggedIn,
-                                          isFavorite:
-                                              _favorites.contains(entry.id),
-                                          onToggleFavorite: () async {
-                                            final next = !_favorites
-                                                .contains(entry.id);
-                                            await CharacterLocalStore.instance
-                                                .setFavorite(entry.id, next);
-                                            await _load();
-                                          },
-                                          onRefresh: _load,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                  child: FadeSlideIndexedStack(
+                    index: _tabIndex,
+                    children: [
+                      for (var i = 0;
+                          i < AppCatalog.myCharacterTabs.length;
+                          i++)
+                        _buildCharacterTabBody(i),
+                    ],
+                  ),
                 ),
               ],
             ),

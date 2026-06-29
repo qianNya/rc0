@@ -4,6 +4,8 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_scaffold.dart';
+import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
+import '../../../../shared/widgets/feed_tab_bar.dart';
 import '../../../../shared/widgets/glass/glass_sheet.dart';
 import '../../../../shared/widgets/pose_cover_image.dart';
 import '../../../screenplay/data/screenplay_draft.dart';
@@ -187,31 +189,22 @@ class _ScriptEditorLeftPanelState extends State<ScriptEditorLeftPanel> {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-          child: Row(
-            children: [
-              for (var i = 0; i < _tabs.length; i++)
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    label: Text(_tabs[i]),
-                    selected: _tabIndex == i,
-                    onSelected: (_) => setState(() => _tabIndex = i),
-                    selectedColor: AppColors.accentLight,
-                    labelStyle: TextStyle(
-                      fontSize: 13,
-                      color: _tabIndex == i
-                          ? AppColors.accent
-                          : AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-            ],
+          child: FeedTabBar(
+            tabs: _tabs,
+            selectedIndex: _tabIndex,
+            onChanged: (i) => setState(() => _tabIndex = i),
+            underlineStyle: true,
+            embedded: true,
           ),
         ),
         Expanded(
-          child: _tabIndex == 0
-              ? _buildOutline()
-              : widget.structureEditor,
+          child: FadeSlideIndexedStack(
+            index: _tabIndex,
+            children: [
+              _buildOutline(),
+              widget.structureEditor,
+            ],
+          ),
         ),
         Padding(
           padding: const EdgeInsets.all(12),

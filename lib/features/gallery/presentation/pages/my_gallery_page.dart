@@ -12,6 +12,7 @@ import '../../../../core/utils/image_url_utils.dart';
 import '../../../../core/utils/state_listeners.dart';
 import '../../../../shared/widgets/desktop_shell_app_bar.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
+import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
 import '../../../../shared/widgets/feed_tab_bar.dart';
 import '../../../../shared/widgets/inline_error_banner.dart';
 import '../../../../shared/widgets/image_preview.dart';
@@ -26,7 +27,6 @@ import '../widgets/gallery_masonry_grid.dart';
 import '../widgets/gallery_page_header.dart';
 import '../widgets/gallery_tags_tab.dart';
 import '../widgets/gallery_works_tab.dart';
-import '../../../ip/data/ip_repository.dart';
 import '../../../ip/presentation/widgets/ip_tab.dart';
 
 class MyGalleryPage extends StatefulWidget {
@@ -249,8 +249,7 @@ class _MyGalleryPageState extends State<MyGalleryPage> {
     return '$value';
   }
 
-  Widget _buildGalleryScroll({
-    required bool includeHeader,
+  Widget _buildImagesTabScroll({
     required List<GalleryImage> filtered,
     required bool loading,
     required String? error,
@@ -262,75 +261,77 @@ class _MyGalleryPageState extends State<MyGalleryPage> {
         onNotification: (notification) {
           if (notification is! ScrollEndNotification) return false;
           if (notification.metrics.extentAfter >= 240) return false;
-
-          if (_mainTabIndex == 0 &&
-              _gallery.hasMore &&
-              !_gallery.loadingMore) {
+          if (_gallery.hasMore && !_gallery.loadingMore) {
             _gallery.loadMore();
-          } else if (_mainTabIndex == 1) {
-            final ip = IpRepository.instance;
-            if (ip.hasMore && !ip.loadingMore) {
-              ip.loadMore();
-            }
-          } else if (_mainTabIndex == 2) {
-            _worksTabKey.currentState?.loadMore();
           }
           return false;
         },
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            if (includeHeader)
-              SliverToBoxAdapter(
-                child: GalleryPageHeader(
-                  onUpload: _pickAndUpload,
-                  uploading: _uploading,
-                ),
-              ),
-            SliverToBoxAdapter(
-              child: FeedTabBar(
-                tabs: AppCatalog.galleryTabs,
-                selectedIndex: _mainTabIndex,
-                onChanged: _onMainTabChanged,
-                underlineStyle: true,
-              ),
+            ..._buildImagesTab(
+              filtered: filtered,
+              loading: loading,
+              error: error,
+              secondary: secondary,
             ),
-            if (_mainTabIndex == 0)
-              ..._buildImagesTab(
-                filtered: filtered,
-                loading: loading,
-                error: error,
-                secondary: secondary,
-              ),
-            if (_ipTabVisited)
-              SliverToBoxAdapter(
-                child: Offstage(
-                  offstage: _mainTabIndex != 1,
-                  child: IpTab(key: _ipTabKey),
-                ),
-              ),
-            if (_worksTabVisited)
-              SliverToBoxAdapter(
-                child: Offstage(
-                  offstage: _mainTabIndex != 2,
-                  child: GalleryWorksTab(key: _worksTabKey),
-                ),
-              ),
-            if (_tagsTabVisited)
-              SliverToBoxAdapter(
-                child: Offstage(
-                  offstage: _mainTabIndex != 3,
-                  child: GalleryTagsTab(
-                    onTagSelected: _onTagSelectedFromList,
-                  ),
-                ),
-              ),
             const SliverToBoxAdapter(
               child: SizedBox(height: AppDimensions.spacingLg),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildGalleryBody({
+    required bool includeHeader,
+    required List<GalleryImage> filtered,
+    required bool loading,
+    required String? error,
+    required Color? secondary,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (includeHeader)
+          GalleryPageHeader(
+            onUpload: _pickAndUpload,
+            uploading: _uploading,
+          ),
+        FeedTabBar(
+          tabs: AppCatalog.galleryTabs,
+          selectedIndex: _mainTabIndex,
+          onChanged: _onMainTabChanged,
+          underlineStyle: true,
+          embedded: true,
+        ),
+        Expanded(
+          child: FadeSlideIndexedStack(
+            index: _mainTabIndex,
+            children: [
+              _buildImagesTabScroll(
+                filtered: filtered,
+                loading: loading,
+                error: error,
+                secondary: secondary,
+              ),
+              if (_ipTabVisited)
+                IpTab(key: _ipTabKey)
+              else
+                const SizedBox.shrink(),
+              if (_worksTabVisited)
+                GalleryWorksTab(key: _worksTabKey)
+              else
+                const SizedBox.shrink(),
+              if (_tagsTabVisited)
+                GalleryTagsTab(onTagSelected: _onTagSelectedFromList)
+              else
+                const SizedBox.shrink(),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -374,7 +375,7 @@ class _MyGalleryPageState extends State<MyGalleryPage> {
     final secondary =
         theme.textTheme.bodyMedium?.color ?? AppColors.textSecondary;
 
-    final scroll = _buildGalleryScroll(
+    final body = _buildGalleryBody(
       includeHeader: !isDesktop,
       filtered: filtered,
       loading: loading,
@@ -388,14 +389,14 @@ class _MyGalleryPageState extends State<MyGalleryPage> {
           onUpload: _pickAndUpload,
           uploading: _uploading,
         ),
-        body: scroll,
+        body: body,
       );
     }
 
     return Scaffold(
       body: SafeArea(
         bottom: false,
-        child: scroll,
+        child: body,
       ),
     );
   }

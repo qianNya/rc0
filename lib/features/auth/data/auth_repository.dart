@@ -350,6 +350,8 @@ class AuthRepository extends ChangeNotifier {
 
     required String avatar,
 
+    required String backgroundUrl,
+
   }) {
 
     return updateProfile(
@@ -365,6 +367,8 @@ class AuthRepository extends ChangeNotifier {
         phone: phone,
 
         avatar: avatar,
+
+        backgroundUrl: backgroundUrl,
 
       ),
 

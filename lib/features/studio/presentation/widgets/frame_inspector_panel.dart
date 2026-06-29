@@ -12,6 +12,7 @@ import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/data/app_catalog.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
+import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
 import '../../../../shared/widgets/profile_widgets.dart';
 import '../../../screenplay/data/frame_generation_repository.dart';
 import '../../../screenplay/data/screenplay_draft.dart';
@@ -89,243 +90,267 @@ class _FrameInspectorPanelState extends State<FrameInspectorPanel> {
     final shotLabel =
         '${actIndex + 1}-${sceneIndex + 1}-${frameIndex + 1}';
 
-    return ListView(
+    final padding = widget.showHeader ? 16.0 : 12.0;
+
+    return Column(
       key: ValueKey('inspector-$actIndex-$sceneIndex-$frameIndex'),
-      padding: EdgeInsets.all(widget.showHeader ? 16 : 12),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (widget.showHeader) ...[
-          Text(
-            '画面 $shotLabel',
-            style: AppTextStyles.title.copyWith(fontSize: 16),
+          Padding(
+            padding: EdgeInsets.fromLTRB(padding, padding, padding, 0),
+            child: Text(
+              '画面 $shotLabel',
+              style: AppTextStyles.title.copyWith(fontSize: 16),
+            ),
           ),
           const SizedBox(height: 12),
         ],
-        DetailTabBar(
-          tabs: _tabs,
-          selectedIndex: _tabIndex,
-          onChanged: (i) => setState(() => _tabIndex = i),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: padding),
+          child: DetailTabBar(
+            tabs: _tabs,
+            selectedIndex: _tabIndex,
+            onChanged: (i) => setState(() => _tabIndex = i),
+          ),
         ),
-        SizedBox(height: widget.showHeader ? 16 : 12),
-        if (_tabIndex == 0) ...[
-          TextFormField(
-            initialValue: frame.caption,
-            decoration: const InputDecoration(
-              labelText: '标题',
-              isDense: true,
-            ),
-            onChanged: (v) {
-              widget.actions.onCaptionChanged(
-                actIndex,
-                sceneIndex,
-                frameIndex,
-                v,
-              );
-              widget.onChanged();
-            },
-          ),
-          const SizedBox(height: 8),
-          TextFormField(
-            initialValue: frame.actionNote,
-            maxLines: 3,
-            decoration: const InputDecoration(
-              labelText: '描述',
-              alignLabelWithHint: true,
-            ),
-            onChanged: (v) {
-              widget.actions.onActionNoteChanged(
-                actIndex,
-                sceneIndex,
-                frameIndex,
-                v,
-              );
-              widget.onChanged();
-            },
-          ),
-          const SizedBox(height: 8),
-          TextFormField(
-            key: ValueKey('duration-$actIndex-$sceneIndex-$frameIndex'),
-            initialValue: '${frame.cineParams.durationSec}',
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              labelText: '时长（秒）',
-              isDense: true,
-            ),
-            onChanged: (v) {
-              final sec = int.tryParse(v.trim());
-              if (sec == null || sec < 1) return;
-              widget.actions.onCineParamsChanged(
-                actIndex,
-                sceneIndex,
-                frameIndex,
-                frame.cineParams.copyWith(durationSec: sec),
-              );
-              widget.onChanged();
-            },
-          ),
-          const SizedBox(height: 12),
-          FrameCameraParamsGrid(
-            params: frame.cineParams,
-            onChanged: (params) {
-              widget.actions.onCineParamsChanged(
-                actIndex,
-                sceneIndex,
-                frameIndex,
-                params,
-              );
-              widget.onChanged();
-            },
-          ),
-          const SizedBox(height: 16),
-          _SceneFieldsSection(
-            scene: scene,
-            actIndex: actIndex,
-            sceneIndex: sceneIndex,
-            actions: widget.actions,
-            onChanged: widget.onChanged,
-          ),
-          const SizedBox(height: 16),
-          _CharacterSection(
-            characterId: frame.characterId,
-            characterName: frame.characterName,
-            characterNote: frame.characterNote,
-            onPickCharacter: () async {
-              final picked = await pickAndLinkScreenplayCharacter(
-                context,
-                draft: widget.actions.draft,
-                selectedCharacterId: frame.characterId,
-              );
-              if (!context.mounted) return;
-              if (picked == null) {
-                frame.characterId = null;
-                frame.characterName = '';
-              } else {
-                frame.characterId = picked.id;
-                frame.characterName = picked.name;
-                if (frame.characterNote.trim().isEmpty &&
-                    picked.appearance.isNotEmpty) {
-                  frame.characterNote = picked.appearance;
-                }
-              }
-              widget.onChanged();
-              setState(() {});
-            },
-            onClearCharacter: () {
-              frame.characterId = null;
-              frame.characterName = '';
-              widget.onChanged();
-              setState(() {});
-            },
-            onNoteChanged: (v) {
-              frame.characterNote = v;
-              widget.onChanged();
-            },
-            onCreateCharacter: () async {
-              final createdId =
-                  await context.push<int?>(AppRoutes.characterCreate);
-              if (!context.mounted || createdId == null) return;
-              final result =
-                  await CharacterRepository.instance.fetchDetail(createdId);
-              final entry = result.character;
-              if (entry == null) return;
-              frame.characterId = entry.id;
-              frame.characterName = entry.name;
-              if (frame.characterNote.trim().isEmpty &&
-                  entry.appearance.isNotEmpty) {
-                frame.characterNote = entry.appearance;
-              }
-              ensureDraftCharacterLinked(
-                widget.actions.draft,
-                id: entry.id,
-                name: entry.name,
-              );
-              widget.onChanged();
-              setState(() {});
-            },
-          ),
-        ] else ...[
-          Row(
+        SizedBox(height: padding),
+        Expanded(
+          child: FadeSlideIndexedStack(
+            index: _tabIndex,
             children: [
-              const Expanded(
-                child: Text('提示词', style: AppTextStyles.label),
-              ),
-              TextButton(
-                onPressed: () {
-                  final shootParams = effectiveParamsForFrame(
-                    widget.actions.draft,
-                    actIndex,
-                    sceneIndex,
-                    frameIndex,
-                  );
-                  frame.positivePrompt = AiPromptBuilder.buildPositive(
-                    frame: frame,
+              ListView(
+                padding: EdgeInsets.all(padding),
+                children: [
+                  TextFormField(
+                    initialValue: frame.caption,
+                    decoration: const InputDecoration(
+                      labelText: '标题',
+                      isDense: true,
+                    ),
+                    onChanged: (v) {
+                      widget.actions.onCaptionChanged(
+                        actIndex,
+                        sceneIndex,
+                        frameIndex,
+                        v,
+                      );
+                      widget.onChanged();
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    initialValue: frame.actionNote,
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                      labelText: '描述',
+                      alignLabelWithHint: true,
+                    ),
+                    onChanged: (v) {
+                      widget.actions.onActionNoteChanged(
+                        actIndex,
+                        sceneIndex,
+                        frameIndex,
+                        v,
+                      );
+                      widget.onChanged();
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    key: ValueKey(
+                      'duration-$actIndex-$sceneIndex-$frameIndex',
+                    ),
+                    initialValue: '${frame.cineParams.durationSec}',
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: '时长（秒）',
+                      isDense: true,
+                    ),
+                    onChanged: (v) {
+                      final sec = int.tryParse(v.trim());
+                      if (sec == null || sec < 1) return;
+                      widget.actions.onCineParamsChanged(
+                        actIndex,
+                        sceneIndex,
+                        frameIndex,
+                        frame.cineParams.copyWith(durationSec: sec),
+                      );
+                      widget.onChanged();
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  FrameCameraParamsGrid(
+                    params: frame.cineParams,
+                    onChanged: (params) {
+                      widget.actions.onCineParamsChanged(
+                        actIndex,
+                        sceneIndex,
+                        frameIndex,
+                        params,
+                      );
+                      widget.onChanged();
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _SceneFieldsSection(
                     scene: scene,
-                    shootParams: shootParams,
-                  );
-                  if (frame.negativePrompt.trim().isEmpty) {
-                    frame.negativePrompt =
-                        AiPromptBuilder.defaultNegativePrompt;
-                  }
-                  widget.onChanged();
-                  setState(() {});
-                },
-                child: const Text('从参数生成'),
+                    actIndex: actIndex,
+                    sceneIndex: sceneIndex,
+                    actions: widget.actions,
+                    onChanged: widget.onChanged,
+                  ),
+                  const SizedBox(height: 16),
+                  _CharacterSection(
+                    characterId: frame.characterId,
+                    characterName: frame.characterName,
+                    characterNote: frame.characterNote,
+                    onPickCharacter: () async {
+                      final picked = await pickAndLinkScreenplayCharacter(
+                        context,
+                        draft: widget.actions.draft,
+                        selectedCharacterId: frame.characterId,
+                      );
+                      if (!context.mounted) return;
+                      if (picked == null) {
+                        frame.characterId = null;
+                        frame.characterName = '';
+                      } else {
+                        frame.characterId = picked.id;
+                        frame.characterName = picked.name;
+                        if (frame.characterNote.trim().isEmpty &&
+                            picked.appearance.isNotEmpty) {
+                          frame.characterNote = picked.appearance;
+                        }
+                      }
+                      widget.onChanged();
+                      setState(() {});
+                    },
+                    onClearCharacter: () {
+                      frame.characterId = null;
+                      frame.characterName = '';
+                      widget.onChanged();
+                      setState(() {});
+                    },
+                    onNoteChanged: (v) {
+                      frame.characterNote = v;
+                      widget.onChanged();
+                    },
+                    onCreateCharacter: () async {
+                      final createdId =
+                          await context.push<int?>(AppRoutes.characterCreate);
+                      if (!context.mounted || createdId == null) return;
+                      final result = await CharacterRepository.instance
+                          .fetchDetail(createdId);
+                      final entry = result.character;
+                      if (entry == null) return;
+                      frame.characterId = entry.id;
+                      frame.characterName = entry.name;
+                      if (frame.characterNote.trim().isEmpty &&
+                          entry.appearance.isNotEmpty) {
+                        frame.characterNote = entry.appearance;
+                      }
+                      ensureDraftCharacterLinked(
+                        widget.actions.draft,
+                        id: entry.id,
+                        name: entry.name,
+                      );
+                      widget.onChanged();
+                      setState(() {});
+                    },
+                  ),
+                ],
+              ),
+              ListView(
+                padding: EdgeInsets.all(padding),
+                children: [
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Text('提示词', style: AppTextStyles.label),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          final shootParams = effectiveParamsForFrame(
+                            widget.actions.draft,
+                            actIndex,
+                            sceneIndex,
+                            frameIndex,
+                          );
+                          frame.positivePrompt = AiPromptBuilder.buildPositive(
+                            frame: frame,
+                            scene: scene,
+                            shootParams: shootParams,
+                          );
+                          if (frame.negativePrompt.trim().isEmpty) {
+                            frame.negativePrompt =
+                                AiPromptBuilder.defaultNegativePrompt;
+                          }
+                          widget.onChanged();
+                          setState(() {});
+                        },
+                        child: const Text('从参数生成'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  FramePromptSection(
+                    positivePrompt: frame.positivePrompt,
+                    negativePrompt: frame.negativePrompt,
+                    onPositiveChanged: (v) {
+                      widget.actions.onPositivePromptChanged(
+                        actIndex,
+                        sceneIndex,
+                        frameIndex,
+                        v,
+                      );
+                    },
+                    onNegativeChanged: (v) {
+                      widget.actions.onNegativePromptChanged(
+                        actIndex,
+                        sceneIndex,
+                        frameIndex,
+                        v,
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _ReferenceImagesSection(
+                    frame: frame,
+                    onAdd: () async {
+                      final result = await FrameGenerationRepository.instance
+                          .addReferenceImage(frame: frame);
+                      if (result.error != null && context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(result.error!)),
+                        );
+                      } else {
+                        widget.onChanged();
+                        setState(() {});
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  FrameGenerationActions(
+                    isLoading: _isGenerating,
+                    onGenerateImage: () => _generateImage(
+                      actIndex,
+                      sceneIndex,
+                      frameIndex,
+                    ),
+                    onGenerateVideo: () async {
+                      final msg = await FrameGenerationRepository.instance
+                          .generateVideoForFrame();
+                      if (context.mounted && msg != null) {
+                        context.push(AppRoutes.comingSoon('生成视频'));
+                      }
+                    },
+                  ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          FramePromptSection(
-            positivePrompt: frame.positivePrompt,
-            negativePrompt: frame.negativePrompt,
-            onPositiveChanged: (v) {
-              widget.actions.onPositivePromptChanged(
-                actIndex,
-                sceneIndex,
-                frameIndex,
-                v,
-              );
-            },
-            onNegativeChanged: (v) {
-              widget.actions.onNegativePromptChanged(
-                actIndex,
-                sceneIndex,
-                frameIndex,
-                v,
-              );
-            },
-          ),
-          const SizedBox(height: 12),
-          _ReferenceImagesSection(
-            frame: frame,
-            onAdd: () async {
-              final result = await FrameGenerationRepository.instance
-                  .addReferenceImage(frame: frame);
-              if (result.error != null && context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(result.error!)),
-                );
-              } else {
-                widget.onChanged();
-                setState(() {});
-              }
-            },
-          ),
-          const SizedBox(height: 16),
-          FrameGenerationActions(
-            isLoading: _isGenerating,
-            onGenerateImage: () => _generateImage(
-              actIndex,
-              sceneIndex,
-              frameIndex,
-            ),
-            onGenerateVideo: () async {
-              final msg = await FrameGenerationRepository.instance
-                  .generateVideoForFrame();
-              if (context.mounted && msg != null) {
-                context.push(AppRoutes.comingSoon('生成视频'));
-              }
-            },
-          ),
-        ],
+        ),
       ],
     );
   }

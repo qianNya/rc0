@@ -158,8 +158,7 @@ abstract final class ShellNavCatalog {
       label: '社区',
       icon: Icons.groups_outlined,
       selectedIcon: Icons.groups,
-      route: AppRoutes.community,
-      usePush: true,
+      branchIndex: 5,
       group: '其他',
     ),
   ];

@@ -124,12 +124,6 @@ abstract final class AppRouter {
         },
       ),
       GoRoute(
-        path: AppRoutes.community,
-        name: 'community',
-        parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) => const CommunityPage(),
-      ),
-      GoRoute(
         path: AppRoutes.follow,
         redirect: (_, _) => AppRoutes.discovery,
       ),
@@ -660,6 +654,18 @@ abstract final class AppRouter {
                 pageBuilder: (context, state) => NoTransitionPage(
                   key: state.pageKey,
                   child: const ActionWikiPage(embeddedInHub: true),
+                ),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.community,
+                name: 'community',
+                pageBuilder: (context, state) => NoTransitionPage(
+                  key: state.pageKey,
+                  child: const CommunityPage(embeddedInHub: true),
                 ),
               ),
             ],

@@ -32,11 +32,14 @@ import '../widgets/screenplay_detail_hero.dart';
 import '../widgets/screenplay_info_header.dart';
 import '../widgets/screenplay_structure_tree.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
+import '../../../../shared/widgets/feed_tab_bar.dart';
+import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
+import '../../../../shared/widgets/glass/glass_button.dart';
+import '../../../../shared/widgets/glass/glass_card.dart';
 import '../../../../shared/widgets/glass/glass_sheet.dart';
 import '../../../../shared/widgets/image_preview.dart';
 import '../../../../shared/widgets/pose_cover_image.dart';
 import '../../../../shared/widgets/primary_button.dart';
-import '../../../../shared/widgets/profile_widgets.dart';
 import '../../../../shared/widgets/rc0_app_bar.dart';
 
 class ScreenplayDetailPage extends StatefulWidget {
@@ -959,6 +962,7 @@ class _ScreenplayDetailMobileState extends State<_ScreenplayDetailMobile> {
             ScreenplayDetailHero(
               screenplay: screenplay,
               previewOptions: widget.previewOptions,
+              shootDefaults: widget.shootDefaults,
               isOwner: widget.isOwner,
               onBack: () => popOrGoExplore(context),
               onMore: widget.onMore,
@@ -970,71 +974,76 @@ class _ScreenplayDetailMobileState extends State<_ScreenplayDetailMobile> {
               likeBusy: widget.likeBusy,
               followBusy: widget.followBusy,
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  DetailTabBar(
-                    tabs: _detailTabs,
-                    selectedIndex: _tabIndex,
-                    onChanged: (i) => setState(() => _tabIndex = i),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildTabContent(
-                    screenplay,
-                    framePaths,
-                    frameCaptions,
-                  ),
-                ],
+            FeedTabBar(
+              tabs: _detailTabs,
+              selectedIndex: _tabIndex,
+              onChanged: (i) => setState(() => _tabIndex = i),
+              underlineStyle: true,
+              embedded: true,
+              margin: const EdgeInsets.symmetric(
+                horizontal: AppDimensions.spacingMd,
               ),
             ),
+            const SizedBox(height: AppDimensions.spacingMd),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppDimensions.spacingMd,
+              ),
+              child: GlassCard(
+                borderRadius: BorderRadius.circular(24),
+                padding: const EdgeInsets.all(AppDimensions.spacingMd),
+                child: FadeSlideIndexedStack(
+                  index: _tabIndex,
+                  children: [
+                    ScreenplayStructureTree(
+                      screenplay: screenplay,
+                      galleryPaths: framePaths,
+                      galleryCaptions: frameCaptions,
+                      previewOptions: widget.previewOptions,
+                      onDeleteAct: widget.onDeleteAct,
+                      onDeleteScene: widget.onDeleteScene,
+                      onDeleteFrame: widget.onDeleteFrame,
+                      onUploadFrame: widget.onUploadFrame,
+                    ),
+                    ScreenplayInfoHeader(
+                      screenplay: screenplay,
+                      shootDefaults: widget.shootDefaults,
+                      showTitle: false,
+                      showHierarchySummary: false,
+                      showShootParams: false,
+                    ),
+                    const EmptyStateView(
+                      icon: Icons.construction_outlined,
+                      title: '即将上线',
+                      subtitle: '相关模板推荐正在建设中',
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: AppDimensions.spacingLg),
           ],
         ),
         ),
       ),
       bottomNavigationBar: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(AppDimensions.spacingMd),
-          child: PrimaryButton(
+          padding: const EdgeInsets.fromLTRB(
+            AppDimensions.spacingMd,
+            AppDimensions.spacingSm,
+            AppDimensions.spacingMd,
+            AppDimensions.spacingMd,
+          ),
+          child: GlassButton(
             label: primaryLabel,
-            isLoading: primaryLoading,
+            filled: true,
+            loading: primaryLoading,
+            expand: true,
             onPressed: primaryAction,
           ),
         ),
       ),
     );
-  }
-
-  Widget _buildTabContent(
-    Screenplay screenplay,
-    List<String> framePaths,
-    List<String> frameCaptions,
-  ) {
-    switch (_tabIndex) {
-      case 0:
-        return ScreenplayStructureTree(
-          screenplay: screenplay,
-          galleryPaths: framePaths,
-          galleryCaptions: frameCaptions,
-          previewOptions: widget.previewOptions,
-          onDeleteAct: widget.onDeleteAct,
-          onDeleteScene: widget.onDeleteScene,
-          onDeleteFrame: widget.onDeleteFrame,
-          onUploadFrame: widget.onUploadFrame,
-        );
-      case 1:
-        return ScreenplayInfoHeader(
-          screenplay: screenplay,
-          shootDefaults: widget.shootDefaults,
-        );
-      default:
-        return const EmptyStateView(
-          icon: Icons.construction_outlined,
-          title: '即将上线',
-          subtitle: '相关模板推荐正在建设中',
-        );
-    }
   }
 }
 

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
+import '../../../../shared/widgets/feed_tab_bar.dart';
 import '../../../../shared/widgets/glass/glass.dart';
 import '../../../../shared/widgets/pose_cover_image.dart';
 import '../../../../shared/widgets/rc0_widgets.dart';
@@ -98,15 +100,16 @@ class _ProjectSettingsFormState extends State<ProjectSettingsForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        GlassSegmentedControl(
-          segments: _settingsTabs,
+        FeedTabBar(
+          tabs: _settingsTabs,
           selectedIndex: _tabIndex,
           onChanged: _setTab,
-          margin: EdgeInsets.zero,
+          underlineStyle: true,
+          embedded: true,
         ),
         const SizedBox(height: AppDimensions.spacingSm),
         Expanded(
-          child: IndexedStack(
+          child: FadeSlideIndexedStack(
             index: _tabIndex,
             children: [
               _SettingsTabScroll(child: _buildBasicTab()),

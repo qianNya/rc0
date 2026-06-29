@@ -6,6 +6,7 @@ import '../../../../core/domain/screenplay/script_frame_display.dart';
 import '../../../../core/responsive/breakpoints.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
+import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
 import '../../../../shared/widgets/profile_widgets.dart';
 import '../../../screenplay/data/screenplay_draft.dart';
 import '../../../screenplay/data/screenplay_scene_binding.dart';
@@ -200,7 +201,22 @@ class _SceneEditorDetailPageState extends State<SceneEditorDetailPage> {
             ),
           ),
           const SizedBox(height: 8),
-          Expanded(child: _buildTabContent(scene, frames, isDesktop)),
+          Expanded(
+            child: FadeSlideIndexedStack(
+              index: _tabIndex.clamp(0, _tabs.length - 1),
+              children: [
+                _buildFramesTab(scene, frames, isDesktop),
+                _buildStoryboardTab(scene, frames, isDesktop),
+                if (isDesktop)
+                  ScriptEditorTimelineTab(
+                    draft: _draft,
+                    actions: widget.actions,
+                    filterActIndex: widget.actIndex,
+                    filterSceneIndex: widget.sceneIndex,
+                  ),
+              ],
+            ),
+          ),
         ],
       ),
       floatingActionButton: _tabIndex == 0 && !isDesktop
@@ -243,170 +259,164 @@ class _SceneEditorDetailPageState extends State<SceneEditorDetailPage> {
     }
   }
 
-  Widget _buildTabContent(
+  Widget _buildFramesTab(
     SceneDraft scene,
     List<FrameDraft> frames,
     bool isDesktop,
   ) {
-    switch (_tabIndex) {
-      case 0:
-        if (isDesktop) {
-          return ListView(
-            padding: const EdgeInsets.all(AppDimensions.spacingMd),
-            children: [
-              SceneEditorSection(
-                scene: scene,
-                sceneIndex: widget.sceneIndex,
-                actIndex: widget.actIndex,
-                draft: _draft,
-                onChanged: _refresh,
-                canRemove: widget.actions.canRemoveScene(
+    if (isDesktop) {
+      return ListView(
+        padding: const EdgeInsets.all(AppDimensions.spacingMd),
+        children: [
+          SceneEditorSection(
+            scene: scene,
+            sceneIndex: widget.sceneIndex,
+            actIndex: widget.actIndex,
+            draft: _draft,
+            onChanged: _refresh,
+            canRemove: widget.actions.canRemoveScene(
+              widget.actIndex,
+              widget.sceneIndex,
+            ),
+            onRemove: () => widget.actions
+                .onRemoveScene(widget.actIndex, widget.sceneIndex)
+                .then((_) {
+              if (mounted) Navigator.of(context).pop();
+            }),
+            frames: frames,
+            onPickFrames: _pickFrames,
+            onRemoveFrame: (frameIndex) => widget.actions
+                .onRemoveFrame(
                   widget.actIndex,
                   widget.sceneIndex,
-                ),
-                onRemove: () => widget.actions
-                    .onRemoveScene(widget.actIndex, widget.sceneIndex)
-                    .then((_) {
-                  if (mounted) Navigator.of(context).pop();
-                }),
-                frames: frames,
-                onPickFrames: _pickFrames,
-                onRemoveFrame: (frameIndex) => widget.actions
-                    .onRemoveFrame(
-                      widget.actIndex,
-                      widget.sceneIndex,
-                      frameIndex,
-                    )
-                    .then((_) => _refresh()),
-                onCaptionChanged: (frameIndex, value) {
-                  widget.actions.onCaptionChanged(
-                    widget.actIndex,
-                    widget.sceneIndex,
-                    frameIndex,
-                    value,
-                  );
-                },
-                onActionNoteChanged: (frameIndex, value) {
-                  widget.actions.onActionNoteChanged(
-                    widget.actIndex,
-                    widget.sceneIndex,
-                    frameIndex,
-                    value,
-                  );
-                },
-                onSceneOverrideChanged: (override) {
-                  widget.actions.onSceneOverrideChanged(
-                    widget.actIndex,
-                    widget.sceneIndex,
-                    override,
-                  );
-                  _refresh();
-                },
-                onFrameOverrideChanged: (frameIndex, override) {
-                  widget.actions.onFrameOverrideChanged(
-                    widget.actIndex,
-                    widget.sceneIndex,
-                    frameIndex,
-                    override,
-                  );
-                  _refresh();
-                },
-                expanded: true,
-                onToggleExpanded: () {},
-                isFrameExpanded: _isFrameExpanded,
-                onToggleFrame: _toggleFrame,
-                onMoveFrame: (data, insertIndex) {
-                  widget.actions.onMoveFrame(
-                    data,
-                    widget.actIndex,
-                    scene,
-                    insertIndex,
-                  );
-                  _refresh();
-                },
-                poolTags: widget.actions.poolTags,
-                onToggleSceneTag: (tag) {
-                  widget.actions.onToggleSceneTag(
-                    widget.actIndex,
-                    widget.sceneIndex,
-                    tag,
-                  );
-                  _refresh();
-                },
-                onToggleFrameTag: (frameIndex, tag) {
-                  widget.actions.onToggleFrameTag(
-                    widget.actIndex,
-                    widget.sceneIndex,
-                    frameIndex,
-                    tag,
-                  );
-                  _refresh();
-                },
-                onOpenFrameDetail: _openFrameDetail,
-              ),
-            ],
-          );
-        }
-
-        if (frames.isEmpty) {
-          return EmptyStateView(
-            icon: Icons.photo_library_outlined,
-            title: '暂无画面',
-            subtitle: '点击下方添加画面',
-            actionLabel: '添加画面',
-            onAction: _pickFrames,
-          );
-        }
-
-        return SceneFrameListView(
-          frames: frames,
-          actIndex: widget.actIndex,
-          sceneIndex: widget.sceneIndex,
-          onFrameTap: _openFrameDetail,
-          onBatchEdit: _openBatchEdit,
-          bottomPadding: 128,
-        );
-
-      case 1:
-        final previewFrames = draftFramesForScene(
-          _draft,
-          widget.actIndex,
-          widget.sceneIndex,
-        );
-        if (previewFrames.isEmpty) {
-          return const EmptyStateView(
-            icon: Icons.grid_view_outlined,
-            title: '暂无画面',
-            subtitle: '在画面列表中添加分镜图',
-          );
-        }
-        final paths = previewFrames.map((f) => f.effectiveDisplayPath).toList();
-        final captions = previewFrames.map((f) => f.caption).toList();
-        final labels = [
-          for (var i = 0; i < frames.length; i++)
-            '${widget.actIndex + 1}-${widget.sceneIndex + 1}-${i + 1}',
-        ];
-        return EditorStoryboardPanel(
-          title: '$_sceneTitle（${frames.length}画）',
-          frames: previewFrames,
-          galleryPaths: paths,
-          galleryCaptions: captions,
-          shotLabels: labels,
-          frameSources: frames,
-          onFrameTap: _openFrameDetail,
-          onBatchEdit: _openBatchEdit,
-          onAddFrame: _pickFrames,
-          showBottomBar: !isDesktop,
-        );
-
-      default:
-        return ScriptEditorTimelineTab(
-          draft: _draft,
-          actions: widget.actions,
-          filterActIndex: widget.actIndex,
-          filterSceneIndex: widget.sceneIndex,
-        );
+                  frameIndex,
+                )
+                .then((_) => _refresh()),
+            onCaptionChanged: (frameIndex, value) {
+              widget.actions.onCaptionChanged(
+                widget.actIndex,
+                widget.sceneIndex,
+                frameIndex,
+                value,
+              );
+            },
+            onActionNoteChanged: (frameIndex, value) {
+              widget.actions.onActionNoteChanged(
+                widget.actIndex,
+                widget.sceneIndex,
+                frameIndex,
+                value,
+              );
+            },
+            onSceneOverrideChanged: (override) {
+              widget.actions.onSceneOverrideChanged(
+                widget.actIndex,
+                widget.sceneIndex,
+                override,
+              );
+              _refresh();
+            },
+            onFrameOverrideChanged: (frameIndex, override) {
+              widget.actions.onFrameOverrideChanged(
+                widget.actIndex,
+                widget.sceneIndex,
+                frameIndex,
+                override,
+              );
+              _refresh();
+            },
+            expanded: true,
+            onToggleExpanded: () {},
+            isFrameExpanded: _isFrameExpanded,
+            onToggleFrame: _toggleFrame,
+            onMoveFrame: (data, insertIndex) {
+              widget.actions.onMoveFrame(
+                data,
+                widget.actIndex,
+                scene,
+                insertIndex,
+              );
+              _refresh();
+            },
+            poolTags: widget.actions.poolTags,
+            onToggleSceneTag: (tag) {
+              widget.actions.onToggleSceneTag(
+                widget.actIndex,
+                widget.sceneIndex,
+                tag,
+              );
+              _refresh();
+            },
+            onToggleFrameTag: (frameIndex, tag) {
+              widget.actions.onToggleFrameTag(
+                widget.actIndex,
+                widget.sceneIndex,
+                frameIndex,
+                tag,
+              );
+              _refresh();
+            },
+            onOpenFrameDetail: _openFrameDetail,
+          ),
+        ],
+      );
     }
+
+    if (frames.isEmpty) {
+      return EmptyStateView(
+        icon: Icons.photo_library_outlined,
+        title: '暂无画面',
+        subtitle: '点击下方添加画面',
+        actionLabel: '添加画面',
+        onAction: _pickFrames,
+      );
+    }
+
+    return SceneFrameListView(
+      frames: frames,
+      actIndex: widget.actIndex,
+      sceneIndex: widget.sceneIndex,
+      onFrameTap: _openFrameDetail,
+      onBatchEdit: _openBatchEdit,
+      bottomPadding: 128,
+    );
+  }
+
+  Widget _buildStoryboardTab(
+    SceneDraft scene,
+    List<FrameDraft> frames,
+    bool isDesktop,
+  ) {
+    final previewFrames = draftFramesForScene(
+      _draft,
+      widget.actIndex,
+      widget.sceneIndex,
+    );
+    if (previewFrames.isEmpty) {
+      return const EmptyStateView(
+        icon: Icons.grid_view_outlined,
+        title: '暂无画面',
+        subtitle: '在画面列表中添加分镜图',
+      );
+    }
+    final paths = previewFrames.map((f) => f.effectiveDisplayPath).toList();
+    final captions = previewFrames.map((f) => f.caption).toList();
+    final labels = [
+      for (var i = 0; i < frames.length; i++)
+        '${widget.actIndex + 1}-${widget.sceneIndex + 1}-${i + 1}',
+    ];
+    return EditorStoryboardPanel(
+      title: '$_sceneTitle（${frames.length}画）',
+      frames: previewFrames,
+      galleryPaths: paths,
+      galleryCaptions: captions,
+      shotLabels: labels,
+      frameSources: frames,
+      onFrameTap: _openFrameDetail,
+      onBatchEdit: _openBatchEdit,
+      onAddFrame: _pickFrames,
+      showBottomBar: !isDesktop,
+    );
   }
 }
 

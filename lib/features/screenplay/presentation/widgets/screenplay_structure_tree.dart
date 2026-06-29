@@ -142,70 +142,67 @@ class _ActTreeSection extends StatelessWidget {
     final canDeleteAct = onDeleteAct != null && actCount > 1;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: AppDimensions.spacingMd),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           GestureDetector(
             onTap: onToggle,
             onLongPress: canDeleteAct ? () => onDeleteAct!(actIndex) : null,
-            child: Row(
-              children: [
-                Icon(
-                  expanded
-                      ? Icons.keyboard_arrow_down
-                      : Icons.keyboard_arrow_right,
-                  size: 20,
-                  color: AppColors.textSecondary,
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    'Act ${actIndex + 1} ${act.title}',
-                    style: AppTextStyles.label,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (expanded)
-            Padding(
-              padding: const EdgeInsets.only(left: 10, top: 8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppDimensions.spacingXs),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 2,
-                    margin: const EdgeInsets.only(top: 4, bottom: 4),
-                    color: AppColors.border,
+                  Icon(
+                    expanded
+                        ? Icons.keyboard_arrow_down
+                        : Icons.keyboard_arrow_right,
+                    size: 20,
+                    color: AppColors.textSecondary,
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 4),
                   Expanded(
-                    child: Column(
-                      children: [
-                        for (var sceneIndex = 0;
-                            sceneIndex < act.scenes.length;
-                            sceneIndex++)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: _SceneTreeRow(
-                              scene: act.scenes[sceneIndex],
-                              sceneIndex: sceneIndex,
-                              actIndex: actIndex,
-                              sceneCount: act.scenes.length,
-                              galleryPaths: galleryPaths,
-                              galleryCaptions: galleryCaptions,
-                              previewOptions: previewOptions,
-                              onDeleteScene: onDeleteScene,
-                              onDeleteFrame: onDeleteFrame,
-                              onUploadFrame: onUploadFrame,
-                            ),
-                          ),
-                      ],
+                    child: Text(
+                      'Act ${actIndex + 1} ${act.title}',
+                      style: AppTextStyles.label,
                     ),
                   ),
                 ],
               ),
+            ),
+          ),
+          if (expanded)
+            Padding(
+              padding: const EdgeInsets.only(top: AppDimensions.spacingXs),
+              child: Column(
+                children: [
+                  for (var sceneIndex = 0;
+                      sceneIndex < act.scenes.length;
+                      sceneIndex++)
+                    Padding(
+                      padding: const EdgeInsets.only(
+                        bottom: AppDimensions.spacingSm,
+                      ),
+                      child: _SceneTreeRow(
+                        scene: act.scenes[sceneIndex],
+                        sceneIndex: sceneIndex,
+                        actIndex: actIndex,
+                        sceneCount: act.scenes.length,
+                        galleryPaths: galleryPaths,
+                        galleryCaptions: galleryCaptions,
+                        previewOptions: previewOptions,
+                        onDeleteScene: onDeleteScene,
+                        onDeleteFrame: onDeleteFrame,
+                        onUploadFrame: onUploadFrame,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          if (actIndex < actCount - 1)
+            Divider(
+              height: 1,
+              color: AppColors.border.withValues(alpha: 0.6),
             ),
         ],
       ),
@@ -315,12 +312,20 @@ class _SceneTreeRowState extends State<_SceneTreeRow> {
       );
     }
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final innerBorder = isDark
+        ? AppColors.glassBorderDark
+        : AppColors.glassBorderLight;
+    final innerSurface = isDark
+        ? AppColors.glassSurfaceDark.withValues(alpha: 0.45)
+        : AppColors.glassSurfaceLight.withValues(alpha: 0.55);
+
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(AppDimensions.spacingSm + 2),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: innerSurface,
         borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: innerBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

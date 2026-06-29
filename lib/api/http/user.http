@@ -18,7 +18,8 @@ Content-Type: application/json
   "location": "Shanghai",
   "website": "https://example.com",
   "nickname": "Alice",
-  "avatar": "https://cdn.example.com/avatar.png"
+  "avatar": "https://cdn.example.com/avatar.png",
+  "background_url": "https://cdn.example.com/profile-bg.jpg"
 }
 
 ###

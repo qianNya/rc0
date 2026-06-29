@@ -8,6 +8,8 @@ import '../../../../app/theme/app_dimensions.dart';
 import '../../../../core/data/app_catalog.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
+import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
+import '../../../../shared/widgets/feed_tab_bar.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../data/scene_local_store.dart';
 import '../../data/scene_repository.dart';
@@ -72,12 +74,12 @@ class _MyScenesPageState extends State<MyScenesPage> {
       ..addAll(covers);
   }
 
-  List<SceneEntry> get _filtered {
+  List<SceneEntry> _filteredForTab(int tabIndex) {
     return _repo.items
         .where(
           (e) => matchesMySceneTab(
             e,
-            _tabIndex,
+            tabIndex,
             favoriteIds: _favorites,
             ownedIds: _ownedIds,
             usedIds: _usedIds,
@@ -86,10 +88,56 @@ class _MyScenesPageState extends State<MyScenesPage> {
         .toList(growable: false);
   }
 
+  Widget _buildSceneTabBody(int tabIndex) {
+    final filtered = _filteredForTab(tabIndex);
+    if (filtered.isEmpty) {
+      return EmptyStateView(
+        icon: Icons.landscape_outlined,
+        title: '暂无场景',
+        actionLabel: _auth.isLoggedIn ? '新建场景' : null,
+        onAction: _auth.isLoggedIn
+            ? () async {
+                await context.push(AppRoutes.sceneCreate);
+                if (mounted) _load();
+              }
+            : null,
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: ListView(
+        padding: const EdgeInsets.only(bottom: 32),
+        children: [
+          SceneMasonryGrid(
+            items: filtered,
+            localCoverFor: (e) => _localCovers[e.id],
+            screenplayCountFor: (e) => _repo.countScreenplaysForScene(e.id),
+            favoriteCountFor: (e) =>
+                _favorites.contains(e.id) ? e.favoriteCount + 1 : e.favoriteCount,
+            onTap: (entry) => context.push(AppRoutes.sceneDetailPath(entry.id)),
+            onLongPress: (entry) => showSceneActionSheet(
+              context: context,
+              entry: entry,
+              repo: _repo,
+              isLoggedIn: _auth.isLoggedIn,
+              isFavorite: _favorites.contains(entry.id),
+              onToggleFavorite: () async {
+                final next = !_favorites.contains(entry.id);
+                await SceneLocalStore.instance.setFavorite(entry.id, next);
+                await _load();
+              },
+              onRefresh: _load,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final filtered = _filtered;
 
     return DesktopStackScaffold(
       title: const Text('我的场景'),
@@ -111,72 +159,28 @@ class _MyScenesPageState extends State<MyScenesPage> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.all(AppDimensions.spacingMd),
-              child: SegmentedButton<int>(
-                segments: [
-                  for (var i = 0; i < AppCatalog.mySceneTabs.length; i++)
-                    ButtonSegment(
-                      value: i,
-                      label: Text(AppCatalog.mySceneTabs[i]),
-                    ),
-                ],
-                selected: {_tabIndex},
-                onSelectionChanged: (set) {
-                  setState(() => _tabIndex = set.first);
-                },
+              padding: const EdgeInsets.fromLTRB(
+                AppDimensions.spacingMd,
+                AppDimensions.spacingMd,
+                AppDimensions.spacingMd,
+                0,
+              ),
+              child: FeedTabBar(
+                tabs: AppCatalog.mySceneTabs,
+                selectedIndex: _tabIndex,
+                onChanged: (index) => setState(() => _tabIndex = index),
+                underlineStyle: true,
+                embedded: true,
               ),
             ),
             Expanded(
-              child: filtered.isEmpty
-                  ? EmptyStateView(
-                      icon: Icons.landscape_outlined,
-                      title: '暂无场景',
-                      actionLabel: _auth.isLoggedIn ? '新建场景' : null,
-                      onAction: _auth.isLoggedIn
-                          ? () async {
-                              await context.push(AppRoutes.sceneCreate);
-                              if (mounted) _load();
-                            }
-                          : null,
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _load,
-                      child: ListView(
-                        padding: const EdgeInsets.only(bottom: 32),
-                        children: [
-                          SceneMasonryGrid(
-                            items: filtered,
-                            localCoverFor: (e) => _localCovers[e.id],
-                            screenplayCountFor: (e) =>
-                                _repo.countScreenplaysForScene(e.id),
-                            favoriteCountFor: (e) =>
-                                _favorites.contains(e.id)
-                                    ? e.favoriteCount + 1
-                                    : e.favoriteCount,
-                            onTap: (entry) => context.push(
-                              AppRoutes.sceneDetailPath(entry.id),
-                            ),
-                            onLongPress: (entry) => showSceneActionSheet(
-                              context: context,
-                              entry: entry,
-                              repo: _repo,
-                              isLoggedIn: _auth.isLoggedIn,
-                              isFavorite: _favorites.contains(entry.id),
-                              onToggleFavorite: () async {
-                                final next =
-                                    !_favorites.contains(entry.id);
-                                await SceneLocalStore.instance.setFavorite(
-                                  entry.id,
-                                  next,
-                                );
-                                await _load();
-                              },
-                              onRefresh: _load,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+              child: FadeSlideIndexedStack(
+                index: _tabIndex,
+                children: [
+                  for (var i = 0; i < AppCatalog.mySceneTabs.length; i++)
+                    _buildSceneTabBody(i),
+                ],
+              ),
             ),
           ],
         ),

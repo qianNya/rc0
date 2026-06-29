@@ -5,6 +5,7 @@ class Profile {
   final String email;
   final String phone;
   final String avatar;
+  final String backgroundUrl;
   final String bio;
   final num level;
   final num followerCount;
@@ -19,6 +20,7 @@ class Profile {
     required this.email,
     required this.phone,
     required this.avatar,
+    required this.backgroundUrl,
     required this.bio,
     required this.level,
     required this.followerCount,
@@ -27,14 +29,53 @@ class Profile {
     required this.screenplayCount,
   });
 
+  /// GET/PUT `/users/me` returns `{ profile, user }`; older mocks may be flat.
   factory Profile.fromJson(Map<String, dynamic> m) {
+    if (m.containsKey('profile') || m.containsKey('user')) {
+      return Profile.fromMeEnvelope(m);
+    }
+    return Profile.fromFlatJson(m);
+  }
+
+  factory Profile.fromMeEnvelope(Map<String, dynamic> m) {
+    final profilePart = m['profile'] is Map<String, dynamic>
+        ? m['profile'] as Map<String, dynamic>
+        : const <String, dynamic>{};
+    final userPart = m['user'] is Map<String, dynamic>
+        ? m['user'] as Map<String, dynamic>
+        : const <String, dynamic>{};
+
+    return Profile.fromFlatJson({
+      ...userPart,
+      ...profilePart,
+      'id': userPart['id'] ?? profilePart['user_id'] ?? profilePart['id'] ?? 0,
+      'username': userPart['username'] ?? profilePart['username'] ?? '',
+      'nickname': userPart['nickname'] ?? profilePart['nickname'] ?? '',
+      'email': userPart['email'] ?? profilePart['email'] ?? '',
+      'phone': userPart['phone'] ?? profilePart['phone'] ?? '',
+      'avatar': userPart['avatar'] ?? profilePart['avatar'] ?? '',
+      'bio': profilePart['bio'] ?? userPart['bio'] ?? '',
+      'level': profilePart['level'] ?? userPart['level'] ?? 0,
+      'follower_count': profilePart['follower_count'] ?? userPart['follower_count'] ?? 0,
+      'following_count':
+          profilePart['following_count'] ?? userPart['following_count'] ?? 0,
+      'total_likes': profilePart['total_likes'] ?? userPart['total_likes'] ?? 0,
+      'screenplay_count':
+          profilePart['screenplay_count'] ?? userPart['screenplay_count'] ?? 0,
+      'background_url':
+          profilePart['background_url'] ?? userPart['background_url'] ?? '',
+    });
+  }
+
+  factory Profile.fromFlatJson(Map<String, dynamic> m) {
     return Profile(
-      id: m['id'] ?? 0,
+      id: m['id'] ?? m['user_id'] ?? 0,
       username: m['username'] ?? '',
       nickname: m['nickname'] ?? '',
       email: m['email'] ?? '',
       phone: m['phone'] ?? '',
       avatar: m['avatar'] ?? '',
+      backgroundUrl: m['background_url'] ?? '',
       bio: m['bio'] ?? '',
       level: m['level'] ?? 0,
       followerCount: m['follower_count'] ?? 0,
@@ -51,6 +92,7 @@ class Profile {
         'email': email,
         'phone': phone,
         'avatar': avatar,
+        'background_url': backgroundUrl,
         'bio': bio,
         'level': level,
         'follower_count': followerCount,
@@ -65,6 +107,7 @@ class UpdateProfileReq {
   final String email;
   final String phone;
   final String avatar;
+  final String backgroundUrl;
   final String bio;
 
   UpdateProfileReq({
@@ -72,6 +115,7 @@ class UpdateProfileReq {
     required this.email,
     required this.phone,
     required this.avatar,
+    required this.backgroundUrl,
     required this.bio,
   });
 
@@ -81,6 +125,7 @@ class UpdateProfileReq {
     if (email.isNotEmpty) payload['email'] = email;
     if (phone.isNotEmpty) payload['phone'] = phone;
     if (avatar.isNotEmpty) payload['avatar'] = avatar;
+    if (backgroundUrl.isNotEmpty) payload['background_url'] = backgroundUrl;
     if (bio.isNotEmpty) payload['bio'] = bio;
     return payload;
   }
@@ -91,6 +136,7 @@ class PublicUserProfile {
   final String username;
   final String nickname;
   final String avatar;
+  final String backgroundUrl;
   final String bio;
   final num level;
   final num followerCount;
@@ -104,6 +150,7 @@ class PublicUserProfile {
     required this.username,
     required this.nickname,
     required this.avatar,
+    required this.backgroundUrl,
     required this.bio,
     required this.level,
     required this.followerCount,
@@ -114,11 +161,48 @@ class PublicUserProfile {
   });
 
   factory PublicUserProfile.fromJson(Map<String, dynamic> m) {
+    if (m.containsKey('profile') || m.containsKey('user')) {
+      return PublicUserProfile.fromPublicEnvelope(m);
+    }
+    return PublicUserProfile.fromFlatJson(m);
+  }
+
+  factory PublicUserProfile.fromPublicEnvelope(Map<String, dynamic> m) {
+    final profilePart = m['profile'] is Map<String, dynamic>
+        ? m['profile'] as Map<String, dynamic>
+        : const <String, dynamic>{};
+    final userPart = m['user'] is Map<String, dynamic>
+        ? m['user'] as Map<String, dynamic>
+        : const <String, dynamic>{};
+
+    return PublicUserProfile.fromFlatJson({
+      ...userPart,
+      ...profilePart,
+      'id': userPart['id'] ?? profilePart['user_id'] ?? profilePart['id'] ?? 0,
+      'username': userPart['username'] ?? profilePart['username'] ?? '',
+      'nickname': userPart['nickname'] ?? profilePart['nickname'] ?? '',
+      'avatar': userPart['avatar'] ?? profilePart['avatar'] ?? '',
+      'background_url':
+          profilePart['background_url'] ?? userPart['background_url'] ?? '',
+      'bio': profilePart['bio'] ?? userPart['bio'] ?? '',
+      'level': profilePart['level'] ?? userPart['level'] ?? 0,
+      'follower_count': profilePart['follower_count'] ?? userPart['follower_count'] ?? 0,
+      'following_count':
+          profilePart['following_count'] ?? userPart['following_count'] ?? 0,
+      'total_likes': profilePart['total_likes'] ?? userPart['total_likes'] ?? 0,
+      'screenplay_count':
+          profilePart['screenplay_count'] ?? userPart['screenplay_count'] ?? 0,
+      'is_following': m['is_following'] ?? false,
+    });
+  }
+
+  factory PublicUserProfile.fromFlatJson(Map<String, dynamic> m) {
     return PublicUserProfile(
       id: m['id'] ?? 0,
       username: m['username'] ?? '',
       nickname: m['nickname'] ?? '',
       avatar: m['avatar'] ?? '',
+      backgroundUrl: m['background_url'] ?? '',
       bio: m['bio'] ?? '',
       level: m['level'] ?? 0,
       followerCount: m['follower_count'] ?? 0,

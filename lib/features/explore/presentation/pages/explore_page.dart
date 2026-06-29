@@ -15,6 +15,7 @@ import '../../../screenplay/data/screenplay_remote_repository.dart';
 import '../../../screenplay/presentation/widgets/screenplay_delete_actions.dart';
 import '../../../screenplay/presentation/widgets/screenplay_selection_bar.dart';
 import '../../../screenplay/presentation/widgets/screenplay_selection_controller.dart';
+import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
 import '../../../../shared/widgets/feed_tab_bar.dart';
 import '../../../../shared/widgets/shell_bar_icon_button.dart';
 import '../../../../shared/widgets/rc0_widgets.dart';
@@ -213,97 +214,239 @@ class _ExploreMobileView extends StatelessWidget {
       body: SafeArea(
         top: false,
         bottom: false,
-        child: RefreshIndicator(
-          onRefresh: onRefreshRemote,
-          child: NotificationListener<ScrollNotification>(
-            onNotification: (notification) {
-              if (notification is ScrollEndNotification &&
-                  notification.metrics.extentAfter < 240 &&
-                  remoteHasMore &&
-                  !remoteLoadingMore) {
-                onLoadMore();
-              }
-              return false;
-            },
-            child: CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                const SliverToBoxAdapter(child: StatusBarSpacer()),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 4, right: 4),
-                    child: SizedBox(
-                      height: AppDimensions.shellBarHeight,
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: FeedTabBar(
-                              tabs: AppCatalog.feedTabs,
-                              selectedIndex: feedTabIndex,
-                              onChanged: onFeedTabChanged,
-                              underlineStyle: true,
-                            ),
-                          ),
-                        ShellBarIconButton(
-                          icon: Icons.search,
-                          onPressed: () => context.push(AppRoutes.search),
-                        ),
-                        ScreenplaySelectionAppBarActions(
-                          controller: selectionController,
-                          localIds: localIds,
-                          onSelectionChanged: onSelectionChanged,
-                        ),
-                      ],
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const StatusBarSpacer(),
+            Padding(
+              padding: const EdgeInsets.only(top: 4, right: 4),
+              child: SizedBox(
+                height: AppDimensions.shellBarHeight,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: FeedTabBar(
+                        tabs: AppCatalog.feedTabs,
+                        selectedIndex: feedTabIndex,
+                        onChanged: onFeedTabChanged,
+                        underlineStyle: true,
+                        embedded: true,
+                      ),
                     ),
-                  ),
+                    ShellBarIconButton(
+                      icon: Icons.search,
+                      onPressed: () => context.push(AppRoutes.search),
+                    ),
+                    ScreenplaySelectionAppBarActions(
+                      controller: selectionController,
+                      localIds: localIds,
+                      onSelectionChanged: onSelectionChanged,
+                    ),
+                  ],
                 ),
-                ),
-                const SliverToBoxAdapter(child: ExploreFeaturedCarousel()),
-                const SliverToBoxAdapter(child: ExploreQuickActions()),
-                SliverToBoxAdapter(
-                  child: SectionHeader(
-                    title: '灵感推荐',
-                    action: '更多',
-                    showChevron: true,
-                    onActionTap: () => context.push(AppRoutes.community),
-                    titleStyle: AppTextStyles.title.copyWith(fontSize: 16),
-                    actionStyle:
-                        AppTextStyles.bodySecondary.copyWith(fontSize: 13),
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                  ),
-                ),
-                ...buildDiscoverySlivers(
-                  context: context,
-                  feedItems: feedItems,
-                  remoteLoading: remoteLoading,
-                  remoteError: remoteError,
-                  remoteLoadingMore: remoteLoadingMore,
-                  onDelete: onDelete,
-                  onUpload: onUpload,
-                  onRefreshRemote: onRefreshRemote,
-                  selectionController: selectionController,
-                ),
-                ListenableBuilder(
-                  listenable: selectionController,
-                  builder: (context, _) {
-                    final selectionExtra = selectionController.selectionMode
-                        ? AppDimensions.primaryButtonHeight +
-                            AppDimensions.spacingMd * 2
-                        : 0.0;
-                    return SliverToBoxAdapter(
-                      child: ShellBottomSpacer(extra: selectionExtra),
-                    );
-                  },
-                ),
-              ],
+              ),
             ),
-          ),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: onRefreshRemote,
+                child: FadeSlideIndexedStack(
+                  index: feedTabIndex,
+                  children: [
+                    for (var i = 0; i < AppCatalog.feedTabs.length; i++)
+                      NotificationListener<ScrollNotification>(
+                        key: ValueKey('explore-mobile-tab-$i'),
+                        onNotification: (notification) {
+                          if (notification is ScrollEndNotification &&
+                              notification.metrics.extentAfter < 240 &&
+                              remoteHasMore &&
+                              !remoteLoadingMore) {
+                            onLoadMore();
+                          }
+                          return false;
+                        },
+                        child: CustomScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          slivers: [
+                            const SliverToBoxAdapter(
+                              child: ExploreFeaturedCarousel(),
+                            ),
+                            const SliverToBoxAdapter(
+                              child: ExploreQuickActions(),
+                            ),
+                            SliverToBoxAdapter(
+                              child: SectionHeader(
+                                title: '灵感推荐',
+                                action: '更多',
+                                showChevron: true,
+                                onActionTap: () =>
+                                    context.go(AppRoutes.community),
+                                titleStyle: AppTextStyles.title.copyWith(
+                                  fontSize: 16,
+                                ),
+                                actionStyle: AppTextStyles.bodySecondary
+                                    .copyWith(fontSize: 13),
+                                padding: const EdgeInsets.fromLTRB(
+                                  16,
+                                  12,
+                                  16,
+                                  8,
+                                ),
+                              ),
+                            ),
+                            ...buildDiscoverySlivers(
+                              context: context,
+                              feedItems: feedItems,
+                              remoteLoading: remoteLoading,
+                              remoteError: remoteError,
+                              remoteLoadingMore: remoteLoadingMore,
+                              onDelete: onDelete,
+                              onUpload: onUpload,
+                              onRefreshRemote: onRefreshRemote,
+                              selectionController: selectionController,
+                            ),
+                            ListenableBuilder(
+                              listenable: selectionController,
+                              builder: (context, _) {
+                                final selectionExtra =
+                                    selectionController.selectionMode
+                                        ? AppDimensions.primaryButtonHeight +
+                                            AppDimensions.spacingMd * 2
+                                        : 0.0;
+                                return SliverToBoxAdapter(
+                                  child: ShellBottomSpacer(extra: selectionExtra),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
       bottomNavigationBar: ScreenplaySelectionBottomBar(
         controller: selectionController,
         onDelete: () => onDeleteSelected(),
+      ),
+    );
+  }
+}
+
+class _ExploreDesktopFeedPanel extends StatelessWidget {
+  const _ExploreDesktopFeedPanel({
+    super.key,
+    required this.feedTabIndex,
+    required this.tabIndex,
+    required this.remoteOnly,
+    required this.feedItems,
+    required this.remoteLoading,
+    required this.remoteLoadingMore,
+    required this.remoteError,
+    required this.remoteHasMore,
+    required this.onDelete,
+    required this.onCreate,
+    required this.onRefreshRemote,
+    required this.onLoadMore,
+    required this.selectionController,
+  });
+
+  final int feedTabIndex;
+  final int tabIndex;
+  final List<Screenplay> remoteOnly;
+  final List<Screenplay> feedItems;
+  final bool remoteLoading;
+  final bool remoteLoadingMore;
+  final String? remoteError;
+  final bool remoteHasMore;
+  final Future<void> Function(Screenplay) onDelete;
+  final VoidCallback onCreate;
+  final Future<void> Function() onRefreshRemote;
+  final Future<void> Function() onLoadMore;
+  final ScreenplaySelectionController selectionController;
+
+  @override
+  Widget build(BuildContext context) {
+    return RefreshIndicator(
+      onRefresh: onRefreshRemote,
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (notification) {
+          if (feedTabIndex != tabIndex) return false;
+          if (notification is ScrollEndNotification &&
+              notification.metrics.extentAfter < 320 &&
+              remoteHasMore &&
+              !remoteLoadingMore) {
+            onLoadMore();
+          }
+          return false;
+        },
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.only(
+            bottom: ExploreDesktopChrome.gap * 2,
+          ),
+          children: [
+            ExploreFeaturedSection(items: remoteOnly),
+            const SizedBox(height: ExploreDesktopChrome.gap * 2),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                ExploreDesktopChrome.gap * 2,
+                0,
+                ExploreDesktopChrome.gap * 2,
+                ExploreDesktopChrome.gap,
+              ),
+              child: Row(
+                children: [
+                  Text(
+                    '精选内容',
+                    style: AppTextStyles.title.copyWith(fontSize: 18),
+                  ),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () => context.go(AppRoutes.community),
+                    child: const Text('模板市场'),
+                  ),
+                ],
+              ),
+            ),
+            buildDiscoveryFeedBody(
+              context: context,
+              feedItems: feedItems,
+              remoteLoading: remoteLoading,
+              remoteError: remoteError,
+              remoteLoadingMore: remoteLoadingMore,
+              onDelete: onDelete,
+              onUpload: onCreate,
+              onRefreshRemote: onRefreshRemote,
+              selectionController: selectionController,
+              bottomPadding: ExploreDesktopChrome.gap,
+              gridSpacing: ExploreDesktopChrome.gap,
+              crossAxisCount: 4,
+            ),
+            if (remoteHasMore && !remoteLoading)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: ExploreDesktopChrome.gap * 2,
+                  vertical: ExploreDesktopChrome.gap,
+                ),
+                child: Center(
+                  child: remoteLoadingMore
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : OutlinedButton(
+                          onPressed: () => onLoadMore(),
+                          child: const Text('加载更多'),
+                        ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -371,138 +514,73 @@ class _ExploreDesktopView extends StatelessWidget {
               children: [
                 Expanded(
                   child: ExploreDesktopCard(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: ExploreDesktopChrome.gap * 2,
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: FeedTabBar(
-                                          tabs: ExploreFeedQuery.desktopTabs,
-                                          selectedIndex: feedTabIndex,
-                                          onChanged: onFeedTabChanged,
-                                          underlineStyle: true,
-                                        ),
-                                      ),
-                                      ScreenplaySelectionAppBarActions(
-                                        controller: selectionController,
-                                        localIds: localIds,
-                                        onSelectionChanged: onSelectionChanged,
-                                      ),
-                                    ],
-                                  ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: ExploreDesktopChrome.gap * 2,
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: FeedTabBar(
+                                  tabs: ExploreFeedQuery.desktopTabs,
+                                  selectedIndex: feedTabIndex,
+                                  onChanged: onFeedTabChanged,
+                                  underlineStyle: true,
+                                  embedded: true,
                                 ),
-                                Expanded(
-                                  child: RefreshIndicator(
-                                    onRefresh: onRefreshRemote,
-                                    child: NotificationListener<ScrollNotification>(
-                                      onNotification: (notification) {
-                                        if (notification is ScrollEndNotification &&
-                                            notification.metrics.extentAfter < 320 &&
-                                            remoteHasMore &&
-                                            !remoteLoadingMore) {
-                                          onLoadMore();
-                                        }
-                                        return false;
-                                      },
-                                      child: ListView(
-                                        physics:
-                                            const AlwaysScrollableScrollPhysics(),
-                                        padding: const EdgeInsets.only(
-                                          bottom: ExploreDesktopChrome.gap * 2,
-                                        ),
-                                        children: [
-                                          ExploreFeaturedSection(
-                                            items: remoteOnly,
-                                          ),
-                                          const SizedBox(
-                                            height: ExploreDesktopChrome.gap * 2,
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.fromLTRB(
-                                              ExploreDesktopChrome.gap * 2,
-                                              0,
-                                              ExploreDesktopChrome.gap * 2,
-                                              ExploreDesktopChrome.gap,
-                                            ),
-                                            child: Row(
-                                              children: [
-                                                Text(
-                                                  '精选内容',
-                                                  style: AppTextStyles.title.copyWith(
-                                                    fontSize: 18,
-                                                  ),
-                                                ),
-                                                const Spacer(),
-                                                TextButton(
-                                                  onPressed: () => context.push(
-                                                    AppRoutes.community,
-                                                  ),
-                                                  child: const Text('模板市场'),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          buildDiscoveryFeedBody(
-                                            context: context,
-                                            feedItems: feedItems,
-                                            remoteLoading: remoteLoading,
-                                            remoteError: remoteError,
-                                            remoteLoadingMore: remoteLoadingMore,
-                                            onDelete: onDelete,
-                                            onUpload: onCreate,
-                                            onRefreshRemote: onRefreshRemote,
-                                            selectionController: selectionController,
-                                            bottomPadding: ExploreDesktopChrome.gap,
-                                            gridSpacing: ExploreDesktopChrome.gap,
-                                            crossAxisCount: 4,
-                                          ),
-                                          if (remoteHasMore && !remoteLoading)
-                                            Padding(
-                                              padding: const EdgeInsets.symmetric(
-                                                horizontal: ExploreDesktopChrome.gap * 2,
-                                                vertical: ExploreDesktopChrome.gap,
-                                              ),
-                                              child: Center(
-                                                child: remoteLoadingMore
-                                                    ? const SizedBox(
-                                                        width: 24,
-                                                        height: 24,
-                                                        child:
-                                                            CircularProgressIndicator(
-                                                          strokeWidth: 2,
-                                                        ),
-                                                      )
-                                                    : OutlinedButton(
-                                                        onPressed: () => onLoadMore(),
-                                                        child: const Text('加载更多'),
-                                                      ),
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                              ScreenplaySelectionAppBarActions(
+                                controller: selectionController,
+                                localIds: localIds,
+                                onSelectionChanged: onSelectionChanged,
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(width: ExploreDesktopChrome.gap),
-                        ExploreDesktopRightPanel(
-                          feedItems: remoteOnly,
-                          onTagTap: onTagTap,
-                          onCreate: onCreate,
+                        Expanded(
+                          child: FadeSlideIndexedStack(
+                            index: feedTabIndex,
+                            children: [
+                              for (var i = 0;
+                                  i < ExploreFeedQuery.desktopTabs.length;
+                                  i++)
+                                _ExploreDesktopFeedPanel(
+                                  key: ValueKey('explore-desktop-tab-$i'),
+                                  feedTabIndex: feedTabIndex,
+                                  tabIndex: i,
+                                  remoteOnly: remoteOnly,
+                                  feedItems: feedItems,
+                                  remoteLoading: remoteLoading,
+                                  remoteLoadingMore: remoteLoadingMore,
+                                  remoteError: remoteError,
+                                  remoteHasMore: remoteHasMore,
+                                  onDelete: onDelete,
+                                  onCreate: onCreate,
+                                  onRefreshRemote: onRefreshRemote,
+                                  onLoadMore: onLoadMore,
+                                  selectionController: selectionController,
+                                ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(width: ExploreDesktopChrome.gap),
+                ExploreDesktopRightPanel(
+                  feedItems: remoteOnly,
+                  onTagTap: onTagTap,
+                  onCreate: onCreate,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
       bottomNavigationBar: ScreenplaySelectionBottomBar(
         controller: selectionController,
         onDelete: () => onDeleteSelected(),

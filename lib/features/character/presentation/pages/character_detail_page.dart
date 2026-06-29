@@ -9,6 +9,8 @@ import '../../../../app/theme/app_shadows.dart';
 import '../../../../core/data/app_catalog.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
+import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
+import '../../../../shared/widgets/feed_tab_bar.dart';
 import '../../../../shared/widgets/rc0_image.dart';
 import '../../../../shared/widgets/rc0_widgets.dart';
 import '../../../auth/data/auth_repository.dart';
@@ -33,8 +35,7 @@ class CharacterDetailPage extends StatefulWidget {
   State<CharacterDetailPage> createState() => _CharacterDetailPageState();
 }
 
-class _CharacterDetailPageState extends State<CharacterDetailPage>
-    with SingleTickerProviderStateMixin {
+class _CharacterDetailPageState extends State<CharacterDetailPage> {
   final _repo = CharacterRepository.instance;
   final _auth = AuthRepository.instance;
   bool _loading = true;
@@ -42,22 +43,12 @@ class _CharacterDetailPageState extends State<CharacterDetailPage>
   CharacterEntry? _entry;
   CharacterDetailSnapshot? _snapshot;
   bool _favorite = false;
-  late final TabController _tabController;
+  int _tabIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(
-      length: AppCatalog.characterDetailTabs.length,
-      vsync: this,
-    );
     _load();
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
   }
 
   Future<void> _load() async {
@@ -172,8 +163,8 @@ class _CharacterDetailPageState extends State<CharacterDetailPage>
                     ),
                   ],
                 )
-              : NestedScrollView(
-                  headerSliverBuilder: (context, innerScrolled) => [
+              : CustomScrollView(
+                  slivers: [
                     SliverToBoxAdapter(
                       child: _CharacterHeader(
                         snapshot: snapshot,
@@ -183,35 +174,28 @@ class _CharacterDetailPageState extends State<CharacterDetailPage>
                     ),
                     SliverPersistentHeader(
                       pinned: true,
-                      delegate: _TabBarDelegate(
-                        TabBar(
-                          controller: _tabController,
-                          isScrollable: true,
-                          tabAlignment: TabAlignment.start,
-                          labelColor: AppColors.accent,
-                          unselectedLabelColor: isDark
-                              ? AppColors.textSecondaryDark
-                              : AppColors.textSecondary,
-                          indicatorColor: AppColors.accent,
-                          tabs: [
-                            for (final tab in AppCatalog.characterDetailTabs)
-                              Tab(text: tab),
-                          ],
-                        ),
-                        isDark: isDark,
+                      delegate: PinnedFeedTabBarDelegate(
+                        tabs: AppCatalog.characterDetailTabs,
+                        selectedIndex: _tabIndex,
+                        onChanged: (index) => setState(() => _tabIndex = index),
+                        backgroundColor: isDark
+                            ? AppColors.characterBackgroundDark
+                            : Theme.of(context).scaffoldBackgroundColor,
+                      ),
+                    ),
+                    SliverFillRemaining(
+                      child: FadeSlideIndexedStack(
+                        index: _tabIndex,
+                        children: [
+                          CharacterScriptsTab(characterId: entry.id),
+                          CharacterPosesTab(poses: snapshot.poses),
+                          CharacterWorksTab(works: snapshot.works),
+                          CharacterCostumesTab(costumes: snapshot.costumes),
+                          CharacterInfoTab(entry: entry, snapshot: snapshot),
+                        ],
                       ),
                     ),
                   ],
-                  body: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      CharacterScriptsTab(characterId: entry.id),
-                      CharacterPosesTab(poses: snapshot.poses),
-                      CharacterWorksTab(works: snapshot.works),
-                      CharacterCostumesTab(costumes: snapshot.costumes),
-                      CharacterInfoTab(entry: entry, snapshot: snapshot),
-                    ],
-                  ),
                 ),
     );
   }
@@ -323,35 +307,4 @@ class _CreateFab extends StatelessWidget {
       ),
     );
   }
-}
-
-class _TabBarDelegate extends SliverPersistentHeaderDelegate {
-  _TabBarDelegate(this.tabBar, {required this.isDark});
-
-  final TabBar tabBar;
-  final bool isDark;
-
-  @override
-  double get minExtent => tabBar.preferredSize.height;
-
-  @override
-  double get maxExtent => tabBar.preferredSize.height;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    return Material(
-      color: isDark
-          ? AppColors.characterBackgroundDark
-          : Theme.of(context).scaffoldBackgroundColor,
-      child: tabBar,
-    );
-  }
-
-  @override
-  bool shouldRebuild(covariant _TabBarDelegate oldDelegate) =>
-      oldDelegate.tabBar != tabBar || oldDelegate.isDark != isDark;
 }

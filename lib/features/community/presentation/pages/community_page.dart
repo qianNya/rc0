@@ -14,6 +14,7 @@ import '../../../screenplay/data/screenplay_remote_repository.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/content_card_shared.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
+import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
 import '../../../../shared/widgets/feed_tab_bar.dart';
 import '../../../../shared/widgets/inline_error_banner.dart';
 import '../../../../shared/widgets/profile_widgets.dart';
@@ -27,7 +28,10 @@ import '../widgets/community_featured_banner.dart';
 import '../widgets/community_template_card.dart';
 
 class CommunityPage extends StatefulWidget {
-  const CommunityPage({super.key});
+  const CommunityPage({super.key, this.embeddedInHub = false});
+
+  /// When true, rendered inside the bottom-nav shell (no back affordance).
+  final bool embeddedInHub;
 
   @override
   State<CommunityPage> createState() => _CommunityPageState();
@@ -64,17 +68,16 @@ class _CommunityPageState extends State<CommunityPage> {
   Future<void> _search(String query) =>
       _repository.loadFirstPage(q: query.trim());
 
-  List<Screenplay> get _displayScripts {
+  List<Screenplay> _scriptsForSortTab(int sortIndex) {
     final filtered = filterCommunityScreenplays(
       _repository.screenplays,
       _categoryIndex,
     );
-    return sortCommunityScreenplays(filtered, _sortTabIndex);
+    return sortCommunityScreenplays(filtered, sortIndex);
   }
 
   @override
   Widget build(BuildContext context) {
-    final scripts = _displayScripts;
     final loading = _repository.loading;
     final error = _repository.error;
     final loadingMore = _repository.loadingMore;
@@ -82,7 +85,7 @@ class _CommunityPageState extends State<CommunityPage> {
 
     return ResponsiveBuilder(
       mobile: (_) => _CommunityMobileView(
-        scripts: scripts,
+        embeddedInHub: widget.embeddedInHub,
         loading: loading,
         loadingMore: loadingMore,
         hasMore: hasMore,
@@ -90,6 +93,7 @@ class _CommunityPageState extends State<CommunityPage> {
         categoryIndex: _categoryIndex,
         sortTabIndex: _sortTabIndex,
         searchController: _searchController,
+        scriptsForSortTab: _scriptsForSortTab,
         onCategoryChanged: (i) => setState(() => _categoryIndex = i),
         onSortTabChanged: (i) => setState(() => _sortTabIndex = i),
         onRefresh: _refresh,
@@ -97,7 +101,7 @@ class _CommunityPageState extends State<CommunityPage> {
         onLoadMore: () => _repository.loadMore(),
       ),
       desktop: (_) => _CommunityDesktopView(
-        scripts: scripts,
+        embeddedInHub: widget.embeddedInHub,
         loading: loading,
         loadingMore: loadingMore,
         hasMore: hasMore,
@@ -105,6 +109,7 @@ class _CommunityPageState extends State<CommunityPage> {
         categoryIndex: _categoryIndex,
         sortTabIndex: _sortTabIndex,
         searchController: _searchController,
+        scriptsForSortTab: _scriptsForSortTab,
         onCategoryChanged: (i) => setState(() => _categoryIndex = i),
         onSortTabChanged: (i) => setState(() => _sortTabIndex = i),
         onRefresh: _refresh,
@@ -117,7 +122,7 @@ class _CommunityPageState extends State<CommunityPage> {
 
 class _CommunityMobileView extends StatelessWidget {
   const _CommunityMobileView({
-    required this.scripts,
+    required this.embeddedInHub,
     required this.loading,
     required this.loadingMore,
     required this.hasMore,
@@ -125,6 +130,7 @@ class _CommunityMobileView extends StatelessWidget {
     required this.categoryIndex,
     required this.sortTabIndex,
     required this.searchController,
+    required this.scriptsForSortTab,
     required this.onCategoryChanged,
     required this.onSortTabChanged,
     required this.onRefresh,
@@ -132,7 +138,7 @@ class _CommunityMobileView extends StatelessWidget {
     required this.onLoadMore,
   });
 
-  final List<Screenplay> scripts;
+  final bool embeddedInHub;
   final bool loading;
   final bool loadingMore;
   final bool hasMore;
@@ -140,6 +146,7 @@ class _CommunityMobileView extends StatelessWidget {
   final int categoryIndex;
   final int sortTabIndex;
   final TextEditingController searchController;
+  final List<Screenplay> Function(int sortIndex) scriptsForSortTab;
   final ValueChanged<int> onCategoryChanged;
   final ValueChanged<int> onSortTabChanged;
   final Future<void> Function() onRefresh;
@@ -148,88 +155,244 @@ class _CommunityMobileView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const StatusBarSpacer(),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: AppSearchField(
+                  hint: '搜索模板',
+                  controller: searchController,
+                  onSubmitted: onSearch,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.tune),
+                onPressed: () {},
+              ),
+            ],
+          ),
+        ),
+        CommunityCategoryChips(
+          selectedIndex: categoryIndex,
+          onChanged: onCategoryChanged,
+        ),
+        Padding(
+          padding: const EdgeInsets.only(
+            top: 4,
+            left: AppDimensions.spacingMd,
+            right: AppDimensions.spacingMd,
+          ),
+          child: FeedTabBar(
+            tabs: AppCatalog.communitySortTabs,
+            selectedIndex: sortTabIndex,
+            onChanged: onSortTabChanged,
+            underlineStyle: true,
+          ),
+        ),
+        Expanded(
+          child: FadeSlideIndexedStack(
+            index: sortTabIndex,
+            children: [
+              for (var i = 0; i < AppCatalog.communitySortTabs.length; i++)
+                _CommunitySortTabBody(
+                  key: ValueKey('community-sort-mobile-$i'),
+                  scripts: scriptsForSortTab(i),
+                  sortTabIndex: i,
+                  loading: loading,
+                  loadingMore: loadingMore,
+                  hasMore: hasMore,
+                  error: error,
+                  onRefresh: onRefresh,
+                  onLoadMore: onLoadMore,
+                  mobile: true,
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+
+    if (embeddedInHub) {
+      return content;
+    }
+
     return Scaffold(
       body: SafeArea(
         top: false,
         bottom: false,
-        child: RefreshIndicator(
-          onRefresh: onRefresh,
-          child: NotificationListener<ScrollNotification>(
-            onNotification: (notification) {
-              if (notification is ScrollEndNotification &&
-                  notification.metrics.extentAfter < 240 &&
-                  hasMore &&
-                  !loadingMore) {
-                onLoadMore();
-              }
-              return false;
-            },
-            child: CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                const SliverToBoxAdapter(child: StatusBarSpacer()),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: AppSearchField(
-                            hint: '搜索模板',
-                            controller: searchController,
-                            onSubmitted: (q) => onSearch(q),
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.tune),
-                          onPressed: () {},
-                        ),
-                      ],
-                    ),
+        child: content,
+      ),
+    );
+  }
+}
+
+class _CommunityDesktopView extends StatelessWidget {
+  const _CommunityDesktopView({
+    required this.embeddedInHub,
+    required this.loading,
+    required this.loadingMore,
+    required this.hasMore,
+    required this.error,
+    required this.categoryIndex,
+    required this.sortTabIndex,
+    required this.searchController,
+    required this.scriptsForSortTab,
+    required this.onCategoryChanged,
+    required this.onSortTabChanged,
+    required this.onRefresh,
+    required this.onSearch,
+    required this.onLoadMore,
+  });
+
+  final bool embeddedInHub;
+  final bool loading;
+  final bool loadingMore;
+  final bool hasMore;
+  final String? error;
+  final int categoryIndex;
+  final int sortTabIndex;
+  final TextEditingController searchController;
+  final List<Screenplay> Function(int sortIndex) scriptsForSortTab;
+  final ValueChanged<int> onCategoryChanged;
+  final ValueChanged<int> onSortTabChanged;
+  final Future<void> Function() onRefresh;
+  final Future<void> Function(String query) onSearch;
+  final Future<void> Function() onLoadMore;
+
+  @override
+  Widget build(BuildContext context) {
+    return DesktopStackScaffold(
+      title: const Text('模板市场'),
+      onBack: embeddedInHub ? null : () => popOrGoDiscovery(context),
+      centerTitle: false,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppDimensions.spacingXl,
+              AppDimensions.spacingXl,
+              AppDimensions.spacingXl,
+              0,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (!embeddedInHub)
+                  Text(
+                    '模板市场',
+                    style: Theme.of(context).textTheme.displaySmall,
                   ),
-                ),
-                SliverToBoxAdapter(
-                  child: CommunityCategoryChips(
-                    selectedIndex: categoryIndex,
-                    onChanged: onCategoryChanged,
-                  ),
-                ),
-                const SliverToBoxAdapter(child: CommunityFeaturedBanner()),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 8, bottom: 8),
-                    child: FeedTabBar(
-                      tabs: AppCatalog.communitySortTabs,
-                      selectedIndex: sortTabIndex,
-                      onChanged: onSortTabChanged,
-                      underlineStyle: true,
-                    ),
-                  ),
-                ),
-                ..._buildContentSlivers(context),
-                if (loadingMore)
-                  const SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.all(AppDimensions.spacingMd),
-                      child: Center(
-                        child: SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
+                if (!embeddedInHub) const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: AppSearchField(
+                        hint: '搜索模板…',
+                        controller: searchController,
+                        onSubmitted: onSearch,
                       ),
                     ),
-                  ),
-                const SliverToBoxAdapter(child: ShellBottomSpacer()),
+                    const SizedBox(width: 12),
+                    IconButton(
+                      icon: const Icon(Icons.tune),
+                      onPressed: () {},
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                CommunityCategoryChips(
+                  selectedIndex: categoryIndex,
+                  onChanged: onCategoryChanged,
+                ),
+                const SizedBox(height: 8),
+                FeedTabBar(
+                  tabs: AppCatalog.communitySortTabs,
+                  selectedIndex: sortTabIndex,
+                  onChanged: onSortTabChanged,
+                  underlineStyle: true,
+                ),
               ],
             ),
           ),
+          Expanded(
+            child: FadeSlideIndexedStack(
+              index: sortTabIndex,
+              children: [
+                for (var i = 0; i < AppCatalog.communitySortTabs.length; i++)
+                  _CommunitySortTabBody(
+                    key: ValueKey('community-sort-desktop-$i'),
+                    scripts: scriptsForSortTab(i),
+                    sortTabIndex: i,
+                    loading: loading,
+                    loadingMore: loadingMore,
+                    hasMore: hasMore,
+                    error: error,
+                    onRefresh: onRefresh,
+                    onLoadMore: onLoadMore,
+                    mobile: false,
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CommunitySortTabBody extends StatelessWidget {
+  const _CommunitySortTabBody({
+    super.key,
+    required this.scripts,
+    required this.sortTabIndex,
+    required this.loading,
+    required this.loadingMore,
+    required this.hasMore,
+    required this.error,
+    required this.onRefresh,
+    required this.onLoadMore,
+    required this.mobile,
+  });
+
+  final List<Screenplay> scripts;
+  final int sortTabIndex;
+  final bool loading;
+  final bool loadingMore;
+  final bool hasMore;
+  final String? error;
+  final Future<void> Function() onRefresh;
+  final Future<void> Function() onLoadMore;
+  final bool mobile;
+
+  @override
+  Widget build(BuildContext context) {
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (notification) {
+          if (notification is ScrollEndNotification &&
+              notification.metrics.extentAfter < 240 &&
+              hasMore &&
+              !loadingMore) {
+            onLoadMore();
+          }
+          return false;
+        },
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: _buildSlivers(context),
         ),
       ),
     );
   }
 
-  List<Widget> _buildContentSlivers(BuildContext context) {
+  List<Widget> _buildSlivers(BuildContext context) {
     if (loading && scripts.isEmpty) {
       return const [
         SliverFillRemaining(
@@ -261,38 +424,125 @@ class _CommunityMobileView extends StatelessWidget {
       ];
     }
 
+    final horizontalPadding = mobile
+        ? AppDimensions.spacingMd
+        : AppDimensions.spacingXl;
+
     return [
+      if (mobile)
+        const SliverToBoxAdapter(child: CommunityFeaturedBanner())
+      else ...[
+        const SliverToBoxAdapter(child: FeaturedBanner()),
+        const SliverToBoxAdapter(child: SizedBox(height: 24)),
+        SliverToBoxAdapter(
+          child: Wrap(
+            alignment: WrapAlignment.spaceAround,
+            spacing: 8,
+            runSpacing: 12,
+            children: [
+              for (var i = 0; i < AppCatalog.marketQuickActions.length; i++)
+                QuickActionCircle(
+                  label: AppCatalog.marketQuickActions[i],
+                  icon: [
+                    Icons.grid_view,
+                    Icons.local_fire_department_outlined,
+                    Icons.schedule,
+                    Icons.card_giftcard_outlined,
+                  ][i],
+                ),
+            ],
+          ),
+        ),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              horizontalPadding,
+              28,
+              horizontalPadding,
+              16,
+            ),
+            child: Text(
+              '热门模板',
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
+          ),
+        ),
+      ],
       if (error != null)
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            padding: EdgeInsets.fromLTRB(horizontalPadding, 0, horizontalPadding, 8),
             child: InlineErrorBanner(
               message: error!,
               onRetry: onRefresh,
             ),
           ),
         ),
+      if (mobile)
+        const SliverToBoxAdapter(child: SizedBox(height: 8))
+      else
+        const SliverToBoxAdapter(child: SizedBox.shrink()),
       SliverPadding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-        sliver: SliverGrid(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 0.62,
-          ),
-          delegate: SliverChildBuilderDelegate(
-            (context, index) {
-              final script = scripts[index];
-              return CommunityTemplateCard(
-                screenplay: script,
-                showHotBadge: index == 0 && sortTabIndex == 0,
-              );
-            },
-            childCount: scripts.length,
+        padding: EdgeInsets.fromLTRB(horizontalPadding, 8, horizontalPadding, 0),
+        sliver: mobile
+            ? SliverGrid(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  childAspectRatio: 0.62,
+                ),
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final script = scripts[index];
+                    return CommunityTemplateCard(
+                      screenplay: script,
+                      showHotBadge: index == 0 && sortTabIndex == 0,
+                    );
+                  },
+                  childCount: scripts.length,
+                ),
+              )
+            : SliverGrid(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: Breakpoints.gridColumns(context, desktop: 4),
+                  mainAxisSpacing: 16,
+                  crossAxisSpacing: 16,
+                  childAspectRatio: feedGridChildAspectRatio(
+                    Breakpoints.gridColumns(context, desktop: 4),
+                  ),
+                ),
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final script = scripts[index];
+                    return TemplateGridCard(
+                      screenplay: script,
+                      compact: true,
+                      showBadge: index == 0
+                          ? ContentBadgeType.hot
+                          : index == 1
+                              ? ContentBadgeType.now
+                              : null,
+                    );
+                  },
+                  childCount: scripts.length,
+                ),
+              ),
+      ),
+      if (loadingMore)
+        const SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.all(AppDimensions.spacingMd),
+            child: Center(
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
           ),
         ),
-      ),
+      const SliverToBoxAdapter(child: ShellBottomSpacer()),
     ];
   }
 
@@ -315,199 +565,6 @@ class _CommunityMobileView extends StatelessWidget {
       subtitle: error,
       actionLabel: '重试',
       onAction: onRefresh,
-    );
-  }
-}
-
-class _CommunityDesktopView extends StatelessWidget {
-  const _CommunityDesktopView({
-    required this.scripts,
-    required this.loading,
-    required this.loadingMore,
-    required this.hasMore,
-    required this.error,
-    required this.categoryIndex,
-    required this.sortTabIndex,
-    required this.searchController,
-    required this.onCategoryChanged,
-    required this.onSortTabChanged,
-    required this.onRefresh,
-    required this.onSearch,
-    required this.onLoadMore,
-  });
-
-  final List<Screenplay> scripts;
-  final bool loading;
-  final bool loadingMore;
-  final bool hasMore;
-  final String? error;
-  final int categoryIndex;
-  final int sortTabIndex;
-  final TextEditingController searchController;
-  final ValueChanged<int> onCategoryChanged;
-  final ValueChanged<int> onSortTabChanged;
-  final Future<void> Function() onRefresh;
-  final Future<void> Function(String query) onSearch;
-  final Future<void> Function() onLoadMore;
-
-  @override
-  Widget build(BuildContext context) {
-    return DesktopStackScaffold(
-      title: const Text('模板市场'),
-      onBack: () => popOrGoDiscovery(context),
-      centerTitle: false,
-      body: RefreshIndicator(
-        onRefresh: onRefresh,
-        child: NotificationListener<ScrollNotification>(
-          onNotification: (notification) {
-            if (notification is ScrollEndNotification &&
-                notification.metrics.extentAfter < 240 &&
-                hasMore &&
-                !loadingMore) {
-              onLoadMore();
-            }
-            return false;
-          },
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(AppDimensions.spacingXl),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('模板市场', style: Theme.of(context).textTheme.displaySmall),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppSearchField(
-                        hint: '搜索模板…',
-                        controller: searchController,
-                        onSubmitted: (q) => onSearch(q),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    IconButton(
-                      icon: const Icon(Icons.tune),
-                      onPressed: () {},
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                CommunityCategoryChips(
-                  selectedIndex: categoryIndex,
-                  onChanged: onCategoryChanged,
-                ),
-                const SizedBox(height: 16),
-                FeedTabBar(
-                  tabs: AppCatalog.communitySortTabs,
-                  selectedIndex: sortTabIndex,
-                  onChanged: onSortTabChanged,
-                  underlineStyle: true,
-                ),
-                const SizedBox(height: 20),
-                const FeaturedBanner(),
-                const SizedBox(height: 24),
-                Wrap(
-                  alignment: WrapAlignment.spaceAround,
-                  spacing: 8,
-                  runSpacing: 12,
-                  children: [
-                    for (var i = 0; i < AppCatalog.marketQuickActions.length; i++)
-                      QuickActionCircle(
-                        label: AppCatalog.marketQuickActions[i],
-                        icon: [
-                          Icons.grid_view,
-                          Icons.local_fire_department_outlined,
-                          Icons.schedule,
-                          Icons.card_giftcard_outlined,
-                        ][i],
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 28),
-                Text('热门模板', style: Theme.of(context).textTheme.labelLarge),
-                const SizedBox(height: 16),
-                if (error != null && scripts.isNotEmpty)
-                  InlineErrorBanner(message: error!, onRetry: onRefresh),
-                if (loading && scripts.isEmpty)
-                  const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(48),
-                      child: CircularProgressIndicator(),
-                    ),
-                  )
-                else if (error != null && scripts.isEmpty)
-                  Builder(
-                    builder: (context) {
-                      final needsLogin = isUnauthorizedError(error);
-                      if (needsLogin) {
-                        return EmptyStateView(
-                          icon: Icons.lock_outline,
-                          title: '请先登录',
-                          subtitle: '登录后查看社区内容',
-                          actionLabel: '去登录',
-                          onAction: () => context.go(
-                            AppRoutes.loginWithRedirect(AppRoutes.community),
-                          ),
-                        );
-                      }
-                      return EmptyStateView(
-                        icon: Icons.cloud_off_outlined,
-                        title: '加载失败',
-                        subtitle: error,
-                        actionLabel: '重试',
-                        onAction: onRefresh,
-                      );
-                    },
-                  )
-                else if (scripts.isEmpty)
-                  const EmptyStateView(
-                    icon: Icons.storefront_outlined,
-                    title: '暂无模板',
-                    subtitle: '稍后再来看看',
-                  )
-                else
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: Breakpoints.gridColumns(context, desktop: 4),
-                      mainAxisSpacing: 16,
-                      crossAxisSpacing: 16,
-                      childAspectRatio: feedGridChildAspectRatio(
-                        Breakpoints.gridColumns(context, desktop: 4),
-                      ),
-                    ),
-                    itemCount: scripts.length,
-                    itemBuilder: (_, index) {
-                      final script = scripts[index];
-                      return TemplateGridCard(
-                        screenplay: script,
-                        compact: true,
-                        showBadge: index == 0
-                            ? ContentBadgeType.hot
-                            : index == 1
-                                ? ContentBadgeType.now
-                                : null,
-                      );
-                    },
-                  ),
-                if (loadingMore)
-                  const Padding(
-                    padding: EdgeInsets.all(AppDimensions.spacingMd),
-                    child: Center(
-                      child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

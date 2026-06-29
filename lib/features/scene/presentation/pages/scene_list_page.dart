@@ -11,6 +11,7 @@ import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/glass/glass_sheet.dart';
 import '../../../../shared/widgets/rc0_widgets.dart';
+import '../../../../shared/widgets/status_bar_spacer.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../studio/presentation/widgets/studio_editor_shell_glass_button.dart';
 import '../../data/scene_local_store.dart';
@@ -113,10 +114,38 @@ class _SceneListPageState extends State<SceneListPage> {
       _categoryFiltered,
       AppCatalog.sceneSortTabs[_sortTabIndex],
     );
+    final body = _buildBody(
+      context,
+      hot: hot,
+      recommended: recommended,
+    );
+
+    if (widget.embeddedInHub) {
+      return ColoredBox(
+        color: isDark
+            ? AppColors.characterBackgroundDark
+            : Theme.of(context).scaffoldBackgroundColor,
+        child: Stack(
+          children: [
+            body,
+            Positioned(
+              right: AppDimensions.spacingMd,
+              bottom: AppDimensions.spacingMd,
+              child: StudioEditorShellGlassButton(
+                label: 'AI 场景',
+                icon: Icons.auto_awesome,
+                minWidth: 120,
+                onPressed: () => context.push(AppRoutes.sceneAi),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return DesktopStackScaffold(
       title: const Text('场景库'),
-      onBack: widget.embeddedInHub ? null : () => popOrGoDiscovery(context),
+      onBack: () => popOrGoDiscovery(context),
       actions: [
         IconButton(
           tooltip: '我的场景',
@@ -142,191 +171,213 @@ class _SceneListPageState extends State<SceneListPage> {
           onPressed: () => context.push(AppRoutes.sceneAi),
         ),
       ),
-      body: ColoredBox(
-        color: isDark
-            ? AppColors.characterBackgroundDark
-            : Theme.of(context).scaffoldBackgroundColor,
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppDimensions.spacingMd,
-                AppDimensions.spacingSm,
-                AppDimensions.spacingMd,
-                AppDimensions.spacingSm,
+      body: body,
+    );
+  }
+
+  Widget _buildBody(
+    BuildContext context, {
+    required List<SceneEntry> hot,
+    required List<SceneEntry> recommended,
+  }) {
+    return Column(
+      children: [
+        if (widget.embeddedInHub) const StatusBarSpacer(),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppDimensions.spacingMd,
+            AppDimensions.spacingSm,
+            AppDimensions.spacingMd,
+            AppDimensions.spacingSm,
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 48,
+                  child: AppSearchField(
+                    hint: '搜索场景名称、标签、地点',
+                    controller: _searchController,
+                    onSubmitted: (_) => _load(),
+                  ),
+                ),
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: SizedBox(
-                      height: 48,
-                      child: AppSearchField(
-                        hint: '搜索场景名称、标签、地点',
-                        controller: _searchController,
-                        onSubmitted: (_) => _load(),
+              if (widget.embeddedInHub) ...[
+                const SizedBox(width: 4),
+                IconButton(
+                  tooltip: '我的场景',
+                  onPressed: () => context.push(AppRoutes.myScenes),
+                  icon: const Icon(Icons.folder_outlined),
+                ),
+                if (_auth.isLoggedIn)
+                  IconButton(
+                    tooltip: '新建场景',
+                    onPressed: () async {
+                      await context.push(AppRoutes.sceneCreate);
+                      if (mounted) _load();
+                    },
+                    icon: const Icon(Icons.add),
+                  ),
+              ] else ...[
+                const SizedBox(width: 8),
+                IconButton(
+                  tooltip: '筛选',
+                  onPressed: () => _showFilterSheet(context),
+                  icon: const Icon(Icons.tune),
+                ),
+              ],
+            ],
+          ),
+        ),
+        SceneCategoryChips(
+          chips: AppCatalog.sceneCategoryChips,
+          selectedIndex: _categoryIndex,
+          onChanged: (index) => setState(() => _categoryIndex = index),
+        ),
+        const SizedBox(height: AppDimensions.spacingSm),
+        Expanded(
+          child: _repo.loading && _repo.items.isEmpty
+              ? const Center(child: CircularProgressIndicator())
+              : recommended.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        SizedBox(
+                          height: MediaQuery.sizeOf(context).height * 0.15,
+                        ),
+                        EmptyStateView(
+                          icon: Icons.landscape_outlined,
+                          title: _repo.error ?? '暂无场景',
+                          subtitle: _repo.error != null ? null : '创建第一个场景',
+                          actionLabel: _auth.isLoggedIn ? '新建场景' : null,
+                          onAction: _auth.isLoggedIn
+                              ? () async {
+                                  await context.push(AppRoutes.sceneCreate);
+                                  if (mounted) _load();
+                                }
+                              : null,
+                        ),
+                      ],
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _load,
+                      child: ListView(
+                        controller: _scrollController,
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: EdgeInsets.only(
+                          bottom: widget.embeddedInHub
+                              ? AppDimensions.spacingXl * 3
+                              : AppDimensions.spacingXl * 2,
+                        ),
+                        children: [
+                          if (hot.isNotEmpty) ...[
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppDimensions.spacingMd,
+                              ),
+                              child: Text(
+                                '热门场景',
+                                style: AppTextStyles.title.copyWith(
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            SceneMasonryGrid(
+                              items: hot,
+                              localCoverFor: (e) => _localCovers[e.id],
+                              screenplayCountFor: (e) =>
+                                  _repo.countScreenplaysForScene(e.id),
+                              favoriteCountFor: (e) =>
+                                  _favorites.contains(e.id)
+                                      ? e.favoriteCount + 1
+                                      : e.favoriteCount,
+                              onTap: (entry) => context.push(
+                                AppRoutes.sceneDetailPath(entry.id),
+                              ),
+                              onLongPress: (entry) => showSceneActionSheet(
+                                context: context,
+                                entry: entry,
+                                repo: _repo,
+                                isLoggedIn: _auth.isLoggedIn,
+                                isFavorite: _favorites.contains(entry.id),
+                                onToggleFavorite: () => _toggleFavorite(entry),
+                                onRefresh: _load,
+                              ),
+                            ),
+                            const SizedBox(height: AppDimensions.spacingMd),
+                          ],
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppDimensions.spacingMd,
+                            ),
+                            child: Row(
+                              children: [
+                                const Expanded(
+                                  child: Text(
+                                    '推荐场景',
+                                    style: AppTextStyles.title,
+                                  ),
+                                ),
+                                PopupMenuButton<int>(
+                                  initialValue: _sortTabIndex,
+                                  onSelected: (index) {
+                                    setState(() => _sortTabIndex = index);
+                                    _load();
+                                  },
+                                  itemBuilder: (context) => [
+                                    for (var i = 0;
+                                        i < AppCatalog.sceneSortTabs.length;
+                                        i++)
+                                      PopupMenuItem(
+                                        value: i,
+                                        child: Text(
+                                          AppCatalog.sceneSortTabs[i],
+                                        ),
+                                      ),
+                                  ],
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        AppCatalog.sceneSortTabs[_sortTabIndex],
+                                        style: AppTextStyles.bodySecondary,
+                                      ),
+                                      const Icon(Icons.arrow_drop_down),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          SceneMasonryGrid(
+                            items: recommended,
+                            localCoverFor: (e) => _localCovers[e.id],
+                            screenplayCountFor: (e) =>
+                                _repo.countScreenplaysForScene(e.id),
+                            favoriteCountFor: (e) =>
+                                _favorites.contains(e.id)
+                                    ? e.favoriteCount + 1
+                                    : e.favoriteCount,
+                            onTap: (entry) => context.push(
+                              AppRoutes.sceneDetailPath(entry.id),
+                            ),
+                            onLongPress: (entry) => showSceneActionSheet(
+                              context: context,
+                              entry: entry,
+                              repo: _repo,
+                              isLoggedIn: _auth.isLoggedIn,
+                              isFavorite: _favorites.contains(entry.id),
+                              onToggleFavorite: () => _toggleFavorite(entry),
+                              onRefresh: _load,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    tooltip: '筛选',
-                    onPressed: () => _showFilterSheet(context),
-                    icon: const Icon(Icons.tune),
-                  ),
-                ],
-              ),
-            ),
-            SceneCategoryChips(
-              chips: AppCatalog.sceneCategoryChips,
-              selectedIndex: _categoryIndex,
-              onChanged: (index) => setState(() => _categoryIndex = index),
-            ),
-            const SizedBox(height: AppDimensions.spacingSm),
-            Expanded(
-              child: _repo.loading && _repo.items.isEmpty
-                  ? const Center(child: CircularProgressIndicator())
-                  : recommended.isEmpty
-                      ? ListView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          children: [
-                            SizedBox(
-                              height: MediaQuery.sizeOf(context).height * 0.15,
-                            ),
-                            EmptyStateView(
-                              icon: Icons.landscape_outlined,
-                              title: _repo.error ?? '暂无场景',
-                              subtitle: _repo.error != null ? null : '创建第一个场景',
-                              actionLabel: _auth.isLoggedIn ? '新建场景' : null,
-                              onAction: _auth.isLoggedIn
-                                  ? () async {
-                                      await context.push(AppRoutes.sceneCreate);
-                                      if (mounted) _load();
-                                    }
-                                  : null,
-                            ),
-                          ],
-                        )
-                      : RefreshIndicator(
-                          onRefresh: _load,
-                          child: ListView(
-                            controller: _scrollController,
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            padding: const EdgeInsets.only(
-                              bottom: AppDimensions.spacingXl * 2,
-                            ),
-                            children: [
-                              if (hot.isNotEmpty) ...[
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: AppDimensions.spacingMd,
-                                  ),
-                                  child: Text(
-                                    '热门场景',
-                                    style: AppTextStyles.title.copyWith(
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                SceneMasonryGrid(
-                                  items: hot,
-                                  localCoverFor: (e) => _localCovers[e.id],
-                                  screenplayCountFor: (e) =>
-                                      _repo.countScreenplaysForScene(e.id),
-                                  favoriteCountFor: (e) =>
-                                      _favorites.contains(e.id)
-                                          ? e.favoriteCount + 1
-                                          : e.favoriteCount,
-                                  onTap: (entry) => context.push(
-                                    AppRoutes.sceneDetailPath(entry.id),
-                                  ),
-                                  onLongPress: (entry) => showSceneActionSheet(
-                                    context: context,
-                                    entry: entry,
-                                    repo: _repo,
-                                    isLoggedIn: _auth.isLoggedIn,
-                                    isFavorite: _favorites.contains(entry.id),
-                                    onToggleFavorite: () =>
-                                        _toggleFavorite(entry),
-                                    onRefresh: _load,
-                                  ),
-                                ),
-                                const SizedBox(height: AppDimensions.spacingMd),
-                              ],
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AppDimensions.spacingMd,
-                                ),
-                                child: Row(
-                                  children: [
-                                    const Expanded(
-                                      child: Text(
-                                        '推荐场景',
-                                        style: AppTextStyles.title,
-                                      ),
-                                    ),
-                                    PopupMenuButton<int>(
-                                      initialValue: _sortTabIndex,
-                                      onSelected: (index) {
-                                        setState(() => _sortTabIndex = index);
-                                        _load();
-                                      },
-                                      itemBuilder: (context) => [
-                                        for (var i = 0;
-                                            i < AppCatalog.sceneSortTabs.length;
-                                            i++)
-                                          PopupMenuItem(
-                                            value: i,
-                                            child: Text(
-                                              AppCatalog.sceneSortTabs[i],
-                                            ),
-                                          ),
-                                      ],
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Text(
-                                            AppCatalog.sceneSortTabs[
-                                                _sortTabIndex],
-                                            style: AppTextStyles.bodySecondary,
-                                          ),
-                                          const Icon(Icons.arrow_drop_down),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              SceneMasonryGrid(
-                                items: recommended,
-                                localCoverFor: (e) => _localCovers[e.id],
-                                screenplayCountFor: (e) =>
-                                    _repo.countScreenplaysForScene(e.id),
-                                favoriteCountFor: (e) =>
-                                    _favorites.contains(e.id)
-                                        ? e.favoriteCount + 1
-                                        : e.favoriteCount,
-                                onTap: (entry) => context.push(
-                                  AppRoutes.sceneDetailPath(entry.id),
-                                ),
-                                onLongPress: (entry) => showSceneActionSheet(
-                                  context: context,
-                                  entry: entry,
-                                  repo: _repo,
-                                  isLoggedIn: _auth.isLoggedIn,
-                                  isFavorite: _favorites.contains(entry.id),
-                                  onToggleFavorite: () => _toggleFavorite(entry),
-                                  onRefresh: _load,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-            ),
-          ],
         ),
-      ),
+      ],
     );
   }
 

@@ -10,6 +10,8 @@ import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/responsive/breakpoints.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
+import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
+import '../../../../shared/widgets/feed_tab_bar.dart';
 import '../../../../shared/widgets/image_preview.dart';
 import '../../../../shared/widgets/rc0_image.dart';
 import '../../../profile/data/screenplay_favorite_repository.dart';
@@ -25,28 +27,17 @@ class FavoritesPage extends StatefulWidget {
   State<FavoritesPage> createState() => _FavoritesPageState();
 }
 
-class _FavoritesPageState extends State<FavoritesPage>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
+class _FavoritesPageState extends State<FavoritesPage> {
   final _spFavorites = ScreenplayFavoriteRepository.instance;
   bool _loadingScreenplays = false;
   String? _spError;
+  late int _tabIndex;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(
-      length: 2,
-      vsync: this,
-      initialIndex: widget.initialTab.clamp(0, 1),
-    );
+    _tabIndex = widget.initialTab.clamp(0, 1);
     _loadScreenplayFavorites();
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
   }
 
   Future<void> _loadScreenplayFavorites() async {
@@ -80,20 +71,17 @@ class _FavoritesPageState extends State<FavoritesPage>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 12),
-              TabBar(
-                controller: _tabController,
-                labelColor: AppColors.accent,
-                unselectedLabelColor: AppColors.textSecondary,
-                indicatorColor: AppColors.accent,
-                tabs: const [
-                  Tab(text: '画格收藏'),
-                  Tab(text: '剧本收藏'),
-                ],
+              FeedTabBar(
+                tabs: const ['画格收藏', '剧本收藏'],
+                selectedIndex: _tabIndex,
+                onChanged: (index) => setState(() => _tabIndex = index),
+                underlineStyle: true,
+                embedded: true,
               ),
               const SizedBox(height: 16),
               Expanded(
-                child: TabBarView(
-                  controller: _tabController,
+                child: FadeSlideIndexedStack(
+                  index: _tabIndex,
                   children: [
                     _FrameFavoritesTab(repo: imageRepo, isDesktop: isDesktop),
                     _ScreenplayFavoritesTab(
@@ -221,7 +209,7 @@ class _ScreenplayFavoritesTab extends StatelessWidget {
         title: '暂无剧本收藏',
         subtitle: error ?? '在社区中收藏喜欢的剧本',
         actionLabel: '去社区',
-        onAction: () => context.push(AppRoutes.community),
+        onAction: () => context.go(AppRoutes.community),
       );
     }
 

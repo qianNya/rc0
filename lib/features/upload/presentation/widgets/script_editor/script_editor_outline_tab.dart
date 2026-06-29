@@ -16,6 +16,7 @@ import 'script_editor_actions.dart';
 import 'script_editor_navigation.dart';
 import 'script_editor_frames_tab.dart';
 import '../../../../../core/responsive/breakpoints.dart';
+import '../../../../../shared/widgets/fade_slide_tab_switcher.dart';
 import '../../../../studio/presentation/studio_editor_shell_bridge.dart';
 import '../../../../../shared/widgets/shell_insets.dart';
 
@@ -265,11 +266,23 @@ class _ScriptEditorOutlineTabState extends State<ScriptEditorOutlineTab> {
     return 12;
   }
 
-  Widget _buildModeBody() {
-    final bottomPadding = _scrollBottomPadding(context);
+  int get _modeIndex {
     switch (_mode) {
+      case EditorHubMode.script:
+        return 1;
+      case EditorHubMode.frames:
+        return 2;
       case EditorHubMode.outline:
-        return SingleChildScrollView(
+        return 0;
+    }
+  }
+
+  Widget _buildModeStack() {
+    final bottomPadding = _scrollBottomPadding(context);
+    return FadeSlideIndexedStack(
+      index: _modeIndex,
+      children: [
+        SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(
             AppDimensions.spacingMd,
             0,
@@ -277,16 +290,15 @@ class _ScriptEditorOutlineTabState extends State<ScriptEditorOutlineTab> {
             bottomPadding,
           ),
           child: _buildOutlineContent(),
-        );
-      case EditorHubMode.script:
-        return widget.structureEditor;
-      case EditorHubMode.frames:
-        return ScriptEditorFramesTab(
+        ),
+        widget.structureEditor,
+        ScriptEditorFramesTab(
           draft: widget.draft,
           actions: widget.actions,
           embeddedInHub: widget.embeddedInHub,
-        );
-    }
+        ),
+      ],
+    );
   }
 
   Widget _buildOutlineContent() {
@@ -362,7 +374,7 @@ class _ScriptEditorOutlineTabState extends State<ScriptEditorOutlineTab> {
             padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
             child: _buildHubHeader(),
           ),
-          Expanded(child: _buildModeBody()),
+          Expanded(child: _buildModeStack()),
         ],
       );
     }
@@ -370,7 +382,7 @@ class _ScriptEditorOutlineTabState extends State<ScriptEditorOutlineTab> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Expanded(child: _buildModeBody()),
+        Expanded(child: _buildModeStack()),
       ],
     );
   }

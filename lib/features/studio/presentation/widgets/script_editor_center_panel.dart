@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
 import '../../../../shared/widgets/profile_widgets.dart';
 import '../../../screenplay/data/screenplay_draft.dart';
 import '../../../upload/presentation/widgets/editor/project_hero_card.dart';
@@ -201,7 +202,22 @@ class _ScriptEditorCenterPanelState extends State<ScriptEditorCenterPanel> {
             onChanged: (i) => setState(() => _tabIndex = i),
           ),
         ),
-        Expanded(child: _buildTabBody()),
+        Expanded(
+          child: FadeSlideIndexedStack(
+            index: _tabIndex,
+            children: [
+              _buildShotList(),
+              ScriptEditorStoryboardTab(
+                draft: widget.controller.draft,
+                actions: widget.actions,
+              ),
+              ScriptEditorTimelineTab(
+                draft: widget.controller.draft,
+                actions: widget.actions,
+              ),
+            ],
+          ),
+        ),
         Padding(
           padding: const EdgeInsets.all(AppDimensions.spacingMd),
           child: OutlinedButton.icon(
@@ -261,23 +277,6 @@ class _ScriptEditorCenterPanelState extends State<ScriptEditorCenterPanel> {
         ),
       ],
     );
-  }
-
-  Widget _buildTabBody() {
-    switch (_tabIndex) {
-      case 1:
-        return ScriptEditorStoryboardTab(
-          draft: widget.controller.draft,
-          actions: widget.actions,
-        );
-      case 2:
-        return ScriptEditorTimelineTab(
-          draft: widget.controller.draft,
-          actions: widget.actions,
-        );
-      default:
-        return _buildShotList();
-    }
   }
 
   Widget _buildShotList() {

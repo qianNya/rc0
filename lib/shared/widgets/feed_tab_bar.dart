@@ -12,12 +12,18 @@ class FeedTabBar extends StatelessWidget {
     required this.selectedIndex,
     required this.onChanged,
     this.underlineStyle = false,
+    this.embedded = false,
+    this.margin,
   });
 
   final List<String> tabs;
   final int selectedIndex;
   final ValueChanged<int> onChanged;
   final bool underlineStyle;
+
+  /// When true, renders tabs without an outer [LiquidGlassSurface] wrapper.
+  final bool embedded;
+  final EdgeInsetsGeometry? margin;
 
   @override
   Widget build(BuildContext context) {
@@ -32,14 +38,39 @@ class FeedTabBar extends StatelessWidget {
         ? Colors.transparent
         : theme.dividerColor;
 
+    final tabList = _buildTabList(
+      secondary: secondary,
+      surfaceSecondary: surfaceSecondary,
+      border: border,
+    );
+
+    final barHeight = underlineStyle
+        ? AppDimensions.primaryButtonHeight
+        : AppDimensions.feedTabBarHeight;
+
+    if (embedded) {
+      return Padding(
+        padding: margin ?? EdgeInsets.zero,
+        child: SizedBox(height: barHeight, child: tabList),
+      );
+    }
+
     return LiquidGlassSurface(
-      margin: const EdgeInsets.symmetric(
-        horizontal: AppDimensions.floatingBarMarginHorizontal,
-      ),
-      height: underlineStyle
-          ? AppDimensions.primaryButtonHeight
-          : AppDimensions.feedTabBarHeight,
-      child: ListView.separated(
+      margin: margin ??
+          const EdgeInsets.symmetric(
+            horizontal: AppDimensions.floatingBarMarginHorizontal,
+          ),
+      height: barHeight,
+      child: tabList,
+    );
+  }
+
+  Widget _buildTabList({
+    required Color secondary,
+    required Color surfaceSecondary,
+    required Color border,
+  }) {
+    return ListView.separated(
         scrollDirection: Axis.horizontal,
         clipBehavior: Clip.hardEdge,
         padding: const EdgeInsets.symmetric(
@@ -107,8 +138,53 @@ class FeedTabBar extends StatelessWidget {
             ),
           );
         },
+      );
+  }
+}
+
+/// Pinned [FeedTabBar] for [CustomScrollView] / [NestedScrollView] headers.
+class PinnedFeedTabBarDelegate extends SliverPersistentHeaderDelegate {
+  PinnedFeedTabBarDelegate({
+    required this.tabs,
+    required this.selectedIndex,
+    required this.onChanged,
+    required this.backgroundColor,
+  });
+
+  final List<String> tabs;
+  final int selectedIndex;
+  final ValueChanged<int> onChanged;
+  final Color backgroundColor;
+
+  @override
+  double get minExtent => AppDimensions.primaryButtonHeight;
+
+  @override
+  double get maxExtent => minExtent;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return ColoredBox(
+      color: backgroundColor,
+      child: FeedTabBar(
+        tabs: tabs,
+        selectedIndex: selectedIndex,
+        onChanged: onChanged,
+        underlineStyle: true,
+        embedded: true,
       ),
     );
+  }
+
+  @override
+  bool shouldRebuild(covariant PinnedFeedTabBarDelegate oldDelegate) {
+    return oldDelegate.selectedIndex != selectedIndex ||
+        oldDelegate.tabs != tabs ||
+        oldDelegate.backgroundColor != backgroundColor;
   }
 }
 

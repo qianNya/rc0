@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../../../app/theme/app_dimensions.dart';
-import '../../../../../shared/widgets/glass/glass.dart';
+import '../../../../../shared/widgets/fade_slide_tab_switcher.dart';
+import '../../../../../shared/widgets/feed_tab_bar.dart';
 import '../../../../screenplay/data/screenplay_draft.dart';
 import 'script_editor_actions.dart';
 import 'script_editor_storyboard_tab.dart';
@@ -32,19 +32,15 @@ class _ScriptEditorFramesTabState extends State<ScriptEditorFramesTab> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        GlassSegmentedControl(
-          segments: const ['故事版', '时间线'],
+        FeedTabBar(
+          tabs: const ['故事版', '时间线'],
           selectedIndex: _viewIndex,
           onChanged: (index) => setState(() => _viewIndex = index),
-          margin: const EdgeInsets.fromLTRB(
-            AppDimensions.spacingMd,
-            6,
-            AppDimensions.spacingMd,
-            0,
-          ),
+          underlineStyle: true,
+          embedded: true,
         ),
         Expanded(
-          child: IndexedStack(
+          child: FadeSlideIndexedStack(
             index: _viewIndex,
             children: [
               ScriptEditorStoryboardTab(

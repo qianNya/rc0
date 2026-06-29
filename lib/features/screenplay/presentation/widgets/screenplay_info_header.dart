@@ -15,6 +15,8 @@ class ScreenplayInfoHeader extends StatelessWidget {
     this.shootDefaults,
     this.onShootParamsTap,
     this.showTitle = true,
+    this.showHierarchySummary = true,
+    this.showShootParams = true,
   });
 
   final Screenplay screenplay;
@@ -22,6 +24,8 @@ class ScreenplayInfoHeader extends StatelessWidget {
   final ShootParams? shootDefaults;
   final VoidCallback? onShootParamsTap;
   final bool showTitle;
+  final bool showHierarchySummary;
+  final bool showShootParams;
 
   @override
   Widget build(BuildContext context) {
@@ -35,15 +39,19 @@ class ScreenplayInfoHeader extends StatelessWidget {
           ),
           const SizedBox(height: 8),
         ],
-        Text(
-          screenplay.hierarchySummary,
-          style: const TextStyle(
-            color: AppColors.accent,
-            fontWeight: FontWeight.w600,
+        if (showHierarchySummary) ...[
+          Text(
+            screenplay.hierarchySummary,
+            style: const TextStyle(
+              color: AppColors.accent,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-        ),
-        if (shootDefaults != null && shootDefaults!.hasAnyValue) ...[
-          const SizedBox(height: 10),
+        ],
+        if (showShootParams &&
+            shootDefaults != null &&
+            shootDefaults!.hasAnyValue) ...[
+          if (showHierarchySummary) const SizedBox(height: 10),
           ScreenplayShootParamsChips(
             params: shootDefaults!,
             onTap: onShootParamsTap,
@@ -51,7 +59,8 @@ class ScreenplayInfoHeader extends StatelessWidget {
           ),
         ],
         if (screenplay.createdAt != null) ...[
-          const SizedBox(height: 6),
+          if (showTitle || showHierarchySummary || showShootParams)
+            const SizedBox(height: 6),
           Text(
             '发布于 ${_formatDate(screenplay.createdAt!)}',
             style: AppTextStyles.bodySecondary.copyWith(fontSize: 12),

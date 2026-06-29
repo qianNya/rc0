@@ -20,6 +20,7 @@ const shellTabRoutes = {
   AppRoutes.scenes,
   AppRoutes.profile,
   AppRoutes.action,
+  AppRoutes.community,
 };
 
 String desktopSidebarActiveId(String location) {

@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
 
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/domain/screenplay/screenplay_display.dart';
 import '../../../../core/domain/screenplay/script_frame_display.dart';
+import '../../../../shared/widgets/glass/glass_button.dart';
+import '../../../../shared/widgets/glass/glass_card.dart';
 import '../../../../shared/widgets/image_preview.dart';
+import '../../../../shared/widgets/liquid_glass_surface.dart';
 import '../../../../shared/widgets/pose_cover_image.dart';
-import '../../../../shared/widgets/primary_button.dart';
 import '../../../../shared/widgets/profile_widgets.dart';
+import '../../domain/shoot_params.dart';
+import 'screenplay_shoot_params_chips.dart';
 
 class ScreenplayDetailHero extends StatefulWidget {
   const ScreenplayDetailHero({
@@ -22,6 +27,7 @@ class ScreenplayDetailHero extends StatefulWidget {
     this.onEdit,
     this.onFollow,
     this.onLike,
+    this.shootDefaults,
     this.forking = false,
     this.followBusy = false,
     this.likeBusy = false,
@@ -29,6 +35,7 @@ class ScreenplayDetailHero extends StatefulWidget {
 
   final Screenplay screenplay;
   final ImagePreviewOptions previewOptions;
+  final ShootParams? shootDefaults;
   final bool isOwner;
   final VoidCallback onBack;
   final VoidCallback? onMore;
@@ -58,7 +65,7 @@ class _ScreenplayDetailHeroState extends State<ScreenplayDetailHero> {
         (screenplay.coverUrl != null && screenplay.coverUrl!.isNotEmpty);
     final coverPath = screenplay.effectiveCoverImagePath;
     const heroHeight = 300.0;
-    const cardOverlap = 28.0;
+    const cardOverlap = 40.0;
 
     return Column(
       children: [
@@ -94,6 +101,20 @@ class _ScreenplayDetailHeroState extends State<ScreenplayDetailHero> {
                 )
               else
                 const PoseCoverImage(expand: true, borderRadius: 0),
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0x33000000),
+                      Colors.transparent,
+                      Color(0x99000000),
+                    ],
+                    stops: [0, 0.4, 1],
+                  ),
+                ),
+              ),
               Positioned(
                 top: 0,
                 left: 0,
@@ -123,14 +144,11 @@ class _ScreenplayDetailHeroState extends State<ScreenplayDetailHero> {
                 Positioned(
                   right: 12,
                   bottom: cardOverlap + 12,
-                  child: Container(
+                  child: LiquidGlassSurface(
+                    borderRadius: BorderRadius.circular(12),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
                       vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       '${_carouselIndex + 1}/${frames.length}',
@@ -143,18 +161,25 @@ class _ScreenplayDetailHeroState extends State<ScreenplayDetailHero> {
         ),
         Transform.translate(
           offset: const Offset(0, -cardOverlap),
-          child: ScreenplayDetailInfoCard(
-            screenplay: screenplay,
-            isOwner: widget.isOwner,
-            onFork: widget.onFork,
-            onEdit: widget.onEdit,
-            onFollow: widget.onFollow,
-            onLike: widget.onLike,
-            forking: widget.forking,
-            followBusy: widget.followBusy,
-            likeBusy: widget.likeBusy,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppDimensions.spacingMd,
+            ),
+            child: ScreenplayDetailInfoCard(
+              screenplay: screenplay,
+              shootDefaults: widget.shootDefaults,
+              isOwner: widget.isOwner,
+              onFork: widget.onFork,
+              onEdit: widget.onEdit,
+              onFollow: widget.onFollow,
+              onLike: widget.onLike,
+              forking: widget.forking,
+              followBusy: widget.followBusy,
+              likeBusy: widget.likeBusy,
+            ),
           ),
         ),
+        const SizedBox(height: AppDimensions.spacingSm),
       ],
     );
   }
@@ -168,13 +193,11 @@ class _HeroIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.black38,
-      shape: const CircleBorder(),
-      clipBehavior: Clip.antiAlias,
+    return LiquidGlassSurface(
+      borderRadius: BorderRadius.circular(999),
       child: IconButton(
         onPressed: onPressed,
-        icon: Icon(icon, color: Colors.white),
+        icon: Icon(icon, color: Colors.white, size: 22),
         tooltip: icon == Icons.arrow_back ? '返回' : '更多',
       ),
     );
@@ -186,6 +209,7 @@ class ScreenplayDetailInfoCard extends StatelessWidget {
     super.key,
     required this.screenplay,
     required this.isOwner,
+    this.shootDefaults,
     this.onFork,
     this.onEdit,
     this.onFollow,
@@ -196,6 +220,7 @@ class ScreenplayDetailInfoCard extends StatelessWidget {
   });
 
   final Screenplay screenplay;
+  final ShootParams? shootDefaults;
   final bool isOwner;
   final VoidCallback? onFork;
   final VoidCallback? onEdit;
@@ -208,31 +233,44 @@ class ScreenplayDetailInfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final showInlineFork = !isOwner || screenplay.isForkCopy;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary =
+        isDark ? AppColors.textPrimaryDark : AppColors.textPrimary;
 
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 0),
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-      decoration: const BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+    return GlassCard(
+      borderRadius: BorderRadius.circular(24),
+      padding: const EdgeInsets.all(AppDimensions.spacingMd),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             screenplay.title,
-            style: AppTextStyles.display.copyWith(fontSize: 22),
+            style: AppTextStyles.display.copyWith(
+              fontSize: 22,
+              color: primary,
+            ),
           ),
+          const SizedBox(height: 6),
+          Text(
+            screenplay.hierarchySummary,
+            style: const TextStyle(
+              color: AppColors.accent,
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+            ),
+          ),
+          if (shootDefaults != null && shootDefaults!.hasAnyValue) ...[
+            const SizedBox(height: 10),
+            ScreenplayShootParamsChips(
+              params: shootDefaults!,
+              compact: true,
+            ),
+          ],
           if (screenplay.isPublished && screenplay.isPrivate) ...[
-            const SizedBox(height: 8),
-            Container(
+            const SizedBox(height: 10),
+            LiquidGlassSurface(
+              borderRadius: BorderRadius.circular(12),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.border),
-              ),
               child: Text(
                 '非公开 · 可通过 JSON 分享',
                 style: AppTextStyles.bodySecondary.copyWith(fontSize: 12),
@@ -258,15 +296,14 @@ class ScreenplayDetailInfoCard extends StatelessWidget {
                 ),
               ),
               if (isOwner && onEdit != null)
-                SecondaryButton(
+                GlassButton(
                   label: '编辑剧本',
-                  isExpanded: false,
                   onPressed: onEdit,
                 )
               else if (showInlineFork && onFork != null)
-                SecondaryButton(
+                GlassButton(
                   label: forking ? 'Fork 中…' : 'Fork 模板',
-                  isExpanded: false,
+                  loading: forking,
                   onPressed: forking ? null : onFork,
                 ),
             ],

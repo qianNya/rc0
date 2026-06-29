@@ -13,6 +13,7 @@ class UserProfileSummary {
     required this.username,
     required this.nickname,
     required this.avatar,
+    required this.backgroundUrl,
     required this.bio,
     required this.level,
     required this.followerCount,
@@ -26,6 +27,7 @@ class UserProfileSummary {
   final String username;
   final String nickname;
   final String avatar;
+  final String backgroundUrl;
   final String bio;
   final int level;
   final int followerCount;
@@ -43,6 +45,7 @@ class UserProfileSummary {
       username: username,
       nickname: nickname,
       avatar: avatar,
+      backgroundUrl: backgroundUrl,
       bio: bio,
       level: level,
       followerCount: followerCount + (followerDelta ?? 0),
@@ -60,6 +63,7 @@ UserProfileSummary _toSummary(PublicUserProfile profile) {
     username: profile.username,
     nickname: profile.nickname,
     avatar: profile.avatar,
+    backgroundUrl: profile.backgroundUrl,
     bio: profile.bio,
     level: profile.level.toInt(),
     followerCount: profile.followerCount.toInt(),
