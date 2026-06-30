@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../app/theme/app_colors.dart';
-import '../../app/theme/app_dimensions.dart';
 import '../../app/theme/app_motion.dart';
 
 /// Glossy water-drop pill that slides between tab slots with liquid stretch.
@@ -12,13 +11,13 @@ class LiquidTabIndicator extends StatefulWidget {
     super.key,
     required this.selectedIndex,
     required this.itemCount,
-    this.horizontalInset = AppDimensions.bottomNavIndicatorInsetH,
-    this.verticalInset = AppDimensions.bottomNavIndicatorInsetV,
+    this.breath = 0,
+    this.verticalInset = 8,
   });
 
   final int selectedIndex;
   final int itemCount;
-  final double horizontalInset;
+  final double breath;
   final double verticalInset;
 
   @override
@@ -38,7 +37,7 @@ class _LiquidTabIndicatorState extends State<LiquidTabIndicator>
     _toIndex = _fromIndex;
     _controller = AnimationController(
       vsync: this,
-      duration: AppMotion.slow,
+      duration: AppMotion.normal,
     )..value = 1;
   }
 
@@ -48,8 +47,15 @@ class _LiquidTabIndicatorState extends State<LiquidTabIndicator>
     if (oldWidget.selectedIndex != widget.selectedIndex) {
       _fromIndex = _animatedIndex;
       _toIndex = widget.selectedIndex.toDouble();
+      _controller.duration = _transitionDuration;
       _controller.forward(from: 0);
     }
+  }
+
+  Duration get _transitionDuration {
+    final distance = (_toIndex - _fromIndex).abs();
+    final millis = (210 + distance * 80).round().clamp(210, 340);
+    return Duration(milliseconds: millis);
   }
 
   double get _animatedIndex {
@@ -72,97 +78,120 @@ class _LiquidTabIndicatorState extends State<LiquidTabIndicator>
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final fill = isDark
         ? AppColors.glassNavIndicatorDark
-        : AppColors.glassNavIndicatorLight;
+        : const Color(0xFFD9B4E9).withValues(alpha: 0.36);
     final border = isDark
         ? AppColors.glassNavIndicatorBorderDark
-        : AppColors.glassNavIndicatorBorderLight;
+        : const Color(0xFFF0D9F8).withValues(alpha: 0.44);
     final sheen = isDark
         ? AppColors.glassNavIndicatorSheenDark
-        : AppColors.glassNavIndicatorSheenLight;
-    final radius = BorderRadius.circular(AppDimensions.radiusXl);
+        : Colors.white.withValues(alpha: 0.14);
 
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, _) {
         final t = _controller.value;
         final moving = _fromIndex != _toIndex;
-        final stretch = moving ? 0.24 * math.sin(math.pi * t) : 0.0;
-        final squash = stretch * 0.38;
+        final transferDistance = (_toIndex - _fromIndex).abs().clamp(0.0, 2.0);
+        final phase = moving ? math.sin(math.pi * t) : 0.0;
+        final stretch = phase * (0.18 + transferDistance * 0.03);
         final index = _animatedIndex;
+        final breathing = widget.breath.clamp(0.0, 1.0);
 
         return LayoutBuilder(
           builder: (context, constraints) {
             final itemWidth = constraints.maxWidth / widget.itemCount;
-            final pillWidth = itemWidth - widget.horizontalInset * 2;
-            final pillHeight =
-                constraints.maxHeight - widget.verticalInset * 2;
-            final left = itemWidth * index + widget.horizontalInset;
+            final capsuleHeight = constraints.maxHeight - widget.verticalInset * 2;
+            final baseWidth = (itemWidth * 0.72).clamp(44.0, 62.0);
+            final capsuleWidth = baseWidth + stretch * (14 + transferDistance * 4);
+            final centerX = itemWidth * index + itemWidth / 2;
+            final left = centerX - capsuleWidth / 2;
+            final top = ((constraints.maxHeight - capsuleHeight) / 2)
+                .clamp(widget.verticalInset, constraints.maxHeight)
+                .toDouble();
+            final radius = BorderRadius.circular(capsuleHeight / 2);
+            final floatY = -phase * 1.1;
 
             return Stack(
               clipBehavior: Clip.none,
               children: [
+                // iPhone-style dynamic outer ring
                 Positioned(
-                  left: left,
-                  top: widget.verticalInset,
-                  width: pillWidth,
-                  height: pillHeight,
-                  child: Transform.scale(
-                    scaleX: 1 + stretch,
-                    scaleY: 1 - squash,
-                    alignment: Alignment.center,
+                  left: left - (6 + stretch * 6),
+                  top: top + floatY - (3 + stretch * 2),
+                  width: capsuleWidth + (12 + stretch * 12),
+                  height: capsuleHeight + (6 + stretch * 4),
+                  child: IgnorePointer(
                     child: DecoratedBox(
                       decoration: BoxDecoration(
-                        borderRadius: radius,
-                        color: fill,
-                        border: Border.all(color: border, width: 0.5),
+                        borderRadius: BorderRadius.circular(capsuleHeight),
+                        border: Border.all(
+                          color: Colors.white.withValues(
+                            alpha: (0.42 + breathing * 0.12).clamp(0.0, 0.64),
+                          ),
+                          width: 0.7,
+                        ),
                         boxShadow: [
                           BoxShadow(
-                            color: isDark
-                                ? AppColors.shadowFaint
-                                : AppColors.shadowSoft,
-                            blurRadius: 10,
-                            offset: const Offset(0, 3),
+                            color: (isDark
+                                    ? AppColors.glassNavIconSelectedDark
+                                    : AppColors.glassNavIconSelectedLight)
+                                .withValues(alpha: 0.14 + phase * 0.08),
+                            blurRadius: 18 + breathing * 6,
+                            spreadRadius: -10,
+                            offset: Offset(0, 2 + phase * 2.2),
                           ),
                         ],
                       ),
+                    ),
+                  ),
+                ),
+                // Main liquid capsule
+                Positioned(
+                  left: left,
+                  top: top + floatY,
+                  width: capsuleWidth,
+                  height: capsuleHeight,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: radius,
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          sheen.withValues(alpha: 0.95),
+                          fill.withValues(alpha: 0.78),
+                          fill.withValues(alpha: 0.72),
+                        ],
+                        stops: const [0, 0.42, 1],
+                      ),
+                      border: Border.all(
+                        color: border.withValues(alpha: 0.95),
+                        width: 0.7,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: isDark ? AppColors.shadowFaint : AppColors.shadowSoft,
+                          blurRadius: 12 + breathing * 5,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: radius,
                       child: ClipRRect(
                         borderRadius: radius,
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            DecoratedBox(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    sheen,
-                                    sheen.withValues(alpha: 0),
-                                  ],
-                                  stops: const [0, 0.55],
-                                ),
-                              ),
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment(-0.95 + phase * 0.9, -0.45),
+                              end: Alignment(0.95 + phase * 0.9, 0.85),
+                              colors: [
+                                Colors.white.withValues(alpha: 0.26 + breathing * 0.08),
+                                Colors.white.withValues(alpha: 0),
+                              ],
+                              stops: const [0, 0.62],
                             ),
-                            Align(
-                              alignment: Alignment.topCenter,
-                              child: Container(
-                                margin: const EdgeInsets.only(top: 1),
-                                height: 1,
-                                width: pillWidth * 0.55,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(1),
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      Colors.white.withValues(
-                                        alpha: isDark ? 0.12 : 0.65,
-                                      ),
-                                      Colors.white.withValues(alpha: 0),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                       ),
                     ),

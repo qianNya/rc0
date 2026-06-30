@@ -94,6 +94,33 @@
 - D 配置化双布局（随阶段 3–6 一并落地）
 - 进一步去重与体积削减将在各 feature 重绘时进行（目标 ~26k 行）
 
+## 阶段 8 · 液态玻璃全量重构（完成）
+
+### 基础设施
+- 新增 `GlassHeroPage` / `GlassListRow` / `GlassSearchScaffold` / `GlassEmptyState` / `GlassProgressSheet`
+- `AppColors.heroScrimTop/Mid/Bottom` token
+
+### 占位路由 → 真实页面
+- `/search` → `SearchPage` + `SearchRepository`
+- `/settings` → `SettingsPage`
+- `/messages` → `MessagesPage` + `MessagesRepository`（API 预留）
+- `/image/:id` → `ImageDetailPage`
+- `/image/:id/analysis` → `ImageAnalysisPage` + `getImageAnalysis` API
+- `/preset/:id` → `PresetDetailPage`
+- `/script/:id/export` → `ScriptExportPage`
+- `/script/:id/scene/:sid` → `ScriptSceneDetailPage`
+- `/script/:id/scene/:sid/shot/:kid` → `ScriptShotDetailPage`
+
+### Discovery Hub
+- `WikiHubPage` 首 Tab 合并 `ExplorePage(embeddedInHub: true)`
+- `wikiHubTabs` 更新为 `发现 / IP / 角色 / 相关`
+
+### 视觉与组件
+- Hero scrim token 化（character / screenplay detail）
+- 删除确认 → `GlassDialog`
+- 编辑器 AppBar → `Rc0AppBar`
+- `preset_marketplace_widgets` magic padding → `AppDimensions`
+
 ## 剩余 analyze 提示（非本阶段范围）
 - `lib/api/**` 文件名 `xxx-api.dart` 命名（项目约定只读，不改）
 - 多处 `value`/`groupValue`/`onChanged`/`activeColor` 等 Flutter 版本弃用（统一在组件重绘阶段处理）

@@ -13,7 +13,7 @@ import '../../../../shared/widgets/glass/glass_sheet.dart';
 import '../../../../shared/widgets/rc0_widgets.dart';
 import '../../../../shared/widgets/status_bar_spacer.dart';
 import '../../../auth/data/auth_repository.dart';
-import '../../../studio/presentation/widgets/studio_editor_shell_glass_button.dart';
+import '../../../studio/presentation/widgets/script_studio_glass_widgets.dart';
 import '../../data/scene_local_store.dart';
 import '../../data/scene_repository.dart';
 import '../../domain/scene_entry.dart';
@@ -125,21 +125,7 @@ class _SceneListPageState extends State<SceneListPage> {
         color: isDark
             ? AppColors.characterBackgroundDark
             : Theme.of(context).scaffoldBackgroundColor,
-        child: Stack(
-          children: [
-            body,
-            Positioned(
-              right: AppDimensions.spacingMd,
-              bottom: AppDimensions.spacingMd,
-              child: StudioEditorShellGlassButton(
-                label: 'AI 场景',
-                icon: Icons.auto_awesome,
-                minWidth: 120,
-                onPressed: () => context.push(AppRoutes.sceneAi),
-              ),
-            ),
-          ],
-        ),
+        child: body,
       );
     }
 
@@ -147,30 +133,26 @@ class _SceneListPageState extends State<SceneListPage> {
       title: const Text('场景库'),
       onBack: () => popOrGoDiscovery(context),
       actions: [
-        IconButton(
+        StudioGlassIconButton(
+          tooltip: 'AI 场景',
+          icon: Icons.auto_awesome,
+          onPressed: () => context.push(AppRoutes.sceneAi),
+        ),
+        StudioGlassIconButton(
           tooltip: '我的场景',
-          icon: const Icon(Icons.folder_outlined),
+          icon: Icons.folder_outlined,
           onPressed: () => context.push(AppRoutes.myScenes),
         ),
         if (_auth.isLoggedIn)
-          IconButton(
+          StudioGlassIconButton(
             tooltip: '新建场景',
-            icon: const Icon(Icons.add),
+            icon: Icons.add,
             onPressed: () async {
               await context.push(AppRoutes.sceneCreate);
               if (mounted) _load();
             },
           ),
       ],
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: StudioEditorShellGlassButton(
-          label: 'AI 场景',
-          icon: Icons.auto_awesome,
-          minWidth: 120,
-          onPressed: () => context.push(AppRoutes.sceneAi),
-        ),
-      ),
       body: body,
     );
   }
@@ -204,20 +186,31 @@ class _SceneListPageState extends State<SceneListPage> {
               ),
               if (widget.embeddedInHub) ...[
                 const SizedBox(width: 4),
-                IconButton(
+                StudioGlassIconButton(
+                  size: 36,
+                  iconSize: 20,
                   tooltip: '我的场景',
                   onPressed: () => context.push(AppRoutes.myScenes),
-                  icon: const Icon(Icons.folder_outlined),
+                  icon: Icons.folder_outlined,
                 ),
                 if (_auth.isLoggedIn)
-                  IconButton(
+                  StudioGlassIconButton(
+                    size: 36,
+                    iconSize: 20,
                     tooltip: '新建场景',
                     onPressed: () async {
                       await context.push(AppRoutes.sceneCreate);
                       if (mounted) _load();
                     },
-                    icon: const Icon(Icons.add),
+                    icon: Icons.add,
                   ),
+                StudioGlassIconButton(
+                  size: 36,
+                  iconSize: 20,
+                  tooltip: 'AI 场景',
+                  onPressed: () => context.push(AppRoutes.sceneAi),
+                  icon: Icons.auto_awesome,
+                ),
               ] else ...[
                 const SizedBox(width: 8),
                 IconButton(

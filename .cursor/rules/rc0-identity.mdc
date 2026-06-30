@@ -1,0 +1,30 @@
+---
+description: RC0 Apple Liquid Glass 产品定位与层级哲学
+alwaysApply: true
+---
+
+# RC0 Apple Liquid Glass 定位
+
+版本：2.0。目标平台：Flutter（iOS/Android/macOS/Windows/Web）。
+
+视觉与交互参考：iOS 26、visionOS、Apple Music、Photos、Journal、TV。
+
+## 核心哲学
+
+- Content is the world：内容是世界本体，UI 仅为轻量浮层。
+- 容器不包裹内容；控件应悬浮于内容之上。
+- 体验应具备生命感：Floating、Adaptive、Responsive、Breathing。
+
+## Liquid Glass 不是普通毛玻璃
+
+禁止将 Liquid Glass 简化为透明容器或单纯 blur 卡片。
+
+Liquid Glass 必须对背景、滚动、光线、触摸、上下文变化产生响应。
+
+## 三层视觉层级
+
+- Level 0 内容层：角色图、场景图、生成图，占据主视觉。
+- Level 1 玻璃层：导航、Tab、搜索、工具栏，浮于内容之上。
+- Level 2 交互层：Dialog、Sheet、关键操作，按需短暂出现。
+
+任何页面若接近 Material 设置页或后台 Dashboard，应重构。

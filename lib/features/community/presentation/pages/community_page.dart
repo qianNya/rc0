@@ -486,11 +486,11 @@ class _CommunitySortTabBody extends StatelessWidget {
         padding: EdgeInsets.fromLTRB(horizontalPadding, 8, horizontalPadding, 0),
         sliver: mobile
             ? SliverGrid(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
                   mainAxisSpacing: 12,
                   crossAxisSpacing: 12,
-                  childAspectRatio: 0.62,
+                  childAspectRatio: feedGridChildAspectRatio(2),
                 ),
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {

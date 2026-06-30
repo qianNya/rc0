@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/routes.dart';
+import '../../../../shared/widgets/rc0_page_scaffold.dart';
 import '../../../upload/presentation/widgets/script_editor/script_editor_outline_tab.dart';
 import '../screenplay_editor_host.dart';
 import '../studio_editor_shell_bridge.dart';
@@ -46,13 +47,14 @@ class ScriptStudioCreatePage extends StatelessWidget {
         final actions = controller.buildEditorActions();
         final fallbackTitle = _isEditing ? '编辑剧本' : '新建剧本';
 
-        return Scaffold(
+        return Rc0PageScaffold(
           appBar: ScriptStudioHubAppBar(
             controller: controller,
             onBack: () => _onBack(context),
             onOpenSettings: controller.openProjectSettings,
             hubFallbackTitle: fallbackTitle,
           ),
+          includeShellBottomSpacer: false,
           body: ScriptEditorOutlineTab(
             draft: controller.draft,
             actions: actions,

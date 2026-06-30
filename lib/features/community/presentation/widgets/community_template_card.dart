@@ -40,6 +40,8 @@ class CommunityTemplateCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final secondary =
+        theme.textTheme.bodyMedium?.color ?? AppColors.textSecondary;
     final aspectLabel = communityAspectRatioLabel(screenplay);
     final structureLabel = communityStructureLabel(screenplay);
 
@@ -53,8 +55,7 @@ class CommunityTemplateCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            AspectRatio(
-              aspectRatio: 4 / 3,
+            Expanded(
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -94,7 +95,7 @@ class CommunityTemplateCard extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -104,48 +105,49 @@ class CommunityTemplateCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   FeedAuthorRow(
                     author: screenplay.author,
                     avatarUrl: screenplay.authorAvatar,
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Text(
                     structureLabel,
-                    style: theme.textTheme.bodyMedium?.copyWith(fontSize: 11),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontSize: 11,
+                      color: secondary,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Row(
                     children: [
                       Icon(
                         Icons.favorite_border,
                         size: 14,
-                        color: theme.textTheme.bodyMedium?.color,
+                        color: secondary,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         formatFeedCount(screenplay.likes),
-                        style: theme.textTheme.bodyMedium?.copyWith(fontSize: 11),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontSize: 11,
+                          color: secondary,
+                        ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 10),
                       Icon(
                         Icons.visibility_outlined,
                         size: 14,
-                        color: theme.textTheme.bodyMedium?.color,
+                        color: secondary,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         formatFeedCount(screenplay.views),
-                        style: theme.textTheme.bodyMedium?.copyWith(fontSize: 11),
-                      ),
-                      const Spacer(),
-                      Text(
-                        aspectLabel,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontSize: 11,
-                          color: AppColors.accent,
+                          color: secondary,
                         ),
                       ),
                     ],

@@ -14,6 +14,7 @@ import '../../../../shared/widgets/desktop_shell_app_bar.dart';
 import '../../../../shared/widgets/feed_tab_bar.dart';
 import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
 import '../../../../shared/widgets/glass/glass_card.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 import '../../../../shared/widgets/glass/glass_sheet.dart';
 import '../../../../shared/widgets/shell_insets.dart';
 import '../../../../shared/widgets/theme_mode_selector.dart';
@@ -109,36 +110,34 @@ class _ProfilePageState extends State<ProfilePage> {
     );
 
     if (!mounted) return;
-    showDialog<void>(
-      context: context,
+    showGlassDialog<void>(
+      context,
       barrierDismissible: false,
-      builder: (dialogContext) {
-        return ValueListenableBuilder<({int received, int? total})>(
-          valueListenable: progress,
-          builder: (_, value, _) {
-            final total = value.total;
-            final percent = total != null && total > 0
-                ? (value.received * 100 / total).clamp(0, 100).toInt()
-                : null;
-            return AlertDialog(
-              title: const Text('版本更新'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(percent != null ? '正在下载… $percent%' : '正在下载…'),
-                  const SizedBox(height: 16),
-                  LinearProgressIndicator(
-                    value: total != null && total > 0
-                        ? value.received / total
-                        : null,
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
+      child: ValueListenableBuilder<({int received, int? total})>(
+        valueListenable: progress,
+        builder: (_, value, _) {
+          final total = value.total;
+          final percent = total != null && total > 0
+              ? (value.received * 100 / total).clamp(0, 100).toInt()
+              : null;
+          return GlassDialog(
+            title: const Text('版本更新'),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(percent != null ? '正在下载… $percent%' : '正在下载…'),
+                const SizedBox(height: 16),
+                LinearProgressIndicator(
+                  value: total != null && total > 0
+                      ? value.received / total
+                      : null,
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
 
     final result = await AppUpdateService.downloadAndInstall(
@@ -161,21 +160,28 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _clearCache() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
+    final confirmed = await showGlassDialog<bool>(
+      context,
+      child: GlassDialog(
         title: const Text('清理缓存'),
-        content: const Text('将清除本地草稿与画格收藏缓存，登录状态不受影响。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('取消'),
+        onClose: () => Navigator.pop(context, false),
+        child: const Text('将清除本地草稿与画格收藏缓存，登录状态不受影响。'),
+        footer: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('取消'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('清理'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('清理'),
-          ),
-        ],
+        ),
       ),
     );
     if (confirmed != true || !mounted) return;

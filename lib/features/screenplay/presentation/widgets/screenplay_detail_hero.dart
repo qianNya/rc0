@@ -107,9 +107,9 @@ class _ScreenplayDetailHeroState extends State<ScreenplayDetailHero> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Color(0x33000000),
+                      AppColors.heroScrimMid,
                       Colors.transparent,
-                      Color(0x99000000),
+                      AppColors.heroScrimBottom,
                     ],
                     stops: [0, 0.4, 1],
                   ),

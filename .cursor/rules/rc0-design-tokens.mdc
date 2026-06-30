@@ -1,0 +1,35 @@
+---
+description: Liquid Glass Token 规则（颜色/圆角/材质/动效）
+globs: lib/**/*.dart
+alwaysApply: false
+---
+
+# Token 规则
+
+SSOT：`lib/app/theme/` + `docs/DESIGN_SYSTEM.md`。
+
+| 类 | 作用 |
+|---|---|
+| `AppColors` | 玻璃材质色、高光、边框、导航/Tab 语义色 |
+| `AppDimensions` | 间距、连续圆角、浮动边距、玻璃 blur |
+| `AppMotion` | 150/250/350-400ms 动效与曲线 |
+
+## 连续曲率（Continuous Curvature）
+
+优先使用 24 / 28 / 32 / Pill；避免 4/6/8 直角化体验。
+
+导航与 Tab 需使用专门 radius token（top nav 28、bottom nav/tab 32）。
+
+## 颜色策略
+
+- UI 保持中性，颜色主要来自内容。
+- `AppColors.accent` 仅用于 CTA、激活态、焦点态。
+- 透明优先于不透明；禁止厚重实心面板。
+
+## 动画策略
+
+- 状态切换必须 Emerges / Dissolves，不可瞬时跳变。
+- Micro 150ms，Small 250ms，Medium 350~400ms。
+- 允许 Fade/Scale/Slide/Blend；避免激进 bounce/shake/overshoot。
+
+`preset_cover.dart` 调色板数据表为唯一允许的 raw `Color(0x)` 例外。

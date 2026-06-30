@@ -2,7 +2,7 @@
 abstract final class AppRoutes {
   // Primary shell routes (L1)
   static const String discovery = '/discovery';
-  static const String discoveryCharacterWiki = '/discovery?hubTab=1';
+  static const String discoveryCharacterWiki = '/discovery?hubTab=2';
   static const String library = '/library';
   /// @deprecated Use [scenes] shell tab instead.
   static const String screenplays = '/screenplays';

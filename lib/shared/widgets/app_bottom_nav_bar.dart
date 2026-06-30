@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'dart:async';
 
-import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_dimensions.dart';
 import '../../app/theme/app_motion.dart';
-import '../../app/theme/app_text_styles.dart';
-import 'liquid_glass_surface.dart';
+import 'bottom_bar_glass_chrome.dart';
 import 'liquid_tab_indicator.dart';
 import 'shell_nav_items.dart';
 
-class AppBottomNavBar extends StatelessWidget {
+class AppBottomNavBar extends StatefulWidget {
   const AppBottomNavBar({
     super.key,
     required this.selectedIndex,
@@ -28,35 +28,92 @@ class AppBottomNavBar extends StatelessWidget {
   final VoidCallback? onBarLongPress;
 
   @override
-  Widget build(BuildContext context) {
-    final count = items.length;
-    final showIndicator = selectedIndex >= 0 && selectedIndex < count;
+  State<AppBottomNavBar> createState() => _AppBottomNavBarState();
+}
 
+class _AppBottomNavBarState extends State<AppBottomNavBar> {
+  ScrollNotificationObserverState? _observer;
+  Timer? _settleTimer;
+  double _scrollBreath = 0;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final nextObserver = ScrollNotificationObserver.maybeOf(context);
+    if (_observer == nextObserver) return;
+    _observer?.removeListener(_onScrollNotification);
+    _observer = nextObserver;
+    _observer?.addListener(_onScrollNotification);
+  }
+
+  @override
+  void dispose() {
+    _settleTimer?.cancel();
+    _observer?.removeListener(_onScrollNotification);
+    super.dispose();
+  }
+
+  void _onScrollNotification(ScrollNotification notification) {
+    final metrics = notification.metrics;
+    if (notification.depth > 1 || metrics.axis != Axis.vertical) return;
+
+    var impulse = 0.0;
+    if (notification is ScrollUpdateNotification) {
+      impulse = ((notification.scrollDelta ?? 0).abs() / 48).clamp(0.0, 1.0);
+    } else if (notification is OverscrollNotification) {
+      impulse = (notification.overscroll.abs() / 64).clamp(0.0, 1.0);
+    } else if (notification is UserScrollNotification &&
+        notification.direction != ScrollDirection.idle) {
+      impulse = 0.25;
+    }
+
+    if (impulse <= 0) return;
+    final next = (_scrollBreath * 0.72 + impulse).clamp(0.0, 1.0);
+    if ((next - _scrollBreath).abs() > 0.01 && mounted) {
+      setState(() {
+        _scrollBreath = next;
+      });
+    }
+
+    _settleTimer?.cancel();
+    _settleTimer = Timer(const Duration(milliseconds: 180), () {
+      if (mounted) {
+        setState(() {
+          _scrollBreath = 0;
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final count = widget.items.length;
+    final showIndicator = widget.selectedIndex >= 0 && widget.selectedIndex < count;
     final bar = GestureDetector(
-      onLongPress: onBarLongPress,
+      onLongPress: widget.onBarLongPress,
       behavior: HitTestBehavior.translucent,
-      child: LiquidGlassSurface(
-        style: LiquidGlassStyle.navigation,
-        height: AppDimensions.bottomNavFloatingHeight,
+      child: BottomBarGlassChrome(
+        breath: _scrollBreath,
         child: Stack(
           fit: StackFit.expand,
           children: [
             if (showIndicator)
               LiquidTabIndicator(
-                selectedIndex: selectedIndex,
+                selectedIndex: widget.selectedIndex,
                 itemCount: count,
+                breath: _scrollBreath,
               ),
             Row(
               children: [
                 for (var i = 0; i < count; i++)
                   Expanded(
                     child: _NavSlot(
-                      item: items[i],
-                      selected: selectedIndex == i,
-                      onTap: () => onItemSelected(i),
-                      onLongPress: onItemLongPress == null
+                      item: widget.items[i],
+                      selected: widget.selectedIndex == i,
+                      onTap: () => widget.onItemSelected(i),
+                      onLongPress: widget.onItemLongPress == null
                           ? null
-                          : () => onItemLongPress!(i),
+                          : () => widget.onItemLongPress!(i),
                     ),
                   ),
               ],
@@ -66,7 +123,7 @@ class AppBottomNavBar extends StatelessWidget {
       ),
     );
 
-    if (!wrapPadding) return bar;
+    if (!widget.wrapPadding) return bar;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -83,7 +140,7 @@ class AppBottomNavBar extends StatelessWidget {
   }
 }
 
-class _NavSlot extends StatelessWidget {
+class _NavSlot extends StatefulWidget {
   const _NavSlot({
     required this.item,
     required this.selected,
@@ -97,50 +154,52 @@ class _NavSlot extends StatelessWidget {
   final VoidCallback? onLongPress;
 
   @override
+  State<_NavSlot> createState() => _NavSlotState();
+}
+
+class _NavSlotState extends State<_NavSlot> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final unselectedColor =
-        isDark ? AppColors.glassNavIconDark : AppColors.glassNavIconLight;
-    final selectedColor = isDark
-        ? AppColors.glassNavIconSelectedDark
-        : AppColors.glassNavIconSelectedLight;
+    final unselectedColor = isDark
+        ? Colors.white.withValues(alpha: 0.78)
+        : const Color(0xCC1F2430);
+    final selectedColor = Colors.white;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      onLongPress: onLongPress,
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapCancel: () => setState(() => _pressed = false),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTap: widget.onTap,
+      onLongPress: widget.onLongPress,
       child: TweenAnimationBuilder<double>(
-        tween: Tween(end: selected ? 1.0 : 0.0),
-        duration: AppMotion.normal,
-        curve: AppMotion.standard,
+        tween: Tween<double>(end: widget.selected ? 1 : 0),
+        duration: AppMotion.fast,
+        curve: AppMotion.smooth,
         builder: (context, t, _) {
           final color = Color.lerp(unselectedColor, selectedColor, t)!;
+          final pressScale = _pressed ? 0.92 : 1.0;
+          final pressOffset = _pressed ? 1.4 : 0.0;
 
-          return SizedBox(
-            height: AppDimensions.bottomNavFloatingHeight,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  selected ? item.selectedIcon : item.icon,
-                  size: 22,
-                  color: color,
-                ),
-                if (!item.hideLabel) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    item.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.caption.copyWith(
-                      fontSize: 10,
-                      fontWeight:
-                          selected ? FontWeight.w600 : FontWeight.w400,
-                      color: color,
-                    ),
+          return AnimatedScale(
+            duration: AppMotion.fast,
+            curve: AppMotion.standard,
+            scale: pressScale,
+            child: Transform.translate(
+              offset: Offset(0, pressOffset),
+              child: SizedBox(
+                height: AppDimensions.bottomNavFloatingHeight,
+                child: Center(
+                  child: Icon(
+                    widget.selected ? widget.item.selectedIcon : widget.item.icon,
+                    size: 22,
+                    color: color,
                   ),
-                ],
-              ],
+                ),
+              ),
             ),
           );
         },

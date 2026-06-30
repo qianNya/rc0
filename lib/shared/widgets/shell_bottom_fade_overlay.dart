@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 
 import '../../app/theme/app_dimensions.dart';
@@ -24,25 +26,33 @@ class ShellBottomFadeOverlay extends StatelessWidget {
     final height = heightOf(context);
     if (height <= 0) return const SizedBox.shrink();
 
-    final background = Theme.of(context).scaffoldBackgroundColor;
-
     return Positioned(
       left: 0,
       right: 0,
       bottom: 0,
       height: height,
       child: IgnorePointer(
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              stops: const [0, 0.72, 1],
-              colors: [
-                background.withValues(alpha: 0),
-                background.withValues(alpha: 0.18),
-                background.withValues(alpha: 0.55),
-              ],
+        child: ClipRect(
+          child: ShaderMask(
+            blendMode: BlendMode.dstIn,
+            shaderCallback: (bounds) {
+              return const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                stops: [0, 0.55, 1],
+                colors: [
+                  Color(0x00000000),
+                  Color(0x99000000),
+                  Color(0xFF000000),
+                ],
+              ).createShader(bounds);
+            },
+            child: BackdropFilter(
+              filter: ImageFilter.blur(
+                sigmaX: AppDimensions.glassNavBlurSigma,
+                sigmaY: AppDimensions.glassNavBlurSigma,
+              ),
+              child: const SizedBox.expand(),
             ),
           ),
         ),

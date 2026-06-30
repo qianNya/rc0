@@ -12,6 +12,7 @@ import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
 import '../../../../shared/widgets/feed_tab_bar.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 import '../../../../shared/widgets/image_preview.dart';
 import '../../../../shared/widgets/rc0_image.dart';
 import '../../../profile/data/screenplay_favorite_repository.dart';
@@ -265,21 +266,28 @@ class _FavoriteImageTile extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       onLongPress: () async {
-        final confirmed = await showDialog<bool>(
-          context: context,
-          builder: (ctx) => AlertDialog(
+        final confirmed = await showGlassDialog<bool>(
+          context,
+          child: GlassDialog(
             title: const Text('取消收藏'),
-            content: const Text('确定从收藏中移除这张画格吗？'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('取消'),
+            onClose: () => Navigator.pop(context, false),
+            child: const Text('确定从收藏中移除这张画格吗？'),
+            footer: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('取消'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('移除'),
+                  ),
+                ],
               ),
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('移除'),
-              ),
-            ],
+            ),
           ),
         );
         if (confirmed == true) onRemove();

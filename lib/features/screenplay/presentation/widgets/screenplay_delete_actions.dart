@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../app/router/navigation_utils.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../data/screenplay_delete_options.dart';
@@ -29,12 +30,13 @@ Future<ScreenplayDeleteConfirmation> _confirmSingle(
   final isFork = script.isForkCopy;
   var deleteRemote = false;
 
-  final result = await showDialog<bool>(
-    context: context,
-    builder: (context) => StatefulBuilder(
-      builder: (context, setState) => AlertDialog(
+  final result = await showGlassDialog<bool>(
+    context,
+    child: StatefulBuilder(
+      builder: (context, setState) => GlassDialog(
         title: const Text('删除剧本'),
-        content: Column(
+        onClose: () => Navigator.pop(context, false),
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -55,16 +57,22 @@ Future<ScreenplayDeleteConfirmation> _confirmSingle(
             ],
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
+        footer: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('取消'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('删除', style: TextStyle(color: AppColors.error)),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('删除', style: TextStyle(color: AppColors.error)),
-          ),
-        ],
+        ),
       ),
     ),
   );
@@ -85,14 +93,15 @@ Future<ScreenplayDeleteConfirmation> _confirmBatch(
   final canDeleteRemote = anyScreenplayCanDeleteRemote(scripts);
   var deleteRemote = false;
 
-  final result = await showDialog<bool>(
-    context: context,
-    builder: (context) => StatefulBuilder(
-      builder: (context, setState) => AlertDialog(
+  final result = await showGlassDialog<bool>(
+    context,
+    child: StatefulBuilder(
+      builder: (context, setState) => GlassDialog(
         title: const Text('删除剧本'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
+        onClose: () => Navigator.pop(context, false),
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text('确定删除选中的 ${scripts.length} 个剧本？本地文件将一并清除。'),
             if (canDeleteRemote) ...[
@@ -108,16 +117,22 @@ Future<ScreenplayDeleteConfirmation> _confirmBatch(
             ],
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
+        footer: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('取消'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('删除', style: TextStyle(color: AppColors.error)),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('删除', style: TextStyle(color: AppColors.error)),
-          ),
-        ],
+        ),
       ),
     ),
   );
@@ -144,21 +159,28 @@ Future<bool> confirmDeleteNode(
   required String title,
   required String message,
 }) async {
-  final result = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
+  final result = await showGlassDialog<bool>(
+    context,
+    child: GlassDialog(
       title: Text(title),
-      content: Text(message),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: const Text('取消'),
+      onClose: () => Navigator.pop(context, false),
+      child: Text(message),
+      footer: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('取消'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('删除', style: TextStyle(color: AppColors.error)),
+            ),
+          ],
         ),
-        TextButton(
-          onPressed: () => Navigator.pop(context, true),
-          child: const Text('删除', style: TextStyle(color: AppColors.error)),
-        ),
-      ],
+      ),
     ),
   );
   return result ?? false;

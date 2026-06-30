@@ -16,6 +16,7 @@ class ScreenplayLocalMeta {
     this.imagesLocalized = false,
     this.browseCache = false,
     this.createdAt,
+    this.updatedAt,
     this.remoteScreenplayId,
     this.visibility,
     this.treeJsonObjectKey,
@@ -32,6 +33,7 @@ class ScreenplayLocalMeta {
   final bool imagesLocalized;
   final bool browseCache;
   final DateTime? createdAt;
+  final DateTime? updatedAt;
   final int? remoteScreenplayId;
   final int? visibility;
   final String? treeJsonObjectKey;
@@ -48,6 +50,7 @@ class ScreenplayLocalMeta {
         'images_localized': imagesLocalized,
         'browse_cache': browseCache,
         'created_at': createdAt?.toIso8601String(),
+        'updated_at': updatedAt?.toIso8601String(),
         'remote_screenplay_id': remoteScreenplayId,
         'visibility': visibility,
         'tree_json_object_key': treeJsonObjectKey,
@@ -71,6 +74,9 @@ class ScreenplayLocalMeta {
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'] as String)
           : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.tryParse(json['updated_at'] as String)
+          : null,
       remoteScreenplayId: (json['remote_screenplay_id'] as num?)?.toInt(),
       visibility: (json['visibility'] as num?)?.toInt(),
       treeJsonObjectKey: json['tree_json_object_key'] as String?,
@@ -91,6 +97,7 @@ class ScreenplayLocalMeta {
     bool? imagesLocalized,
     bool? browseCache,
     DateTime? createdAt,
+    DateTime? updatedAt,
     int? remoteScreenplayId,
     int? visibility,
     String? treeJsonObjectKey,
@@ -107,6 +114,7 @@ class ScreenplayLocalMeta {
       imagesLocalized: imagesLocalized ?? this.imagesLocalized,
       browseCache: browseCache ?? this.browseCache,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       remoteScreenplayId: remoteScreenplayId ?? this.remoteScreenplayId,
       visibility: visibility ?? this.visibility,
       treeJsonObjectKey: treeJsonObjectKey ?? this.treeJsonObjectKey,
@@ -162,6 +170,7 @@ class ScreenplayTreeDocument {
             screenplay.forkedFromLocalId ?? baseMeta?.forkedFromLocalId,
         imagesLocalized: screenplay.imagesLocalized,
         createdAt: screenplay.createdAt ?? baseMeta?.createdAt,
+        updatedAt: screenplay.updatedAt ?? baseMeta?.updatedAt,
         remoteScreenplayId:
             screenplay.remoteScreenplayId ?? baseMeta?.remoteScreenplayId,
         visibility: screenplay.visibility ?? baseMeta?.visibility,

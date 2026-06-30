@@ -3,7 +3,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../shared/widgets/bottom_bar_glass_chrome.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 import '../../../screenplay/data/screenplay_bundle_service.dart';
 import '../../../screenplay/data/screenplay_draft.dart';
 import '../../../screenplay/data/screenplay_local_repository.dart';
@@ -38,106 +41,109 @@ class ScriptEditorBottomToolbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        border: Border(top: BorderSide(color: AppColors.border)),
-      ),
+    return BottomBarGlassChrome(
+      height: AppDimensions.bottomNavFloatingHeight + 8,
       child: SafeArea(
         top: false,
-        child: Row(
-          children: [
-            Checkbox(
-              value: _allSelected,
-              tristate: true,
-              onChanged: allRefs.isEmpty
-                  ? null
-                  : (v) {
-                      if (v == true) {
-                        onCheckedRefsChanged(
-                          allRefs.map(refKeyForFrame).toSet(),
-                        );
-                      } else {
-                        onCheckedRefsChanged({});
-                      }
-                    },
-            ),
-            Text(
-              '全选 (${checkedRefs.length}/${allRefs.length})',
-              style: AppTextStyles.bodySecondary.copyWith(fontSize: 12),
-            ),
-            const SizedBox(width: 12),
-            TextButton(
-              onPressed: checkedRefs.isEmpty
-                  ? null
-                  : () => ScriptEditorBatchEditSheet.show(
-                        context,
-                        draft: controller.draft,
-                        scope: BatchEditScope.entireScript,
-                        frameRefs: _checkedFrameRefs,
-                        onApply: controller.onChanged,
-                      ),
-              child: const Text('批量参数'),
-            ),
-            TextButton(
-              onPressed: checkedRefs.isEmpty
-                  ? null
-                  : () => ScriptEditorBatchEditSheet.show(
-                        context,
-                        draft: controller.draft,
-                        scope: BatchEditScope.entireScript,
-                        frameRefs: _checkedFrameRefs,
-                        tagsOnly: true,
-                        onApply: controller.onChanged,
-                      ),
-              child: const Text('批量标签'),
-            ),
-            TextButton(
-              onPressed: checkedRefs.isEmpty
-                  ? null
-                  : () => _batchDelete(context),
-              child: const Text(
-                '批量删除',
-                style: TextStyle(color: AppColors.error),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              Checkbox(
+                value: _allSelected,
+                tristate: true,
+                onChanged: allRefs.isEmpty
+                    ? null
+                    : (v) {
+                        if (v == true) {
+                          onCheckedRefsChanged(
+                            allRefs.map(refKeyForFrame).toSet(),
+                          );
+                        } else {
+                          onCheckedRefsChanged({});
+                        }
+                      },
               ),
-            ),
-            const Spacer(),
-            TextButton(
-              onPressed: () => _importBundle(context),
-              child: const Text('导入剧本'),
-            ),
-            TextButton(
-              onPressed: () => _exportBundle(context),
-              child: const Text('导出剧本'),
-            ),
-            TextButton(
-              onPressed: () =>
-                  context.push(AppRoutes.comingSoon('版本历史')),
-              child: const Text('版本历史'),
-            ),
-          ],
+              Text(
+                '全选 (${checkedRefs.length}/${allRefs.length})',
+                style: AppTextStyles.bodySecondary.copyWith(fontSize: 12),
+              ),
+              const SizedBox(width: 12),
+              TextButton(
+                onPressed: checkedRefs.isEmpty
+                    ? null
+                    : () => ScriptEditorBatchEditSheet.show(
+                          context,
+                          draft: controller.draft,
+                          scope: BatchEditScope.entireScript,
+                          frameRefs: _checkedFrameRefs,
+                          onApply: controller.onChanged,
+                        ),
+                child: const Text('批量参数'),
+              ),
+              TextButton(
+                onPressed: checkedRefs.isEmpty
+                    ? null
+                    : () => ScriptEditorBatchEditSheet.show(
+                          context,
+                          draft: controller.draft,
+                          scope: BatchEditScope.entireScript,
+                          frameRefs: _checkedFrameRefs,
+                          tagsOnly: true,
+                          onApply: controller.onChanged,
+                        ),
+                child: const Text('批量标签'),
+              ),
+              TextButton(
+                onPressed: checkedRefs.isEmpty ? null : () => _batchDelete(context),
+                child: const Text(
+                  '批量删除',
+                  style: TextStyle(color: AppColors.error),
+                ),
+              ),
+              const Spacer(),
+              TextButton(
+                onPressed: () => _importBundle(context),
+                child: const Text('导入剧本'),
+              ),
+              TextButton(
+                onPressed: () => _exportBundle(context),
+                child: const Text('导出剧本'),
+              ),
+              TextButton(
+                onPressed: () => context.push(AppRoutes.comingSoon('版本历史')),
+                child: const Text('版本历史'),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Future<void> _batchDelete(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
+    final confirmed = await showGlassDialog<bool>(
+      context,
+      child: GlassDialog(
         title: const Text('批量删除'),
-        content: Text('确定删除选中的 ${checkedRefs.length} 个分镜吗？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
+        onClose: () => Navigator.pop(context, false),
+        footer: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('取消'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('删除', style: TextStyle(color: AppColors.error)),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('删除', style: TextStyle(color: AppColors.error)),
-          ),
-        ],
+        ),
+        child: Text('确定删除选中的 ${checkedRefs.length} 个分镜吗？'),
       ),
     );
     if (confirmed == true) {

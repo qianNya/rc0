@@ -1,0 +1,31 @@
+---
+description: 响应式、动效连续性与 Liquid Glass 性能约束
+globs: lib/**/*.dart
+alwaysApply: false
+---
+
+# 响应式
+
+断点以 `Breakpoints` 为准，不写 magic width：
+
+- compact 600
+- medium 840（侧栏壳切换）
+- expanded 1024（桌面）
+
+# 动效连续性
+
+- Tab/导航/面板切换必须动画化，不允许瞬时跳变。
+- 结构增删（如编辑器大纲）需 `AnimatedSize` / `AnimatedSwitcher` 过渡。
+- 默认时长优先 `AppMotion.fast|normal`，避免超过 400ms。
+
+# 性能
+
+- 避免堆叠 blur 层；Glass 层尽量复用共享组件。
+- 避免深层嵌套滚动；大列表分页/懒加载。
+- 状态变化局部化，减少整页 rebuild。
+
+# 深度层级
+
+保持 Depth 关系：内容(0) < 导航(1) < dialog(2) < sheet(3) < critical(4)。
+
+不得让工具层在视觉上压制内容层。

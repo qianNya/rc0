@@ -194,6 +194,7 @@ abstract final class ScreenplayApiMapper {
       forkedFromLocalId: doc.meta.forkedFromLocalId,
       imagesLocalized: doc.meta.imagesLocalized,
       createdAt: doc.meta.createdAt,
+      updatedAt: doc.meta.updatedAt,
       remoteScreenplayId: doc.meta.remoteScreenplayId,
       visibility: doc.meta.visibility,
       treeJsonObjectKey: doc.meta.treeJsonObjectKey,
@@ -339,8 +340,7 @@ abstract final class ScreenplayApiMapper {
       if (frame.localThumbnailPath != null &&
           frame.localThumbnailPath!.isNotEmpty) {
         json['local_thumbnail_path'] = frame.localThumbnailPath;
-      } else if (localImagePath != null &&
-          !ScreenplayImageResolver.isNetworkUrl(localImagePath)) {
+      } else if (!ScreenplayImageResolver.isNetworkUrl(localImagePath)) {
         json['local_thumbnail_path'] = localImagePath;
       }
     }
@@ -841,6 +841,7 @@ abstract final class ScreenplayApiMapper {
       meta: meta.copyWith(
         remoteScreenplayId: sp.id.toInt(),
         visibility: sp.visibility.toInt(),
+        updatedAt: DateTime.now(),
         publishedAt: publishedAt ?? DateTime.now(),
       ),
     );
@@ -868,6 +869,7 @@ abstract final class ScreenplayApiMapper {
       meta: meta.copyWith(
         remoteScreenplayId: (sp['id'] as num?)?.toInt(),
         visibility: (sp['visibility'] as num?)?.toInt() ?? meta.visibility,
+        updatedAt: DateTime.now(),
         publishedAt: publishedAt ?? DateTime.now(),
       ),
     );

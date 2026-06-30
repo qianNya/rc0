@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../../app/router/routes.dart';
 import '../../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
-import '../../../../../shared/widgets/rc0_app_bar.dart';
 import '../../../../screenplay/data/screenplay_draft.dart';
 import 'script_editor_actions.dart';
 import 'script_editor_shot_list_tab.dart';
@@ -80,8 +79,9 @@ Future<void> openShotList(
 }) {
   return Navigator.of(context, rootNavigator: true).push<void>(
     MaterialPageRoute(
-      builder: (_) => Scaffold(
-        appBar: Rc0AppBar(title: const Text('分镜列表')),
+      builder: (ctx) => DesktopStackScaffold(
+        title: const Text('分镜列表'),
+        onBack: () => Navigator.of(ctx).pop(),
         body: ScriptEditorShotListTab(
           draft: draft,
           actions: actions,

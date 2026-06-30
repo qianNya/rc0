@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../app/theme/app_dimensions.dart';
 import '../../app/theme/system_ui_style.dart';
+import 'glass_title_chip.dart';
 import 'glass_app_bar_background.dart';
 
 /// iOS-style glass navigation bar wrapping [AppBar].
@@ -22,6 +24,7 @@ class Rc0AppBar extends StatelessWidget implements PreferredSizeWidget {
     this.actionsIconTheme,
     this.frosted = true,
     this.systemOverlayStyle,
+    this.glassTitleMode = GlassTitleMode.auto,
   });
 
   final Widget? title;
@@ -38,10 +41,11 @@ class Rc0AppBar extends StatelessWidget implements PreferredSizeWidget {
   final IconThemeData? actionsIconTheme;
   final bool frosted;
   final SystemUiOverlayStyle? systemOverlayStyle;
+  final GlassTitleMode glassTitleMode;
 
   @override
   Size get preferredSize {
-    final toolbar = toolbarHeight ?? kToolbarHeight;
+    final toolbar = toolbarHeight ?? AppDimensions.bottomNavFloatingHeight;
     final bottomHeight = bottom?.preferredSize.height ?? 0;
     return Size.fromHeight(toolbar + bottomHeight);
   }
@@ -51,14 +55,14 @@ class Rc0AppBar extends StatelessWidget implements PreferredSizeWidget {
     final brightness = Theme.of(context).brightness;
 
     return AppBar(
-      title: title,
+      title: GlassTitleChip.maybeWrap(title, mode: glassTitleMode),
       leading: leading,
       actions: actions,
       bottom: bottom,
       centerTitle: centerTitle,
       automaticallyImplyLeading: automaticallyImplyLeading,
       leadingWidth: leadingWidth,
-      toolbarHeight: toolbarHeight,
+      toolbarHeight: toolbarHeight ?? AppDimensions.bottomNavFloatingHeight,
       foregroundColor: foregroundColor,
       titleTextStyle: titleTextStyle,
       iconTheme: iconTheme,

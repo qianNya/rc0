@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
+import '../../../../app/theme/app_motion.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_scaffold.dart';
 import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
 import '../../../../shared/widgets/feed_tab_bar.dart';
-import '../../../../shared/widgets/glass/glass_sheet.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 import '../../../../shared/widgets/pose_cover_image.dart';
 import '../../../screenplay/data/screenplay_draft.dart';
 import '../../../upload/presentation/widgets/script_editor/script_editor_actions.dart';
@@ -49,6 +50,19 @@ class _ScriptEditorLeftPanelState extends State<ScriptEditorLeftPanel> {
   bool get _allActsExpanded =>
       widget.draft.acts.isNotEmpty &&
       _expandedActs.length == widget.draft.acts.length;
+
+  String get _outlineVersion {
+    final draft = widget.draft;
+    var sceneCount = 0;
+    var frameCount = 0;
+    for (final act in draft.acts) {
+      sceneCount += act.scenes.length;
+      for (final scene in act.scenes) {
+        frameCount += scene.frames.length;
+      }
+    }
+    return '${draft.acts.length}-$sceneCount-$frameCount-${_expandedActs.length}-${_expandedScenes.length}';
+  }
 
   void _toggleExpandAll() {
     setState(() {
@@ -94,24 +108,31 @@ class _ScriptEditorLeftPanelState extends State<ScriptEditorLeftPanel> {
     int sceneIndex,
     int frameIndex,
   ) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
+    final confirmed = await showGlassDialog<bool>(
+      context,
+      child: GlassDialog(
         title: const Text('删除分镜'),
-        content: const Text('确定删除此分镜吗？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
+        onClose: () => Navigator.pop(context, false),
+        child: const Text('确定删除此分镜吗？'),
+        footer: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('取消'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text(
+                  '删除',
+                  style: TextStyle(color: AppColors.error),
+                ),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text(
-              '删除',
-              style: TextStyle(color: AppColors.error),
-            ),
-          ),
-        ],
+        ),
       ),
     );
     if (confirmed == true) {
@@ -122,24 +143,31 @@ class _ScriptEditorLeftPanelState extends State<ScriptEditorLeftPanel> {
 
   Future<void> _confirmDeleteScene(int actIndex, int sceneIndex) async {
     if (!widget.actions.canRemoveScene(actIndex, sceneIndex)) return;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
+    final confirmed = await showGlassDialog<bool>(
+      context,
+      child: GlassDialog(
         title: const Text('删除场次'),
-        content: const Text('确定删除此场次及其所有分镜吗？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
+        onClose: () => Navigator.pop(context, false),
+        child: const Text('确定删除此场次及其所有分镜吗？'),
+        footer: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('取消'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text(
+                  '删除',
+                  style: TextStyle(color: AppColors.error),
+                ),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text(
-              '删除',
-              style: TextStyle(color: AppColors.error),
-            ),
-          ),
-        ],
+        ),
       ),
     );
     if (confirmed == true) {
@@ -151,25 +179,32 @@ class _ScriptEditorLeftPanelState extends State<ScriptEditorLeftPanel> {
   Future<void> _renameScene(int actIndex, int sceneIndex) async {
     final scene = widget.draft.acts[actIndex].scenes[sceneIndex];
     final controller = TextEditingController(text: scene.title);
-    final result = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
+    final result = await showGlassDialog<String>(
+      context,
+      child: GlassDialog(
         title: const Text('重命名场次'),
-        content: TextField(
+        onClose: () => Navigator.pop(context),
+        child: TextField(
           controller: controller,
           decoration: const InputDecoration(labelText: '场次名称'),
           autofocus: true,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
+        footer: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('取消'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, controller.text),
+                child: const Text('确定'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, controller.text),
-            child: const Text('确定'),
-          ),
-        ],
+        ),
       ),
     );
     if (result != null) {
@@ -189,21 +224,57 @@ class _ScriptEditorLeftPanelState extends State<ScriptEditorLeftPanel> {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-          child: FeedTabBar(
-            tabs: _tabs,
-            selectedIndex: _tabIndex,
-            onChanged: (i) => setState(() => _tabIndex = i),
-            underlineStyle: true,
-            embedded: true,
+          child: AnimatedSwitcher(
+            duration: AppMotion.normal,
+            switchInCurve: AppMotion.standard,
+            switchOutCurve: AppMotion.smooth,
+            transitionBuilder: (child, animation) {
+              final slide = Tween<Offset>(
+                begin: const Offset(0, -0.05),
+                end: Offset.zero,
+              ).animate(animation);
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(position: slide, child: child),
+              );
+            },
+            child: KeyedSubtree(
+              key: ValueKey('left-panel-tab-$_tabIndex'),
+              child: FeedTabBar(
+                tabs: _tabs,
+                selectedIndex: _tabIndex,
+                onChanged: (i) => setState(() => _tabIndex = i),
+                underlineStyle: true,
+                embedded: true,
+              ),
+            ),
           ),
         ),
         Expanded(
-          child: FadeSlideIndexedStack(
-            index: _tabIndex,
-            children: [
-              _buildOutline(),
-              widget.structureEditor,
-            ],
+          child: AnimatedSwitcher(
+            duration: AppMotion.normal,
+            switchInCurve: AppMotion.standard,
+            switchOutCurve: AppMotion.smooth,
+            transitionBuilder: (child, animation) {
+              final slide = Tween<Offset>(
+                begin: const Offset(0.015, 0),
+                end: Offset.zero,
+              ).animate(animation);
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(position: slide, child: child),
+              );
+            },
+            child: KeyedSubtree(
+              key: ValueKey('left-panel-content-$_tabIndex-$_outlineVersion'),
+              child: FadeSlideIndexedStack(
+                index: _tabIndex,
+                children: [
+                  _buildOutline(),
+                  widget.structureEditor,
+                ],
+              ),
+            ),
           ),
         ),
         Padding(

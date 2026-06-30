@@ -5,6 +5,8 @@ import '../../features/action/presentation/pages/action_wiki_page.dart';
 import '../../features/auth/data/auth_repository.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
+import '../../features/gallery/presentation/pages/image_analysis_page.dart';
+import '../../features/gallery/presentation/pages/image_detail_page.dart';
 import '../../features/gallery/presentation/pages/my_gallery_page.dart';
 import '../../features/community/presentation/pages/community_page.dart';
 import '../../features/character/presentation/pages/character_ai_page.dart';
@@ -22,13 +24,20 @@ import '../../features/scene/presentation/pages/scene_list_page.dart';
 import '../../features/ip/presentation/pages/ip_detail_page.dart';
 import '../../features/ip/presentation/pages/ip_edit_page.dart';
 import '../../features/favorites/presentation/pages/favorites_page.dart';
+import '../../features/messages/presentation/pages/messages_page.dart';
 import '../../features/profile/presentation/pages/edit_profile_page.dart';
 import '../../features/profile/presentation/pages/profile_about_page.dart';
 import '../../features/profile/presentation/pages/profile_coming_soon_page.dart';
 import '../../features/profile/presentation/pages/profile_likes_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/profile/presentation/pages/profile_works_page.dart';
+import '../../features/screenplay/presentation/pages/preset_detail_page.dart';
 import '../../features/screenplay/presentation/pages/screenplay_detail_page.dart';
+import '../../features/screenplay/presentation/pages/script_export_page.dart';
+import '../../features/screenplay/presentation/pages/script_scene_detail_page.dart';
+import '../../features/screenplay/presentation/pages/script_shot_detail_page.dart';
+import '../../features/search/presentation/pages/search_page.dart';
+import '../../features/settings/presentation/pages/settings_page.dart';
 import '../../features/shell/presentation/pages/adaptive_shell_page.dart';
 import '../../features/shell/presentation/pages/wiki_hub_page.dart';
 import '../../features/studio/presentation/pages/script_studio_create_page.dart';
@@ -73,15 +82,6 @@ abstract final class AppRouter {
     }
 
     return null;
-  }
-
-  static GoRoute _comingSoonRoute(String path, String title, {String? name}) {
-    return GoRoute(
-      path: path,
-      name: name,
-      parentNavigatorKey: rootNavigatorKey,
-      builder: (context, state) => ProfileComingSoonPage(title: title),
-    );
   }
 
   static Map<String, dynamic>? _asMapExtra(GoRouterState state) {
@@ -165,22 +165,35 @@ abstract final class AppRouter {
         path: AppRoutes.scriptExport,
         name: 'script-export',
         parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) =>
-            const ProfileComingSoonPage(title: '导出分镜'),
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return ScriptExportPage(scriptId: id);
+        },
       ),
       GoRoute(
         path: AppRoutes.scriptShotDetail,
         name: 'script-shot-detail',
         parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) =>
-            const ProfileComingSoonPage(title: '分镜详情'),
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          final sid = state.pathParameters['sid']!;
+          final kid = state.pathParameters['kid']!;
+          return ScriptShotDetailPage(
+            scriptId: id,
+            sceneId: sid,
+            shotId: kid,
+          );
+        },
       ),
       GoRoute(
         path: AppRoutes.scriptSceneDetail,
         name: 'script-scene-detail',
         parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) =>
-            const ProfileComingSoonPage(title: '场景详情'),
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          final sid = state.pathParameters['sid']!;
+          return ScriptSceneDetailPage(scriptId: id, sceneId: sid);
+        },
       ),
       GoRoute(
         path: AppRoutes.scriptDetail,
@@ -195,15 +208,19 @@ abstract final class AppRouter {
         path: AppRoutes.imageAnalysis,
         name: 'image-analysis',
         parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) =>
-            const ProfileComingSoonPage(title: 'AI 视觉分析'),
+        builder: (context, state) {
+          final id = int.parse(state.pathParameters['id']!);
+          return ImageAnalysisPage(imageId: id);
+        },
       ),
       GoRoute(
         path: AppRoutes.imageDetail,
         name: 'image-detail',
         parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) =>
-            const ProfileComingSoonPage(title: '图片详情'),
+        builder: (context, state) {
+          final id = int.parse(state.pathParameters['id']!);
+          return ImageDetailPage(imageId: id);
+        },
       ),
       GoRoute(
         path: AppRoutes.ipCreate,
@@ -406,11 +423,23 @@ abstract final class AppRouter {
         path: AppRoutes.presetDetail,
         name: 'preset-detail',
         parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) =>
-            const ProfileComingSoonPage(title: '预设详情'),
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return PresetDetailPage(presetId: id);
+        },
       ),
-      _comingSoonRoute(AppRoutes.search, '全局搜索', name: 'search'),
-      _comingSoonRoute(AppRoutes.settings, '设置', name: 'settings'),
+      GoRoute(
+        path: AppRoutes.search,
+        name: 'search',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const SearchPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.settings,
+        name: 'settings',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const SettingsPage(),
+      ),
       GoRoute(
         path: AppRoutes.userProfile,
         name: 'user-profile',
@@ -463,8 +492,7 @@ abstract final class AppRouter {
         path: AppRoutes.messages,
         name: 'messages',
         parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) =>
-            const ProfileComingSoonPage(title: '消息'),
+        builder: (context, state) => const MessagesPage(),
       ),
       GoRoute(
         path: AppRoutes.favorites,

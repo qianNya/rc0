@@ -61,7 +61,7 @@ class ProfileHeaderCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final gradientColors = isDark
         ? [
-            const Color(0xFF1A1528),
+            AppColors.characterBackgroundDark,
             AppColors.profileGradientEnd.withValues(alpha: 0.92),
           ]
         : [

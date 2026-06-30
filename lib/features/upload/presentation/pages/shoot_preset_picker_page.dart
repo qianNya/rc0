@@ -10,6 +10,7 @@ import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/data/preset_catalog.dart';
 import '../../../../core/utils/state_listeners.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 import '../../../../shared/widgets/glass/glass_sheet.dart';
 import '../../../screenplay/data/shoot_preset_repository.dart';
 import '../../../screenplay/domain/shoot_preset.dart';
@@ -97,21 +98,28 @@ class _ShootPresetPickerPageState extends State<ShootPresetPickerPage> {
   }
 
   Future<void> _deletePreset(ShootPreset preset) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
+    final confirmed = await showGlassDialog<bool>(
+      context,
+      child: GlassDialog(
         title: const Text('删除预设'),
-        content: Text('确定删除「${preset.label}」？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('取消'),
+        onClose: () => Navigator.pop(context, false),
+        child: Text('确定删除「${preset.label}」？'),
+        footer: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('取消'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('删除'),
+              ),
+            ],
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('删除'),
-          ),
-        ],
+        ),
       ),
     );
     if (confirmed != true || !mounted) return;

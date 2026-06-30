@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 import '../../../../shared/widgets/glass/glass_sheet.dart';
 import '../../data/scene_repository.dart';
 import '../../domain/scene_entry.dart';
@@ -50,21 +51,28 @@ Future<void> showSceneActionSheet({
             ),
             onTap: () async {
               Navigator.pop(context);
-              final confirmed = await showDialog<bool>(
-                context: context,
-                builder: (dialogContext) => AlertDialog(
+              final confirmed = await showGlassDialog<bool>(
+                context,
+                child: GlassDialog(
                   title: const Text('删除场景'),
-                  content: Text('确定删除「${entry.title}」？'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(dialogContext, false),
-                      child: const Text('取消'),
+                  onClose: () => Navigator.pop(context, false),
+                  child: Text('确定删除「${entry.title}」？'),
+                  footer: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('取消'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text('删除'),
+                        ),
+                      ],
                     ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(dialogContext, true),
-                      child: const Text('删除'),
-                    ),
-                  ],
+                  ),
                 ),
               );
               if (confirmed != true || !context.mounted) return;

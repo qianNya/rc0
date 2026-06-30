@@ -44,9 +44,10 @@ class StudioGlassIconButton extends StatelessWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color: ScriptStudioColors.accentGlow.withValues(alpha: 0.12),
-                blurRadius: 12,
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 14,
                 spreadRadius: -2,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
@@ -56,7 +57,7 @@ class StudioGlassIconButton extends StatelessWidget {
             child: Icon(
               icon,
               size: iconSize,
-              color: ScriptStudioColors.textPrimary,
+              color: ScriptStudioColors.iconForeground,
             ),
           ),
         ),
@@ -76,7 +77,7 @@ class StudioGlassIconButton extends StatelessWidget {
   }
 }
 
-/// Liquid glass card with nebula glow border for Script Studio.
+/// Liquid glass card for the light Script Studio surface.
 class StudioGlassCard extends StatelessWidget {
   const StudioGlassCard({
     super.key,
@@ -114,8 +115,8 @@ class StudioGlassCard extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           borderRadius: radius,
-          splashColor: Colors.white.withValues(alpha: 0.08),
-          highlightColor: Colors.white.withValues(alpha: 0.04),
+          splashColor: AppColors.accent.withValues(alpha: 0.08),
+          highlightColor: Colors.black.withValues(alpha: 0.02),
           child: content,
         ),
       );
@@ -128,15 +129,15 @@ class StudioGlassCard extends StatelessWidget {
         borderRadius: radius,
         boxShadow: [
           BoxShadow(
-            color: glow.withValues(alpha: 0.22),
-            blurRadius: 28,
-            spreadRadius: -6,
+            color: glow.withValues(alpha: 0.08),
+            blurRadius: 20,
+            spreadRadius: -10,
             offset: const Offset(0, 8),
           ),
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.35),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -157,23 +158,6 @@ class StudioGlassCard extends StatelessWidget {
                     border: Border.all(
                       color: ScriptStudioColors.glassBorder,
                       width: 0.9,
-                    ),
-                  ),
-                ),
-              ),
-              Positioned.fill(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: radius,
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        ScriptStudioColors.glassHighlight,
-                        Colors.white.withValues(alpha: 0.06),
-                        Colors.transparent,
-                      ],
-                      stops: const [0, 0.28, 0.65],
                     ),
                   ),
                 ),
@@ -223,7 +207,7 @@ class StudioChevronBadge extends StatelessWidget {
             child: Icon(
               Icons.chevron_right,
               size: 18,
-              color: ScriptStudioColors.textSecondary,
+              color: ScriptStudioColors.textTertiary,
             ),
           ),
         ),
@@ -232,15 +216,15 @@ class StudioChevronBadge extends StatelessWidget {
   }
 }
 
-/// Glowing square icon container for primary actions.
+/// Theme-colored square icon container for primary actions.
 class StudioGlowIconBox extends StatelessWidget {
   const StudioGlowIconBox({
     super.key,
     required this.icon,
     this.size = 52,
     this.gradientColors = const [
-      Color(0xFF7C5CFF),
-      Color(0xFF3B82F6),
+      AppColors.accent,
+      AppColors.accentDark,
     ],
     this.glowColor = ScriptStudioColors.accentGlow,
   });
@@ -261,9 +245,10 @@ class StudioGlowIconBox extends StatelessWidget {
         borderRadius: radius,
         boxShadow: [
           BoxShadow(
-            color: glowColor.withValues(alpha: 0.55),
+            color: glowColor.withValues(alpha: 0.18),
             blurRadius: 18,
-            spreadRadius: -2,
+            spreadRadius: -6,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -279,7 +264,7 @@ class StudioGlowIconBox extends StatelessWidget {
                 end: Alignment.bottomRight,
                 colors: [
                   gradientColors.first.withValues(alpha: 0.85),
-                  gradientColors.last.withValues(alpha: 0.65),
+                  gradientColors.last.withValues(alpha: 0.78),
                 ],
               ),
               border: Border.all(
@@ -358,7 +343,7 @@ class StudioGlowPillButton extends StatelessWidget {
   }
 }
 
-/// Circular quick-action with colored outer glow.
+/// Circular quick-action with light glass styling.
 class StudioQuickActionOrb extends StatelessWidget {
   const StudioQuickActionOrb({
     super.key,
@@ -390,9 +375,10 @@ class StudioQuickActionOrb extends StatelessWidget {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: glowColor.withValues(alpha: 0.45),
-                  blurRadius: 20,
-                  spreadRadius: -2,
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 14,
+                  spreadRadius: -6,
+                  offset: const Offset(0, 6),
                 ),
               ],
             ),
@@ -405,19 +391,19 @@ class StudioQuickActionOrb extends StatelessWidget {
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: glowColor.withValues(alpha: 0.14),
+                    color: ScriptStudioColors.glassFill,
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.22),
+                      color: ScriptStudioColors.glassBorder,
                       width: 0.8,
                     ),
                     gradient: RadialGradient(
                       colors: [
-                        glowColor.withValues(alpha: 0.28),
+                        AppColors.accentLight.withValues(alpha: 0.75),
                         ScriptStudioColors.glassFill,
                       ],
                     ),
                   ),
-                  child: Icon(icon, color: glowColor, size: 26),
+                  child: Icon(icon, color: AppColors.accent, size: 26),
                 ),
               ),
             ),

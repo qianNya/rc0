@@ -1,0 +1,32 @@
+// Redirect Google / Maven Central to Aliyun mirrors for all Gradle builds,
+// including Flutter's included :gradle composite build.
+def mirrorMavenUrl = { repo ->
+    if (!(repo instanceof org.gradle.api.artifacts.repositories.MavenArtifactRepository)) {
+        return
+    }
+
+    def url = repo.url.toString()
+    if (url.startsWith('https://dl.google.com/dl/android/maven2')) {
+        repo.url = uri('https://maven.aliyun.com/repository/google')
+        return
+    }
+    if (url.startsWith('https://repo.maven.apache.org/maven2')) {
+        repo.url = uri('https://maven.aliyun.com/repository/central')
+        return
+    }
+    if (url.startsWith('https://plugins.gradle.org/m2')) {
+        repo.url = uri('https://maven.aliyun.com/repository/gradle-plugin')
+    }
+}
+
+gradle.settingsEvaluated { settings ->
+    settings.pluginManagement.repositories.all(mirrorMavenUrl)
+    settings.dependencyResolutionManagement.repositories.all(mirrorMavenUrl)
+}
+
+gradle.projectsLoaded {
+    rootProject.allprojects { project ->
+        project.buildscript.repositories.all(mirrorMavenUrl)
+        project.repositories.all(mirrorMavenUrl)
+    }
+}

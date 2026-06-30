@@ -30,7 +30,20 @@ import '../widgets/explore_quick_actions.dart';
 import 'explore_page_shared.dart';
 
 class ExplorePage extends StatefulWidget {
-  const ExplorePage({super.key});
+  const ExplorePage({
+    super.key,
+    this.embeddedInHub = false,
+    this.showInlineSearchAction = true,
+    this.showInlineFeedTabs = true,
+    this.mobileFeedTabIndex,
+    this.onMobileFeedTabChanged,
+  });
+
+  final bool embeddedInHub;
+  final bool showInlineSearchAction;
+  final bool showInlineFeedTabs;
+  final int? mobileFeedTabIndex;
+  final ValueChanged<int>? onMobileFeedTabChanged;
 
   @override
   State<ExplorePage> createState() => _ExplorePageState();
@@ -44,6 +57,18 @@ class _ExplorePageState extends State<ExplorePage> {
   int _feedTabIndex = 0;
   int _mobileFeedTabIndex = 0;
   String _searchQuery = '';
+
+  int get _effectiveMobileFeedTabIndex =>
+      widget.mobileFeedTabIndex ?? _mobileFeedTabIndex;
+
+  void _handleMobileFeedTabChanged(int index) {
+    final external = widget.onMobileFeedTabChanged;
+    if (external != null) {
+      external(index);
+      return;
+    }
+    setState(() => _mobileFeedTabIndex = index);
+  }
 
   @override
   void initState() {
@@ -133,13 +158,16 @@ class _ExplorePageState extends State<ExplorePage> {
 
     return ResponsiveBuilder(
       mobile: (_) => _ExploreMobileView(
+        embeddedInHub: widget.embeddedInHub,
+        showInlineSearchAction: widget.showInlineSearchAction,
+        showInlineFeedTabs: widget.showInlineFeedTabs,
         feedItems: _mobileFeedItems,
-        feedTabIndex: _mobileFeedTabIndex,
+        feedTabIndex: _effectiveMobileFeedTabIndex,
         remoteLoading: _remoteRepository.loading,
         remoteLoadingMore: _remoteRepository.loadingMore,
         remoteError: _remoteRepository.error,
         remoteHasMore: _remoteRepository.hasMore,
-        onFeedTabChanged: (i) => setState(() => _mobileFeedTabIndex = i),
+        onFeedTabChanged: _handleMobileFeedTabChanged,
         onDelete: _deleteScript,
         onUpload: () => context.go(AppRoutes.studio),
         onRefreshRemote: () => _remoteRepository.loadFirstPage(),
@@ -150,6 +178,7 @@ class _ExplorePageState extends State<ExplorePage> {
         onSelectionChanged: _onDataChanged,
       ),
       desktop: (_) => _ExploreDesktopView(
+        embeddedInHub: widget.embeddedInHub,
         feedItems: _desktopFeedItems,
         feedTabIndex: _feedTabIndex,
         remoteLoading: _feedRepository.loading,
@@ -175,6 +204,9 @@ class _ExplorePageState extends State<ExplorePage> {
 
 class _ExploreMobileView extends StatelessWidget {
   const _ExploreMobileView({
+    this.embeddedInHub = false,
+    this.showInlineSearchAction = true,
+    this.showInlineFeedTabs = true,
     required this.feedItems,
     required this.feedTabIndex,
     required this.remoteLoading,
@@ -208,16 +240,24 @@ class _ExploreMobileView extends StatelessWidget {
   final Future<void> Function() onDeleteSelected;
   final VoidCallback onSelectionChanged;
 
+  final bool embeddedInHub;
+  final bool showInlineSearchAction;
+  final bool showInlineFeedTabs;
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        top: false,
-        bottom: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const StatusBarSpacer(),
+    final showTopControlsBar = showInlineFeedTabs ||
+        showInlineSearchAction ||
+        localIds.isNotEmpty ||
+        selectionController.selectionMode;
+    final body = SafeArea(
+      top: !embeddedInHub,
+      bottom: false,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (!embeddedInHub) const StatusBarSpacer(),
+          if (showTopControlsBar)
             Padding(
               padding: const EdgeInsets.only(top: 4, right: 4),
               child: SizedBox(
@@ -225,19 +265,23 @@ class _ExploreMobileView extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Expanded(
-                      child: FeedTabBar(
-                        tabs: AppCatalog.feedTabs,
-                        selectedIndex: feedTabIndex,
-                        onChanged: onFeedTabChanged,
-                        underlineStyle: true,
-                        embedded: true,
+                    if (showInlineFeedTabs)
+                      Expanded(
+                        child: FeedTabBar(
+                          tabs: AppCatalog.feedTabs,
+                          selectedIndex: feedTabIndex,
+                          onChanged: onFeedTabChanged,
+                          underlineStyle: true,
+                          embedded: true,
+                        ),
+                      )
+                    else
+                      const Spacer(),
+                    if (showInlineSearchAction)
+                      ShellBarIconButton(
+                        icon: Icons.search,
+                        onPressed: () => context.push(AppRoutes.search),
                       ),
-                    ),
-                    ShellBarIconButton(
-                      icon: Icons.search,
-                      onPressed: () => context.push(AppRoutes.search),
-                    ),
                     ScreenplaySelectionAppBarActions(
                       controller: selectionController,
                       localIds: localIds,
@@ -248,86 +292,105 @@ class _ExploreMobileView extends StatelessWidget {
               ),
             ),
             Expanded(
-              child: RefreshIndicator(
-                onRefresh: onRefreshRemote,
-                child: FadeSlideIndexedStack(
-                  index: feedTabIndex,
-                  children: [
-                    for (var i = 0; i < AppCatalog.feedTabs.length; i++)
-                      NotificationListener<ScrollNotification>(
-                        key: ValueKey('explore-mobile-tab-$i'),
-                        onNotification: (notification) {
-                          if (notification is ScrollEndNotification &&
-                              notification.metrics.extentAfter < 240 &&
-                              remoteHasMore &&
-                              !remoteLoadingMore) {
-                            onLoadMore();
-                          }
-                          return false;
-                        },
-                        child: CustomScrollView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          slivers: [
-                            const SliverToBoxAdapter(
-                              child: ExploreFeaturedCarousel(),
-                            ),
-                            const SliverToBoxAdapter(
-                              child: ExploreQuickActions(),
-                            ),
-                            SliverToBoxAdapter(
-                              child: SectionHeader(
-                                title: '灵感推荐',
-                                action: '更多',
-                                showChevron: true,
-                                onActionTap: () =>
-                                    context.go(AppRoutes.community),
-                                titleStyle: AppTextStyles.title.copyWith(
-                                  fontSize: 16,
-                                ),
-                                actionStyle: AppTextStyles.bodySecondary
-                                    .copyWith(fontSize: 13),
-                                padding: const EdgeInsets.fromLTRB(
-                                  16,
-                                  12,
-                                  16,
-                                  8,
+              child: MediaQuery.removePadding(
+                context: context,
+                removeTop: embeddedInHub,
+                child: RefreshIndicator(
+                  onRefresh: onRefreshRemote,
+                  child: FadeSlideIndexedStack(
+                    index: feedTabIndex,
+                    children: [
+                      for (var i = 0; i < AppCatalog.feedTabs.length; i++)
+                        NotificationListener<ScrollNotification>(
+                          key: ValueKey('explore-mobile-tab-$i'),
+                          onNotification: (notification) {
+                            if (notification is ScrollEndNotification &&
+                                notification.metrics.extentAfter < 240 &&
+                                remoteHasMore &&
+                                !remoteLoadingMore) {
+                              onLoadMore();
+                            }
+                            return false;
+                          },
+                          child: CustomScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            slivers: [
+                              const SliverToBoxAdapter(
+                                child: ExploreFeaturedCarousel(),
+                              ),
+                              const SliverToBoxAdapter(
+                                child: ExploreQuickActions(),
+                              ),
+                              SliverToBoxAdapter(
+                                child: SectionHeader(
+                                  title: '灵感推荐',
+                                  action: '更多',
+                                  showChevron: true,
+                                  onActionTap: () =>
+                                      context.go(AppRoutes.community),
+                                  titleStyle: AppTextStyles.title.copyWith(
+                                    fontSize: 16,
+                                  ),
+                                  actionStyle: AppTextStyles.bodySecondary
+                                      .copyWith(fontSize: 13),
+                                  padding: const EdgeInsets.fromLTRB(
+                                    16,
+                                    12,
+                                    16,
+                                    8,
+                                  ),
                                 ),
                               ),
-                            ),
-                            ...buildDiscoverySlivers(
-                              context: context,
-                              feedItems: feedItems,
-                              remoteLoading: remoteLoading,
-                              remoteError: remoteError,
-                              remoteLoadingMore: remoteLoadingMore,
-                              onDelete: onDelete,
-                              onUpload: onUpload,
-                              onRefreshRemote: onRefreshRemote,
-                              selectionController: selectionController,
-                            ),
-                            ListenableBuilder(
-                              listenable: selectionController,
-                              builder: (context, _) {
-                                final selectionExtra =
-                                    selectionController.selectionMode
-                                        ? AppDimensions.primaryButtonHeight +
-                                            AppDimensions.spacingMd * 2
-                                        : 0.0;
-                                return SliverToBoxAdapter(
-                                  child: ShellBottomSpacer(extra: selectionExtra),
-                                );
-                              },
-                            ),
-                          ],
+                              ...buildDiscoverySlivers(
+                                context: context,
+                                feedItems: feedItems,
+                                remoteLoading: remoteLoading,
+                                remoteError: remoteError,
+                                remoteLoadingMore: remoteLoadingMore,
+                                onDelete: onDelete,
+                                onUpload: onUpload,
+                                onRefreshRemote: onRefreshRemote,
+                                selectionController: selectionController,
+                              ),
+                              ListenableBuilder(
+                                listenable: selectionController,
+                                builder: (context, _) {
+                                  final selectionExtra =
+                                      selectionController.selectionMode
+                                          ? AppDimensions.primaryButtonHeight +
+                                              AppDimensions.spacingMd * 2
+                                          : 0.0;
+                                  return SliverToBoxAdapter(
+                                    child: ShellBottomSpacer(extra: selectionExtra),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
           ],
         ),
-      ),
+    );
+
+    if (embeddedInHub) {
+      return Column(
+        children: [
+          Expanded(child: body),
+          ScreenplaySelectionBottomBar(
+            controller: selectionController,
+            onDelete: () => onDeleteSelected(),
+          ),
+        ],
+      );
+    }
+
+    return Scaffold(
+      body: body,
       bottomNavigationBar: ScreenplaySelectionBottomBar(
         controller: selectionController,
         onDelete: () => onDeleteSelected(),
@@ -454,6 +517,7 @@ class _ExploreDesktopFeedPanel extends StatelessWidget {
 
 class _ExploreDesktopView extends StatelessWidget {
   const _ExploreDesktopView({
+    this.embeddedInHub = false,
     required this.feedItems,
     required this.feedTabIndex,
     required this.remoteLoading,
@@ -493,9 +557,30 @@ class _ExploreDesktopView extends StatelessWidget {
   final Future<void> Function() onDeleteSelected;
   final VoidCallback onSelectionChanged;
 
+  final bool embeddedInHub;
+
   @override
   Widget build(BuildContext context) {
     final remoteOnly = feedItems.where((s) => !s.isLocal).toList();
+
+    if (embeddedInHub) {
+      return _ExploreDesktopFeedPanel(
+        key: const ValueKey('discovery-embedded'),
+        feedTabIndex: feedTabIndex,
+        tabIndex: feedTabIndex,
+        remoteOnly: remoteOnly,
+        feedItems: feedItems,
+        remoteLoading: remoteLoading,
+        remoteLoadingMore: remoteLoadingMore,
+        remoteError: remoteError,
+        remoteHasMore: remoteHasMore,
+        onDelete: onDelete,
+        onCreate: onCreate,
+        onRefreshRemote: onRefreshRemote,
+        onLoadMore: onLoadMore,
+        selectionController: selectionController,
+      );
+    }
 
     return Scaffold(
       backgroundColor: Colors.transparent,

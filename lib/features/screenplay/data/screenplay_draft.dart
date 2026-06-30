@@ -432,6 +432,7 @@ Screenplay buildScreenplayFromDraft(
   required Map<UploadImageFile, String> persistedPaths,
   String? scriptId,
   DateTime? createdAt,
+  DateTime? updatedAt,
   String? coverPath,
 }) {
   final resolvedId = scriptId ?? _newId('script');
@@ -513,6 +514,7 @@ Screenplay buildScreenplayFromDraft(
     acts: acts,
     isLocal: true,
     createdAt: createdAt ?? DateTime.now(),
+    updatedAt: updatedAt ?? DateTime.now(),
     localCoverPath: coverPath,
   );
 }

@@ -8,9 +8,8 @@ import '../../../app/theme/system_ui_style.dart';
 import '../../../core/platform/platform_features.dart';
 import '../../../core/responsive/breakpoints.dart';
 import '../../../features/shell/presentation/widgets/desktop_title_bar.dart';
-import '../rc0_app_bar.dart';
-import '../shell_insets.dart';
-import '../status_bar_spacer.dart';
+import '../glass_title_chip.dart';
+import '../rc0_page_scaffold.dart';
 import 'desktop_card.dart';
 import 'desktop_chrome.dart';
 
@@ -31,6 +30,7 @@ class DesktopStackScaffold extends StatelessWidget {
     this.bottomNavigationBar,
     this.overlayAppBar = false,
     this.appBarForegroundColor,
+    this.glassTitleMode = GlassTitleMode.auto,
   });
 
   final Widget title;
@@ -48,6 +48,7 @@ class DesktopStackScaffold extends StatelessWidget {
   /// Immersive hero pages: transparent app bar over body, no top inset.
   final bool overlayAppBar;
   final Color? appBarForegroundColor;
+  final GlassTitleMode glassTitleMode;
 
   bool get _isMacOS => !kIsWeb && Platform.isMacOS;
 
@@ -56,40 +57,18 @@ class DesktopStackScaffold extends StatelessWidget {
     final isDesktop = Breakpoints.isDesktop(context);
 
     if (!isDesktop || !shouldUseDesktopWindowChrome) {
-      return Scaffold(
-        extendBodyBehindAppBar: true,
-        appBar: Rc0AppBar(
-          title: title,
-          leading: leading ??
-              (onBack != null
-                  ? IconButton(
-                      icon: const Icon(Icons.arrow_back),
-                      onPressed: onBack,
-                    )
-                  : null),
-          automaticallyImplyLeading: onBack != null && leading == null,
-          actions: actions,
-          centerTitle: centerTitle,
-          frosted: !overlayAppBar,
-          foregroundColor: appBarForegroundColor,
-          iconTheme: appBarForegroundColor != null
-              ? IconThemeData(color: appBarForegroundColor)
-              : null,
-          actionsIconTheme: appBarForegroundColor != null
-              ? IconThemeData(color: appBarForegroundColor)
-              : null,
-          systemOverlayStyle: overlayAppBar
-              ? AppSystemUi.darkStyle
-              : null,
-        ),
-        body: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (!overlayAppBar) const AppBarContentInset(),
-            Expanded(child: body),
-            const ShellBottomSpacer(),
-          ],
-        ),
+      return Rc0PageScaffold(
+        title: title,
+        leading: leading,
+        onBack: onBack,
+        actions: actions,
+        centerTitle: centerTitle,
+        overlayAppBar: overlayAppBar,
+        appBarForegroundColor: appBarForegroundColor,
+        glassTitleMode: glassTitleMode,
+        systemOverlayStyle:
+            overlayAppBar ? AppSystemUi.darkStyle : null,
+        body: body,
         floatingActionButton: floatingActionButton,
         floatingActionButtonLocation: floatingActionButtonLocation,
         bottomNavigationBar: bottomNavigationBar,
@@ -105,6 +84,8 @@ class DesktopStackScaffold extends StatelessWidget {
                 visualDensity: VisualDensity.compact,
               )
             : null);
+    final leadingWidgets =
+        backLeading == null ? null : <Widget>[backLeading];
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -128,13 +109,21 @@ class DesktopStackScaffold extends StatelessWidget {
                   child: Row(
                     children: [
                       if (_isMacOS) const DesktopWindowControls(),
-                      if (backLeading != null) backLeading,
+                      ...?leadingWidgets,
                       Expanded(
                         child: centerTitle
-                            ? Center(child: title)
+                            ? Center(
+                                child: GlassTitleChip.maybeWrap(
+                                  title,
+                                  mode: glassTitleMode,
+                                ),
+                              )
                             : Align(
                                 alignment: Alignment.centerLeft,
-                                child: title,
+                                child: GlassTitleChip.maybeWrap(
+                                  title,
+                                  mode: glassTitleMode,
+                                ),
                               ),
                       ),
                       ...actions,

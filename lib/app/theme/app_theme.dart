@@ -134,6 +134,31 @@ abstract final class AppTheme {
           ),
         ),
       ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        elevation: 0,
+        backgroundColor: brightness == Brightness.dark
+            ? AppColors.glassSurfaceDark.withValues(alpha: 0.9)
+            : AppColors.glassSurfaceLight.withValues(alpha: 0.9),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.floatingBarRadius),
+          side: BorderSide(
+            color: brightness == Brightness.dark
+                ? AppColors.glassBorderDark.withValues(alpha: 0.9)
+                : AppColors.glassBorderLight.withValues(alpha: 0.9),
+            width: 0.8,
+          ),
+        ),
+        insetPadding: const EdgeInsets.fromLTRB(
+          AppDimensions.floatingBarMarginHorizontal,
+          0,
+          AppDimensions.floatingBarMarginHorizontal,
+          AppDimensions.floatingBarMarginBottom + 8,
+        ),
+        contentTextStyle: AppTextStyles.body.copyWith(color: textPrimary),
+        actionTextColor: AppColors.accent,
+        disabledActionTextColor: textSecondary,
+      ),
       dividerTheme: DividerThemeData(
         color: border,
         thickness: 1,

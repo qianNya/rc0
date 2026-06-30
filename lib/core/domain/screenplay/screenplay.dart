@@ -20,6 +20,7 @@ class Screenplay {
     this.acts = const [],
     this.isLocal = false,
     this.createdAt,
+    this.updatedAt,
     this.coverUrl,
     this.localCoverPath,
     this.apiActCount,
@@ -50,6 +51,7 @@ class Screenplay {
   final List<ScriptAct> acts;
   final bool isLocal;
   final DateTime? createdAt;
+  final DateTime? updatedAt;
   final String? coverUrl;
   final String? localCoverPath;
   final int? apiActCount;
@@ -165,6 +167,7 @@ class Screenplay {
         'acts': acts.map((a) => a.toJson()).toList(),
         'isLocal': isLocal,
         'createdAt': createdAt?.toIso8601String(),
+        'updatedAt': updatedAt?.toIso8601String(),
         'coverUrl': coverUrl,
         'localCoverPath': localCoverPath,
         'apiActCount': apiActCount,
@@ -205,6 +208,9 @@ class Screenplay {
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'] as String)
           : null,
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.tryParse(json['updatedAt'] as String)
+          : null,
       coverUrl: json['coverUrl'] as String?,
       localCoverPath: json['localCoverPath'] as String?,
       apiActCount: json['apiActCount'] as int?,
@@ -239,6 +245,7 @@ class Screenplay {
     List<ScriptAct>? acts,
     bool? isLocal,
     DateTime? createdAt,
+    DateTime? updatedAt,
     String? coverUrl,
     String? localCoverPath,
     int? apiActCount,
@@ -269,6 +276,7 @@ class Screenplay {
       acts: acts ?? this.acts,
       isLocal: isLocal ?? this.isLocal,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       coverUrl: coverUrl ?? this.coverUrl,
       localCoverPath: localCoverPath ?? this.localCoverPath,
       apiActCount: apiActCount ?? this.apiActCount,

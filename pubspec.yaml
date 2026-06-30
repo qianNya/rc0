@@ -42,21 +42,29 @@ dependencies:
   package_info_plus: ^8.3.0
   window_manager: ^0.4.3
   video_thumbnail: ^0.5.3
+  three_dart: ^0.0.16
+  flutter_gl: ^0.0.21
+  three_dart_jsm: ^0.0.10
+  model_viewer_plus: ^1.10.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
   flutter_lints: ^6.0.0
-  flutter_launcher_icons: ^0.14.3
-  flutter_native_splash: ^2.4.5
+  flutter_launcher_icons: ^0.11.0
+  flutter_native_splash: ^2.2.0
 
-flutter_launcher_icons:
+flutter_icons:
   android: true
-  ios: false
+  ios: true
   image_path: assets/branding/app_logo.png
   adaptive_icon_background: "#FFFFFF"
   adaptive_icon_foreground: assets/branding/app_logo.png
+  remove_alpha_ios: true
+  macos:
+    generate: true
+    image_path: assets/branding/app_logo.png
 
 flutter_native_splash:
   color: "#FFFFFF"
@@ -78,6 +86,9 @@ flutter:
 
   assets:
     - assets/branding/app_logo.png
+    - assets/model/aku_aku/
+    - assets/model/aku_aku/textures/
+    - assets/model/yt/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

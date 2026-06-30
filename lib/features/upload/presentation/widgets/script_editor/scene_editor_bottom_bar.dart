@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../../../../app/theme/app_colors.dart';
-import '../../../../../app/theme/app_text_styles.dart';
-import 'script_editor_navigation.dart';class SceneEditorBottomBar extends StatelessWidget {
+import '../../../../../app/theme/app_dimensions.dart';
+import '../../../../../shared/widgets/bottom_bar_glass_chrome.dart';
+import 'script_editor_navigation.dart';
+
+class SceneEditorBottomBar extends StatelessWidget {
   const SceneEditorBottomBar({
     super.key,
     required this.onBatchEdit,
@@ -16,12 +19,8 @@ import 'script_editor_navigation.dart';class SceneEditorBottomBar extends Statel
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        border: Border(top: BorderSide(color: AppColors.border)),
-      ),
+    return BottomBarGlassChrome(
+      height: AppDimensions.bottomNavFloatingHeight,
       child: SafeArea(
         top: false,
         child: Row(
@@ -62,13 +61,10 @@ class _BarItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TextButton.icon(
+    return IconButton(
       onPressed: onTap,
-      icon: Icon(icon, size: 20, color: AppColors.textSecondary),
-      label: Text(
-        label,
-        style: AppTextStyles.bodySecondary.copyWith(fontSize: 12),
-      ),
+      tooltip: label,
+      icon: Icon(icon, size: 22, color: AppColors.glassNavIconLight),
     );
   }
 }

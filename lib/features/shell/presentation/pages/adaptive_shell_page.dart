@@ -35,14 +35,55 @@ class AdaptiveShellPage extends StatefulWidget {
 
 class _AdaptiveShellPageState extends State<AdaptiveShellPage> {
   final _navConfig = ShellNavConfigStore.instance;
+  bool _didSyncInitialTab = false;
+  String? _lastSyncedFirstOptionId;
 
   @override
   void initState() {
     super.initState();
+    _navConfig.addListener(_onNavConfigChanged);
     _navConfig.initialize();
   }
 
+  @override
+  void dispose() {
+    _navConfig.removeListener(_onNavConfigChanged);
+    super.dispose();
+  }
+
   StatefulNavigationShell get navigationShell => widget.navigationShell;
+
+  void _onNavConfigChanged() {
+    if (!mounted || !_navConfig.isInitialized || _navConfig.slotCount == 0) return;
+    final state = GoRouter.of(context).state;
+    if (isStudioEditorRoute(state)) return;
+
+    final first = _navConfig.optionForSlot(0);
+    final shouldSync = !_didSyncInitialTab || _lastSyncedFirstOptionId != first.id;
+    if (!shouldSync) return;
+
+    _didSyncInitialTab = true;
+    _lastSyncedFirstOptionId = first.id;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _goToOptionAsRoot(first);
+    });
+  }
+
+  void _goToOptionAsRoot(ShellNavOption option) {
+    final branch = option.branchIndex;
+    if (branch != null) {
+      navigationShell.goBranch(
+        branch,
+        initialLocation: branch == navigationShell.currentIndex,
+      );
+      return;
+    }
+
+    final route = option.route;
+    if (route == null || route.isEmpty) return;
+    GoRouter.of(context).go(route);
+  }
 
   void _goToBranch(int index) {
     navigationShell.goBranch(
@@ -51,14 +92,33 @@ class _AdaptiveShellPageState extends State<AdaptiveShellPage> {
     );
   }
 
-  int _mobilePrimarySelectedIndex(String path) {
+  int _mobilePrimarySelectedIndex(
+    String path,
+    List<ShellNavItem> navItems,
+  ) {
     if (navigationShell.currentIndex == mobileCreateNavItem.branchIndex) {
       return -1;
     }
-    return _navConfig.selectedSlotIndex(
+    final selected = _navConfig.selectedSlotIndex(
       currentBranch: navigationShell.currentIndex,
       path: path,
     );
+    if (selected >= 0) return selected;
+
+    for (var i = 0; i < navItems.length; i++) {
+      final item = navItems[i];
+      if (item.branchIndex == navigationShell.currentIndex) {
+        return i;
+      }
+      final route = item.stackRoute;
+      if (route != null &&
+          route.isNotEmpty &&
+          (path == route || path.startsWith('$route/'))) {
+        return i;
+      }
+    }
+
+    return navItems.isNotEmpty ? 0 : -1;
   }
 
   Widget _buildMobileBottomBar(BuildContext context) {
@@ -105,7 +165,8 @@ class _AdaptiveShellPageState extends State<AdaptiveShellPage> {
                           : AppBottomNavBar(
                               wrapPadding: false,
                               items: navItems,
-                              selectedIndex: _mobilePrimarySelectedIndex(path),
+                              selectedIndex:
+                                  _mobilePrimarySelectedIndex(path, navItems),
                               onItemSelected: (index) {
                                 navigateShellNavOption(
                                   context,
@@ -166,21 +227,23 @@ class _AdaptiveShellPageState extends State<AdaptiveShellPage> {
     final useSidebar = Breakpoints.useSidebarShell(context);
 
     if (useSidebar) {
-      return Scaffold(
-        backgroundColor: AppColors.background,
-        body: Padding(
-          padding: const EdgeInsets.all(DesktopChrome.gap),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const DesktopSidebar(),
-              const SizedBox(width: DesktopChrome.gap),
-              Expanded(
-                child: ShellBranchTransition(
-                  navigationShell: navigationShell,
+      return ScrollNotificationObserver(
+        child: Scaffold(
+          backgroundColor: AppColors.background,
+          body: Padding(
+            padding: const EdgeInsets.all(DesktopChrome.gap),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const DesktopSidebar(),
+                const SizedBox(width: DesktopChrome.gap),
+                Expanded(
+                  child: ShellBranchTransition(
+                    navigationShell: navigationShell,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       );
@@ -188,19 +251,21 @@ class _AdaptiveShellPageState extends State<AdaptiveShellPage> {
 
     final bottomClearance = ShellInsets.mobileTabBarClearance(context);
 
-    return Scaffold(
-      extendBody: true,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          ShellInsets(
-            bottomClearance: bottomClearance,
-            child: ShellBranchTransition(navigationShell: navigationShell),
-          ),
-          const ShellBottomFadeOverlay(),
-        ],
+    return ScrollNotificationObserver(
+      child: Scaffold(
+        extendBody: true,
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            ShellInsets(
+              bottomClearance: bottomClearance,
+              child: ShellBranchTransition(navigationShell: navigationShell),
+            ),
+            const ShellBottomFadeOverlay(),
+          ],
+        ),
+        bottomNavigationBar: _buildMobileBottomBar(context),
       ),
-      bottomNavigationBar: _buildMobileBottomBar(context),
     );
   }
 }

@@ -123,8 +123,8 @@ abstract final class ShellNavCatalog {
       label: '角色',
       icon: Icons.person_outline,
       selectedIcon: Icons.person,
-      route: AppRoutes.character,
-      usePush: true,
+      route: '${AppRoutes.discovery}?hubTab=2',
+      usePush: false,
       group: '发现',
     ),
     ShellNavOption(

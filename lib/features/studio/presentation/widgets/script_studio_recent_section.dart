@@ -41,9 +41,7 @@ class ScriptStudioRecentSection extends StatelessWidget {
           ),
           const SizedBox(height: AppDimensions.spacingMd),
           if (projects.isEmpty)
-            _EmptyRecentCard(
-              onCreate: () => context.go(AppRoutes.studioCreate),
-            )
+            const _EmptyRecentCard()
           else
             ...projects.map(
               (script) => Padding(
@@ -98,9 +96,7 @@ class _StudioSectionHeader extends StatelessWidget {
 }
 
 class _EmptyRecentCard extends StatelessWidget {
-  const _EmptyRecentCard({required this.onCreate});
-
-  final VoidCallback onCreate;
+  const _EmptyRecentCard();
 
   @override
   Widget build(BuildContext context) {
@@ -116,7 +112,7 @@ class _EmptyRecentCard extends StatelessWidget {
           Icon(
             Icons.movie_creation_outlined,
             size: 56,
-            color: ScriptStudioColors.textPrimary.withValues(alpha: 0.35),
+            color: ScriptStudioColors.textTertiary,
           ),
           const SizedBox(height: AppDimensions.spacingMd),
           const Text('暂无项目', style: ScriptStudioColors.cardTitle),
@@ -125,11 +121,6 @@ class _EmptyRecentCard extends StatelessWidget {
             '新建剧本后会显示在这里',
             style: ScriptStudioColors.cardSubtitle,
             textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: AppDimensions.spacingLg),
-          StudioGlowPillButton(
-            label: '新建剧本',
-            onPressed: onCreate,
           ),
         ],
       ),
@@ -152,10 +143,18 @@ class _RecentProjectTile extends StatelessWidget {
   }
 
   String get _timeLabel {
-    final date = screenplay.createdAt;
+    final date = screenplay.updatedAt ?? screenplay.createdAt;
     if (date == null) return '';
     return formatRelativeTime(date);
   }
+
+  String get _sourceLabel => screenplay.isLocal ? '草稿' : '云端';
+
+  Color get _sourceFg =>
+      screenplay.isLocal ? AppColors.catPurple : AppColors.catBlue;
+
+  Color get _sourceBg =>
+      screenplay.isLocal ? AppColors.catPurpleBg : AppColors.catBlueBg;
 
   void _openProject(BuildContext context) {
     if (screenplay.isLocal && !screenplay.isPublished) {
@@ -166,6 +165,7 @@ class _RecentProjectTile extends StatelessWidget {
   }
 
   Future<void> _delete(BuildContext context) async {
+    if (!screenplay.isLocal) return;
     final deleted = await confirmAndDeleteScreenplays(context, [screenplay]);
     if (deleted) onDataChanged();
   }
@@ -197,11 +197,23 @@ class _RecentProjectTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  screenplay.title.isEmpty ? '未命名剧本' : screenplay.title,
-                  style: ScriptStudioColors.cardTitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        screenplay.title.isEmpty ? '未命名剧本' : screenplay.title,
+                        style: ScriptStudioColors.cardTitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: AppDimensions.spacingSm),
+                    _SourceBadge(
+                      label: _sourceLabel,
+                      fg: _sourceFg,
+                      bg: _sourceBg,
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -222,26 +234,61 @@ class _RecentProjectTile extends StatelessWidget {
               ],
             ),
           ),
-          PopupMenuButton<String>(
-            icon: const Icon(
-              Icons.more_horiz,
-              color: ScriptStudioColors.textSecondary,
-            ),
-            color: ScriptStudioColors.nebulaDeep,
-            onSelected: (value) {
-              if (value == 'delete') _delete(context);
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'delete',
-                child: Text(
-                  '删除',
-                  style: TextStyle(color: AppColors.error),
-                ),
+          if (screenplay.isLocal)
+            PopupMenuButton<String>(
+              icon: const Icon(
+                Icons.more_horiz,
+                color: ScriptStudioColors.textSecondary,
               ),
-            ],
-          ),
+              color: AppColors.surface,
+              onSelected: (value) {
+                if (value == 'delete') _delete(context);
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: Text(
+                    '删除',
+                    style: TextStyle(color: AppColors.error),
+                  ),
+                ),
+              ],
+            ),
         ],
+      ),
+    );
+  }
+}
+
+class _SourceBadge extends StatelessWidget {
+  const _SourceBadge({
+    required this.label,
+    required this.fg,
+    required this.bg,
+  });
+
+  final String label;
+  final Color fg;
+  final Color bg;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimensions.spacingSm,
+        vertical: 2,
+      ),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: fg,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

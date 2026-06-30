@@ -45,12 +45,12 @@ abstract final class AppColors {
   static const Color glassBorderDark = Color(0x1AFFFFFF);
 
   /// Bottom navigation — frosted glass; opaque enough for icon legibility.
-  static const Color glassNavSurfaceLight = Color(0x72F2F2F7);
-  static const Color glassNavSurfaceDark = Color(0x5A2C2C2E);
-  static const Color glassNavBorderLight = Color(0x66FFFFFF);
-  static const Color glassNavBorderDark = Color(0x30FFFFFF);
-  static const Color glassNavHighlightLight = Color(0x1AFFFFFF);
-  static const Color glassNavHighlightDark = Color(0x12FFFFFF);
+  static const Color glassNavSurfaceLight = Color(0x00FFFFFF);
+  static const Color glassNavSurfaceDark = Color(0x00000000);
+  static const Color glassNavBorderLight = Color(0x2EFFFFFF); // ~0.18
+  static const Color glassNavBorderDark = Color(0x24FFFFFF);
+  static const Color glassNavHighlightLight = Color(0x40FFFFFF); // ~0.25
+  static const Color glassNavHighlightDark = Color(0x2AFFFFFF);
 
   /// Bottom navigation icon colors (higher contrast than body text tokens).
   static const Color glassNavIconLight = Color(0xFF3A3A3A);
@@ -79,6 +79,11 @@ abstract final class AppColors {
   static const Color shadowNavCast = Color(0x0A000000);
   static const Color shadowNavFaint = Color(0x06000000);
   static const Color scrimStrong = Color(0xCC000000);
+
+  /// Hero image gradient scrims (detail / immersive pages).
+  static const Color heroScrimTop = Color(0x00000000);
+  static const Color heroScrimMid = Color(0x33000000);
+  static const Color heroScrimBottom = Color(0x99000000);
 
   // Profile semantic accents (was hardcoded in profile pages).
   static const Color profileIcon = Color(0xFF7C4DFF);

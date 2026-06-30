@@ -64,7 +64,7 @@ class WikiCharacterGridCard extends StatelessWidget {
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
-                        colors: [Colors.transparent, Color(0x99000000)],
+                        colors: [Colors.transparent, AppColors.heroScrimBottom],
                         stops: [0.45, 1.0],
                       ),
                     ),
@@ -74,7 +74,7 @@ class WikiCharacterGridCard extends StatelessWidget {
                     right: 8,
                     child: _MetricPill(
                       icon: favorited ? Icons.favorite : Icons.favorite_border,
-                      iconColor: favorited ? const Color(0xFFFF6B8A) : Colors.white,
+                      iconColor: favorited ? AppColors.catPink : Colors.white,
                       label: formatCharacterCount(likes),
                     ),
                   ),

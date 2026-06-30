@@ -19,11 +19,18 @@ abstract final class AppDimensions {
   static const double primaryButtonHeight = 48;
 
   static const double glassBlurSigma = 24;
-  static const double glassNavBlurSigma = 42;
+  static const double glassNavBlurSigma = 16;
   static const double floatingBarRadius = 28;
   static const double floatingBarMarginHorizontal = 16;
-  static const double floatingBarMarginBottom = 0;
+  static const double floatingBarMarginBottom = 16;
+  static const double topNavFloatingMarginTop = 8;
+  static const double topNavFloatingMarginBottom = 12;
+  static const double topNavFloatingRadius = 28;
+  static const double bottomNavFloatingRadius = 32;
+  static const double tabFloatingRadius = 32;
+  static const double tabFloatingHeight = 56;
   static const double bottomNavFloatingHeight = 56;
+  static const double bottomNavLiquidActiveOrbSize = 36;
   static const double bottomNavSecondaryTabSize = bottomNavFloatingHeight;
   static const double bottomNavSecondaryTabGap = spacingSm;
   static const double bottomNavIndicatorInsetH = 6;

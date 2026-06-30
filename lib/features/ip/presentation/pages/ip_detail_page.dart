@@ -9,6 +9,7 @@ import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/data/app_catalog.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../character/data/character_repository.dart';
 import '../../../character/domain/character_entry.dart';
@@ -76,21 +77,28 @@ class _IpDetailPageState extends State<IpDetailPage> {
     final entry = _entry;
     if (entry == null || _deleting) return;
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
+    final confirmed = await showGlassDialog<bool>(
+      context,
+      child: GlassDialog(
         title: const Text('删除 IP'),
-        content: Text('确定删除「${entry.title}」？此操作不可撤销。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
+        onClose: () => Navigator.pop(context, false),
+        child: Text('确定删除「${entry.title}」？此操作不可撤销。'),
+        footer: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('取消'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('删除'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('删除'),
-          ),
-        ],
+        ),
       ),
     );
 

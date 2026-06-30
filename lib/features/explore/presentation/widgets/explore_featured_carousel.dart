@@ -30,7 +30,7 @@ class _ExploreFeaturedCarouselState extends State<ExploreFeaturedCarousel> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppDimensions.spacingMd,
-        12,
+        0,
         AppDimensions.spacingMd,
         0,
       ),

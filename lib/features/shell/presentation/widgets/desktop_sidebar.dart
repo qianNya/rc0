@@ -23,7 +23,12 @@ const shellTabRoutes = {
   AppRoutes.community,
 };
 
-String desktopSidebarActiveId(String location) {
+String desktopSidebarActiveId(Uri uri) {
+  final location = uri.path;
+  final hubTab = int.tryParse(uri.queryParameters['hubTab'] ?? '');
+  if (location.startsWith(AppRoutes.discovery) && hubTab == 2) {
+    return 'character_wiki';
+  }
   if (location.startsWith(AppRoutes.studio) ||
       location.startsWith('/studio/edit/')) {
     return 'scene_flow';
@@ -51,7 +56,7 @@ String desktopSidebarActiveId(String location) {
 
 @Deprecated('Use desktopSidebarActiveId')
 String exploreSidebarActiveId(String location) =>
-    desktopSidebarActiveId(location);
+    desktopSidebarActiveId(Uri(path: location));
 
 class DesktopSidebarSection {
   const DesktopSidebarSection({required this.title, required this.items});
@@ -249,7 +254,8 @@ class DesktopSidebar extends StatelessWidget {
     }
     final route = item.route;
     if (route == null) return;
-    if (shellTabRoutes.contains(route)) {
+    final routePath = Uri.parse(route).path;
+    if (shellTabRoutes.contains(routePath)) {
       context.go(route);
       return;
     }
@@ -262,7 +268,7 @@ class DesktopSidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final activeId = desktopSidebarActiveId(GoRouterState.of(context).uri.path);
+    final activeId = desktopSidebarActiveId(GoRouterState.of(context).uri);
     final isMacOS = !kIsWeb && Platform.isMacOS;
 
     return DesktopCard(

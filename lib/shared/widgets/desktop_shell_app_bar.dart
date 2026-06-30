@@ -8,9 +8,9 @@ import '../../app/theme/app_dimensions.dart';
 import '../../core/platform/platform_features.dart';
 import '../../core/responsive/breakpoints.dart';
 import '../../features/shell/presentation/widgets/desktop_title_bar.dart';
+import 'glass_title_chip.dart';
 import 'rc0_app_bar.dart';
-import 'shell_insets.dart';
-import 'status_bar_spacer.dart';
+import 'rc0_page_scaffold.dart';
 import 'desktop/desktop_card.dart';
 import 'desktop/desktop_chrome.dart';
 
@@ -24,6 +24,7 @@ class DesktopShellAppBar extends StatelessWidget implements PreferredSizeWidget 
     this.centerTitle = true,
     this.automaticallyImplyLeading = true,
     this.titleBarHeight = kDesktopTitleBarHeight,
+    this.glassTitleMode = GlassTitleMode.auto,
   });
 
   final Widget? title;
@@ -32,6 +33,7 @@ class DesktopShellAppBar extends StatelessWidget implements PreferredSizeWidget 
   final bool centerTitle;
   final bool automaticallyImplyLeading;
   final double titleBarHeight;
+  final GlassTitleMode glassTitleMode;
 
   bool get _isMacOS => !kIsWeb && Platform.isMacOS;
 
@@ -51,6 +53,7 @@ class DesktopShellAppBar extends StatelessWidget implements PreferredSizeWidget 
         actions: actions,
         centerTitle: centerTitle,
         automaticallyImplyLeading: automaticallyImplyLeading,
+        glassTitleMode: glassTitleMode,
       );
     }
 
@@ -69,13 +72,23 @@ class DesktopShellAppBar extends StatelessWidget implements PreferredSizeWidget 
           child: Row(
             children: [
               if (_isMacOS) const DesktopWindowControls(),
-              if (resolvedLeading != null) resolvedLeading,
+              ...(resolvedLeading != null
+                  ? [resolvedLeading]
+                  : const <Widget>[]),
               Expanded(
                 child: centerTitle
-                    ? Center(child: title)
+                    ? Center(
+                        child: GlassTitleChip.maybeWrap(
+                          title,
+                          mode: glassTitleMode,
+                        ),
+                      )
                     : Align(
                         alignment: Alignment.centerLeft,
-                        child: title,
+                        child: GlassTitleChip.maybeWrap(
+                          title,
+                          mode: glassTitleMode,
+                        ),
                       ),
               ),
               ...actions,
@@ -106,17 +119,9 @@ class DesktopShellTabScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!Breakpoints.isDesktop(context) || !shouldUseDesktopWindowChrome) {
-      return Scaffold(
-        extendBodyBehindAppBar: true,
+      return Rc0PageScaffold(
         appBar: appBar,
-        body: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const AppBarContentInset(),
-            Expanded(child: body),
-            const ShellBottomSpacer(),
-          ],
-        ),
+        body: body,
         floatingActionButton: floatingActionButton,
         bottomNavigationBar: bottomNavigationBar,
       );

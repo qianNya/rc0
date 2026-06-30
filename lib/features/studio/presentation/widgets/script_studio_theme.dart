@@ -2,20 +2,18 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/theme/app_colors.dart';
 
-/// Immersive Script Studio page palette (dark nebula + liquid glass).
+/// Light Script Studio palette aligned with the app theme.
 abstract final class ScriptStudioColors {
-  static const Color background = Color(0xFF07050F);
-  static const Color nebulaDeep = Color(0xFF120A28);
-  static const Color nebulaPurple = Color(0xFF3D1F6E);
-  static const Color nebulaBlue = Color(0xFF1A3568);
-  static const Color nebulaMagenta = Color(0xFF5C2D8A);
-  static const Color textPrimary = Color(0xFFFFFFFF);
-  static const Color textSecondary = Color(0xB3FFFFFF);
-  static const Color textTertiary = Color(0x80FFFFFF);
-  static const Color accentGlow = Color(0xFFA855F7);
-  static const Color glassFill = Color(0x14FFFFFF);
-  static const Color glassBorder = Color(0x33FFFFFF);
-  static const Color glassHighlight = Color(0x40FFFFFF);
+  static const Color background = AppColors.surface;
+  static const Color textPrimary = AppColors.textPrimary;
+  static const Color textSecondary = AppColors.textSecondary;
+  static const Color textTertiary = AppColors.textTertiary;
+  static const Color accentGlow = AppColors.accent;
+  static const Color glassFill = Color(0xD9FFFFFF);
+  static const Color glassBorder = AppColors.border;
+  static const Color glassHighlight = AppColors.glassHighlightLight;
+  static const Color iconSurface = AppColors.accentLight;
+  static const Color iconForeground = AppColors.accent;
 
   static const TextStyle title = TextStyle(
     color: textPrimary,

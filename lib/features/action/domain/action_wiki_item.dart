@@ -22,11 +22,13 @@ List<ActionWikiItem> buildActionWikiItems() {
   final items = <ActionWikiItem>[];
   for (final entry in groups.entries) {
     for (final label in entry.value) {
-      items.add(ActionWikiItem(
-        id: '${entry.key}-$label',
-        label: label,
-        group: entry.key,
-      ));
+      items.add(
+        ActionWikiItem(
+          id: '${entry.key}-$label',
+          label: label,
+          group: entry.key,
+        ),
+      );
     }
   }
   return items;

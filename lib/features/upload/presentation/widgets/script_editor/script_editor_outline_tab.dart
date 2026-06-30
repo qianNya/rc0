@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../../app/theme/app_colors.dart';
 import '../../../../../app/theme/app_dimensions.dart';
+import '../../../../../app/theme/app_motion.dart';
 import '../../../../../app/theme/app_text_styles.dart';
 import '../../../../screenplay/data/screenplay_draft.dart';
 import '../editor/editor_hub_tab_bar.dart';
@@ -17,6 +18,7 @@ import 'script_editor_navigation.dart';
 import 'script_editor_frames_tab.dart';
 import '../../../../../core/responsive/breakpoints.dart';
 import '../../../../../shared/widgets/fade_slide_tab_switcher.dart';
+import '../../../../../shared/widgets/glass/glass.dart';
 import '../../../../studio/presentation/studio_editor_shell_bridge.dart';
 import '../../../../../shared/widgets/shell_insets.dart';
 
@@ -112,24 +114,31 @@ class _ScriptEditorOutlineTabState extends State<ScriptEditorOutlineTab> {
 
   Future<bool> _confirmDismissAct(int actIndex) async {
     if (!widget.canRemoveAct(actIndex)) return false;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
+    final confirmed = await showGlassDialog<bool>(
+      context,
+      child: GlassDialog(
         title: const Text('删除幕'),
-        content: const Text('确定删除此幕及其所有场次吗？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('取消'),
+        onClose: () => Navigator.pop(context, false),
+        child: const Text('确定删除此幕及其所有场次吗？'),
+        footer: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('取消'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text(
+                  '删除',
+                  style: TextStyle(color: AppColors.error),
+                ),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
-              '删除',
-              style: TextStyle(color: AppColors.error),
-            ),
-          ),
-        ],
+        ),
       ),
     );
     return confirmed == true;
@@ -150,24 +159,31 @@ class _ScriptEditorOutlineTabState extends State<ScriptEditorOutlineTab> {
 
   Future<bool> _confirmDismissScene(int actIndex, int sceneIndex) async {
     if (!widget.actions.canRemoveScene(actIndex, sceneIndex)) return false;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
+    final confirmed = await showGlassDialog<bool>(
+      context,
+      child: GlassDialog(
         title: const Text('删除场'),
-        content: const Text('确定删除此场及其所有分镜吗？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('取消'),
+        onClose: () => Navigator.pop(context, false),
+        child: const Text('确定删除此场及其所有分镜吗？'),
+        footer: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('取消'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text(
+                  '删除',
+                  style: TextStyle(color: AppColors.error),
+                ),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
-              '删除',
-              style: TextStyle(color: AppColors.error),
-            ),
-          ),
-        ],
+        ),
       ),
     );
     return confirmed == true;
@@ -277,6 +293,20 @@ class _ScriptEditorOutlineTabState extends State<ScriptEditorOutlineTab> {
     }
   }
 
+  String get _structureVersion {
+    final draft = widget.draft;
+    final actCount = draft.acts.length;
+    var sceneCount = 0;
+    var frameCount = 0;
+    for (final act in draft.acts) {
+      sceneCount += act.scenes.length;
+      for (final scene in act.scenes) {
+        frameCount += scene.frames.length;
+      }
+    }
+    return '$actCount-$sceneCount-$frameCount-${_expandedActs.length}';
+  }
+
   Widget _buildModeStack() {
     final bottomPadding = _scrollBottomPadding(context);
     return FadeSlideIndexedStack(
@@ -289,7 +319,25 @@ class _ScriptEditorOutlineTabState extends State<ScriptEditorOutlineTab> {
             AppDimensions.spacingMd,
             bottomPadding,
           ),
-          child: _buildOutlineContent(),
+          child: AnimatedSwitcher(
+            duration: AppMotion.normal,
+            switchInCurve: AppMotion.standard,
+            switchOutCurve: AppMotion.smooth,
+            transitionBuilder: (child, animation) {
+              final offset = Tween<Offset>(
+                begin: const Offset(0, 0.02),
+                end: Offset.zero,
+              ).animate(animation);
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(position: offset, child: child),
+              );
+            },
+            child: KeyedSubtree(
+              key: ValueKey('outline-$_structureVersion'),
+              child: _buildOutlineContent(),
+            ),
+          ),
         ),
         widget.structureEditor,
         ScriptEditorFramesTab(
@@ -315,36 +363,59 @@ class _ScriptEditorOutlineTabState extends State<ScriptEditorOutlineTab> {
           ),
         ),
         const SizedBox(height: 4),
-        DraftStructureOutlineTree(
-          draft: draft,
-          actions: widget.actions,
-          expandedActs: _expandedActs,
-          onToggleAct: _toggleAct,
-          onAddScene: _handleAddSceneForAct,
-          onAddAct: _handleAddAct,
-          confirmDismissAct: _confirmDismissAct,
-          onRemoveAct: _removeAct,
-          confirmDismissScene: _confirmDismissScene,
-          onRemoveScene: _removeScene,
-          canRemoveAct: widget.canRemoveAct,
-          onReorderActs: _handleReorderActs,
-          onMoveScene: widget.onMoveScene,
-          onSceneTap: _openScene,
-          onFrameStackTap: _openFrameStack,
+        AnimatedSize(
+          duration: AppMotion.normal,
+          curve: AppMotion.standard,
+          alignment: Alignment.topCenter,
+          child: DraftStructureOutlineTree(
+            draft: draft,
+            actions: widget.actions,
+            expandedActs: _expandedActs,
+            onToggleAct: _toggleAct,
+            onAddScene: _handleAddSceneForAct,
+            onAddAct: _handleAddAct,
+            confirmDismissAct: _confirmDismissAct,
+            onRemoveAct: _removeAct,
+            confirmDismissScene: _confirmDismissScene,
+            onRemoveScene: _removeScene,
+            canRemoveAct: widget.canRemoveAct,
+            onReorderActs: _handleReorderActs,
+            onMoveScene: widget.onMoveScene,
+            onSceneTap: _openScene,
+            onFrameStackTap: _openFrameStack,
+          ),
         ),
       ],
     );
   }
 
   Widget _buildHubHeader() {
-    return EditorHubTabBar(
-      selectedMode: _mode,
-      onModeSelected: _shellBridge.setHubMode,
-      onAiDecompose: () => openAiCreationHub(
-        context,
-        editScriptId: widget.editScriptId,
+    return AnimatedSwitcher(
+      duration: AppMotion.normal,
+      switchInCurve: AppMotion.standard,
+      switchOutCurve: AppMotion.smooth,
+      transitionBuilder: (child, animation) {
+        final slide = Tween<Offset>(
+          begin: const Offset(0, -0.08),
+          end: Offset.zero,
+        ).animate(animation);
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(position: slide, child: child),
+        );
+      },
+      child: KeyedSubtree(
+        key: ValueKey('hub-header-${_mode.name}'),
+        child: EditorHubTabBar(
+          selectedMode: _mode,
+          onModeSelected: _shellBridge.setHubMode,
+          onAiDecompose: () => openAiCreationHub(
+            context,
+            editScriptId: widget.editScriptId,
+          ),
+          onMore: _openMoreSheet,
+        ),
       ),
-      onMore: _openMoreSheet,
     );
   }
 
@@ -428,95 +499,107 @@ class DraftStructureOutlineTree extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (draft.acts.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 24),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '暂无结构',
-                style: AppTextStyles.bodySecondary,
-              ),
-              const SizedBox(height: 8),
-              _OutlineAddButton(
-                label: '添加幕',
-                icon: Icons.add_box_outlined,
-                onPressed: onAddAct,
-              ),
-            ],
+      return AnimatedSwitcher(
+        duration: AppMotion.normal,
+        switchInCurve: AppMotion.standard,
+        switchOutCurve: AppMotion.smooth,
+        child: Padding(
+          key: const ValueKey('outline-empty'),
+          padding: const EdgeInsets.symmetric(vertical: 24),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '暂无结构',
+                  style: AppTextStyles.bodySecondary,
+                ),
+                const SizedBox(height: 8),
+                _OutlineAddButton(
+                  label: '添加幕',
+                  icon: Icons.add_box_outlined,
+                  onPressed: onAddAct,
+                ),
+              ],
+            ),
           ),
         ),
       );
     }
 
-    return ReorderableListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      buildDefaultDragHandles: false,
-      itemCount: draft.acts.length,
-      onReorderItem: onReorderActs,
-      proxyDecorator: (child, index, animation) {
-        final preview = _OutlineReorderSpacing.dragPreviewOf(child) ?? child;
-        return AnimatedBuilder(
-          animation: animation,
-          builder: (context, _) {
-            return Material(
-              color: Colors.transparent,
-              elevation: 6 * animation.value,
-              shadowColor: AppColors.shadowDrag,
-              borderRadius: BorderRadius.circular(AppDimensions.radiusXl),
-              clipBehavior: Clip.antiAlias,
-              child: preview,
-            );
-          },
-        );
-      },
-      itemBuilder: (context, actIndex) {
-        final act = draft.acts[actIndex];
-        final card = _ActOutlineSection(
-          act: act,
-          actIndex: actIndex,
-          expanded: expandedActs.contains(actIndex),
-          onToggleAct: () => onToggleAct(actIndex),
-          onAddScene: () => onAddScene(actIndex),
-          onMoveScene: (data, insertIndex) =>
-              onMoveScene(data, actIndex, insertIndex),
-          confirmDismissScene: (sceneIndex) =>
-              confirmDismissScene(actIndex, sceneIndex),
-          onRemoveScene: (sceneIndex) => onRemoveScene(actIndex, sceneIndex),
-          canRemoveScene: (sceneIndex) =>
-              actions.canRemoveScene(actIndex, sceneIndex),
-          onSceneTap: onSceneTap,
-          onFrameStackTap: onFrameStackTap,
-        );
+    return AnimatedSwitcher(
+      duration: AppMotion.normal,
+      switchInCurve: AppMotion.standard,
+      switchOutCurve: AppMotion.smooth,
+      child: ReorderableListView.builder(
+        key: ValueKey('outline-list-${draft.acts.length}-${expandedActs.length}'),
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        buildDefaultDragHandles: false,
+        itemCount: draft.acts.length,
+        onReorderItem: onReorderActs,
+        proxyDecorator: (child, index, animation) {
+          final preview = _OutlineReorderSpacing.dragPreviewOf(child) ?? child;
+          return AnimatedBuilder(
+            animation: animation,
+            builder: (context, _) {
+              return Material(
+                color: Colors.transparent,
+                elevation: 6 * animation.value,
+                shadowColor: AppColors.shadowDrag,
+                borderRadius: BorderRadius.circular(AppDimensions.radiusXl),
+                clipBehavior: Clip.antiAlias,
+                child: preview,
+              );
+            },
+          );
+        },
+        itemBuilder: (context, actIndex) {
+          final act = draft.acts[actIndex];
+          final card = _ActOutlineSection(
+            act: act,
+            actIndex: actIndex,
+            expanded: expandedActs.contains(actIndex),
+            onToggleAct: () => onToggleAct(actIndex),
+            onAddScene: () => onAddScene(actIndex),
+            onMoveScene: (data, insertIndex) =>
+                onMoveScene(data, actIndex, insertIndex),
+            confirmDismissScene: (sceneIndex) =>
+                confirmDismissScene(actIndex, sceneIndex),
+            onRemoveScene: (sceneIndex) => onRemoveScene(actIndex, sceneIndex),
+            canRemoveScene: (sceneIndex) =>
+                actions.canRemoveScene(actIndex, sceneIndex),
+            onSceneTap: onSceneTap,
+            onFrameStackTap: onFrameStackTap,
+          );
 
-        final draggable = ReorderableDragStartListener(
-          index: actIndex,
-          child: card,
-        );
+          final draggable = ReorderableDragStartListener(
+            index: actIndex,
+            child: card,
+          );
 
-        final item = canRemoveAct(actIndex)
-            ? Dismissible(
-                key: ValueKey('outline-act-$actIndex'),
-                direction: DismissDirection.endToStart,
-                confirmDismiss: (_) => confirmDismissAct(actIndex),
-                onDismissed: (_) => onRemoveAct(actIndex),
-                background: const _DismissDeleteBackground(label: '删除幕'),
-                child: draggable,
-              )
-            : draggable;
+          final item = canRemoveAct(actIndex)
+              ? Dismissible(
+                  key: ValueKey('outline-act-$actIndex'),
+                  direction: DismissDirection.endToStart,
+                  confirmDismiss: (_) => confirmDismissAct(actIndex),
+                  onDismissed: (_) => onRemoveAct(actIndex),
+                  background: const _DismissDeleteBackground(label: '删除幕'),
+                  child: draggable,
+                )
+              : draggable;
 
-        return KeyedSubtree(
-          key: ValueKey('outline-act-$actIndex'),
-          child: _OutlineReorderSpacing(
-            spacingTop:
-                actIndex == 0 ? 0 : AppDimensions.spacingSm,
-            dragPreview: card,
-            child: item,
-          ),
-        );
-      },
+          return KeyedSubtree(
+            key: ValueKey('outline-act-$actIndex'),
+            child: _OutlineReorderSpacing(
+              spacingTop:
+                  actIndex == 0 ? 0 : AppDimensions.spacingSm,
+              dragPreview: card,
+              child: item,
+            ),
+          );
+        },
+      ),
     );
   }
 }
@@ -760,48 +843,55 @@ class _ActOutlineSection extends StatelessWidget {
                 ),
               ),
             ],
-            if (expanded) ...[
-              const SizedBox(height: AppDimensions.spacingXs),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (var sceneIndex = 0;
-                      sceneIndex < act.scenes.length;
-                      sceneIndex++) ...[
-                    StructureInsertDropTarget<SceneDragData>(
-                      onAccept: (data) => onMoveScene(data, sceneIndex),
-                      canAccept: (data) {
-                        if (data.fromActIndex != actIndex) {
-                          return true;
-                        }
-                        return act.scenes.indexOf(data.scene) != sceneIndex;
-                      },
-                    ),
-                    _SceneOutlineRow(
-                      scene: act.scenes[sceneIndex],
-                      actIndex: actIndex,
-                      sceneIndex: sceneIndex,
-                      canRemove: canRemoveScene(sceneIndex),
-                      margin: EdgeInsets.only(
-                        bottom: sceneIndex < act.scenes.length - 1
-                            ? AppDimensions.spacingXs
-                            : 0,
-                      ),
-                      onSceneTap: () => onSceneTap(actIndex, sceneIndex),
-                      onFrameStackTap: () =>
-                          onFrameStackTap(actIndex, sceneIndex),
-                      confirmDismiss: () =>
-                          confirmDismissScene(sceneIndex),
-                      onRemove: () => onRemoveScene(sceneIndex),
-                    ),
-                  ],
-                  StructureInsertDropTarget<SceneDragData>(
-                    onAccept: (data) =>
-                        onMoveScene(data, act.scenes.length),
-                  ),
-                ],
+            ClipRect(
+              child: AnimatedSize(
+                duration: AppMotion.normal,
+                curve: AppMotion.standard,
+                alignment: Alignment.topCenter,
+                child: expanded
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const SizedBox(height: AppDimensions.spacingXs),
+                          for (var sceneIndex = 0;
+                              sceneIndex < act.scenes.length;
+                              sceneIndex++) ...[
+                            StructureInsertDropTarget<SceneDragData>(
+                              onAccept: (data) => onMoveScene(data, sceneIndex),
+                              canAccept: (data) {
+                                if (data.fromActIndex != actIndex) {
+                                  return true;
+                                }
+                                return act.scenes.indexOf(data.scene) != sceneIndex;
+                              },
+                            ),
+                            _SceneOutlineRow(
+                              scene: act.scenes[sceneIndex],
+                              actIndex: actIndex,
+                              sceneIndex: sceneIndex,
+                              canRemove: canRemoveScene(sceneIndex),
+                              margin: EdgeInsets.only(
+                                bottom: sceneIndex < act.scenes.length - 1
+                                    ? AppDimensions.spacingXs
+                                    : 0,
+                              ),
+                              onSceneTap: () => onSceneTap(actIndex, sceneIndex),
+                              onFrameStackTap: () =>
+                                  onFrameStackTap(actIndex, sceneIndex),
+                              confirmDismiss: () =>
+                                  confirmDismissScene(sceneIndex),
+                              onRemove: () => onRemoveScene(sceneIndex),
+                            ),
+                          ],
+                          StructureInsertDropTarget<SceneDragData>(
+                            onAccept: (data) =>
+                                onMoveScene(data, act.scenes.length),
+                          ),
+                        ],
+                      )
+                    : const SizedBox.shrink(),
               ),
-            ],
+            ),
           ],
         ),
       ),

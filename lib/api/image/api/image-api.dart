@@ -189,6 +189,35 @@ Future unlinkImageWork(
   );
 }
 
+Future getImageAnalysis(
+  int imageId, {
+  Function(ImageAnalysisResp)? ok,
+  Function(String)? fail,
+  Function? eventually,
+}) async {
+  await apiGet(
+    '/images/$imageId/analysis',
+    ok: (data) => ok?.call(ImageAnalysisResp.fromJson(data)),
+    fail: fail,
+    eventually: eventually,
+  );
+}
+
+Future retryImageAnalysis(
+  int imageId, {
+  Function(Map<String, dynamic>)? ok,
+  Function(String)? fail,
+  Function? eventually,
+}) async {
+  await apiPost(
+    '/images/$imageId/retry-analysis',
+    const {},
+    ok: ok,
+    fail: fail,
+    eventually: eventually,
+  );
+}
+
 String _slugify(String name) {
   final trimmed = name.trim().toLowerCase();
   if (trimmed.isEmpty) return 'tag';

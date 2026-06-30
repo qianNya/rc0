@@ -431,7 +431,7 @@ class _EditableBackground extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: isDark
               ? [
-                  const Color(0xFF1A1528),
+                  AppColors.characterBackgroundDark,
                   AppColors.profileGradientEnd.withValues(alpha: 0.92),
                 ]
               : [

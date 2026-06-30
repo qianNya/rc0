@@ -1,0 +1,35 @@
+---
+description: 内容优先页面模式（Liquid Glass 空间层级）
+globs: lib/features/**/presentation/pages/**/*.dart
+alwaysApply: false
+---
+
+# 页面模式
+
+## 内容优先
+
+首屏优先展示内容（图像/分镜/角色作品），导航与控制层次后置。
+
+禁止先看到导航壳、后看到内容的布局。
+
+## 详情页模板
+
+Hero 内容占据顶部；Glass 信息卡覆盖在 Hero 上；Tabs 浮动；内容在其下滚动。
+
+适用：`character` / `screenplay` / `scene` / `gallery image detail`。
+
+## 社区与探索
+
+媒体主导（大图优先），元数据与操作控件弱化；避免后台式密集卡片网格。
+
+## 编辑器域
+
+Storyboard 是内容层，Timeline 是工具层。
+
+Timeline 不得视觉压制 Storyboard；模式切换必须有平滑动态过渡。
+
+## 通用要求
+
+- 列表/数据页必须具备空/加载/错误三态。
+- UI 仅经 Repository，不直连 API。
+- 新页面先复用 `lib/shared/widgets/`。

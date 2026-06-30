@@ -16,7 +16,9 @@ class TopBarGlassChrome extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final radius = BorderRadius.circular(AppDimensions.topNavFloatingRadius);
+    final radius = BorderRadius.circular(AppDimensions.tabFloatingRadius);
+    final highlight = 0.12 + breath * 0.04;
+    final tail = 0.02 + breath * 0.02;
 
     return LiquidGlassSurface(
       style: LiquidGlassStyle.navigation,
@@ -28,17 +30,14 @@ class TopBarGlassChrome extends StatelessWidget {
             child: DecoratedBox(
               decoration: BoxDecoration(
                 borderRadius: radius,
-                color: Colors.white.withValues(alpha: 0.04 + breath * 0.02),
-              ),
-            ),
-          ),
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: radius,
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.16 + breath * 0.06),
-                  width: 0.8,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withValues(alpha: highlight),
+                    Colors.white.withValues(alpha: tail),
+                  ],
+                  stops: const [0, 0.75],
                 ),
               ),
             ),

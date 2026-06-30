@@ -232,6 +232,7 @@ class ScreenplayLocalRepository extends ChangeNotifier {
       persistedPaths: persisted,
       scriptId: id,
       createdAt: existing.createdAt,
+      updatedAt: DateTime.now(),
       coverPath: draft.coverImage != null ? persisted[draft.coverImage!] : null,
     ).copyWith(
       author: existing.author,
@@ -342,6 +343,7 @@ class ScreenplayLocalRepository extends ChangeNotifier {
       forkedFromLocalId: forkedFromLocalId,
       imagesLocalized: false,
       createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
 
     final doc = ScreenplayTreeDocument(tree: tree, meta: meta);
@@ -411,7 +413,10 @@ class ScreenplayLocalRepository extends ChangeNotifier {
 
       final updated = ScreenplayTreeDocument(
         tree: tree,
-        meta: doc.meta.copyWith(imagesLocalized: true),
+        meta: doc.meta.copyWith(
+          imagesLocalized: true,
+          updatedAt: DateTime.now(),
+        ),
       );
       _documents[index] = updated;
       await _save();
@@ -516,6 +521,7 @@ class ScreenplayLocalRepository extends ChangeNotifier {
       imagesLocalized: false,
       browseCache: true,
       createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
 
     final doc = ScreenplayTreeDocument(tree: tree, meta: meta);
@@ -593,6 +599,7 @@ class ScreenplayLocalRepository extends ChangeNotifier {
       tree: tree,
       meta: doc.meta.copyWith(
         imagesLocalized: _treeImagesFullyLocalized(tree),
+        updatedAt: DateTime.now(),
       ),
     );
     await _save();
@@ -694,6 +701,7 @@ class ScreenplayLocalRepository extends ChangeNotifier {
           : null,
       imagesLocalized: false,
       createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
 
     final doc = ScreenplayTreeDocument(tree: tree, meta: meta);
@@ -713,10 +721,13 @@ class ScreenplayLocalRepository extends ChangeNotifier {
     if (!_hasValidFrames(document.toScreenplay())) {
       return (document: null, error: '剧本没有有效的画格');
     }
-    _documents[index] = document;
+    _documents[index] = ScreenplayTreeDocument(
+      tree: document.tree,
+      meta: document.meta.copyWith(updatedAt: DateTime.now()),
+    );
     await _save();
     notifyListeners();
-    return (document: document, error: null);
+    return (document: _documents[index], error: null);
   }
 
   Future<({ScreenplayTreeDocument? document, String? error})> importDocument(
@@ -725,10 +736,20 @@ class ScreenplayLocalRepository extends ChangeNotifier {
     if (!_hasValidFrames(document.toScreenplay())) {
       return (document: null, error: '剧本没有有效的画格');
     }
-    _documents.insert(0, document);
+    final now = DateTime.now();
+    _documents.insert(
+      0,
+      ScreenplayTreeDocument(
+        tree: document.tree,
+        meta: document.meta.copyWith(
+          createdAt: document.meta.createdAt ?? now,
+          updatedAt: document.meta.updatedAt ?? now,
+        ),
+      ),
+    );
     await _save();
     notifyListeners();
-    return (document: document, error: null);
+    return (document: _documents.first, error: null);
   }
 
   Screenplay? findById(String id) {
@@ -1012,7 +1033,10 @@ class ScreenplayLocalRepository extends ChangeNotifier {
     ScreenplayTreeDocument doc,
     Map<String, dynamic> tree,
   ) async {
-    final updated = ScreenplayTreeDocument(tree: tree, meta: doc.meta);
+    final updated = ScreenplayTreeDocument(
+      tree: tree,
+      meta: doc.meta.copyWith(updatedAt: DateTime.now()),
+    );
     if (!_hasValidFrames(updated.toScreenplay())) {
       return (success: false, error: '删除后剧本没有有效的画格');
     }

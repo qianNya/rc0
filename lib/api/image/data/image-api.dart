@@ -251,6 +251,32 @@ class ImageDetailResp {
   }
 }
 
+class ImageAnalysisResp {
+  ImageAnalysisResp({
+    required this.status,
+    required this.summary,
+    this.labels = const [],
+    this.rawJson = const {},
+  });
+
+  final String status;
+  final String summary;
+  final List<String> labels;
+  final Map<String, dynamic> rawJson;
+
+  factory ImageAnalysisResp.fromJson(Map<String, dynamic> m) {
+    final labelsRaw = m['labels'] ?? m['tags'];
+    return ImageAnalysisResp(
+      status: m['status']?.toString() ?? 'unknown',
+      summary: m['summary']?.toString() ?? m['description']?.toString() ?? '',
+      labels: labelsRaw is List
+          ? labelsRaw.map((e) => e.toString()).toList()
+          : const [],
+      rawJson: m,
+    );
+  }
+}
+
 class ImageTagItem {
   final num id;
   final String name;

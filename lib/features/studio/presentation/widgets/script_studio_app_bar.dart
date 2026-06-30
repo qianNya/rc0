@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../../../app/router/routes.dart';
 import '../../../../core/responsive/breakpoints.dart';
 import '../../../../shared/widgets/desktop_shell_app_bar.dart';
+import 'script_studio_header_components.dart';
 import 'script_studio_glass_widgets.dart';
 import 'script_studio_theme.dart';
 
@@ -22,19 +21,8 @@ class ScriptStudioAppBar extends StatelessWidget implements PreferredSizeWidget 
       return DesktopShellAppBar(
         centerTitle: true,
         automaticallyImplyLeading: false,
-        title: Text('Script Studio', style: ScriptStudioColors.title),
-        actions: [
-          StudioGlassIconButton(
-            icon: Icons.search,
-            tooltip: '搜索',
-            onPressed: () => context.push(AppRoutes.search),
-          ),
-          StudioGlassIconButton(
-            icon: Icons.notifications_outlined,
-            tooltip: '消息',
-            onPressed: () => context.push(AppRoutes.messages),
-          ),
-        ],
+        title: Text('剧本工坊', style: ScriptStudioColors.title),
+        actions: const [ScriptStudioHeaderActionButtons()],
       );
     }
 
@@ -45,27 +33,14 @@ class ScriptStudioAppBar extends StatelessWidget implements PreferredSizeWidget 
       surfaceTintColor: Colors.transparent,
       centerTitle: true,
       automaticallyImplyLeading: false,
-      systemOverlayStyle: SystemUiOverlayStyle.light,
-      title: Text('Script Studio', style: ScriptStudioColors.title),
+      systemOverlayStyle: SystemUiOverlayStyle.dark,
+      title: const ScriptStudioHeaderTitleChip(text: '剧本工坊'),
       leading: StudioGlassIconButton(
         icon: Icons.menu,
         tooltip: '菜单',
         onPressed: () {},
       ),
-      actions: [
-        StudioGlassIconButton(
-          icon: Icons.search,
-          tooltip: '搜索',
-          onPressed: () => context.push(AppRoutes.search),
-        ),
-        const SizedBox(width: 4),
-        StudioGlassIconButton(
-          icon: Icons.notifications_outlined,
-          tooltip: '消息',
-          onPressed: () => context.push(AppRoutes.messages),
-        ),
-        const SizedBox(width: 8),
-      ],
+      actions: const [ScriptStudioHeaderActionButtons(trailingSpacing: 8)],
     );
   }
 }

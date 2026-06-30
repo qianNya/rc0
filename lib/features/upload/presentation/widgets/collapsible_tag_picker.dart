@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 import '../../../../shared/widgets/inline_error_banner.dart';
 import '../../../../shared/widgets/rc0_widgets.dart';
 
@@ -55,26 +56,33 @@ class _CollapsibleTagPickerState extends State<CollapsibleTagPicker> {
   Future<void> _showAddDialog() async {
     if (widget.onAdd == null) return;
     final controller = TextEditingController();
-    final tag = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
+    final tag = await showGlassDialog<String>(
+      context,
+      child: GlassDialog(
         title: const Text('添加标签'),
-        content: TextField(
+        onClose: () => Navigator.pop(context),
+        child: TextField(
           controller: controller,
           autofocus: true,
           decoration: const InputDecoration(hintText: '输入标签名称'),
           onSubmitted: (value) => Navigator.pop(context, value.trim()),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
+        footer: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('取消'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, controller.text.trim()),
+                child: const Text('添加'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('添加'),
-          ),
-        ],
+        ),
       ),
     );
     if (tag != null && tag.isNotEmpty) {

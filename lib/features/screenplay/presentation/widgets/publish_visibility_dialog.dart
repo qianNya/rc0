@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 import 'screenplay_visibility_sheet.dart';
 
 /// Dialog for choosing screenplay visibility before publish.
@@ -25,22 +26,28 @@ class _PublishVisibilityDialogState extends State<PublishVisibilityDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
+    return GlassDialog(
       title: const Text('发布剧本'),
-      content: ScreenplayVisibilityOptions(
+      child: ScreenplayVisibilityOptions(
         value: _visibility,
         onChanged: (v) => setState(() => _visibility = v),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('取消'),
+      footer: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(_visibility),
+              child: const Text('开始发布'),
+            ),
+          ],
         ),
-        FilledButton(
-          onPressed: () => Navigator.of(context).pop(_visibility),
-          child: const Text('开始发布'),
-        ),
-      ],
+      ),
     );
   }
 }

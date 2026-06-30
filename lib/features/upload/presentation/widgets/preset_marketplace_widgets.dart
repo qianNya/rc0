@@ -135,7 +135,7 @@ class PresetMarketSegmentedTabs extends StatelessWidget {
         vertical: AppDimensions.spacingSm,
       ),
       child: Container(
-        padding: const EdgeInsets.all(3),
+        padding: const EdgeInsets.all(AppDimensions.spacingXs),
         decoration: BoxDecoration(
           color: track,
           borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
@@ -287,7 +287,7 @@ class PresetRecentCard extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(AppDimensions.spacingSm),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -399,7 +399,7 @@ class PresetMyRowCard extends StatelessWidget {
         onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
         child: Container(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(AppDimensions.spacingSm),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
             border: Border.all(color: AppColors.border),
@@ -513,7 +513,7 @@ class PresetOfficialCard extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(AppDimensions.spacingSm),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -587,7 +587,7 @@ class PresetCommunityCard extends StatelessWidget {
             child: PresetCover(preset: preset, expand: true),
           ),
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(AppDimensions.spacingMd),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -710,7 +710,7 @@ class _PresetCommunityCompactCard extends StatelessWidget {
                 child: PresetCover(preset: preset, expand: true),
               ),
               Padding(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(AppDimensions.spacingSm),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -794,7 +794,7 @@ class PresetListTileCard extends StatelessWidget {
             ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(AppDimensions.spacingMd),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

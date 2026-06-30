@@ -4,9 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../../app/router/routes.dart';
 import '../../../../../app/theme/app_colors.dart';
 import '../../../../../app/theme/app_text_styles.dart';
-import '../../../../../app/theme/system_ui_style.dart';
 import '../../../../../core/responsive/breakpoints.dart';
-import '../../../../../shared/widgets/glass_app_bar_background.dart';
+import '../../../../../shared/widgets/rc0_app_bar.dart';
 import '../../../../screenplay/data/screenplay_local_repository.dart';
 
 class ScriptEditorAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -39,14 +38,8 @@ class ScriptEditorAppBar extends StatelessWidget implements PreferredSizeWidget 
     final projects = ScreenplayLocalRepository.instance.localScreenplays;
     final isMobile = Breakpoints.isMobile(context);
 
-    return AppBar(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      surfaceTintColor: Colors.transparent,
-      flexibleSpace: const GlassAppBarBackground(),
-      systemOverlayStyle:
-          AppSystemUi.styleFor(Theme.of(context).brightness),
+    return Rc0AppBar(
+      toolbarHeight: subtitle != null ? 72 : kToolbarHeight,
       leading: TextButton(
         onPressed: onCancel,
         child: const Text('取消'),

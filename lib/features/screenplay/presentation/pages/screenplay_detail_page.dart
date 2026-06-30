@@ -9,7 +9,6 @@ import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/domain/screenplay/script_frame_display.dart';
 import '../../../../core/network/api_auth.dart';
-import '../../../../core/responsive/breakpoints.dart';
 import '../../../../core/responsive/responsive_builder.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../core/utils/state_listeners.dart';
@@ -40,7 +39,6 @@ import '../../../../shared/widgets/glass/glass_sheet.dart';
 import '../../../../shared/widgets/image_preview.dart';
 import '../../../../shared/widgets/pose_cover_image.dart';
 import '../../../../shared/widgets/primary_button.dart';
-import '../../../../shared/widgets/rc0_app_bar.dart';
 
 class ScreenplayDetailPage extends StatefulWidget {
   const ScreenplayDetailPage({super.key, required this.scriptId});
@@ -670,61 +668,33 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
     final script = _screenplay;
 
     if (script == null && _loadingRemote) {
-      const loadingBody = Center(child: CircularProgressIndicator());
-      if (Breakpoints.isDesktop(context)) {
-        return DesktopStackScaffold(
-          title: const Text('剧本详情'),
-          onBack: () => popOrGoDiscovery(context),
-          body: loadingBody,
-        );
-      }
-      return Scaffold(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        appBar: Rc0AppBar(
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => popOrGoDiscovery(context),
-          ),
-          title: const Text('剧本详情'),
-        ),
-        body: loadingBody,
+      return DesktopStackScaffold(
+        title: const Text('剧本详情'),
+        onBack: () => popOrGoDiscovery(context),
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     if (script == null) {
       final needsLogin = isUnauthorizedError(_remoteError);
-      final errorBody = EmptyStateView(
-        icon: Icons.search_off_outlined,
-        title: needsLogin ? '请先登录' : '剧本不存在',
-        subtitle: needsLogin
-            ? '登录后查看远程剧本详情'
-            : (_remoteError ?? '可能已被删除，或链接无效'),
-        actionLabel: needsLogin ? '去登录' : '重试',
-        onAction: needsLogin
-            ? () => context.go(
-                  AppRoutes.loginWithRedirect(
-                    AppRoutes.script(widget.scriptId),
-                  ),
-                )
-            : _loadScreenplay,
-      );
-      if (Breakpoints.isDesktop(context)) {
-        return DesktopStackScaffold(
-          title: const Text('剧本详情'),
-          onBack: () => popOrGoDiscovery(context),
-          body: errorBody,
-        );
-      }
-      return Scaffold(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        appBar: Rc0AppBar(
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => popOrGoDiscovery(context),
-          ),
-          title: const Text('剧本详情'),
+      return DesktopStackScaffold(
+        title: const Text('剧本详情'),
+        onBack: () => popOrGoDiscovery(context),
+        body: EmptyStateView(
+          icon: Icons.search_off_outlined,
+          title: needsLogin ? '请先登录' : '剧本不存在',
+          subtitle: needsLogin
+              ? '登录后查看远程剧本详情'
+              : (_remoteError ?? '可能已被删除，或链接无效'),
+          actionLabel: needsLogin ? '去登录' : '重试',
+          onAction: needsLogin
+              ? () => context.go(
+                    AppRoutes.loginWithRedirect(
+                      AppRoutes.script(widget.scriptId),
+                    ),
+                  )
+              : _loadScreenplay,
         ),
-        body: errorBody,
       );
     }
 

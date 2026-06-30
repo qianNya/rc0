@@ -4,6 +4,7 @@ import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 import '../../../../shared/widgets/image_preview.dart';
 import '../../../../shared/widgets/pose_cover_image.dart';
 import '../../../screenplay/data/screenplay_draft.dart';
@@ -34,21 +35,28 @@ class _FrameEditorDetailPageState extends State<FrameEditorDetailPage> {
       .scenes[widget.sceneIndex].frames[widget.frameIndex];
 
   Future<void> _confirmDelete() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
+    final confirmed = await showGlassDialog<bool>(
+      context,
+      child: GlassDialog(
         title: const Text('删除画面'),
-        content: const Text('确定要删除这个画面吗？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
+        onClose: () => Navigator.pop(context, false),
+        child: const Text('确定要删除这个画面吗？'),
+        footer: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('取消'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('删除', style: TextStyle(color: AppColors.error)),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('删除', style: TextStyle(color: AppColors.error)),
-          ),
-        ],
+        ),
       ),
     );
     if (confirmed == true && mounted) {

@@ -1,6 +1,8 @@
 # rc0 设计系统（Liquid Glass Design System）
 
-苹果液态玻璃（Liquid Glass / Glassmorphism）为全局视觉基准，Material 3 之上扩展，支持 Light/Dark。
+当前遵循 **RC0 Apple Liquid Glass Design System v2.0**。目标：让内容成为空间主体，UI 作为轻量浮层。
+
+Liquid Glass 不是普通 glassmorphism：不仅有 blur，还要有透明、高光、上下文自适应与动态过渡。
 
 ## 1. 设计 Token
 
@@ -47,6 +49,11 @@ duration: AppMotion.normal
 | `GlassTextField` | `glass/glass_text_field.dart` | 玻璃输入框（无下划线，背景由玻璃提供） |
 | `GlassSegmentedControl` | `glass/glass_segmented_control.dart` | 分段控件（玻璃轨道 + 动画选中药丸） |
 | `GlassSheet` + `showGlassSheet` | `glass/glass_sheet.dart` | 玻璃底部弹窗（含 grab handle 与 SafeArea） |
+| `GlassHeroPage` | `glass/glass_hero_page.dart` | Hero 沉浸详情页壳（渐变遮罩 + 浮动信息卡） |
+| `GlassListRow` | `glass/glass_list_row.dart` | 设置/消息列表行 |
+| `GlassSearchScaffold` | `glass/glass_search_scaffold.dart` | 全局搜索页壳 |
+| `GlassEmptyState` | `glass/glass_empty_state.dart` | 玻璃包裹的空状态 |
+| `GlassProgressSheet` | `glass/glass_progress_sheet.dart` | 长任务不透明进度 sheet |
 
 ### 用法示例
 ```dart
@@ -67,5 +74,11 @@ showGlassSheet(context, child: const VisibilityOptions());
 - UI 不直接调用 API（经 Repository），不暴露 raw DTO。
 - 动画优先隐式动画 + `AppMotion` token。
 
-## 4. 进度
+## 4. 导航与 TabBar（v2）
+- Top Navigation：浮动高度 56，radius 28，top margin 8，bottom margin 12。
+- Bottom Navigation：浮动高度 56，radius 32，距底 16，不得贴屏幕边缘。
+- TabBar：胶囊化连续圆角，选中态需有融合式动画，不允许硬切换。
+- 导航层级：内容(0) < 导航(1) < Dialog(2) < Sheet(3) < Critical(4)。
+
+## 5. 进度
 改造进度与逐文件清单见 `docs/UI_REFACTOR_TRACKER.md`。

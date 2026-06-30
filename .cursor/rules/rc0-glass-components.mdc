@@ -1,0 +1,36 @@
+---
+description: Liquid Glass 组件映射与导航/Tab 规范
+globs: lib/**/presentation/**/*.dart
+alwaysApply: false
+---
+
+# Liquid Glass 组件与导航规范
+
+统一入口：`lib/shared/widgets/glass/glass.dart`。
+
+底层材质：`LiquidGlassSurface`（业务层禁止直接 `BackdropFilter`）。
+
+| 语义角色 | 组件 |
+|---|---|
+| Glass Card | `GlassCard` |
+| Glass Dialog | `GlassDialog` + `showGlassDialog` |
+| Glass Sheet | `GlassSheet` + `showGlassSheet` |
+| Glass Search | `GlassSearchScaffold` / `GlassTextField` |
+| Glass Tab | `FeedTabBar`（液态胶囊） |
+| Glass Top Nav | `Rc0AppBar` + `GlassAppBarBackground` |
+| Glass Bottom Nav | `AppBottomNavBar` + `LiquidGlassSurface` |
+| Glass Feedback | 全局 `SnackBarTheme` + `ScaffoldMessenger` |
+
+## 导航与 TabBar 视觉要求
+
+- Navigation/Tab 必须浮动，不得贴边。
+- Top Nav：高度 56，radius 28，top margin 8，bottom margin 12。
+- Bottom Nav：高度 56，radius 32，bottom margin 16。
+- TabBar：胶囊化、连续圆角、轻量高光、弱边框、动态选中态。
+
+## 强制与禁止
+
+- 禁止业务层直接使用 `AppBar` / `BottomNavigationBar` / `Card` 等默认壳。
+- 允许在共享封装内部使用 Material 基础能力（例如 `Rc0AppBar`）。
+- 长任务进度、键盘感知表单、滚动选择器可保留非透明 `showModalBottomSheet`。
+- 提示弹出信息（toast/snackbar）必须使用全局统一样式，不得在业务页面覆写单页私有样式。

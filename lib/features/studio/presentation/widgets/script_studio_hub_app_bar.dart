@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/routes.dart';
-import '../../../../app/theme/system_ui_style.dart';
-import '../../../../shared/widgets/glass_app_bar_background.dart';
+import '../../../../shared/widgets/rc0_app_bar.dart';
 import '../../../screenplay/data/screenplay_draft.dart';
 import '../../../screenplay/data/screenplay_local_repository.dart';
 import '../screenplay_editor_host.dart';
@@ -44,21 +43,13 @@ class ScriptStudioHubAppBar extends StatelessWidget
     final scriptId = controller.editScriptId ?? '';
     final draft = controller.draft;
 
-    return AppBar(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      surfaceTintColor: Colors.transparent,
+    return Rc0AppBar(
       toolbarHeight: toolbarHeight,
-      flexibleSpace: const GlassAppBarBackground(),
-      systemOverlayStyle:
-          AppSystemUi.styleFor(Theme.of(context).brightness),
       leading: IconButton(
         icon: const Icon(Icons.arrow_back, size: 22),
         onPressed: onBack,
       ),
       leadingWidth: 48,
-      titleSpacing: 0,
       title: ListenableBuilder(
         listenable: controller.titleController,
         builder: (context, _) {

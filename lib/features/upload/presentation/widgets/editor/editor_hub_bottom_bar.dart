@@ -4,7 +4,7 @@ import '../../../../../app/theme/app_colors.dart';
 import '../../../../../app/theme/app_dimensions.dart';
 import '../../../../../app/theme/app_motion.dart';
 import '../../../../../app/theme/app_text_styles.dart';
-import '../../../../../shared/widgets/liquid_glass_surface.dart';
+import '../../../../../shared/widgets/bottom_bar_glass_chrome.dart';
 import '../../../../../shared/widgets/liquid_tab_indicator.dart';
 import '../../../../studio/presentation/studio_editor_shell_bridge.dart';
 import 'editor_quick_action_row.dart';
@@ -36,9 +36,7 @@ class EditorHubBottomBar extends StatelessWidget {
       builder: (context, _) {
         final selectedIndex = _modes.indexOf(bridge.hubMode).clamp(0, _modes.length - 1);
 
-        return LiquidGlassSurface(
-          style: LiquidGlassStyle.navigation,
-          height: AppDimensions.bottomNavFloatingHeight,
+        return BottomBarGlassChrome(
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -67,7 +65,7 @@ class EditorHubBottomBar extends StatelessWidget {
   }
 }
 
-class _HubNavSlot extends StatelessWidget {
+class _HubNavSlot extends StatefulWidget {
   const _HubNavSlot({
     required this.label,
     required this.icon,
@@ -81,6 +79,13 @@ class _HubNavSlot extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
+  State<_HubNavSlot> createState() => _HubNavSlotState();
+}
+
+class _HubNavSlotState extends State<_HubNavSlot> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final unselectedColor =
@@ -91,32 +96,55 @@ class _HubNavSlot extends StatelessWidget {
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: onTap,
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapCancel: () => setState(() => _pressed = false),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTap: widget.onTap,
       child: TweenAnimationBuilder<double>(
-        tween: Tween(end: selected ? 1.0 : 0.0),
+        tween: Tween(end: widget.selected ? 1.0 : 0.0),
         duration: AppMotion.normal,
         curve: AppMotion.standard,
         builder: (context, t, _) {
           final color = Color.lerp(unselectedColor, selectedColor, t)!;
+          final y = -1.2 * t + (_pressed ? 1.4 : 0);
+          final pressScale = _pressed ? 0.93 : 1.0;
 
-          return SizedBox(
-            height: AppDimensions.bottomNavFloatingHeight,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 22, color: color),
-                const SizedBox(height: 2),
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.caption.copyWith(
-                    fontSize: 10,
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                    color: color,
-                  ),
+          return AnimatedScale(
+            duration: AppMotion.fast,
+            curve: AppMotion.standard,
+            scale: pressScale,
+            child: Transform.translate(
+              offset: Offset(0, y),
+              child: SizedBox(
+                height: AppDimensions.bottomNavFloatingHeight,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    AnimatedScale(
+                      duration: AppMotion.fast,
+                      curve: AppMotion.standard,
+                      scale: 0.94 + t * 0.1,
+                      child: Icon(widget.icon, size: 22, color: color),
+                    ),
+                    const SizedBox(height: 2),
+                    AnimatedDefaultTextStyle(
+                      duration: AppMotion.fast,
+                      curve: AppMotion.standard,
+                      style: AppTextStyles.caption.copyWith(
+                        fontSize: 10,
+                        fontWeight:
+                            widget.selected ? FontWeight.w600 : FontWeight.w400,
+                        color: color,
+                      ),
+                      child: Text(
+                        widget.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           );
         },

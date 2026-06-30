@@ -71,7 +71,7 @@ abstract final class AppCatalog {
 
   static const feedTabs = ['发现', '关注', '推荐'];
 
-  static const wikiHubTabs = ['IP', '角色', '相关'];
+  static const wikiHubTabs = ['发现', 'IP', '角色', '相关'];
 
   static final wikiRelatedLinks = [
     WikiRelatedLinkItem(

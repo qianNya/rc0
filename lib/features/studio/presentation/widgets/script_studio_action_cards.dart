@@ -37,7 +37,7 @@ class ScriptStudioActionCards extends StatelessWidget {
               Expanded(
                 child: _SecondaryActionCard(
                   icon: Icons.folder_copy_outlined,
-                  glowColor: AppColors.badgeHot,
+                  glowColor: AppColors.accentDark,
                   title: '模板中心',
                   subtitle: '使用优质模板创作',
                   onTap: () => context.go(AppRoutes.community),
@@ -60,7 +60,7 @@ class _PrimaryCreateCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return StudioGlassCard(
       onTap: onTap,
-      glowColor: const Color(0xFF6366F1),
+      glowColor: AppColors.accent,
       padding: const EdgeInsets.symmetric(
         horizontal: AppDimensions.spacingMd,
         vertical: AppDimensions.spacingMd,
@@ -112,7 +112,7 @@ class _SecondaryActionCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: glowColor, size: 28),
+            Icon(icon, color: AppColors.accent, size: 28),
             const Spacer(),
             Text(title, style: ScriptStudioColors.cardTitle),
             const SizedBox(height: 4),

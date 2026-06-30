@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_dimensions.dart';
 import 'rc0_app_bar.dart';
+import 'rc0_page_scaffold.dart';
 
 class AppScaffold extends StatelessWidget {
   const AppScaffold({
@@ -26,24 +27,32 @@ class AppScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasAppBar = title != null;
 
-    return Scaffold(
-      extendBodyBehindAppBar: hasAppBar,
-      appBar: hasAppBar
-          ? Rc0AppBar(
-              title: Text(title!),
-              actions: actions,
-              bottom: bottom,
-              automaticallyImplyLeading: showBackButton,
-            )
-          : null,
-      body: SafeArea(
-        top: !hasAppBar,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppDimensions.pagePadding,
+    if (!hasAppBar) {
+      return Scaffold(
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppDimensions.pagePadding,
+            ),
+            child: body,
           ),
-          child: body,
         ),
+        floatingActionButton: floatingActionButton,
+      );
+    }
+
+    return Rc0PageScaffold(
+      appBar: Rc0AppBar(
+        title: Text(title!),
+        actions: actions,
+        bottom: bottom,
+        automaticallyImplyLeading: showBackButton,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDimensions.pagePadding,
+        ),
+        child: body,
       ),
       floatingActionButton: floatingActionButton,
     );
