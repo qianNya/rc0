@@ -1,5 +1,6 @@
 import '../domain/shoot_params.dart';
 import 'cine_params_draft.dart';
+import 'frame_asset_refs_draft.dart';
 import 'screenplay_draft.dart';
 import 'screenplay_draft_tags.dart';
 import 'screenplay_tree_document.dart';
@@ -36,16 +37,24 @@ ScreenplayDraft screenplayDraftFromTreeDocument(ScreenplayTreeDocument doc) {
 
   final tree = doc.tree;
   final screenplayMap = tree['screenplay'] as Map<String, dynamic>?;
-  if (screenplayMap != null) {
-    final defaults = screenplayMap['shoot_defaults'];
-    if (defaults is Map<String, dynamic>) {
-      final parsed = ShootParams.fromJson(defaults);
-      if (parsed.hasAnyValue) {
-        draft.defaultParams = parsed;
+    if (screenplayMap != null) {
+      final defaults = screenplayMap['shoot_defaults'];
+      if (defaults is Map<String, dynamic>) {
+        final parsed = ShootParams.fromJson(defaults);
+        if (parsed.hasAnyValue) {
+          draft.defaultParams = parsed;
+        }
       }
-    }
+      final schemeId = screenplayMap['lighting_scheme_id'] as String?;
+      if (schemeId != null && schemeId.isNotEmpty) {
+        draft.lightingSchemeId = schemeId;
+      }
+      final rig = screenplayMap['lighting_rig'];
+      if (rig is Map<String, dynamic>) {
+        draft.lightingRig = Map<String, dynamic>.from(rig);
+      }
 
-    final linkedRaw = screenplayMap['linked_characters'];
+      final linkedRaw = screenplayMap['linked_characters'];
     if (linkedRaw is List) {
       draft.linkedCharacters.clear();
       for (final item in linkedRaw) {
@@ -118,6 +127,16 @@ ScreenplayDraft screenplayDraftFromTreeDocument(ScreenplayTreeDocument doc) {
         frameDraft.tags = parseDraftTagList(frameMap['tags']);
 
         applyCineParamsFromFrameMap(frameDraft, frameMap);
+        applyReferenceImagesFromFrameMap(frameDraft, frameMap);
+
+        final schemeId = frameMap['lighting_scheme_id'] as String?;
+        if (schemeId != null && schemeId.isNotEmpty) {
+          frameDraft.lightingSchemeId = schemeId;
+        }
+        final rig = frameMap['lighting_rig'];
+        if (rig is Map<String, dynamic>) {
+          frameDraft.lightingRig = Map<String, dynamic>.from(rig);
+        }
 
         final frameOverride = frameMap['shoot_override'];
         if (frameOverride is Map<String, dynamic>) {

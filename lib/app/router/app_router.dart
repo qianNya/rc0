@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/lighting/presentation/lighting_editor_controller.dart';
+import '../../features/lighting/presentation/pages/lighting_wiki_page.dart';
 import '../../features/action/presentation/pages/action_wiki_page.dart';
 import '../../features/auth/data/auth_repository.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
@@ -95,10 +97,12 @@ abstract final class AppRouter {
         int.tryParse(state.uri.queryParameters['characterId'] ?? '');
     final characterName = state.uri.queryParameters['characterName'];
     final editId = state.uri.queryParameters['edit'];
+    final lightingSchemeId = state.uri.queryParameters['lightingSchemeId'];
     return ScriptStudioCreatePage(
       editScriptId: editId,
       initialCharacterId: characterId,
       initialCharacterName: characterName,
+      initialLightingSchemeId: lightingSchemeId,
     );
   }
 
@@ -392,6 +396,26 @@ abstract final class AppRouter {
         builder: (context, state) {
           final id = state.pathParameters['id'] ?? '';
           return SceneDetailPage(sceneId: id);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.lighting,
+        name: 'lighting-wiki',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) {
+          final qp = state.uri.queryParameters;
+          final scope = qp['scope'] == 'apply'
+              ? LightingApplyScope.apply
+              : LightingApplyScope.browse;
+          return LightingWikiPage(
+            initialSchemeId: qp['schemeId'],
+            previewCharacterId: int.tryParse(qp['characterId'] ?? ''),
+            previewSceneId: qp['sceneId'],
+            applyScope: scope,
+            actIndex: int.tryParse(qp['act'] ?? ''),
+            sceneIndex: int.tryParse(qp['scene'] ?? ''),
+            frameIndex: int.tryParse(qp['frame'] ?? ''),
+          );
         },
       ),
       GoRoute(

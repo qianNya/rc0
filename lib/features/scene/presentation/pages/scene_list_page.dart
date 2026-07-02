@@ -20,6 +20,9 @@ import '../../domain/scene_entry.dart';
 import '../../domain/scene_utils.dart';
 import '../widgets/scene_action_sheet.dart';
 import '../widgets/scene_category_chips.dart';
+import '../widgets/scene_create_sheet.dart';
+import '../widgets/scene_map_pick.dart';
+import '../widgets/scene_map_sheet.dart';
 import '../widgets/scene_masonry_grid.dart';
 
 class SceneListPage extends StatefulWidget {
@@ -45,6 +48,7 @@ class _SceneListPageState extends State<SceneListPage> {
   void initState() {
     super.initState();
     _repo.addListener(_onRepoChanged);
+    _scrollController.addListener(_onScroll);
     _load();
     _loadFavorites();
   }
@@ -61,6 +65,14 @@ class _SceneListPageState extends State<SceneListPage> {
     if (mounted) setState(() {});
   }
 
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    if (position.pixels >= position.maxScrollExtent - 480) {
+      _repo.loadMore();
+    }
+  }
+
   Future<void> _loadFavorites() async {
     final ids = await SceneLocalStore.instance.favoriteIds();
     if (!mounted) return;
@@ -72,6 +84,7 @@ class _SceneListPageState extends State<SceneListPage> {
       q: _searchController.text.trim().isEmpty
           ? null
           : _searchController.text.trim(),
+      category: AppCatalog.sceneCategoryChips[_categoryIndex],
       sortTab: AppCatalog.sceneSortTabs[_sortTabIndex],
     );
     await _loadLocalCovers();
@@ -91,9 +104,11 @@ class _SceneListPageState extends State<SceneListPage> {
       ..addAll(covers));
   }
 
-  List<SceneEntry> get _categoryFiltered {
-    final category = AppCatalog.sceneCategoryChips[_categoryIndex];
-    return filterScenesByCategory(_repo.filteredItems, category);
+  List<SceneEntry> get _recommended {
+    return sortScenesByTab(
+      _repo.filteredItems,
+      AppCatalog.sceneSortTabs[_sortTabIndex],
+    );
   }
 
   Future<void> _toggleFavorite(SceneEntry entry) async {
@@ -106,14 +121,42 @@ class _SceneListPageState extends State<SceneListPage> {
       ..showSnackBar(SnackBar(content: Text(next ? '已收藏' : '已取消收藏')));
   }
 
+  Future<void> _openCreateScene() async {
+    await showSceneCreateSheet(context);
+    if (mounted) _load();
+  }
+
+  Future<void> _openCreateSceneAtFromMap(SceneMapPick pick) async {
+    Navigator.of(context).pop();
+    await Future<void>.delayed(Duration.zero);
+    if (!mounted) return;
+    await showSceneCreateSheet(
+      context,
+      useRootNavigator: true,
+      initialLatitude: pick.point.latitude,
+      initialLongitude: pick.point.longitude,
+      initialCity: pick.city,
+      initialLocation: pick.locationLabel,
+    );
+    if (mounted) _load();
+  }
+
+  Future<void> _openMapSheet() async {
+    await showSceneMapSheet(
+      context,
+      repo: _repo,
+      isLoggedIn: _auth.isLoggedIn,
+      onCreateSceneAt:
+          _auth.isLoggedIn ? _openCreateSceneAtFromMap : null,
+    );
+    if (mounted) _load();
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final hot = _repo.hotScenes;
-    final recommended = sortScenesByTab(
-      _categoryFiltered,
-      AppCatalog.sceneSortTabs[_sortTabIndex],
-    );
+    final recommended = _recommended;
     final body = _buildBody(
       context,
       hot: hot,
@@ -134,6 +177,11 @@ class _SceneListPageState extends State<SceneListPage> {
       onBack: () => popOrGoDiscovery(context),
       actions: [
         StudioGlassIconButton(
+          tooltip: '场景地图',
+          icon: Icons.map_outlined,
+          onPressed: _openMapSheet,
+        ),
+        StudioGlassIconButton(
           tooltip: 'AI 场景',
           icon: Icons.auto_awesome,
           onPressed: () => context.push(AppRoutes.sceneAi),
@@ -147,10 +195,7 @@ class _SceneListPageState extends State<SceneListPage> {
           StudioGlassIconButton(
             tooltip: '新建场景',
             icon: Icons.add,
-            onPressed: () async {
-              await context.push(AppRoutes.sceneCreate);
-              if (mounted) _load();
-            },
+            onPressed: _openCreateScene,
           ),
       ],
       body: body,
@@ -189,6 +234,13 @@ class _SceneListPageState extends State<SceneListPage> {
                 StudioGlassIconButton(
                   size: 36,
                   iconSize: 20,
+                  tooltip: '场景地图',
+                  onPressed: _openMapSheet,
+                  icon: Icons.map_outlined,
+                ),
+                StudioGlassIconButton(
+                  size: 36,
+                  iconSize: 20,
                   tooltip: '我的场景',
                   onPressed: () => context.push(AppRoutes.myScenes),
                   icon: Icons.folder_outlined,
@@ -198,10 +250,7 @@ class _SceneListPageState extends State<SceneListPage> {
                     size: 36,
                     iconSize: 20,
                     tooltip: '新建场景',
-                    onPressed: () async {
-                      await context.push(AppRoutes.sceneCreate);
-                      if (mounted) _load();
-                    },
+                    onPressed: _openCreateScene,
                     icon: Icons.add,
                   ),
                 StudioGlassIconButton(
@@ -225,7 +274,10 @@ class _SceneListPageState extends State<SceneListPage> {
         SceneCategoryChips(
           chips: AppCatalog.sceneCategoryChips,
           selectedIndex: _categoryIndex,
-          onChanged: (index) => setState(() => _categoryIndex = index),
+          onChanged: (index) {
+            setState(() => _categoryIndex = index);
+            _load();
+          },
         ),
         const SizedBox(height: AppDimensions.spacingSm),
         Expanded(
@@ -241,14 +293,15 @@ class _SceneListPageState extends State<SceneListPage> {
                         EmptyStateView(
                           icon: Icons.landscape_outlined,
                           title: _repo.error ?? '暂无场景',
-                          subtitle: _repo.error != null ? null : '创建第一个场景',
-                          actionLabel: _auth.isLoggedIn ? '新建场景' : null,
-                          onAction: _auth.isLoggedIn
-                              ? () async {
-                                  await context.push(AppRoutes.sceneCreate);
-                                  if (mounted) _load();
-                                }
-                              : null,
+                          subtitle: _repo.error != null
+                              ? '请检查网络后重试'
+                              : '创建第一个场景',
+                          actionLabel: _repo.error != null
+                              ? '重试'
+                              : (_auth.isLoggedIn ? '新建场景' : null),
+                          onAction: _repo.error != null
+                              ? _load
+                              : (_auth.isLoggedIn ? _openCreateScene : null),
                         ),
                       ],
                     )
@@ -366,6 +419,13 @@ class _SceneListPageState extends State<SceneListPage> {
                               onRefresh: _load,
                             ),
                           ),
+                          if (_repo.loadingMore)
+                            const Padding(
+                              padding: EdgeInsets.all(16),
+                              child: Center(
+                                child: CircularProgressIndicator(),
+                              ),
+                            ),
                         ],
                       ),
                     ),

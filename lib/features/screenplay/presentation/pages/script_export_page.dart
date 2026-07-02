@@ -82,7 +82,8 @@ class _ScriptExportPageState extends State<ScriptExportPage> {
                   Text('导出分镜', style: AppTextStyles.title),
                   const SizedBox(height: AppDimensions.spacingSm),
                   Text(
-                    '将剧本结构导出为 .rc0.json 文件，可在其他设备导入。',
+                    '将剧本结构导出为 .rc0.json 文件，可在其他设备导入。'
+                    '当前不支持 PDF、视频或独立图片包导出。',
                     style: AppTextStyles.bodySecondary,
                   ),
                 ],

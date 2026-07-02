@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'feed_grid_layout.dart';
+
 /// Layout breakpoints aligned with Material adaptive guidelines.
 abstract final class Breakpoints {
   static const double compact = 600;
@@ -32,5 +34,5 @@ abstract final class Breakpoints {
       widthOf(context) >= compact;
 
   static int gridColumns(BuildContext context, {int mobile = 2, int desktop = 3}) =>
-      isDesktop(context) ? desktop : mobile;
+      FeedGridLayout.columnsFor(context);
 }

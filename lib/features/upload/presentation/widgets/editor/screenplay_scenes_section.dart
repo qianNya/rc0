@@ -123,10 +123,11 @@ class ScreenplayScenesSection extends StatelessWidget {
                     ),
                     onPressed: canApplyToScene
                         ? () async {
-                            final entry =
+                            final result =
                                 await SceneRepository.instance.fetchDetail(
                               link.id,
                             );
+                            final entry = result.scene;
                             if (entry != null) {
                               await _applyToSelectedScene(entry);
                             }

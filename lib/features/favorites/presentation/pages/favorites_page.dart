@@ -8,6 +8,7 @@ import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/responsive/breakpoints.dart';
+import '../../../../core/responsive/feed_grid_layout.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
@@ -139,23 +140,33 @@ class _FrameFavoritesTab extends StatelessWidget {
 
         return RefreshIndicator(
           onRefresh: () async => repo.load(),
-          child: GridView.builder(
-            physics: const AlwaysScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: isDesktop ? 5 : 3,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 0.75,
+          child: FeedGridScope(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final columns = FeedGridLayout.columnsForWidth(
+                  constraints.maxWidth,
+                );
+                return GridView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: FeedGridLayout.padding(bottom: 24),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: columns,
+                    mainAxisSpacing: FeedGridLayout.spacing,
+                    crossAxisSpacing: FeedGridLayout.spacing,
+                    childAspectRatio: 0.75,
+                  ),
+                  itemCount: items.length,
+                  itemBuilder: (context, index) {
+                    return _FavoriteImageTile(
+                      item: items[index],
+                      onTap: () => _openPreview(context, items, index),
+                      onRemove: () => repo.remove(items[index].id),
+                    );
+                  },
+                );
+              },
+            ),
           ),
-          itemCount: items.length,
-          itemBuilder: (context, index) {
-            return _FavoriteImageTile(
-              item: items[index],
-              onTap: () => _openPreview(context, items, index),
-              onRemove: () => repo.remove(items[index].id),
-            );
-          },
-        ),
         );
       },
     );

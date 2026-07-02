@@ -18,6 +18,8 @@ class ScriptStudioQuickStart extends StatelessWidget {
         context.go(AppRoutes.scenes);
       case '摄影预设':
         context.push(AppRoutes.shootPresetPicker(mode: 'manage'));
+      case '灯光':
+        context.push(AppRoutes.lighting);
       case '我的素材':
         context.push(AppRoutes.library);
     }

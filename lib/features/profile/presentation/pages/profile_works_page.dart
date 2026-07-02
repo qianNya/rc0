@@ -10,6 +10,7 @@ import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/domain/screenplay/screenplay_display.dart';
 import '../../../../core/responsive/breakpoints.dart';
+import '../../../../core/responsive/feed_grid_layout.dart';
 import '../../../../core/utils/state_listeners.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/feed_tab_bar.dart';
@@ -143,12 +144,6 @@ class _ProfileWorksPageState extends State<ProfileWorksPage> {
     context.push(AppRoutes.script(script.detailRouteId));
   }
 
-  int _columnsFor(double width) {
-    if (width >= 1000) return 4;
-    if (width >= 680) return 3;
-    return 2;
-  }
-
   @override
   Widget build(BuildContext context) {
     final userId = _userId ?? _auth.profile?.id.toInt();
@@ -184,7 +179,6 @@ class _ProfileWorksPageState extends State<ProfileWorksPage> {
       loadingMore: loadingMore,
       hasMore: hasMore && _filter != _WorksFilter.drafts,
       selectionController: _selectionController,
-      columnsFor: _columnsFor,
       onRefresh: _load,
       onLoadMore: _loadMore,
       onRetry: _load,
@@ -323,7 +317,6 @@ class _WorksGrid extends StatelessWidget {
     required this.loadingMore,
     required this.hasMore,
     required this.selectionController,
-    required this.columnsFor,
     required this.onRefresh,
     required this.onLoadMore,
     required this.onRetry,
@@ -341,7 +334,6 @@ class _WorksGrid extends StatelessWidget {
   final bool loadingMore;
   final bool hasMore;
   final ScreenplaySelectionController selectionController;
-  final int Function(double width) columnsFor;
   final Future<void> Function() onRefresh;
   final Future<void> Function() onLoadMore;
   final VoidCallback onRetry;
@@ -365,9 +357,11 @@ class _WorksGrid extends StatelessWidget {
           if (hasMore && !loadingMore) onLoadMore();
           return false;
         },
-        child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          slivers: _buildSlivers(context),
+        child: FeedGridScope(
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: _buildSlivers(context),
+          ),
         ),
       ),
     );
@@ -423,7 +417,9 @@ class _WorksGrid extends StatelessWidget {
         ),
         sliver: SliverLayoutBuilder(
           builder: (context, constraints) {
-            final crossAxisCount = columnsFor(constraints.crossAxisExtent);
+            final crossAxisCount = FeedGridLayout.columnsForWidth(
+              FeedGridLayout.layoutWidth(constraints.crossAxisExtent),
+            );
             return SliverGrid(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: crossAxisCount,

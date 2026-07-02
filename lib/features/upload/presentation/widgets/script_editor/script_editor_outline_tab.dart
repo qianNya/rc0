@@ -20,6 +20,7 @@ import '../../../../../core/responsive/breakpoints.dart';
 import '../../../../../shared/widgets/fade_slide_tab_switcher.dart';
 import '../../../../../shared/widgets/glass/glass.dart';
 import '../../../../studio/presentation/studio_editor_shell_bridge.dart';
+import '../../../../studio/presentation/widgets/script_studio_project_info_card.dart';
 import '../../../../../shared/widgets/shell_insets.dart';
 
 class ScriptEditorOutlineTab extends StatefulWidget {
@@ -37,6 +38,11 @@ class ScriptEditorOutlineTab extends StatefulWidget {
     this.editScriptId,
     this.onOpenSettings,
     this.hubLayout = true,
+    this.hubFallbackTitle = '新建剧本',
+    this.titleListenable,
+    this.onBack,
+    this.scriptMenuItems,
+    this.onScriptSelected,
   });
 
   final ScreenplayDraft draft;
@@ -52,6 +58,11 @@ class ScriptEditorOutlineTab extends StatefulWidget {
   final String? editScriptId;
   final VoidCallback? onOpenSettings;
   final bool hubLayout;
+  final String hubFallbackTitle;
+  final Listenable? titleListenable;
+  final VoidCallback? onBack;
+  final List<PopupMenuEntry<String>>? scriptMenuItems;
+  final ValueChanged<String>? onScriptSelected;
 
   /// Mobile hub embed: avoids duplicate bottom bars and applies shell insets.
   bool get embeddedInHub => hubLayout;
@@ -389,6 +400,28 @@ class _ScriptEditorOutlineTabState extends State<ScriptEditorOutlineTab> {
     );
   }
 
+  Widget _buildHubProjectHeader() {
+    final listenable = widget.titleListenable;
+    Widget buildCard() {
+      final rawTitle = widget.draft.title.trim();
+      return ScriptStudioProjectInfoCard(
+        draft: widget.draft,
+        title: rawTitle,
+        fallbackTitle: widget.hubFallbackTitle,
+        onBack: widget.onBack!,
+        onEditTap: widget.onOpenSettings,
+        scriptMenuItems: widget.scriptMenuItems,
+        onScriptSelected: widget.onScriptSelected,
+      );
+    }
+
+    if (listenable == null) return buildCard();
+    return ListenableBuilder(
+      listenable: listenable,
+      builder: (context, _) => buildCard(),
+    );
+  }
+
   Widget _buildHubHeader() {
     return AnimatedSwitcher(
       duration: AppMotion.normal,
@@ -436,11 +469,13 @@ class _ScriptEditorOutlineTabState extends State<ScriptEditorOutlineTab> {
     }
 
     final showInlineHub = Breakpoints.useSidebarShell(context);
+    final showProjectHeader = widget.hubLayout && widget.onBack != null;
 
     if (showInlineHub) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (showProjectHeader) _buildHubProjectHeader(),
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
             child: _buildHubHeader(),
@@ -453,6 +488,7 @@ class _ScriptEditorOutlineTabState extends State<ScriptEditorOutlineTab> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (showProjectHeader) _buildHubProjectHeader(),
         Expanded(child: _buildModeStack()),
       ],
     );

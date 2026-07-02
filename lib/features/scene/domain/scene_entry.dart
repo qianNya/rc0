@@ -10,6 +10,8 @@ class SceneEntry {
     required this.imageUrls,
     required this.location,
     required this.city,
+    this.latitude,
+    this.longitude,
     required this.shootingTips,
     required this.favoriteCount,
     required this.useCount,
@@ -31,6 +33,8 @@ class SceneEntry {
   final List<String> imageUrls;
   final String location;
   final String city;
+  final double? latitude;
+  final double? longitude;
   final Map<String, String> shootingTips;
   final int favoriteCount;
   final int useCount;
@@ -47,6 +51,8 @@ class SceneEntry {
     return merged.toList(growable: false);
   }
 
+  bool get hasLocation => latitude != null && longitude != null;
+
   SceneEntry copyWith({
     String? id,
     String? title,
@@ -58,6 +64,8 @@ class SceneEntry {
     List<String>? imageUrls,
     String? location,
     String? city,
+    double? latitude,
+    double? longitude,
     Map<String, String>? shootingTips,
     int? favoriteCount,
     int? useCount,
@@ -79,6 +87,8 @@ class SceneEntry {
       imageUrls: imageUrls ?? this.imageUrls,
       location: location ?? this.location,
       city: city ?? this.city,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
       shootingTips: shootingTips ?? this.shootingTips,
       favoriteCount: favoriteCount ?? this.favoriteCount,
       useCount: useCount ?? this.useCount,
@@ -102,6 +112,8 @@ class SceneEntry {
         'image_urls': imageUrls,
         'location': location,
         'city': city,
+        if (latitude != null) 'latitude': latitude,
+        if (longitude != null) 'longitude': longitude,
         'shooting_tips': shootingTips,
         'favorite_count': favoriteCount,
         'use_count': useCount,
@@ -141,6 +153,8 @@ class SceneEntry {
           const [],
       location: json['location'] as String? ?? '',
       city: json['city'] as String? ?? '',
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
       shootingTips: tips,
       favoriteCount: (json['favorite_count'] as num?)?.toInt() ?? 0,
       useCount: (json['use_count'] as num?)?.toInt() ?? 0,

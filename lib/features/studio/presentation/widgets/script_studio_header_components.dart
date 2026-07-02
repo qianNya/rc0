@@ -1,10 +1,8 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/routes.dart';
-import '../../../../app/theme/app_dimensions.dart';
+import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 import 'script_studio_glass_widgets.dart';
 import 'script_studio_theme.dart';
 
@@ -19,33 +17,7 @@ class ScriptStudioHeaderTitleChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final radius = BorderRadius.circular(999);
-    return ClipRRect(
-      borderRadius: radius,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(
-          sigmaX: AppDimensions.glassNavBlurSigma,
-          sigmaY: AppDimensions.glassNavBlurSigma,
-        ),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: radius,
-            color: ScriptStudioColors.glassFill,
-            border: Border.all(
-              color: ScriptStudioColors.glassBorder,
-              width: 0.8,
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppDimensions.spacingMd,
-              vertical: AppDimensions.spacingSm,
-            ),
-            child: Text(text, style: ScriptStudioColors.title),
-          ),
-        ),
-      ),
-    );
+    return WikiModeTagTitleChip(text: text, style: ScriptStudioColors.title);
   }
 }
 

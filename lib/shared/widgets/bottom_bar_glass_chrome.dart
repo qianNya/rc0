@@ -9,11 +9,13 @@ class BottomBarGlassChrome extends StatelessWidget {
     super.key,
     required this.child,
     this.height = AppDimensions.bottomNavFloatingHeight,
+    this.width,
     this.breath = 0,
   });
 
   final Widget child;
   final double height;
+  final double? width;
   final double breath;
 
   @override
@@ -23,6 +25,7 @@ class BottomBarGlassChrome extends StatelessWidget {
     return LiquidGlassSurface(
       style: LiquidGlassStyle.navigation,
       height: height,
+      width: width,
       borderRadius: radius,
       child: Stack(
         fit: StackFit.expand,

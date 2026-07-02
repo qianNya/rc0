@@ -155,29 +155,26 @@ class _AdaptiveShellPageState extends State<AdaptiveShellPage> {
             top: false,
             minimum: EdgeInsets.zero,
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Expanded(
-                  child: showEditorHubBar
-                      ? const EditorHubBottomBar()
-                      : navItems.isEmpty
-                          ? const SizedBox.shrink()
-                          : AppBottomNavBar(
-                              wrapPadding: false,
-                              items: navItems,
-                              selectedIndex:
-                                  _mobilePrimarySelectedIndex(path, navItems),
-                              onItemSelected: (index) {
-                                navigateShellNavOption(
-                                  context,
-                                  navigationShell,
-                                  _navConfig.optionForSlot(index),
-                                );
-                              },
-                              onItemLongPress: (_) => openNavConfig(),
-                              onBarLongPress: openNavConfig,
-                            ),
-                ),
+                if (showEditorHubBar)
+                  const EditorHubBottomBar()
+                else if (navItems.isNotEmpty)
+                  AppBottomNavBar(
+                    wrapPadding: false,
+                    items: navItems,
+                    selectedIndex: _mobilePrimarySelectedIndex(path, navItems),
+                    onItemSelected: (index) {
+                      navigateShellNavOption(
+                        context,
+                        navigationShell,
+                        _navConfig.optionForSlot(index),
+                      );
+                    },
+                    onItemLongPress: (_) => openNavConfig(),
+                    onBarLongPress: openNavConfig,
+                  ),
                 if (showEditorHubBar) ...[
                   const SizedBox(width: AppDimensions.bottomNavSecondaryTabGap),
                   StudioEditorShellGlassButton(
@@ -253,6 +250,7 @@ class _AdaptiveShellPageState extends State<AdaptiveShellPage> {
 
     return ScrollNotificationObserver(
       child: Scaffold(
+        backgroundColor: Colors.transparent,
         extendBody: true,
         body: Stack(
           fit: StackFit.expand,

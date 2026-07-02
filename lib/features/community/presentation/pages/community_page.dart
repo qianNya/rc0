@@ -7,12 +7,11 @@ import '../../../../app/theme/app_dimensions.dart';
 import '../../../../core/network/api_auth.dart';
 import '../../../../core/data/app_catalog.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
-import '../../../../core/responsive/breakpoints.dart';
+import '../../../../core/responsive/feed_grid_layout.dart';
 import '../../../../core/responsive/responsive_builder.dart';
 import '../../../../core/utils/state_listeners.dart';
 import '../../../screenplay/data/screenplay_remote_repository.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
-import '../../../../shared/widgets/content_card_shared.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
 import '../../../../shared/widgets/feed_tab_bar.dart';
@@ -484,50 +483,40 @@ class _CommunitySortTabBody extends StatelessWidget {
         const SliverToBoxAdapter(child: SizedBox.shrink()),
       SliverPadding(
         padding: EdgeInsets.fromLTRB(horizontalPadding, 8, horizontalPadding, 0),
-        sliver: mobile
-            ? SliverGrid(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  childAspectRatio: feedGridChildAspectRatio(2),
-                ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final script = scripts[index];
+        sliver: SliverLayoutBuilder(
+          builder: (context, constraints) {
+            final gridWidth = FeedGridLayout.layoutWidth(
+              constraints.crossAxisExtent,
+            );
+            return SliverGrid(
+              gridDelegate: FeedGridLayout.sliverDelegate(
+                gridWidth,
+                gridSpacing: mobile ? 12 : 16,
+              ),
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final script = scripts[index];
+                  if (mobile) {
                     return CommunityTemplateCard(
                       screenplay: script,
                       showHotBadge: index == 0 && sortTabIndex == 0,
                     );
-                  },
-                  childCount: scripts.length,
-                ),
-              )
-            : SliverGrid(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: Breakpoints.gridColumns(context, desktop: 4),
-                  mainAxisSpacing: 16,
-                  crossAxisSpacing: 16,
-                  childAspectRatio: feedGridChildAspectRatio(
-                    Breakpoints.gridColumns(context, desktop: 4),
-                  ),
-                ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final script = scripts[index];
-                    return TemplateGridCard(
-                      screenplay: script,
-                      compact: true,
-                      showBadge: index == 0
-                          ? ContentBadgeType.hot
-                          : index == 1
-                              ? ContentBadgeType.now
-                              : null,
-                    );
-                  },
-                  childCount: scripts.length,
-                ),
+                  }
+                  return TemplateGridCard(
+                    screenplay: script,
+                    compact: true,
+                    showBadge: index == 0
+                        ? ContentBadgeType.hot
+                        : index == 1
+                            ? ContentBadgeType.now
+                            : null,
+                  );
+                },
+                childCount: scripts.length,
               ),
+            );
+          },
+        ),
       ),
       if (loadingMore)
         const SliverToBoxAdapter(

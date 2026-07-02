@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/navigation_utils.dart';
-import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
@@ -10,6 +8,7 @@ import '../../../../core/data/app_catalog.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/primary_button.dart';
 import '../../../../shared/widgets/rc0_widgets.dart';
+import '../widgets/scene_create_sheet.dart';
 
 class SceneAiPage extends StatefulWidget {
   const SceneAiPage({super.key});
@@ -67,16 +66,15 @@ class _SceneAiPageState extends State<SceneAiPage> {
     });
   }
 
-  void _saveScene() {
+  Future<void> _saveScene() async {
     final summary = _descriptionController.text.trim();
     final style = AppCatalog.sceneAiStyles[_styleIndex];
-    final uri = Uri(
-      path: AppRoutes.sceneCreate,
-      queryParameters: {
-        if (summary.isNotEmpty) 'description': '$summary\n风格：$style',
-      },
+    final description =
+        summary.isNotEmpty ? '$summary\n风格：$style' : '风格：$style';
+    await showSceneCreateSheet(
+      context,
+      initialDescription: description,
     );
-    context.push(uri.toString());
   }
 
   @override

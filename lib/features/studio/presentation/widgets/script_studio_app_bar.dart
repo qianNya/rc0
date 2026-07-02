@@ -1,46 +1,68 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
-import '../../../../core/responsive/breakpoints.dart';
-import '../../../../shared/widgets/desktop_shell_app_bar.dart';
+import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 import 'script_studio_header_components.dart';
-import 'script_studio_glass_widgets.dart';
 import 'script_studio_theme.dart';
 
+/// Shared transparent glass app bar for Script Studio and related hubs.
 class ScriptStudioAppBar extends StatelessWidget implements PreferredSizeWidget {
-  const ScriptStudioAppBar({super.key});
+  const ScriptStudioAppBar({
+    super.key,
+    this.title = '剧本工坊',
+    this.leading,
+    this.actions,
+    this.leadingWidth,
+  });
+
+  final String title;
+  final Widget? leading;
+  final List<Widget>? actions;
+  final double? leadingWidth;
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = Breakpoints.isDesktop(context);
+    return WikiModeTagAppBar(
+      title: title,
+      leadingWidth: leadingWidth,
+      leading: leading ??
+          WikiModeTagIconButton(
+            icon: Icons.menu,
+            tooltip: '菜单',
+            onPressed: () {},
+          ),
+      actions: actions ??
+          const [ScriptStudioHeaderActionButtons(trailingSpacing: 8)],
+    );
+  }
+}
 
-    if (isDesktop) {
-      return DesktopShellAppBar(
-        centerTitle: true,
-        automaticallyImplyLeading: false,
-        title: Text('剧本工坊', style: ScriptStudioColors.title),
-        actions: const [ScriptStudioHeaderActionButtons()],
-      );
-    }
+/// Top spacing below floating Wiki-style app bars when [extendBodyBehindAppBar] is true.
+typedef ScriptStudioToolbarContentInset = WikiModeTagToolbarInset;
 
-    return AppBar(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      surfaceTintColor: Colors.transparent,
-      centerTitle: true,
-      automaticallyImplyLeading: false,
-      systemOverlayStyle: SystemUiOverlayStyle.dark,
-      title: const ScriptStudioHeaderTitleChip(text: '剧本工坊'),
-      leading: StudioGlassIconButton(
-        icon: Icons.menu,
-        tooltip: '菜单',
-        onPressed: () {},
-      ),
-      actions: const [ScriptStudioHeaderActionButtons(trailingSpacing: 8)],
+/// Script Studio hub shell: Wiki-style floating chrome, no title-bar fill.
+class ScriptStudioHubScaffold extends StatelessWidget {
+  const ScriptStudioHubScaffold({
+    super.key,
+    required this.appBar,
+    required this.body,
+    this.includeShellBottomSpacer = false,
+  });
+
+  final PreferredSizeWidget appBar;
+  final Widget body;
+  final bool includeShellBottomSpacer;
+
+  @override
+  Widget build(BuildContext context) {
+    return WikiModeTagPageScaffold(
+      appBar: appBar,
+      pageBackgroundColor: ScriptStudioColors.background,
+      bleedUnderAppBar: true,
+      includeShellBottomSpacer: includeShellBottomSpacer,
+      body: body,
     );
   }
 }

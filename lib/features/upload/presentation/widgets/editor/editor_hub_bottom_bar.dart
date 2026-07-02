@@ -35,33 +35,63 @@ class EditorHubBottomBar extends StatelessWidget {
       listenable: bridge,
       builder: (context, _) {
         final selectedIndex = _modes.indexOf(bridge.hubMode).clamp(0, _modes.length - 1);
+        final tabWidths = [
+          for (final label in _labels) _hubTabWidth(context, label),
+        ];
+        final barWidth = AppDimensions.bottomNavBarWidth(tabWidths).clamp(
+          0.0,
+          AppDimensions.floatingBottomNavEditorMaxWidth,
+        );
 
         return BottomBarGlassChrome(
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              LiquidTabIndicator(
-                selectedIndex: selectedIndex,
-                itemCount: _modes.length,
-              ),
-              Row(
-                children: [
-                  for (var i = 0; i < _modes.length; i++)
-                    Expanded(
-                      child: _HubNavSlot(
-                        label: _labels[i],
-                        icon: _icons[i],
-                        selected: selectedIndex == i,
-                        onTap: () => bridge.setHubMode(_modes[i]),
+          width: barWidth,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppDimensions.bottomNavBarInsetH,
+            ),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                LiquidTabIndicator(
+                  selectedIndex: selectedIndex,
+                  itemCount: _modes.length,
+                  itemWidths: tabWidths,
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (var i = 0; i < _modes.length; i++)
+                      SizedBox(
+                        width: tabWidths[i],
+                        child: _HubNavSlot(
+                          label: _labels[i],
+                          icon: _icons[i],
+                          selected: selectedIndex == i,
+                          onTap: () => bridge.setHubMode(_modes[i]),
+                        ),
                       ),
-                    ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
         );
       },
     );
+  }
+
+  static double _hubTabWidth(BuildContext context, String label) {
+    final style = AppTextStyles.caption.copyWith(
+      fontSize: 10,
+      fontWeight: FontWeight.w600,
+    );
+    final painter = TextPainter(
+      text: TextSpan(text: label, style: style),
+      textDirection: Directionality.of(context),
+      maxLines: 1,
+    )..layout();
+    final contentWidth = painter.width > 22 ? painter.width : 22;
+    return contentWidth + AppDimensions.bottomNavLabeledTabPaddingH * 2;
   }
 }
 

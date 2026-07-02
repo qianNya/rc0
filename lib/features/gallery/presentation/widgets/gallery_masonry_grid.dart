@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../app/theme/app_dimensions.dart';
+import '../../../../core/responsive/feed_grid_layout.dart';
 import '../../domain/gallery_image.dart';
 import 'gallery_image_tile.dart';
 
@@ -35,7 +36,7 @@ class GalleryMasonryGrid extends StatelessWidget {
     super.key,
     required this.items,
     required this.onTap,
-    this.crossAxisCount = 3,
+    this.crossAxisCount,
     this.spacing = AppDimensions.spacingSm,
     this.padding = const EdgeInsets.symmetric(
       horizontal: AppDimensions.spacingMd,
@@ -44,7 +45,7 @@ class GalleryMasonryGrid extends StatelessWidget {
 
   final List<GalleryImage> items;
   final void Function(int index) onTap;
-  final int crossAxisCount;
+  final int? crossAxisCount;
   final double spacing;
   final EdgeInsetsGeometry padding;
 
@@ -52,43 +53,46 @@ class GalleryMasonryGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     if (items.isEmpty) return const SizedBox.shrink();
 
+    final columnsCount = crossAxisCount ?? FeedGridLayout.columnsFor(context);
     final columns = distributeToShortestColumns(
       itemCount: items.length,
-      columnCount: crossAxisCount,
+      columnCount: columnsCount,
     );
 
-    return Padding(
-      padding: padding,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (var col = 0; col < columns.length; col++) ...[
-            if (col > 0) SizedBox(width: spacing),
-            Expanded(
-              child: Column(
-                children: [
-                  for (var i = 0; i < columns[col].length; i++) ...[
-                    if (i > 0) SizedBox(height: spacing),
-                    Builder(
-                      builder: (context) {
-                        final index = columns[col][i];
-                        final ratio =
-                            _kMasonryAspectRatios[index % _kMasonryAspectRatios.length];
-                        return AspectRatio(
-                          aspectRatio: ratio,
-                          child: GalleryImageTile(
-                            image: items[index],
-                            onTap: () => onTap(index),
-                          ),
-                        );
-                      },
-                    ),
+    return FeedGridScope(
+      child: Padding(
+        padding: padding,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (var col = 0; col < columns.length; col++) ...[
+              if (col > 0) SizedBox(width: spacing),
+              Expanded(
+                child: Column(
+                  children: [
+                    for (var i = 0; i < columns[col].length; i++) ...[
+                      if (i > 0) SizedBox(height: spacing),
+                      Builder(
+                        builder: (context) {
+                          final index = columns[col][i];
+                          final ratio = _kMasonryAspectRatios[
+                              index % _kMasonryAspectRatios.length];
+                          return AspectRatio(
+                            aspectRatio: ratio,
+                            child: GalleryImageTile(
+                              image: items[index],
+                              onTap: () => onTap(index),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

@@ -558,21 +558,24 @@ agent_notes:
 ```yaml
 page_id: lighting-wiki
 route: /lighting
-route_state: target
+route_state: implemented
 shell_level: root_stack
 product_domain: lighting
 primary_entity: preset
-feature_owner: lib/features/screenplay
+feature_owner: lib/features/lighting
 screen_widget: LightingWikiPage
-data_owner: ShootPresetRepository
+data_owner: LightingRepository
 entry_from:
   - wiki-home
   - frame-editor
+  - desktop-sidebar
+  - character-detail
+  - scene-detail
 next_actions:
   - select_lighting_preset
   - apply_to_frame
 agent_notes:
-  - 目标页面。当前可先由 /preset?scope=frame 承载。
+  - 灯光方案 Hub：预设、3D/示意图预览、参数面板；与 Studio frame 通过 lighting_rig JSON 打通。
 ```
 
 ### `camera-wiki`

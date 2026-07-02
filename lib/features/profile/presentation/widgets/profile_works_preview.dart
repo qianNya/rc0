@@ -6,6 +6,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
+import '../../../../core/responsive/feed_grid_layout.dart';
 import '../../../../shared/widgets/template_grid_card.dart';
 
 /// Inline works grid for the profile「作品」tab (Douyin-style content area).
@@ -15,13 +16,11 @@ class ProfileWorksPreview extends StatelessWidget {
     required this.screenplays,
     this.maxItems = 6,
     this.onViewAll,
-    this.crossAxisCount = 3,
   });
 
   final List<Screenplay> screenplays;
   final int maxItems;
   final VoidCallback? onViewAll;
-  final int crossAxisCount;
 
   static const _aspectRatio = 0.72;
 
@@ -33,15 +32,15 @@ class ProfileWorksPreview extends StatelessWidget {
 
     final preview = screenplays.take(maxItems).toList(growable: false);
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final gap = AppDimensions.spacingXs;
-        final cols = crossAxisCount;
-        final itemWidth =
-            (constraints.maxWidth - gap * (cols - 1)) / cols;
-        final itemHeight = itemWidth / _aspectRatio;
+    return FeedGridScope(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final gap = AppDimensions.spacingXs;
+          final cols = FeedGridLayout.columnsForWidth(constraints.maxWidth);
+          final itemWidth = (constraints.maxWidth - gap * (cols - 1)) / cols;
+          final itemHeight = itemWidth / _aspectRatio;
 
-        return Column(
+          return Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -73,7 +72,8 @@ class ProfileWorksPreview extends StatelessWidget {
             ],
           ],
         );
-      },
+        },
+      ),
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
+import '../../../../core/responsive/feed_grid_layout.dart';
 import '../../../../core/utils/state_listeners.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/inline_error_banner.dart';
@@ -64,9 +65,12 @@ class _WikiIpTabState extends State<WikiIpTab> with AutomaticKeepAliveClientMixi
     final secondary =
         Theme.of(context).textTheme.bodyMedium?.color ?? AppColors.textSecondary;
 
-    return RefreshIndicator(
-      onRefresh: _refresh,
-      child: CustomScrollView(
+    return FeedGridScope(
+      child: ColoredBox(
+        color: Colors.transparent,
+        child: RefreshIndicator(
+        onRefresh: _refresh,
+        child: CustomScrollView(
         controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
@@ -76,9 +80,9 @@ class _WikiIpTabState extends State<WikiIpTab> with AutomaticKeepAliveClientMixi
             ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(
+              padding: EdgeInsets.fromLTRB(
                 AppDimensions.spacingMd,
-                AppDimensions.spacingSm,
+                MediaQuery.paddingOf(context).top + AppDimensions.spacingSm,
                 AppDimensions.spacingMd,
                 AppDimensions.spacingSm,
               ),
@@ -136,32 +140,34 @@ class _WikiIpTabState extends State<WikiIpTab> with AutomaticKeepAliveClientMixi
                 AppDimensions.spacingMd,
                 AppDimensions.spacingMd,
               ),
-              sliver: SliverGrid(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  mainAxisSpacing: AppDimensions.spacingSm,
-                  crossAxisSpacing: AppDimensions.spacingSm,
-                  childAspectRatio: 0.72,
-                ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    if (index >= items.length) {
-                      return const Center(
-                        child: SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      );
-                    }
-                    final entry = items[index];
-                    return IpGridCard(
-                      entry: entry,
-                      onTap: () => context.push(AppRoutes.ip(entry.id)),
-                    );
-                  },
-                  childCount: items.length + (_repo.loadingMore ? 1 : 0),
-                ),
+              sliver: SliverLayoutBuilder(
+                builder: (context, constraints) {
+                  return SliverGrid(
+                    gridDelegate: FeedGridLayout.sliverDelegate(
+                      FeedGridLayout.layoutWidth(constraints.crossAxisExtent),
+                      childAspectRatio: 0.72,
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        if (index >= items.length) {
+                          return const Center(
+                            child: SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          );
+                        }
+                        final entry = items[index];
+                        return IpGridCard(
+                          entry: entry,
+                          onTap: () => context.push(AppRoutes.ip(entry.id)),
+                        );
+                      },
+                      childCount: items.length + (_repo.loadingMore ? 1 : 0),
+                    ),
+                  );
+                },
               ),
             ),
           if (items.isNotEmpty && _repo.total > 0)
@@ -180,6 +186,8 @@ class _WikiIpTabState extends State<WikiIpTab> with AutomaticKeepAliveClientMixi
             child: SizedBox(height: ShellInsets.scrollBottom(context)),
           ),
         ],
+      ),
+        ),
       ),
     );
   }

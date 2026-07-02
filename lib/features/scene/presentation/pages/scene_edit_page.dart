@@ -40,7 +40,8 @@ class _SceneEditPageState extends State<SceneEditPage> {
   }
 
   Future<void> _load() async {
-    final entry = await _repo.fetchDetail(widget.sceneId);
+    final result = await _repo.fetchDetail(widget.sceneId);
+    final entry = result.scene;
     if (entry == null) {
       if (mounted) setState(() => _loading = false);
       return;
@@ -57,7 +58,9 @@ class _SceneEditPageState extends State<SceneEditPage> {
       ..themes = List<String>.from(entry.themes)
       ..shootingTips = Map<String, String>.from(entry.shootingTips)
       ..location = entry.location
-      ..city = entry.city;
+      ..city = entry.city
+      ..latitude = entry.latitude
+      ..longitude = entry.longitude;
     if (mounted) setState(() => _loading = false);
   }
 
@@ -77,6 +80,8 @@ class _SceneEditPageState extends State<SceneEditPage> {
       imageUrls: _formData.referencePaths,
       location: _formData.location,
       city: _formData.city,
+      latitude: _formData.latitude,
+      longitude: _formData.longitude,
       shootingTips: _formData.shootingTips,
     );
     if (!mounted) return;

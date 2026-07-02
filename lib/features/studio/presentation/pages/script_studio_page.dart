@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
@@ -7,13 +6,11 @@ import '../../../../core/utils/state_listeners.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../screenplay/data/screenplay_local_repository.dart';
 import '../../../user/data/user_screenplays_repository.dart';
-import '../../../../shared/widgets/shell_insets.dart';
 import '../widgets/script_studio_action_cards.dart';
 import '../widgets/script_studio_app_bar.dart';
-import '../widgets/script_studio_backdrop.dart';
 import '../widgets/script_studio_quick_start.dart';
 import '../widgets/script_studio_recent_section.dart';
-import '../widgets/script_studio_theme.dart';
+import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 
 class ScriptStudioPage extends StatefulWidget {
   const ScriptStudioPage({super.key});
@@ -93,44 +90,27 @@ class _ScriptStudioPageState extends State<ScriptStudioPage> {
 
   @override
   Widget build(BuildContext context) {
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark,
-      child: Scaffold(
-        backgroundColor: ScriptStudioColors.background,
-        extendBodyBehindAppBar: true,
-        appBar: const ScriptStudioAppBar(),
-        body: Stack(
-          fit: StackFit.expand,
-          children: [
-            const ScriptStudioBackdrop(),
-            ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                const _ScriptStudioTopInset(),
-                const ScriptStudioActionCards(),
-                ScriptStudioRecentSection(
-                  projects: _recentProjects,
-                  onDataChanged: _onChanged,
-                ),
-                const ScriptStudioQuickStart(),
-                const ShellBottomSpacer(),
-              ],
-            ),
-          ],
+    return ScriptStudioHubScaffold(
+      appBar: const ScriptStudioAppBar(),
+      includeShellBottomSpacer: true,
+      body: ListView(
+        padding: wikiModeTagBodyPadding(
+          context,
+          contentGap: AppDimensions.spacingMd,
+        ).copyWith(
+          left: 0,
+          right: 0,
+          bottom: 0,
         ),
+        children: [
+          const ScriptStudioActionCards(),
+          ScriptStudioRecentSection(
+            projects: _recentProjects,
+            onDataChanged: _onChanged,
+          ),
+          const ScriptStudioQuickStart(),
+        ],
       ),
-    );
-  }
-}
-
-class _ScriptStudioTopInset extends StatelessWidget {
-  const _ScriptStudioTopInset();
-
-  @override
-  Widget build(BuildContext context) {
-    final statusTop = MediaQuery.paddingOf(context).top;
-    return SizedBox(
-      height: statusTop + kToolbarHeight - AppDimensions.spacingXl,
     );
   }
 }

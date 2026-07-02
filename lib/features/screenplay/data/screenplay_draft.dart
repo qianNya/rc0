@@ -21,8 +21,11 @@ class FrameDraft {
     this.characterNote = '',
     this.characterId,
     this.characterName = '',
+    this.poseId,
     Set<String>? tags,
     List<UploadImageFile>? referenceImages,
+    this.lightingSchemeId,
+    this.lightingRig,
   })  : cineParams = cineParams ?? const CineParams(),
         tags = tags != null ? Set<String>.from(tags) : <String>{},
         referenceImages = referenceImages ?? [];
@@ -37,8 +40,12 @@ class FrameDraft {
   String characterNote;
   int? characterId;
   String characterName;
+  /// Optional link to a character-library pose (Roadmap: Pose Nodes).
+  int? poseId;
   Set<String> tags;
   final List<UploadImageFile> referenceImages;
+  String? lightingSchemeId;
+  Map<String, dynamic>? lightingRig;
 
   FrameDraft copyDeep() {
     return FrameDraft(
@@ -56,6 +63,7 @@ class FrameDraft {
       characterNote: characterNote,
       characterId: characterId,
       characterName: characterName,
+      poseId: poseId,
       tags: Set<String>.from(tags),
       referenceImages: [
         for (final ref in referenceImages)
@@ -65,6 +73,10 @@ class FrameDraft {
             previewPath: ref.previewPath,
           ),
       ],
+      lightingSchemeId: lightingSchemeId,
+      lightingRig: lightingRig != null
+          ? Map<String, dynamic>.from(lightingRig!)
+          : null,
     );
   }
 }
@@ -81,6 +93,8 @@ class SceneDraft {
     List<FrameDraft>? frames,
     this.paramOverride,
     Set<String>? tags,
+    this.lightingSchemeId,
+    this.lightingRig,
   })  : frames = frames ?? [],
         tags = tags != null ? Set<String>.from(tags) : <String>{};
 
@@ -94,6 +108,8 @@ class SceneDraft {
   final List<FrameDraft> frames;
   ShootParams? paramOverride;
   Set<String> tags;
+  String? lightingSchemeId;
+  Map<String, dynamic>? lightingRig;
 
   SceneDraft copyDeep() {
     return SceneDraft(
@@ -107,6 +123,10 @@ class SceneDraft {
       frames: frames.map((f) => f.copyDeep()).toList(),
       paramOverride: paramOverride?.copyWith(),
       tags: Set<String>.from(tags),
+      lightingSchemeId: lightingSchemeId,
+      lightingRig: lightingRig != null
+          ? Map<String, dynamic>.from(lightingRig!)
+          : null,
     );
   }
 }
@@ -263,6 +283,8 @@ class ScreenplayDraft {
     ShootParams? defaultParams,
     List<ScreenplayCharacterLink>? linkedCharacters,
     List<ScreenplaySceneLink>? linkedScenes,
+    this.lightingSchemeId,
+    this.lightingRig,
   })  : tags = Set<String>.from(tags ?? {'站姿'}),
         acts = acts ?? [ActDraft()],
         defaultParams = defaultParams ?? AppCatalog.defaultShootParams,
@@ -351,6 +373,8 @@ class ScreenplayDraft {
   ShootParams defaultParams;
   final List<ScreenplayCharacterLink> linkedCharacters;
   final List<ScreenplaySceneLink> linkedScenes;
+  String? lightingSchemeId;
+  Map<String, dynamic>? lightingRig;
 
   /// Explicit cover; null means use the first frame/image as default.
   UploadImageFile? coverImage;
@@ -374,6 +398,10 @@ class ScreenplayDraft {
               previewPath: coverImage!.previewPath,
             ),
       defaultParams: defaultParams.copyWith(),
+      lightingSchemeId: lightingSchemeId,
+      lightingRig: lightingRig != null
+          ? Map<String, dynamic>.from(lightingRig!)
+          : null,
       linkedCharacters: linkedCharacters
           .map((c) => ScreenplayCharacterLink(id: c.id, name: c.name))
           .toList(),
@@ -543,6 +571,9 @@ List<UploadImageFile> collectDraftImages(ScreenplayDraft draft) {
     for (final scene in act.scenes) {
       for (final frame in scene.frames) {
         add(frame.image);
+        for (final ref in frame.referenceImages) {
+          add(ref);
+        }
       }
     }
   }

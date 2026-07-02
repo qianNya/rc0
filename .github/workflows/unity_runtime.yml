@@ -1,0 +1,32 @@
+name: Unity Runtime Build
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'unity/rc0_runtime/**'
+      - 'packages/rc0_unity_widget/**'
+
+jobs:
+  validate-flutter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: flutter analyze lib/runtime_3d packages/rc0_unity_widget/lib
+      - run: flutter test test/runtime_3d/
+
+  unity-build-matrix:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [iOS, Android, WebGL, StandaloneOSX, StandaloneWindows64]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unity build placeholder
+        run: |
+          echo "Build ${{ matrix.target }} from unity/rc0_runtime on a Unity-enabled runner."
+          echo "Copy artifacts per packages/rc0_unity_widget/README.md"

@@ -104,11 +104,6 @@ class _MyGalleryPageState extends State<MyGalleryPage> {
     return items.where((image) => image.matchesTag(tag)).toList();
   }
 
-  int get _masonryColumns {
-    if (Breakpoints.isDesktop(context)) return 4;
-    return 3;
-  }
-
   void _showSnack(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
@@ -485,7 +480,6 @@ class _MyGalleryPageState extends State<MyGalleryPage> {
         SliverToBoxAdapter(
           child: GalleryMasonryGrid(
             items: filtered,
-            crossAxisCount: _masonryColumns,
             onTap: (index) => _openPreview(filtered, index),
           ),
         ),

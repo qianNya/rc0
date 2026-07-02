@@ -18,6 +18,7 @@ import 'features/gallery/data/image_gallery_repository.dart';
 import 'features/gallery/data/image_tags_repository.dart';
 import 'features/screenplay/data/screenplay_tags_repository.dart';
 import 'features/screenplay/data/shoot_preset_repository.dart';
+import 'features/lighting/data/lighting_repository.dart';
 import 'features/screenplay/data/screenplay_image_localization_service.dart';
 import 'features/screenplay/data/screenplay_local_repository.dart';
 
@@ -64,6 +65,7 @@ Future<void> _initBackgroundServices() async {
     IpRepository.instance.initialize(),
     ScreenplayTagsRepository.instance.initialize(),
     ShootPresetRepository.instance.load(),
+    LightingRepository.instance.load(),
   ]);
   ImageFavoriteStore.instance = ImageFavoriteRepository.instance;
 }

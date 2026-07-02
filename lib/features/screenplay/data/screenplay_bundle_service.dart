@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
@@ -26,18 +27,17 @@ class ScreenplayBundleService {
       );
 
       if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
-        final savePath = await FilePicker.platform.saveFile(
+        final savePath = await FilePicker.saveFile(
           dialogTitle: '导出剧本 JSON',
           fileName: filename,
           type: FileType.custom,
           allowedExtensions: ['json'],
+          bytes: Uint8List.fromList(utf8.encode(jsonText)),
         );
         if (savePath == null) {
           return (path: null, error: null);
         }
-        final file = File(savePath);
-        await file.writeAsString(jsonText, encoding: utf8);
-        return (path: file.path, error: null);
+        return (path: savePath, error: null);
       }
 
       final dir = await getApplicationDocumentsDirectory();
@@ -55,7 +55,7 @@ class ScreenplayBundleService {
 
   Future<({ScreenplayTreeDocument? document, String? error})> importFromFile() async {
     try {
-      final result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['json', 'rc0'],
         withData: true,

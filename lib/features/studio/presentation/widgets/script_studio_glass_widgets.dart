@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import 'script_studio_theme.dart';
@@ -25,54 +26,12 @@ class StudioGlassIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final radius = BorderRadius.circular(size / 2);
-
-    final button = ClipRRect(
-      borderRadius: radius,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(
-          sigmaX: AppDimensions.glassNavBlurSigma,
-          sigmaY: AppDimensions.glassNavBlurSigma,
-        ),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: ScriptStudioColors.glassFill,
-            border: Border.all(
-              color: ScriptStudioColors.glassBorder,
-              width: 0.8,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 14,
-                spreadRadius: -2,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: SizedBox(
-            width: size,
-            height: size,
-            child: Icon(
-              icon,
-              size: iconSize,
-              color: ScriptStudioColors.iconForeground,
-            ),
-          ),
-        ),
-      ),
-    );
-
-    return IconButton(
+    return WikiModeTagIconButton(
+      icon: icon,
       onPressed: onPressed,
+      size: size,
+      iconSize: iconSize,
       tooltip: tooltip,
-      padding: EdgeInsets.zero,
-      constraints: BoxConstraints.tightFor(width: size, height: size),
-      style: IconButton.styleFrom(
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      ),
-      icon: button,
     );
   }
 }

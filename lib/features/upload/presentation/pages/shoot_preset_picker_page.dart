@@ -9,13 +9,15 @@ import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/data/preset_catalog.dart';
 import '../../../../core/utils/state_listeners.dart';
-import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/glass/glass.dart';
 import '../../../../shared/widgets/glass/glass_sheet.dart';
+import '../../../../shared/widgets/rc0_page_scaffold.dart';
+import '../../../lighting/presentation/utils/lighting_navigation.dart';
 import '../../../screenplay/data/shoot_preset_repository.dart';
 import '../../../screenplay/domain/shoot_preset.dart';
 import '../widgets/preset_marketplace_widgets.dart';
 import '../widgets/shoot_preset_edit_sheet.dart';
+import '../widgets/shoot_preset_picker_header_card.dart';
 enum ShootPresetPickerMode { select, manage }
 
 enum _MarketTab { mine, official, community }
@@ -64,8 +66,8 @@ class _ShootPresetPickerPageState extends State<ShootPresetPickerPage> {
   bool get _isManage => widget.mode == ShootPresetPickerMode.manage;
 
   String get _title {
-    if (_isManage) return '管理拍摄预设';
-    return '选择参数';
+    if (_isManage) return '管理摄影预设';
+    return '选择摄影预设';
   }
 
   void _applyPreset(ShootPreset preset) {
@@ -149,7 +151,7 @@ class _ShootPresetPickerPageState extends State<ShootPresetPickerPage> {
 
   void _sharePreset(ShootPreset preset) {
     Share.share(
-      '${preset.label}\n${preset.displaySubtitle}\n— 来自 rc0 拍摄预设',
+      '${preset.label}\n${preset.displaySubtitle}\n— 来自 rc0 摄影预设',
       subject: preset.label,
     );
   }
@@ -245,24 +247,66 @@ class _ShootPresetPickerPageState extends State<ShootPresetPickerPage> {
     setState(() => _tab = _MarketTab.values[index]);
   }
 
+  String get _subtitle {
+    if (_isManage) return '编辑、复制与同步自定义摄影预设';
+    return '选择设备与画幅 · 打光请使用灯光库';
+  }
+
+  void _onBack() => popOrGoStudio(context);
+
+  void _openLightingHub() {
+    openLightingHub(context, scope: 'browse');
+  }
+
+  Widget _buildHeader() {
+    return ShootPresetPickerHeaderCard(
+      title: _title,
+      subtitle: _subtitle,
+      onBack: _onBack,
+      scopeLabel: widget.scopeLabel,
+      myPresetCount: _repo.userPresets.length,
+      officialCount: _repo.builtinPresets.length,
+      onCreateTap: _createPreset,
+      onLightingTap: _isManage ? null : _openLightingHub,
+      isManage: _isManage,
+    );
+  }
+
+  Widget _buildPage({
+    required Widget body,
+    Widget? floatingActionButton,
+  }) {
+    return Rc0PageScaffold(
+      includeShellBottomSpacer: false,
+      floatingActionButton: floatingActionButton,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildHeader(),
+          Expanded(child: body),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!_repo.isLoaded && _repo.allPresets.isEmpty) {
-      return DesktopStackScaffold(
-        title: Text(_title),
-        onBack: () => popOrGoStudio(context),
+      return _buildPage(
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     if (_isManage) {
-      return _buildManageScaffold();
+      return _buildManageBody();
     }
 
-    return DesktopStackScaffold(
-      title: Text(_title),
-      onBack: () => popOrGoStudio(context),
-      centerTitle: false,
+    return _buildPage(
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _createPreset,
+        icon: const Icon(Icons.add),
+        label: const Text('创建预设'),
+      ),
       body: Stack(
         children: [
           Column(
@@ -291,25 +335,19 @@ class _ShootPresetPickerPageState extends State<ShootPresetPickerPage> {
               Expanded(child: _buildTabBody()),
             ],
           ),
-          Positioned(
-            right: 16,
-            bottom: 16,
-            child: FloatingActionButton.extended(
-              onPressed: _createPreset,
-              icon: const Icon(Icons.add),
-              label: const Text('创建预设'),
-            ),
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildManageScaffold() {
+  Widget _buildManageBody() {
     final user = _repo.userPresets;
-    return DesktopStackScaffold(
-      title: Text(_title),
-      onBack: () => popOrGoStudio(context),
+    return _buildPage(
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _createPreset,
+        icon: const Icon(Icons.add),
+        label: const Text('创建预设'),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(AppDimensions.spacingMd),
         children: [
@@ -342,11 +380,6 @@ class _ShootPresetPickerPageState extends State<ShootPresetPickerPage> {
               ),
             ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _createPreset,
-        icon: const Icon(Icons.add),
-        label: const Text('创建预设'),
       ),
     );
   }

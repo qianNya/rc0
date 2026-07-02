@@ -10,6 +10,8 @@ class SceneItem {
     required this.imageUrls,
     required this.location,
     required this.city,
+    this.latitude,
+    this.longitude,
     required this.shootingTips,
     required this.favoriteCount,
     required this.useCount,
@@ -17,6 +19,8 @@ class SceneItem {
     required this.rating,
     required this.sort,
     required this.isSeed,
+    this.createdAt,
+    this.updatedAt,
   });
 
   final num id;
@@ -29,6 +33,8 @@ class SceneItem {
   final List<String> imageUrls;
   final String location;
   final String city;
+  final double? latitude;
+  final double? longitude;
   final Map<String, String> shootingTips;
   final num favoriteCount;
   final num useCount;
@@ -36,6 +42,8 @@ class SceneItem {
   final num rating;
   final num sort;
   final bool isSeed;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   factory SceneItem.fromJson(Map<String, dynamic> m) {
     final tipsRaw = m['shooting_tips'];
@@ -57,6 +65,8 @@ class SceneItem {
       imageUrls: _stringList(m['image_urls']),
       location: m['location'] as String? ?? '',
       city: m['city'] as String? ?? '',
+      latitude: (m['latitude'] as num?)?.toDouble(),
+      longitude: (m['longitude'] as num?)?.toDouble(),
       shootingTips: tips,
       favoriteCount: m['favorite_count'] ?? 0,
       useCount: m['use_count'] ?? 0,
@@ -64,6 +74,8 @@ class SceneItem {
       rating: m['rating'] ?? 0,
       sort: m['sort'] ?? 0,
       isSeed: m['is_seed'] as bool? ?? false,
+      createdAt: DateTime.tryParse(m['created_at'] as String? ?? ''),
+      updatedAt: DateTime.tryParse(m['updated_at'] as String? ?? ''),
     );
   }
 }
@@ -111,6 +123,8 @@ class SceneWriteBody {
     this.imageUrls = const [],
     this.location = '',
     this.city = '',
+    this.latitude,
+    this.longitude,
     this.shootingTips = const {},
     this.sort = 0,
   });
@@ -124,6 +138,8 @@ class SceneWriteBody {
   final List<String> imageUrls;
   final String location;
   final String city;
+  final double? latitude;
+  final double? longitude;
   final Map<String, String> shootingTips;
   final int sort;
 
@@ -137,6 +153,8 @@ class SceneWriteBody {
         if (imageUrls.isNotEmpty) 'image_urls': imageUrls,
         if (location.isNotEmpty) 'location': location,
         if (city.isNotEmpty) 'city': city,
+        if (latitude != null) 'latitude': latitude,
+        if (longitude != null) 'longitude': longitude,
         if (shootingTips.isNotEmpty) 'shooting_tips': shootingTips,
         'sort': sort,
       };

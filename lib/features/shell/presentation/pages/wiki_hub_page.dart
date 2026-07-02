@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
 import '../../../character/presentation/widgets/wiki/wiki_character_library_tab.dart';
 import '../../../explore/presentation/pages/explore_page.dart';
+import '../widgets/wiki_hub_theme.dart';
 import '../widgets/wiki_ip_tab.dart';
 import '../widgets/wiki_related_tab.dart';
 
@@ -78,18 +79,20 @@ class _WikiHubPageState extends State<WikiHubPage> {
   Widget build(BuildContext context) {
     _loadedSections.add(_activeSection);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Expanded(
-          child: FadeSlideIndexedStack(
-            index: _activeSection.index,
-            children: _WikiSection.values
-                .map(_buildLazySection)
-                .toList(growable: false),
+    return WikiHubTheme(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: FadeSlideIndexedStack(
+              index: _activeSection.index,
+              children: _WikiSection.values
+                  .map(_buildLazySection)
+                  .toList(growable: false),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

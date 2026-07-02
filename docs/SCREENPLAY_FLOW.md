@@ -1,5 +1,6 @@
 # 剧本全流程说明
 
+> 概念树对照：[`SCRIPT_CONCEPT_TREE.md`](SCRIPT_CONCEPT_TREE.md) · 导出范围：[`SCREENPLAY_EXPORT.md`](SCREENPLAY_EXPORT.md)  
 > 对照联调文件：[`lib/api/http/screenplay/screenplay.http`](../lib/api/http/screenplay/screenplay.http)  
 > 树接口细节：[`SCREENPLAY_TREE_API.md`](SCREENPLAY_TREE_API.md)  
 > App 实现：`lib/features/screenplay/data/`

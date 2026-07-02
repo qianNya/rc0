@@ -92,6 +92,21 @@ class SceneLocalStore {
     return (decoded[sceneId] as num?)?.toInt() ?? 0;
   }
 
+  Future<Set<String>> usedIds() async {
+    final prefs = await _ensurePrefs();
+    final raw = prefs.getString(_useCountKey);
+    if (raw == null || raw.isEmpty) return {};
+    final decoded = jsonDecode(raw);
+    if (decoded is! Map) return {};
+    final ids = <String>{};
+    decoded.forEach((key, value) {
+      if (key is String && ((value as num?)?.toInt() ?? 0) > 0) {
+        ids.add(key);
+      }
+    });
+    return ids;
+  }
+
   Future<void> incrementUseCount(String sceneId) async {
     final prefs = await _ensurePrefs();
     final raw = prefs.getString(_useCountKey);

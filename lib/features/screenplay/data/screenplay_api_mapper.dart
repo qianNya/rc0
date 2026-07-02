@@ -451,6 +451,9 @@ abstract final class ScreenplayApiMapper {
   static String frameRef(int actIdx, int sceneIdx, int frameIdx) =>
       'frame-$actIdx-$sceneIdx-$frameIdx';
 
+  static String referenceImageRef(int actIdx, int sceneIdx, int frameIdx, int refIdx) =>
+      'frame-$actIdx-$sceneIdx-$frameIdx-ref-$refIdx';
+
   /// Local cover file pending upload via POST /screenplays/{id}/cover.
   static File? collectLocalCoverFile(Map<String, dynamic> tree) {
     final screenplayMap = tree['screenplay'] as Map<String, dynamic>?;
@@ -493,9 +496,42 @@ abstract final class ScreenplayApiMapper {
     return refToFile;
   }
 
+  /// Collects local reference images pending upload (per-frame `reference_local_paths`).
+  static Map<String, File> collectLocalReferenceAssets(
+    Map<String, dynamic> tree,
+  ) {
+    final refToFile = <String, File>{};
+    final acts = tree['acts'] as List<dynamic>? ?? [];
+    for (var actIdx = 0; actIdx < acts.length; actIdx++) {
+      final scenes =
+          (acts[actIdx] as Map<String, dynamic>)['scenes'] as List<dynamic>? ??
+              [];
+      for (var sceneIdx = 0; sceneIdx < scenes.length; sceneIdx++) {
+        final frames = (scenes[sceneIdx] as Map<String, dynamic>)['frames']
+                as List<dynamic>? ??
+            [];
+        for (var frameIdx = 0; frameIdx < frames.length; frameIdx++) {
+          final frameMap = frames[frameIdx] as Map<String, dynamic>;
+          final paths = frameMap['reference_local_paths'];
+          if (paths is! List) continue;
+          for (var refIdx = 0; refIdx < paths.length; refIdx++) {
+            final uploadSrc = ScreenplayImageResolver.localUploadPath(
+              paths[refIdx] as String?,
+            );
+            if (uploadSrc == null) continue;
+            refToFile[referenceImageRef(actIdx, sceneIdx, frameIdx, refIdx)] =
+                File(uploadSrc);
+          }
+        }
+      }
+    }
+    return refToFile;
+  }
+
   /// Collects local cover + frame files (legacy helper).
   static Map<String, File> collectLocalAssets(Map<String, dynamic> tree) {
     final refToFile = collectLocalFrameAssets(tree);
+    refToFile.addAll(collectLocalReferenceAssets(tree));
     final cover = collectLocalCoverFile(tree);
     if (cover != null) {
       refToFile[coverRef] = cover;
@@ -515,6 +551,13 @@ abstract final class ScreenplayApiMapper {
         'remote_url': uploaded.thumbUrl,
         'remote_image_id': uploaded.imageId,
         'remote_image_file_id': uploaded.thumbFileId,
+      };
+
+  static Map<String, dynamic> _referenceAssetEntry(UploadedImage uploaded) => {
+        'kind': 'frame_reference',
+        'remote_url': uploaded.displayUrl,
+        'remote_image_id': uploaded.imageId,
+        'remote_image_file_id': uploaded.displayFileId,
       };
 
   static String thumbRef(String frameRef) => '${frameRef}_thumb';
@@ -730,6 +773,26 @@ abstract final class ScreenplayApiMapper {
             framePayload['acgn_character_id'] = characterId;
           }
 
+          final referencePaths = frameMap['reference_local_paths'];
+          if (referencePaths is List && referencePaths.isNotEmpty) {
+            final referenceRefs = <String>[];
+            for (var refIdx = 0; refIdx < referencePaths.length; refIdx++) {
+              final refKey =
+                  referenceImageRef(actIdx, sceneIdx, frameIdx, refIdx);
+              final uploaded = refToUploaded[refKey];
+              if (uploaded != null) {
+                assetMap.putIfAbsent(
+                  refKey,
+                  () => _referenceAssetEntry(uploaded),
+                );
+                referenceRefs.add(refKey);
+              }
+            }
+            if (referenceRefs.isNotEmpty) {
+              framePayload['reference_refs'] = referenceRefs;
+            }
+          }
+
           framePayloads.add(framePayload);
         }
 
@@ -919,6 +982,10 @@ abstract final class ScreenplayApiMapper {
           if (localThumb != null && localThumb.isNotEmpty) {
             frame['local_thumbnail_path'] = localThumb;
           }
+          final prevRefs = prevFrame['reference_local_paths'];
+          if (prevRefs is List && prevRefs.isNotEmpty) {
+            frame['reference_local_paths'] = List<dynamic>.from(prevRefs);
+          }
         }
       }
     }
@@ -943,6 +1010,16 @@ abstract final class ScreenplayApiMapper {
     } else {
       screenplayMap['linked_scenes'] =
           draft.linkedScenes.map((s) => s.toJson()).toList();
+    }
+    if (draft.lightingSchemeId != null && draft.lightingSchemeId!.isNotEmpty) {
+      screenplayMap['lighting_scheme_id'] = draft.lightingSchemeId;
+    } else {
+      screenplayMap.remove('lighting_scheme_id');
+    }
+    if (draft.lightingRig != null && draft.lightingRig!.isNotEmpty) {
+      screenplayMap['lighting_rig'] = draft.lightingRig;
+    } else {
+      screenplayMap.remove('lighting_rig');
     }
 
     final acts = copy['acts'] as List<dynamic>? ?? [];
@@ -1002,6 +1079,19 @@ abstract final class ScreenplayApiMapper {
           }
 
           writeCineParamsToFrameMap(frameMap, frameDraft);
+
+          if (frameDraft.lightingSchemeId != null &&
+              frameDraft.lightingSchemeId!.isNotEmpty) {
+            frameMap['lighting_scheme_id'] = frameDraft.lightingSchemeId;
+          } else {
+            frameMap.remove('lighting_scheme_id');
+          }
+          if (frameDraft.lightingRig != null &&
+              frameDraft.lightingRig!.isNotEmpty) {
+            frameMap['lighting_rig'] = frameDraft.lightingRig;
+          } else {
+            frameMap.remove('lighting_rig');
+          }
         }
       }
     }

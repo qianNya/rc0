@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
+import '../../../../core/responsive/feed_grid_layout.dart';
 import '../../../../core/utils/state_listeners.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/inline_error_banner.dart';
@@ -96,48 +97,51 @@ class IpTabState extends State<IpTab> with AutomaticKeepAliveClientMixin {
             ),
           )
         else
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppDimensions.spacingMd,
-              AppDimensions.spacingSm,
-              AppDimensions.spacingMd,
-              AppDimensions.spacingLg,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (error != null)
-                  InlineErrorBanner(message: error, onRetry: load),
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    mainAxisSpacing: AppDimensions.spacingSm,
-                    crossAxisSpacing: AppDimensions.spacingSm,
-                    childAspectRatio: 0.72,
-                  ),
-                  itemCount: items.length + (_repo.loadingMore ? 1 : 0),
-                  itemBuilder: (_, index) {
-                    if (index >= items.length) {
-                      return const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(AppDimensions.spacingMd),
-                          child: SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
+          FeedGridScope(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppDimensions.spacingMd,
+                AppDimensions.spacingSm,
+                AppDimensions.spacingMd,
+                AppDimensions.spacingLg,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (error != null)
+                    InlineErrorBanner(message: error, onRetry: load),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      return GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: FeedGridLayout.boxDelegate(
+                          constraints.maxWidth,
+                          childAspectRatio: 0.72,
                         ),
+                        itemCount: items.length + (_repo.loadingMore ? 1 : 0),
+                        itemBuilder: (_, index) {
+                          if (index >= items.length) {
+                            return const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(AppDimensions.spacingMd),
+                                child: SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                              ),
+                            );
+                          }
+                          final entry = items[index];
+                          return IpGridCard(
+                            entry: entry,
+                            onTap: () => context.push(AppRoutes.ip(entry.id)),
+                          );
+                        },
                       );
-                    }
-                    final entry = items[index];
-                    return IpGridCard(
-                      entry: entry,
-                      onTap: () => context.push(AppRoutes.ip(entry.id)),
-                    );
-                  },
-                ),
+                    },
+                  ),
                 if (_repo.total > 0)
                   Padding(
                     padding: const EdgeInsets.only(top: AppDimensions.spacingMd),
@@ -150,6 +154,7 @@ class IpTabState extends State<IpTab> with AutomaticKeepAliveClientMixin {
                   ),
               ],
             ),
+          ),
           ),
       ],
     );

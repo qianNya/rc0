@@ -100,6 +100,10 @@ Future<T?> showGlassSheet<T>(
   );
 }
 
+/// Height of the grab handle row inside [GlassSheet] (margin + bar).
+const double kGlassSheetHandleHeight =
+    AppDimensions.spacingSm + 4;
+
 /// Tall glass sheet — fixed max height for scrollable editor panels.
 Future<T?> showGlassScrollSheet<T>(
   BuildContext context, {
@@ -115,15 +119,20 @@ Future<T?> showGlassScrollSheet<T>(
     isScrollControlled: true,
     useRootNavigator: useRootNavigator,
     builder: (context) {
-      final viewInsets = MediaQuery.viewInsetsOf(context);
-      final maxHeight = MediaQuery.sizeOf(context).height * maxHeightFraction -
+      final media = MediaQuery.of(context);
+      final viewInsets = media.viewInsets;
+      final sheetBudget = media.size.height * maxHeightFraction -
           viewInsets.bottom;
+      final contentMaxHeight = (sheetBudget -
+              kGlassSheetHandleHeight -
+              media.padding.bottom)
+          .clamp(0.0, sheetBudget);
 
       return Padding(
         padding: EdgeInsets.only(bottom: viewInsets.bottom),
         child: GlassSheet(
           padding: padding,
-          child: builder(context, maxHeight),
+          child: builder(context, contentMaxHeight),
         ),
       );
     },

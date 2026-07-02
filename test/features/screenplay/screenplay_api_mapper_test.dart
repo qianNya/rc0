@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rc0/features/screenplay/data/data_upload_repository.dart';
 import 'package:rc0/features/screenplay/data/screenplay_api_mapper.dart';
 
 Map<String, dynamic> _sampleTree({
@@ -57,13 +58,19 @@ Map<String, dynamic> _sampleTree({
   };
 }
 
+UploadedImage _uploaded(int id) => UploadedImage(
+      imageId: id,
+      displayUrl: 'https://cdn.example.com/$id.jpg',
+      thumbUrl: '',
+    );
+
 void main() {
   group('buildSaveTreePayload', () {
     test('initial publish uses nested structure without tree wrapper', () {
       final payload = ScreenplayApiMapper.buildSaveTreePayload(
         tree: _sampleTree(),
         visibility: 0,
-        refToImageId: const {'frame-0-0-0': 101},
+        refToUploaded: {'frame-0-0-0': _uploaded(101)},
         isRepublish: false,
       );
 
@@ -92,7 +99,7 @@ void main() {
       final payload = ScreenplayApiMapper.buildSaveTreePayload(
         tree: _sampleTree(actId: 11, sceneId: 22, frameId: 33),
         visibility: 1,
-        refToImageId: const {},
+        refToUploaded: const {},
         isRepublish: true,
       );
 
@@ -117,7 +124,7 @@ void main() {
           acgnImageId: 55,
         ),
         visibility: 0,
-        refToImageId: const {},
+        refToUploaded: const {},
         isRepublish: true,
       );
 
@@ -131,11 +138,39 @@ void main() {
       expect(payload.containsKey('asset_map'), isFalse);
     });
 
+    test('reference images use reference_refs in asset_map', () {
+      final tree = _sampleTree();
+      final frame = (((tree['acts'] as List).first as Map)['scenes'] as List)
+          .first['frames'][0] as Map<String, dynamic>;
+      frame['reference_local_paths'] = ['/tmp/ref0.png', '/tmp/ref1.png'];
+
+      final payload = ScreenplayApiMapper.buildSaveTreePayload(
+        tree: tree,
+        visibility: 0,
+        refToUploaded: {
+          'frame-0-0-0-ref-0': const UploadedImage(
+            imageId: 201,
+            displayUrl: 'https://cdn.example.com/ref0.jpg',
+            thumbUrl: '',
+          ),
+        },
+        isRepublish: false,
+      );
+
+      final outFrame = (((payload['acts'] as List).first as Map)['scenes']
+              as List)
+          .first['frames'][0] as Map<String, dynamic>;
+      expect(outFrame['reference_refs'], ['frame-0-0-0-ref-0']);
+      final assetMap = payload['asset_map'] as Map<String, dynamic>;
+      expect(assetMap['frame-0-0-0-ref-0']['kind'], 'frame_reference');
+      expect(assetMap['frame-0-0-0-ref-0']['remote_image_id'], 201);
+    });
+
     test('cover url is included when provided', () {
       final payload = ScreenplayApiMapper.buildSaveTreePayload(
         tree: _sampleTree(),
         visibility: 0,
-        refToImageId: const {},
+        refToUploaded: const {},
         isRepublish: false,
         coverUrl: 'https://cdn.example.com/cover.jpg',
       );
@@ -157,7 +192,7 @@ void main() {
       final payload = ScreenplayApiMapper.buildSaveTreePayload(
         tree: tree,
         visibility: 0,
-        refToImageId: const {'frame-0-0-0': 9},
+        refToUploaded: {'frame-0-0-0': _uploaded(9)},
         isRepublish: false,
       );
 

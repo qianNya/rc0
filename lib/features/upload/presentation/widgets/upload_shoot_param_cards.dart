@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../lighting/presentation/utils/lighting_navigation.dart';
 import '../../../../core/data/preset_catalog.dart';
 import '../../../screenplay/domain/shoot_params.dart';
 import '../../../screenplay/presentation/widgets/screenplay_shoot_params_chips.dart';
@@ -57,12 +58,8 @@ class ShootParamPresetCards extends StatelessWidget {
           onSelected: (value) => onChanged(params.copyWith(aspectRatio: value)),
         ),
         SizedBox(height: compact ? 10 : 14),
-        _ParamRow(
-          label: '打光',
-          options: PresetCatalog.lightingPresets,
+        _LightingHubRow(
           selected: params.lighting,
-          compact: compact,
-          inherited: inherited,
           readOnly: readOnly,
           onSelected: (value) => onChanged(params.copyWith(lighting: value)),
         ),
@@ -143,6 +140,46 @@ class _ParamRow extends StatelessWidget {
               ),
             );
           }).toList(),
+        ),
+      ],
+    );
+  }
+}
+
+class _LightingHubRow extends StatelessWidget {
+  const _LightingHubRow({
+    required this.selected,
+    required this.readOnly,
+    required this.onSelected,
+  });
+
+  final String? selected;
+  final bool readOnly;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = selected?.trim().isNotEmpty == true ? selected! : '未选择';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('打光', style: AppTextStyles.label.copyWith(fontSize: 13)),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: Text(label, style: AppTextStyles.bodySecondary),
+            ),
+            if (!readOnly)
+              TextButton(
+                onPressed: () async {
+                  final scheme = await openLightingHub(context);
+                  if (scheme == null || !context.mounted) return;
+                  onSelected(scheme.displaySummary);
+                },
+                child: const Text('前往灯光库'),
+              ),
+          ],
         ),
       ],
     );

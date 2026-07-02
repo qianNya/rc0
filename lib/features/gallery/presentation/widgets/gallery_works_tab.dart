@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
+import '../../../../core/responsive/feed_grid_layout.dart';
 import '../../../../core/utils/state_listeners.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/inline_error_banner.dart';
@@ -161,73 +162,77 @@ class GalleryWorksTabState extends State<GalleryWorksTab>
               ),
             ),
           ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppDimensions.spacingMd,
-            AppDimensions.spacingSm,
-            AppDimensions.spacingMd,
-            AppDimensions.spacingLg,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (error != null)
-                InlineErrorBanner(message: error, onRetry: load),
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  mainAxisSpacing: AppDimensions.spacingSm,
-                  crossAxisSpacing: AppDimensions.spacingSm,
-                  childAspectRatio: 0.68,
+        FeedGridScope(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppDimensions.spacingMd,
+              AppDimensions.spacingSm,
+              AppDimensions.spacingMd,
+              AppDimensions.spacingLg,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (error != null)
+                  InlineErrorBanner(message: error, onRetry: load),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    return GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: FeedGridLayout.boxDelegate(
+                        constraints.maxWidth,
+                      ),
+                      itemCount: works.length,
+                      itemBuilder: (_, index) {
+                        final script = works[index];
+                        final isLocal = script.isLocal;
+                        return TemplateGridCard(
+                          screenplay: script,
+                          compact: true,
+                          showVisibilityBadge: _canEditVisibility(script),
+                          onDelete:
+                              isLocal ? () => _deleteLocal(script) : null,
+                          onMore: _canEditVisibility(script)
+                              ? () => _openVisibilitySettings(script)
+                              : null,
+                          selectionMode:
+                              _selectionController.selectionMode && isLocal,
+                          selected: _selectionController.isSelected(script.id),
+                          onSelectedToggle: isLocal
+                              ? () => _selectionController.toggle(script.id)
+                              : null,
+                          onLongPressEnterSelection: isLocal
+                              ? () => _selectionController.enterSelection(
+                                    initialLocalId: script.id,
+                                  )
+                              : null,
+                        );
+                      },
+                    );
+                  },
                 ),
-                itemCount: works.length,
-                itemBuilder: (_, index) {
-                  final script = works[index];
-                  final isLocal = script.isLocal;
-                  return TemplateGridCard(
-                    screenplay: script,
-                    compact: true,
-                    showVisibilityBadge: _canEditVisibility(script),
-                    onDelete: isLocal ? () => _deleteLocal(script) : null,
-                    onMore: _canEditVisibility(script)
-                        ? () => _openVisibilitySettings(script)
-                        : null,
-                    selectionMode:
-                        _selectionController.selectionMode && isLocal,
-                    selected: _selectionController.isSelected(script.id),
-                    onSelectedToggle: isLocal
-                        ? () => _selectionController.toggle(script.id)
-                        : null,
-                    onLongPressEnterSelection: isLocal
-                        ? () => _selectionController.enterSelection(
-                              initialLocalId: script.id,
-                            )
-                        : null,
-                  );
-                },
-              ),
-              if (loadingMore)
-                const Padding(
-                  padding: EdgeInsets.all(AppDimensions.spacingMd),
-                  child: Center(
-                    child: SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                if (loadingMore)
+                  const Padding(
+                    padding: EdgeInsets.all(AppDimensions.spacingMd),
+                    child: Center(
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
                     ),
                   ),
-                ),
-              if (hasMore && !loadingMore)
-                Center(
-                  child: TextButton(
-                    onPressed: loadMore,
-                    child: const Text('加载更多'),
+                if (hasMore && !loadingMore)
+                  Center(
+                    child: TextButton(
+                      onPressed: loadMore,
+                      child: const Text('加载更多'),
+                    ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ],

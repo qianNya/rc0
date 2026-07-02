@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../data/scene_repository.dart';
 import '../../domain/scene_entry.dart';
+import 'scene_create_sheet.dart';
 
 class ScenePickerSheet extends StatefulWidget {
   const ScenePickerSheet({
@@ -86,10 +85,13 @@ class _ScenePickerSheetState extends State<ScenePickerSheet> {
                 ),
                 TextButton.icon(
                   onPressed: () async {
-                    final createdId =
-                        await context.push<String?>(AppRoutes.sceneCreate);
+                    final createdId = await showSceneCreateSheet(
+                      context,
+                      useRootNavigator: true,
+                    );
                     if (!context.mounted || createdId == null) return;
-                    final entry = await _repo.fetchDetail(createdId);
+                    final result = await _repo.fetchDetail(createdId);
+                    final entry = result.scene;
                     if (entry != null && context.mounted) {
                       Navigator.pop(context, entry);
                     }

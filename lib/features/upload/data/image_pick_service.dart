@@ -76,7 +76,7 @@ class ImagePickService {
     required bool allowVideo,
     bool single = false,
   }) async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: allowVideo ? FileType.custom : FileType.image,
       allowedExtensions: allowVideo ? _mediaExtensions : null,
       allowMultiple: !single,

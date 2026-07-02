@@ -7,6 +7,8 @@ import '../../../app/router/routes.dart';
 import '../../../core/data/app_catalog.dart';
 import '../../../core/utils/state_listeners.dart';
 import '../../../core/domain/screenplay/screenplay.dart';
+import '../../lighting/data/lighting_draft_binding.dart';
+import '../../lighting/data/lighting_repository.dart';
 import '../../auth/data/auth_repository.dart';
 import '../../screenplay/data/screenplay_draft.dart';
 import '../../screenplay/data/screenplay_draft_tags.dart';
@@ -118,6 +120,7 @@ class ScreenplayEditorHost extends StatefulWidget {
     this.editScriptId,
     this.initialCharacterId,
     this.initialCharacterName,
+    this.initialLightingSchemeId,
     this.enableAutoSave = false,
     this.registerShellBridge = false,
     required this.builder,
@@ -126,6 +129,7 @@ class ScreenplayEditorHost extends StatefulWidget {
   final String? editScriptId;
   final int? initialCharacterId;
   final String? initialCharacterName;
+  final String? initialLightingSchemeId;
   final bool enableAutoSave;
   final bool registerShellBridge;
   final Widget Function(BuildContext context, ScreenplayEditorController controller)
@@ -209,6 +213,15 @@ class _ScreenplayEditorHostState extends State<ScreenplayEditorHost> {
       _localScriptId = null;
     }
     _applyInitialCharacter();
+    _applyInitialLightingScheme();
+  }
+
+  void _applyInitialLightingScheme() {
+    final schemeId = widget.initialLightingSchemeId?.trim();
+    if (schemeId == null || schemeId.isEmpty) return;
+    final scheme = LightingRepository.instance.findById(schemeId);
+    if (scheme == null) return;
+    applyLightingSchemeToDraft(_draft, scheme);
   }
 
   void _applyInitialCharacter() {

@@ -1,4 +1,5 @@
 import '../data/screenplay_draft.dart';
+import '../../lighting/data/lighting_scheme_mapper.dart';
 import '../domain/cine_params.dart';
 import '../domain/shoot_params.dart';
 
@@ -33,7 +34,12 @@ abstract final class AiPromptBuilder {
     if (weather.isNotEmpty) parts.add(weather);
 
     if (shootParams.lighting != null && shootParams.lighting!.isNotEmpty) {
-      parts.add('${shootParams.lighting} lighting');
+      final rigScheme = LightingSchemeMapper.rigFromJson(frame.lightingRig);
+      if (rigScheme != null) {
+        parts.add(LightingSchemeMapper.promptDescription(rigScheme));
+      } else {
+        parts.add('${shootParams.lighting} lighting');
+      }
     }
     if (shootParams.aspectRatio != null && shootParams.aspectRatio!.isNotEmpty) {
       parts.add('${shootParams.aspectRatio} aspect ratio');

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../app/theme/app_dimensions.dart';
+import '../../../../core/responsive/feed_grid_layout.dart';
 import '../../domain/scene_entry.dart';
 import 'scene_grid_card.dart';
 
@@ -13,7 +14,7 @@ class SceneMasonryGrid extends StatelessWidget {
     this.screenplayCountFor,
     this.favoriteCountFor,
     this.localCoverFor,
-    this.crossAxisCount = 2,
+    this.crossAxisCount,
     this.spacing = AppDimensions.spacingSm,
     this.padding = const EdgeInsets.symmetric(
       horizontal: AppDimensions.spacingMd,
@@ -26,7 +27,7 @@ class SceneMasonryGrid extends StatelessWidget {
   final int Function(SceneEntry entry)? screenplayCountFor;
   final int? Function(SceneEntry entry)? favoriteCountFor;
   final String? Function(SceneEntry entry)? localCoverFor;
-  final int crossAxisCount;
+  final int? crossAxisCount;
   final double spacing;
   final EdgeInsetsGeometry padding;
 
@@ -34,10 +35,11 @@ class SceneMasonryGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     if (items.isEmpty) return const SizedBox.shrink();
 
-    final columns = List.generate(crossAxisCount, (_) => <Widget>[]);
+    final columnsCount = crossAxisCount ?? FeedGridLayout.columnsFor(context);
+    final columns = List.generate(columnsCount, (_) => <Widget>[]);
     for (var i = 0; i < items.length; i++) {
       final entry = items[i];
-      columns[i % crossAxisCount].add(
+      columns[i % columnsCount].add(
         Padding(
           padding: EdgeInsets.only(bottom: spacing),
           child: SceneGridCard(
@@ -53,16 +55,18 @@ class SceneMasonryGrid extends StatelessWidget {
       );
     }
 
-    return Padding(
-      padding: padding,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (var c = 0; c < crossAxisCount; c++) ...[
-            if (c > 0) SizedBox(width: spacing),
-            Expanded(child: Column(children: columns[c])),
+    return FeedGridScope(
+      child: Padding(
+        padding: padding,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (var c = 0; c < columnsCount; c++) ...[
+              if (c > 0) SizedBox(width: spacing),
+              Expanded(child: Column(children: columns[c])),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

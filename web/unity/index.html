@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RC0 Unity Runtime</title>
+    <style>
+      html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #121018; overflow: hidden; }
+      #unity-canvas { width: 100%; height: 100%; display: block; }
+      #placeholder {
+        color: rgba(255,255,255,0.5);
+        font-family: system-ui, sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        text-align: center;
+        padding: 24px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="placeholder">
+      RC0 Unity WebGL<br />
+      <small>Export WebGL build from unity/rc0_runtime to web/unity/</small>
+    </div>
+    <script>
+      window.rc0UnityBridge = {
+        onUnityEvent: function (json) {
+          window.parent.postMessage(json, '*');
+        },
+      };
+      window.addEventListener('message', function (event) {
+        if (typeof event.data === 'string' && window.unityInstance) {
+          window.unityInstance.SendMessage('FlutterBridge', 'OnFlutterMessage', event.data);
+        }
+      });
+    </script>
+  </body>
+</html>

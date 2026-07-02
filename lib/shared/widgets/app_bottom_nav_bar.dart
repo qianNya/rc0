@@ -88,37 +88,59 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
   @override
   Widget build(BuildContext context) {
     final count = widget.items.length;
+    if (count == 0) {
+      return const SizedBox.shrink();
+    }
+
+    final tabWidths = List<double>.filled(
+      count,
+      AppDimensions.bottomNavTabSlotWidth,
+    );
+    final barWidth = AppDimensions.bottomNavBarWidth(tabWidths).clamp(
+      0.0,
+      AppDimensions.floatingBottomNavMaxWidth,
+    );
     final showIndicator = widget.selectedIndex >= 0 && widget.selectedIndex < count;
+
     final bar = GestureDetector(
       onLongPress: widget.onBarLongPress,
       behavior: HitTestBehavior.translucent,
       child: BottomBarGlassChrome(
         breath: _scrollBreath,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            if (showIndicator)
-              LiquidTabIndicator(
-                selectedIndex: widget.selectedIndex,
-                itemCount: count,
-                breath: _scrollBreath,
-              ),
-            Row(
-              children: [
-                for (var i = 0; i < count; i++)
-                  Expanded(
-                    child: _NavSlot(
-                      item: widget.items[i],
-                      selected: widget.selectedIndex == i,
-                      onTap: () => widget.onItemSelected(i),
-                      onLongPress: widget.onItemLongPress == null
-                          ? null
-                          : () => widget.onItemLongPress!(i),
+        width: barWidth,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppDimensions.bottomNavBarInsetH,
+          ),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              if (showIndicator)
+                LiquidTabIndicator(
+                  selectedIndex: widget.selectedIndex,
+                  itemCount: count,
+                  itemWidths: tabWidths,
+                  breath: _scrollBreath,
+                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (var i = 0; i < count; i++)
+                    SizedBox(
+                      width: tabWidths[i],
+                      child: _NavSlot(
+                        item: widget.items[i],
+                        selected: widget.selectedIndex == i,
+                        onTap: () => widget.onItemSelected(i),
+                        onLongPress: widget.onItemLongPress == null
+                            ? null
+                            : () => widget.onItemLongPress!(i),
+                      ),
                     ),
-                  ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -134,7 +156,10 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
       ),
       child: SafeArea(
         top: false,
-        child: bar,
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: bar,
+        ),
       ),
     );
   }

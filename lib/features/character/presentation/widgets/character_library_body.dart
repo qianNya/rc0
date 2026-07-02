@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
+import '../../../../core/responsive/feed_grid_layout.dart';
 import '../../../../core/data/app_catalog.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/rc0_widgets.dart';
@@ -164,9 +165,11 @@ class _CharacterLibraryBodyState extends State<CharacterLibraryBody>
   Widget _buildTopBar(bool isDark) {
     if (widget.mode == CharacterLibraryMode.wiki) {
       return Padding(
-        padding: const EdgeInsets.fromLTRB(
+        padding: EdgeInsets.fromLTRB(
           AppDimensions.spacingMd,
-          AppDimensions.spacingSm,
+          widget.embeddedInHub
+              ? MediaQuery.paddingOf(context).top + AppDimensions.spacingSm
+              : AppDimensions.spacingSm,
           AppDimensions.spacingMd,
           AppDimensions.spacingXs,
         ),
@@ -207,9 +210,11 @@ class _CharacterLibraryBodyState extends State<CharacterLibraryBody>
     }
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
+      padding: EdgeInsets.fromLTRB(
         AppDimensions.spacingMd,
-        AppDimensions.spacingSm,
+        widget.embeddedInHub
+            ? MediaQuery.paddingOf(context).top + AppDimensions.spacingSm
+            : AppDimensions.spacingSm,
         AppDimensions.spacingMd,
         AppDimensions.spacingSm,
       ),
@@ -299,51 +304,62 @@ class _CharacterLibraryBodyState extends State<CharacterLibraryBody>
   Widget _buildWikiGrid(List<CharacterEntry> filtered) {
     return RefreshIndicator(
       onRefresh: _load,
-      child: GridView.builder(
-        controller: _scrollController,
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: EdgeInsets.fromLTRB(
-          AppDimensions.spacingMd,
-          0,
-          AppDimensions.spacingMd,
-          ShellInsets.scrollBottom(context, extra: AppDimensions.spacingXl * 3),
-        ),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          mainAxisSpacing: AppDimensions.spacingSm,
-          crossAxisSpacing: AppDimensions.spacingSm,
-          childAspectRatio: 0.56,
-        ),
-        itemCount: filtered.length + (_repo.loadingMore ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (index >= filtered.length) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(AppDimensions.spacingMd),
-                child: CircularProgressIndicator(strokeWidth: 2),
+      child: FeedGridScope(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final columns = FeedGridLayout.columnsForWidth(constraints.maxWidth);
+            return GridView.builder(
+              controller: _scrollController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.fromLTRB(
+                AppDimensions.spacingMd,
+                0,
+                AppDimensions.spacingMd,
+                ShellInsets.scrollBottom(
+                  context,
+                  extra: AppDimensions.spacingXl * 3,
+                ),
               ),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: columns,
+                mainAxisSpacing: AppDimensions.spacingSm,
+                crossAxisSpacing: AppDimensions.spacingSm,
+                childAspectRatio: 0.56,
+              ),
+              itemCount: filtered.length + (_repo.loadingMore ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (index >= filtered.length) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(AppDimensions.spacingMd),
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  );
+                }
+                final entry = filtered[index];
+                final favorited = _favorites.contains(entry.id);
+                return WikiCharacterGridCard(
+                  entry: entry,
+                  localCoverPath: _localCovers[entry.id],
+                  screenplayCount: _repo.countScreenplaysForCharacter(entry.id),
+                  likeCount: entry.sort > 0 ? entry.sort : (favorited ? 1 : null),
+                  favorited: favorited,
+                  onTap: () =>
+                      context.push(AppRoutes.characterDetailPath(entry.id)),
+                  onLongPress: () => showCharacterActionSheet(
+                    context: context,
+                    entry: entry,
+                    repo: _repo,
+                    isLoggedIn: _auth.isLoggedIn,
+                    isFavorite: favorited,
+                    onToggleFavorite: () => _toggleFavorite(entry),
+                    onRefresh: _load,
+                  ),
+                );
+              },
             );
-          }
-          final entry = filtered[index];
-          final favorited = _favorites.contains(entry.id);
-          return WikiCharacterGridCard(
-            entry: entry,
-            localCoverPath: _localCovers[entry.id],
-            screenplayCount: _repo.countScreenplaysForCharacter(entry.id),
-            likeCount: entry.sort > 0 ? entry.sort : (favorited ? 1 : null),
-            favorited: favorited,
-            onTap: () => context.push(AppRoutes.characterDetailPath(entry.id)),
-            onLongPress: () => showCharacterActionSheet(
-              context: context,
-              entry: entry,
-              repo: _repo,
-              isLoggedIn: _auth.isLoggedIn,
-              isFavorite: favorited,
-              onToggleFavorite: () => _toggleFavorite(entry),
-              onRefresh: _load,
-            ),
-          );
-        },
+          },
+        ),
       ),
     );
   }
@@ -420,9 +436,11 @@ class _CharacterLibraryBodyState extends State<CharacterLibraryBody>
     );
 
     final body = ColoredBox(
-      color: isDark
-          ? AppColors.characterBackgroundDark
-          : Theme.of(context).scaffoldBackgroundColor,
+      color: widget.embeddedInHub
+          ? Colors.transparent
+          : (isDark
+              ? AppColors.characterBackgroundDark
+              : Theme.of(context).scaffoldBackgroundColor),
       child: content,
     );
 

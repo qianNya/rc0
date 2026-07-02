@@ -106,6 +106,12 @@ class _CharacterDetailPageState extends State<CharacterDetailPage> {
     );
   }
 
+  void _previewLighting(BuildContext context) {
+    context.push(
+      AppRoutes.lightingWithContext(characterId: widget.characterId),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final entry = _entry;
@@ -123,6 +129,12 @@ class _CharacterDetailPageState extends State<CharacterDetailPage> {
       centerTitle: false,
       onBack: () => popOrGoDiscovery(context),
       actions: [
+        if (entry != null)
+          IconButton(
+            icon: const Icon(Icons.wb_incandescent_outlined),
+            tooltip: '预览灯光',
+            onPressed: () => _previewLighting(context),
+          ),
         if (entry != null)
           IconButton(
             icon: const Icon(Icons.more_horiz),

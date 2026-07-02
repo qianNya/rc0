@@ -8,6 +8,9 @@ import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/data/app_catalog.dart';
 import '../../domain/scene_utils.dart';
 import '../../../upload/data/image_pick_service.dart';
+import 'scene_location_picker.dart';
+
+import 'package:latlong2/latlong.dart';
 
 class SceneFormData {
   SceneFormData({
@@ -19,6 +22,8 @@ class SceneFormData {
     this.shootingTips = const {},
     this.location = '',
     this.city = '',
+    this.latitude,
+    this.longitude,
   });
 
   String category;
@@ -29,6 +34,8 @@ class SceneFormData {
   Map<String, String> shootingTips;
   String location;
   String city;
+  double? latitude;
+  double? longitude;
 }
 
 class SceneFormSections extends StatefulWidget {
@@ -155,6 +162,30 @@ class _SceneFormSectionsState extends State<SceneFormSections> {
             widget.data.city = v;
             widget.onChanged();
           },
+        ),
+        const SizedBox(height: AppDimensions.spacingMd),
+        OutlinedButton.icon(
+          onPressed: () async {
+            final initial = widget.data.latitude != null &&
+                    widget.data.longitude != null
+                ? LatLng(widget.data.latitude!, widget.data.longitude!)
+                : null;
+            final picked = await showSceneLocationPicker(
+              context,
+              initial: initial,
+            );
+            if (picked == null) return;
+            widget.data.latitude = picked.latitude;
+            widget.data.longitude = picked.longitude;
+            widget.onChanged();
+            setState(() {});
+          },
+          icon: const Icon(Icons.map_outlined),
+          label: Text(
+            widget.data.latitude != null && widget.data.longitude != null
+                ? '已选坐标 (${widget.data.latitude!.toStringAsFixed(4)}, ${widget.data.longitude!.toStringAsFixed(4)})'
+                : '在地图上选点',
+          ),
         ),
         const SizedBox(height: AppDimensions.spacingLg),
         Text('封面', style: AppTextStyles.label),

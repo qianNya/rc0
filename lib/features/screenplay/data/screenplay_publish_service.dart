@@ -234,7 +234,10 @@ class ScreenplayPublishService {
     PublishProgressCallback? onProgress,
   }) async {
     final coverFile = ScreenplayApiMapper.collectLocalCoverFile(tree);
-    final refToFile = ScreenplayApiMapper.collectLocalFrameAssets(tree);
+    final refToFile = <String, File>{
+      ...ScreenplayApiMapper.collectLocalFrameAssets(tree),
+      ...ScreenplayApiMapper.collectLocalReferenceAssets(tree),
+    };
 
     if (refToFile.isEmpty) {
       return (

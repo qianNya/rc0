@@ -1,22 +1,35 @@
 PODS:
+  - flutter_gl_macos (0.0.1):
+    - FlutterMacOS
+    - three3d_egl_osx (~> 0.1.1)
   - FlutterMacOS (1.0.0)
+  - three3d_egl_osx (0.1.1)
   - window_manager (0.2.0):
     - FlutterMacOS
 
 DEPENDENCIES:
+  - flutter_gl_macos (from `Flutter/ephemeral/.symlinks/plugins/flutter_gl_macos/macos`)
   - FlutterMacOS (from `Flutter/ephemeral`)
   - window_manager (from `Flutter/ephemeral/.symlinks/plugins/window_manager/macos`)
 
+SPEC REPOS:
+  trunk:
+    - three3d_egl_osx
+
 EXTERNAL SOURCES:
+  flutter_gl_macos:
+    :path: Flutter/ephemeral/.symlinks/plugins/flutter_gl_macos/macos
   FlutterMacOS:
     :path: Flutter/ephemeral
   window_manager:
     :path: Flutter/ephemeral/.symlinks/plugins/window_manager/macos
 
 SPEC CHECKSUMS:
+  flutter_gl_macos: fd42c918a2cfe97e202cc51f2347a15644b763e5
   FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
+  three3d_egl_osx: 5f0b1c41e6d687ac778b3d9900afd569c7f36424
   window_manager: 3a1844359a6295ab1e47659b1a777e36773cd6e8
 
 PODFILE CHECKSUM: 54d867c82ac51cbd61b565781b9fada492027009
 
-COCOAPODS: 1.11.3
+COCOAPODS: 1.16.2

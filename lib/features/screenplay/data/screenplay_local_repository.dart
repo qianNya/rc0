@@ -14,6 +14,7 @@ import '../../../core/utils/image_url_utils.dart';
 import '../../upload/domain/upload_image_file.dart';
 import 'screenplay_delete_options.dart';
 import 'screenplay_draft.dart';
+import 'frame_asset_refs_draft.dart';
 import 'screenplay_api_mapper.dart';
 import 'screenplay_draft_tags.dart';
 import 'screenplay_remote_delete_service.dart';
@@ -206,7 +207,7 @@ class ScreenplayLocalRepository extends ChangeNotifier {
 
     _documents.insert(
       0,
-      _documentFromDraft(screenplay, draft),
+      _documentFromDraft(screenplay, draft, persistedPaths: persisted),
     );
     await _save();
     notifyListeners();
@@ -254,6 +255,7 @@ class ScreenplayLocalRepository extends ChangeNotifier {
       screenplay,
       draft,
       existingMeta: _documents[index].meta,
+      persistedPaths: persisted,
     );
     await _save();
     notifyListeners();
@@ -1100,16 +1102,23 @@ class ScreenplayLocalRepository extends ChangeNotifier {
     Screenplay screenplay,
     ScreenplayDraft draft, {
     ScreenplayLocalMeta? existingMeta,
+    Map<UploadImageFile, String>? persistedPaths,
   }) {
     final base = ScreenplayTreeDocument.fromScreenplay(
       screenplay,
       existingMeta: existingMeta,
     );
+    final withShoot = ScreenplayApiMapper.applyDraftShootParamsToTree(
+      base.tree,
+      draft,
+    );
+    final withRefs = applyDraftReferenceImagesToTree(
+      withShoot,
+      draft,
+      persistedPaths: persistedPaths,
+    );
     return ScreenplayTreeDocument(
-      tree: ScreenplayApiMapper.applyDraftTagsToTree(
-        ScreenplayApiMapper.applyDraftShootParamsToTree(base.tree, draft),
-        draft,
-      ),
+      tree: ScreenplayApiMapper.applyDraftTagsToTree(withRefs, draft),
       meta: base.meta.copyWith(tags: draftTagPoolSorted(draft)),
     );
   }

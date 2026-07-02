@@ -21,7 +21,12 @@ class FramePromptSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('提示词', style: AppTextStyles.label),
+        const Text('AI 渲染提示词', style: AppTextStyles.label),
+        const SizedBox(height: 4),
+        Text(
+          '设备与打光请使用「摄影预设」；此处仅用于 AI 生图 Prompt。',
+          style: AppTextStyles.bodySecondary.copyWith(fontSize: 12),
+        ),
         const SizedBox(height: 12),
         TextFormField(
           initialValue: positivePrompt,

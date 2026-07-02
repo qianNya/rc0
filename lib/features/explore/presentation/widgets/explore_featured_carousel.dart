@@ -10,7 +10,13 @@ import '../../../../core/responsive/breakpoints.dart';
 import '../../../../shared/widgets/pose_cover_image.dart';
 
 class ExploreFeaturedCarousel extends StatefulWidget {
-  const ExploreFeaturedCarousel({super.key});
+  const ExploreFeaturedCarousel({
+    super.key,
+    this.bleedUnderHeader = false,
+  });
+
+  /// When true, hero extends under the transparent status bar + app bar.
+  final bool bleedUnderHeader;
 
   @override
   State<ExploreFeaturedCarousel> createState() =>
@@ -26,18 +32,28 @@ class _ExploreFeaturedCarouselState extends State<ExploreFeaturedCarousel> {
     if (banners.isEmpty) return const SizedBox.shrink();
 
     final height = Breakpoints.isDesktop(context) ? 240.0 : 188.0;
+    final headerBleed = widget.bleedUnderHeader
+        ? MediaQuery.paddingOf(context).top + kToolbarHeight
+        : 0.0;
+    final horizontalPadding =
+        widget.bleedUnderHeader ? 0.0 : AppDimensions.spacingMd;
+    final cardRadius = widget.bleedUnderHeader
+        ? const BorderRadius.vertical(
+            bottom: Radius.circular(AppDimensions.radiusMd),
+          )
+        : BorderRadius.circular(AppDimensions.radiusMd);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppDimensions.spacingMd,
+      padding: EdgeInsets.fromLTRB(
+        horizontalPadding,
         0,
-        AppDimensions.spacingMd,
+        horizontalPadding,
         0,
       ),
       child: Column(
         children: [
           SizedBox(
-            height: height,
+            height: height + headerBleed,
             child: PageView.builder(
               itemCount: banners.length,
               onPageChanged: (i) => setState(() => _index = i),
@@ -46,8 +62,7 @@ class _ExploreFeaturedCarouselState extends State<ExploreFeaturedCarousel> {
                 return GestureDetector(
                   onTap: () => context.go(AppRoutes.community),
                   child: ClipRRect(
-                    borderRadius:
-                        BorderRadius.circular(AppDimensions.radiusMd),
+                    borderRadius: cardRadius,
                     child: Stack(
                       fit: StackFit.expand,
                       children: [

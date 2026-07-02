@@ -6,6 +6,13 @@ Future listScenes({
   int pageSize = 20,
   String? category,
   String? q,
+  String? city,
+  bool? hasLocation,
+  double? minLat,
+  double? maxLat,
+  double? minLng,
+  double? maxLng,
+  String? sort,
   Function(ListScenesResp)? ok,
   Function(String)? fail,
   Function? eventually,
@@ -18,6 +25,13 @@ Future listScenes({
     query['category'] = category.trim();
   }
   if (q != null && q.trim().isNotEmpty) query['q'] = q.trim();
+  if (city != null && city.trim().isNotEmpty) query['city'] = city.trim();
+  if (hasLocation == true) query['has_location'] = 'true';
+  if (minLat != null) query['min_lat'] = '$minLat';
+  if (maxLat != null) query['max_lat'] = '$maxLat';
+  if (minLng != null) query['min_lng'] = '$minLng';
+  if (maxLng != null) query['max_lng'] = '$maxLng';
+  if (sort != null && sort.trim().isNotEmpty) query['sort'] = sort.trim();
 
   await apiGet(
     '/scenes',

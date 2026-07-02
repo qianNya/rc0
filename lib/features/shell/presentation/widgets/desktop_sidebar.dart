@@ -145,8 +145,14 @@ const desktopSidebarSections = [
         route: AppRoutes.myScenes,
       ),
       DesktopSidebarItem(
+        id: 'lighting',
+        label: '灯光',
+        icon: Icons.wb_incandescent_outlined,
+        route: AppRoutes.lighting,
+      ),
+      DesktopSidebarItem(
         id: 'preset_flow',
-        label: '打光与参数',
+        label: '摄影预设',
         icon: Icons.tune_outlined,
         route: AppRoutes.preset,
       ),

@@ -11,12 +11,15 @@ class LiquidTabIndicator extends StatefulWidget {
     super.key,
     required this.selectedIndex,
     required this.itemCount,
+    this.itemWidths,
     this.breath = 0,
     this.verticalInset = 8,
   });
 
   final int selectedIndex;
   final int itemCount;
+  /// When set, indicator position follows each tab's width instead of equal slots.
+  final List<double>? itemWidths;
   final double breath;
   final double verticalInset;
 
@@ -99,11 +102,14 @@ class _LiquidTabIndicatorState extends State<LiquidTabIndicator>
 
         return LayoutBuilder(
           builder: (context, constraints) {
-            final itemWidth = constraints.maxWidth / widget.itemCount;
+            final slotWidths = _resolveSlotWidths(constraints.maxWidth);
             final capsuleHeight = constraints.maxHeight - widget.verticalInset * 2;
-            final baseWidth = (itemWidth * 0.72).clamp(44.0, 62.0);
+            final activeSlotWidth = slotWidths[
+              widget.selectedIndex.clamp(0, slotWidths.length - 1)
+            ];
+            final baseWidth = (activeSlotWidth * 0.72).clamp(44.0, 62.0);
             final capsuleWidth = baseWidth + stretch * (14 + transferDistance * 4);
-            final centerX = itemWidth * index + itemWidth / 2;
+            final centerX = _centerXForIndex(index, slotWidths);
             final left = centerX - capsuleWidth / 2;
             final top = ((constraints.maxHeight - capsuleHeight) / 2)
                 .clamp(widget.verticalInset, constraints.maxHeight)
@@ -203,5 +209,36 @@ class _LiquidTabIndicatorState extends State<LiquidTabIndicator>
         );
       },
     );
+  }
+
+  List<double> _resolveSlotWidths(double trackWidth) {
+    final widths = widget.itemWidths;
+    if (widths != null &&
+        widths.length == widget.itemCount &&
+        widget.itemCount > 0) {
+      return widths;
+    }
+    final itemWidth = trackWidth / widget.itemCount;
+    return List<double>.filled(widget.itemCount, itemWidth);
+  }
+
+  double _centerXForIndex(double index, List<double> slotWidths) {
+    if (slotWidths.isEmpty) return 0;
+
+    final lower = index.floor().clamp(0, slotWidths.length - 1);
+    final upper = (lower + 1).clamp(0, slotWidths.length - 1);
+    final t = index - lower;
+    final lowerCenter = _slotCenter(lower, slotWidths);
+    if (lower == upper || t <= 0) return lowerCenter;
+    final upperCenter = _slotCenter(upper, slotWidths);
+    return lowerCenter + (upperCenter - lowerCenter) * t;
+  }
+
+  double _slotCenter(int slotIndex, List<double> slotWidths) {
+    var leading = 0.0;
+    for (var i = 0; i < slotIndex; i++) {
+      leading += slotWidths[i];
+    }
+    return leading + slotWidths[slotIndex] / 2;
   }
 }

@@ -16,6 +16,7 @@ import '../../data/scene_repository.dart';
 import '../../domain/scene_entry.dart';
 import '../../domain/scene_utils.dart';
 import '../widgets/scene_action_sheet.dart';
+import '../widgets/scene_create_sheet.dart';
 import '../widgets/scene_masonry_grid.dart';
 
 class MyScenesPage extends StatefulWidget {
@@ -52,13 +53,11 @@ class _MyScenesPageState extends State<MyScenesPage> {
   }
 
   Future<void> _load() async {
-    await _repo.loadFirstPage();
+    await _repo.loadFirstPage(pageSize: 100);
     _ownedIds = await SceneLocalStore.instance.ownedIds();
     _favorites = await SceneLocalStore.instance.favoriteIds();
-    _usedIds = _repo.items
-        .where((e) => e.useCount > 0)
-        .map((e) => e.id)
-        .toSet();
+    await _repo.ensureScenesInCache({..._ownedIds, ..._favorites});
+    _usedIds = await SceneLocalStore.instance.usedIds();
     await _loadLocalCovers();
     if (mounted) setState(() {});
   }
@@ -88,6 +87,11 @@ class _MyScenesPageState extends State<MyScenesPage> {
         .toList(growable: false);
   }
 
+  Future<void> _openCreateScene() async {
+    await showSceneCreateSheet(context);
+    if (mounted) _load();
+  }
+
   Widget _buildSceneTabBody(int tabIndex) {
     final filtered = _filteredForTab(tabIndex);
     if (filtered.isEmpty) {
@@ -95,12 +99,7 @@ class _MyScenesPageState extends State<MyScenesPage> {
         icon: Icons.landscape_outlined,
         title: '暂无场景',
         actionLabel: _auth.isLoggedIn ? '新建场景' : null,
-        onAction: _auth.isLoggedIn
-            ? () async {
-                await context.push(AppRoutes.sceneCreate);
-                if (mounted) _load();
-              }
-            : null,
+        onAction: _auth.isLoggedIn ? _openCreateScene : null,
       );
     }
 
@@ -146,10 +145,7 @@ class _MyScenesPageState extends State<MyScenesPage> {
         if (_auth.isLoggedIn)
           IconButton(
             icon: const Icon(Icons.add),
-            onPressed: () async {
-              await context.push(AppRoutes.sceneCreate);
-              if (mounted) _load();
-            },
+            onPressed: _openCreateScene,
           ),
       ],
       body: ColoredBox(

@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../character/data/character_repository.dart';
+import '../../../lighting/domain/lighting_scheme.dart';
+import '../../../lighting/data/lighting_draft_binding.dart';
+import '../../../lighting/presentation/utils/lighting_navigation.dart';
+import '../../../lighting/presentation/widgets/lighting_picker_sheet.dart';
 import '../../../scene/presentation/widgets/scene_picker_sheet.dart';
 import '../../../screenplay/data/screenplay_scene_binding.dart';
 import '../../../upload/presentation/widgets/editor/screenplay_characters_section.dart';
@@ -190,6 +194,18 @@ class _FrameInspectorPanelState extends State<FrameInspectorPanel> {
                         params,
                       );
                       widget.onChanged();
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _LightingSchemeSection(
+                    frame: frame,
+                    actIndex: actIndex,
+                    sceneIndex: sceneIndex,
+                    frameIndex: frameIndex,
+                    draft: widget.actions.draft,
+                    onChanged: () {
+                      widget.onChanged();
+                      setState(() {});
                     },
                   ),
                   const SizedBox(height: 16),
@@ -701,6 +717,91 @@ class _CharacterSection extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _LightingSchemeSection extends StatelessWidget {
+  const _LightingSchemeSection({
+    required this.frame,
+    required this.actIndex,
+    required this.sceneIndex,
+    required this.frameIndex,
+    required this.draft,
+    required this.onChanged,
+  });
+
+  final FrameDraft frame;
+  final int actIndex;
+  final int sceneIndex;
+  final int frameIndex;
+  final ScreenplayDraft draft;
+  final VoidCallback onChanged;
+
+  String get _label {
+    final rig = lightingSchemeFromDraftFrame(frame);
+    if (rig != null) return rig.displaySummary;
+    final params = effectiveParamsForFrame(
+      draft,
+      actIndex,
+      sceneIndex,
+      frameIndex,
+    );
+    return params.lighting?.trim().isNotEmpty == true
+        ? params.lighting!
+        : '未设置';
+  }
+
+  Future<void> _applyScheme(BuildContext context, LightingScheme scheme) async {
+    applyLightingSchemeToDraft(
+      draft,
+      scheme,
+      actIndex: actIndex,
+      sceneIndex: sceneIndex,
+      frameIndex: frameIndex,
+    );
+    onChanged();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Expanded(
+              child: Text('灯光方案', style: AppTextStyles.label),
+            ),
+            TextButton(
+              onPressed: () async {
+                final scheme = await LightingPickerSheet.show(context);
+                if (scheme == null || !context.mounted) return;
+                await _applyScheme(context, scheme);
+              },
+              child: const Text('快速选择'),
+            ),
+            TextButton(
+              onPressed: () async {
+                final scheme = await openLightingHub(
+                  context,
+                  schemeId: frame.lightingSchemeId,
+                  characterId: frame.characterId,
+                  scope: 'apply',
+                  actIndex: actIndex,
+                  sceneIndex: sceneIndex,
+                  frameIndex: frameIndex,
+                );
+                if (scheme == null || !context.mounted) return;
+                await _applyScheme(context, scheme);
+              },
+              child: const Text('灯光库'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(_label, style: AppTextStyles.bodySecondary),
+      ],
     );
   }
 }

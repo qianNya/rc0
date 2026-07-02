@@ -102,7 +102,19 @@ String formatFeedCount(int n) {
 }
 
 /// Grid child aspect ratio for feed cards with cover + title + author + stats.
-double feedGridChildAspectRatio(int crossAxisCount) {
+double feedGridChildAspectRatio(
+  int crossAxisCount, {
+  bool overlayMetrics = false,
+}) {
+  if (overlayMetrics) {
+    if (crossAxisCount >= 6) return 0.70;
+    if (crossAxisCount >= 5) return 0.72;
+    if (crossAxisCount >= 4) return 0.74;
+    if (crossAxisCount >= 3) return 0.76;
+    return 0.78;
+  }
+  if (crossAxisCount >= 6) return 0.58;
+  if (crossAxisCount >= 5) return 0.60;
   if (crossAxisCount >= 4) return 0.62;
   if (crossAxisCount >= 3) return 0.66;
   return 0.68;

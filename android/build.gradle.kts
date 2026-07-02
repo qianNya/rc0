@@ -12,19 +12,6 @@ allprojects {
 }
 
 subprojects {
-    if (project.name == "flutter_gl") {
-        val flutterGlAarDir = project.file("libs/aars")
-        rootProject.allprojects {
-            repositories {
-                flatDir {
-                    dirs(flutterGlAarDir)
-                }
-            }
-        }
-    }
-}
-
-subprojects {
     buildscript {
         repositories {
             configureCnMirrors()
@@ -88,67 +75,6 @@ android {
     lintOptions {
         disable 'InvalidPackage'
     }
-}
-""".trimIndent()
-
-            buildFile.writeText(patched)
-        }
-    }
-
-    if (project.name == "flutter_gl") {
-        project.beforeEvaluate {
-            val buildFile = project.file("build.gradle")
-            if (!buildFile.exists()) return@beforeEvaluate
-
-            val patched = """
-group 'com.futouapp.flutter_gl.flutter_gl'
-version '1.0-SNAPSHOT'
-
-buildscript {
-    ext.kotlin_version = '2.3.20'
-    repositories {
-        google()
-        mavenCentral()
-    }
-
-    dependencies {
-        classpath 'com.android.tools.build:gradle:8.9.1'
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${'$'}kotlin_version"
-    }
-}
-
-rootProject.allprojects {
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
-
-apply plugin: 'com.android.library'
-apply plugin: 'kotlin-android'
-
-android {
-    namespace 'com.futouapp.flutter_gl.flutter_gl'
-    compileSdkVersion 36
-
-    sourceSets {
-        main.java.srcDirs += 'src/main/kotlin'
-    }
-    defaultConfig {
-        minSdkVersion 24
-    }
-    lintOptions {
-        disable 'InvalidPackage'
-    }
-}
-
-dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:${'$'}kotlin_version"
-
-    implementation 'androidx.appcompat:appcompat:1.3.0'
-    implementation 'com.google.android.material:material:1.3.0'
-
-    implementation(name:'threeegl', ext:'aar')
 }
 """.trimIndent()
 

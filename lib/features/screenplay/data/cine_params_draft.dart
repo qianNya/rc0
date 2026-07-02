@@ -59,6 +59,12 @@ void applyCineParamsFromFrameMap(
   if (cachedName is String) {
     frameDraft.characterName = cachedName;
   }
+  final poseId = extraMap['pose_id'];
+  if (poseId is num && poseId.toInt() > 0) {
+    frameDraft.poseId = poseId.toInt();
+  } else {
+    frameDraft.poseId = null;
+  }
 }
 
 void writeCineParamsToFrameMap(
@@ -88,6 +94,7 @@ void writeCineParamsToFrameMap(
   extraMap.remove('negative_prompt');
   extraMap.remove('character_note');
   extraMap.remove('character_name');
+  extraMap.remove('pose_id');
 
   extraMap.addAll(
     cine.toExtraParams(
@@ -102,6 +109,9 @@ void writeCineParamsToFrameMap(
       frameDraft.characterId! > 0 &&
       frameDraft.characterName.trim().isNotEmpty) {
     extraMap['character_name'] = frameDraft.characterName.trim();
+  }
+  if (frameDraft.poseId != null && frameDraft.poseId! > 0) {
+    extraMap['pose_id'] = frameDraft.poseId;
   }
 
   if (frameDraft.characterId != null && frameDraft.characterId! > 0) {

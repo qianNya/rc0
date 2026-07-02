@@ -5,7 +5,7 @@ import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/network/api_auth.dart';
-import '../../../../core/responsive/breakpoints.dart';
+import '../../../../core/responsive/feed_grid_layout.dart';
 import '../../../../shared/widgets/content_card_shared.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/inline_error_banner.dart';
@@ -22,6 +22,7 @@ List<Widget> buildDiscoverySlivers({
   required VoidCallback onUpload,
   required Future<void> Function() onRefreshRemote,
   required ScreenplaySelectionController selectionController,
+  bool overlayMetrics = false,
 }) {
   return [
     SliverToBoxAdapter(
@@ -36,6 +37,7 @@ List<Widget> buildDiscoverySlivers({
         onRefreshRemote: onRefreshRemote,
         bottomPadding: 24,
         selectionController: selectionController,
+        overlayMetrics: overlayMetrics,
       ),
     ),
     if (remoteLoadingMore)
@@ -134,6 +136,7 @@ Widget buildDiscoveryFeedBody({
   double bottomPadding = 32,
   double gridSpacing = 12,
   int? crossAxisCount,
+  bool overlayMetrics = false,
 }) {
   if (remoteLoading && feedItems.isEmpty) {
     return const Padding(
@@ -154,31 +157,33 @@ Widget buildDiscoveryFeedBody({
     );
   }
 
-  final columns =
-      crossAxisCount ?? Breakpoints.gridColumns(context, mobile: 2, desktop: 4);
-  final aspectRatio = feedGridChildAspectRatio(columns);
+  final columns = crossAxisCount ??
+      FeedGridLayout.columnsForWidth(MediaQuery.sizeOf(context).width);
+  final aspectRatio =
+      feedGridChildAspectRatio(columns, overlayMetrics: overlayMetrics);
 
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      if (remoteError != null && !isUnauthorizedError(remoteError))
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-          child: InlineErrorBanner(
-            message: remoteError,
-            onRetry: () => onRefreshRemote(),
+  return FeedGridScope(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (remoteError != null && !isUnauthorizedError(remoteError))
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: InlineErrorBanner(
+              message: remoteError,
+              onRetry: () => onRefreshRemote(),
+            ),
           ),
-        ),
-      GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        padding: EdgeInsets.fromLTRB(16, 8, 16, bottomPadding),
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: columns,
-          mainAxisSpacing: gridSpacing,
-          crossAxisSpacing: gridSpacing,
-          childAspectRatio: aspectRatio,
-        ),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: FeedGridLayout.padding(bottom: bottomPadding),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns,
+            mainAxisSpacing: gridSpacing,
+            crossAxisSpacing: gridSpacing,
+            childAspectRatio: aspectRatio,
+          ),
         itemCount: feedItems.length,
         itemBuilder: (_, index) {
           final item = feedItems[index];
@@ -194,9 +199,11 @@ Widget buildDiscoveryFeedBody({
                 ? () =>
                     selectionController.enterSelection(initialLocalId: item.id)
                 : null,
+            overlayMetrics: overlayMetrics,
           );
         },
       ),
     ],
+    ),
   );
 }

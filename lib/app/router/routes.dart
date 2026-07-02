@@ -56,6 +56,7 @@ abstract final class AppRoutes {
 
   static const String scenes = '/scenes';
   static const String action = '/action';
+  static const String lighting = '/lighting';
   static const String sceneDetail = '/scenes/:id';
   static const String sceneCreate = '/scenes/create';
   static const String sceneEdit = '/scenes/:id/edit';
@@ -162,6 +163,27 @@ abstract final class AppRoutes {
   static String uploadEdit(String id) => createEdit(id);
 
   static String discoveryHubTab(int tab) => '$discovery?hubTab=$tab';
+
+  static String lightingWithContext({
+    String? schemeId,
+    int? characterId,
+    String? sceneId,
+    String scope = 'browse',
+    int? actIndex,
+    int? sceneIndex,
+    int? frameIndex,
+  }) {
+    final query = <String, String>{'scope': scope};
+    if (schemeId != null && schemeId.isNotEmpty) {
+      query['schemeId'] = schemeId;
+    }
+    if (characterId != null) query['characterId'] = '$characterId';
+    if (sceneId != null && sceneId.isNotEmpty) query['sceneId'] = sceneId;
+    if (actIndex != null) query['act'] = '$actIndex';
+    if (sceneIndex != null) query['scene'] = '$sceneIndex';
+    if (frameIndex != null) query['frame'] = '$frameIndex';
+    return Uri(path: lighting, queryParameters: query).toString();
+  }
 
   static String favoritesTab(int tab) => '$favorites?tab=$tab';
   static String comingSoon(String title) =>

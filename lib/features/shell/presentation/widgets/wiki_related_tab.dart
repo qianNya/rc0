@@ -24,10 +24,12 @@ class WikiRelatedTab extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final links = AppCatalog.wikiRelatedLinks;
 
-    return ListView(
+    return ColoredBox(
+      color: Colors.transparent,
+      child: ListView(
       padding: EdgeInsets.fromLTRB(
         AppDimensions.spacingMd,
-        AppDimensions.spacingSm,
+        MediaQuery.paddingOf(context).top + AppDimensions.spacingSm,
         AppDimensions.spacingMd,
         ShellInsets.scrollBottom(context, extra: AppDimensions.spacingMd),
       ),
@@ -100,6 +102,7 @@ class WikiRelatedTab extends StatelessWidget {
             ),
           ),
       ],
+      ),
     );
   }
 }

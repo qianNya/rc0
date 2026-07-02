@@ -49,7 +49,8 @@ class _SceneDetailPageState extends State<SceneDetailPage> {
 
   Future<void> _load() async {
     setState(() => _loading = true);
-    final entry = await _repo.fetchDetail(widget.sceneId);
+    final result = await _repo.fetchDetail(widget.sceneId);
+    final entry = result.scene;
     final favorite = await SceneLocalStore.instance.isFavorite(widget.sceneId);
     final localCover =
         await SceneLocalStore.instance.localCoverPath(widget.sceneId);
@@ -124,26 +125,42 @@ class _SceneDetailPageState extends State<SceneDetailPage> {
           : SafeArea(
               child: Padding(
                 padding: const EdgeInsets.all(AppDimensions.spacingMd),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _toggleFavorite,
-                        icon: Icon(
-                          _favorite ? Icons.favorite : Icons.favorite_border,
+                child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => context.push(
+                        AppRoutes.lightingWithContext(sceneId: entry.id),
+                      ),
+                      icon: const Icon(Icons.wb_incandescent_outlined),
+                      label: const Text('匹配灯光氛围'),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _toggleFavorite,
+                          icon: Icon(
+                            _favorite ? Icons.favorite : Icons.favorite_border,
+                          ),
+                          label: Text(_favorite ? '已收藏' : '收藏'),
                         ),
-                        label: Text(_favorite ? '已收藏' : '收藏'),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: _addToMyScenes,
-                        child: const Text('加入我的场景'),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: _addToMyScenes,
+                          child: const Text('加入我的场景'),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+                ],
+              ),
               ),
             ),
       floatingActionButton: entry == null

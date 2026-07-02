@@ -1,4 +1,7 @@
 /// Cinematic / shot parameters per frame (景别/机位/运镜/焦段/构图/时长).
+///
+/// Roadmap: [movement] may evolve into `movement_keyframes` in `extra_params`
+/// for Camera Nodes; not implemented yet.
 class CineParams {
   const CineParams({
     this.shotType,

@@ -38,12 +38,12 @@ class ActionModelSource {
       }
       return '已导入：$name · $sizeLabel（当前格式等待渲染器支持）';
     }
-    return '已导入：$name · $sizeLabel · WebGL 实色渲染';
+    return '已导入：$name · $sizeLabel · Unity Runtime（需导出库）';
   }
 
   String get renderModeLabel {
     if (!canRender) return '等待渲染器支持';
-    return 'WebGL 实色渲染';
+    return 'Unity Runtime（需导出库）';
   }
 }
 
