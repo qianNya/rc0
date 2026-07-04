@@ -22,12 +22,9 @@ class WikiHubTheme extends StatelessWidget {
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: AppSystemUi.lightStyle,
-      child: ColoredBox(
-        color: AppColors.background,
-        child: Theme(
-          data: themeOf(context),
-          child: child,
-        ),
+      child: Theme(
+        data: themeOf(context),
+        child: child,
       ),
     );
   }

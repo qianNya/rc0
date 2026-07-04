@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
+import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 import '../widgets/scene_create_sheet.dart';
 
 /// Full-screen fallback for deep links to [/scenes/create].
@@ -20,10 +21,16 @@ class SceneCreatePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DesktopStackScaffold(
+      overlayAppBar: true,
       title: const Text('创建场景'),
       onBack: () => popOrGoDiscovery(context),
       body: ListView(
-        padding: const EdgeInsets.all(AppDimensions.spacingMd),
+        padding: EdgeInsets.fromLTRB(
+          AppDimensions.spacingMd,
+          wikiModeTagContentInsetHeight(context) + AppDimensions.spacingMd,
+          AppDimensions.spacingMd,
+          AppDimensions.spacingMd,
+        ),
         children: [
           SceneCreateFormPanel(
             initialDescription: initialDescription,

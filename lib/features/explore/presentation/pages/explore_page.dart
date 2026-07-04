@@ -278,7 +278,7 @@ class _ExploreMobileView extends StatelessWidget {
                   slivers: [
                     SliverToBoxAdapter(
                       child: const ExploreFeaturedCarousel(
-                        bleedUnderHeader: false,
+                        bleedUnderHeader: true,
                       ),
                     ),
                     const SliverToBoxAdapter(
@@ -375,11 +375,11 @@ class _ExploreMobileView extends StatelessWidget {
         );
       }
 
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      return Stack(
+        fit: StackFit.expand,
         children: [
-          bar,
-          Expanded(child: scroll),
+          scroll,
+          Positioned(top: 0, left: 0, right: 0, child: bar),
         ],
       );
     }

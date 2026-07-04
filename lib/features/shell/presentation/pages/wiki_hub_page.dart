@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
+import '../../../character/presentation/widgets/character_wiki_app_bar.dart';
 import '../../../character/presentation/widgets/wiki/wiki_character_library_tab.dart';
 import '../../../explore/presentation/pages/explore_page.dart';
 import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
@@ -81,8 +82,13 @@ class _WikiHubPageState extends State<WikiHubPage> {
       _WikiSection.character => '角色',
     };
 
+    final PreferredSizeWidget appBar = switch (_activeSection) {
+      _WikiSection.character => const CharacterHubAppBar(),
+      _ => WikiModeTagAppBar(title: title),
+    };
+
     return WikiModeTagPageScaffold(
-      appBar: WikiModeTagAppBar(title: title),
+      appBar: appBar,
       body: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

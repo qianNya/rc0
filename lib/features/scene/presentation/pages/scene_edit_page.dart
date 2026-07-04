@@ -5,6 +5,7 @@ import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/primary_button.dart';
+import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 import '../../data/scene_local_store.dart';
 import '../../data/scene_repository.dart';
 import '../widgets/scene_form_sections.dart';
@@ -110,12 +111,18 @@ class _SceneEditPageState extends State<SceneEditPage> {
   @override
   Widget build(BuildContext context) {
     return DesktopStackScaffold(
+      overlayAppBar: true,
       title: const Text('编辑场景'),
       onBack: () => popOrGoDiscovery(context),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
-              padding: const EdgeInsets.all(AppDimensions.spacingMd),
+              padding: EdgeInsets.fromLTRB(
+                AppDimensions.spacingMd,
+                wikiModeTagContentInsetHeight(context) + AppDimensions.spacingMd,
+                AppDimensions.spacingMd,
+                AppDimensions.spacingMd,
+              ),
               children: [
                 SceneFormSections(
                   titleController: _titleController,

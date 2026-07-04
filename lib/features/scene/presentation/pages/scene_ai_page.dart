@@ -6,6 +6,7 @@ import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/data/app_catalog.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
+import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 import '../../../../shared/widgets/primary_button.dart';
 import '../../../../shared/widgets/rc0_widgets.dart';
 import '../widgets/scene_create_sheet.dart';
@@ -82,6 +83,7 @@ class _SceneAiPageState extends State<SceneAiPage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return DesktopStackScaffold(
+      overlayAppBar: true,
       title: const Text('AI 场景'),
       onBack: () => popOrGoDiscovery(context),
       body: ColoredBox(
@@ -89,7 +91,12 @@ class _SceneAiPageState extends State<SceneAiPage> {
             ? AppColors.characterBackgroundDark
             : Theme.of(context).scaffoldBackgroundColor,
         child: ListView(
-          padding: const EdgeInsets.all(AppDimensions.spacingMd),
+          padding: EdgeInsets.fromLTRB(
+            AppDimensions.spacingMd,
+            wikiModeTagContentInsetHeight(context) + AppDimensions.spacingMd,
+            AppDimensions.spacingMd,
+            AppDimensions.spacingMd,
+          ),
           children: [
             Text('场景描述', style: AppTextStyles.label),
             const SizedBox(height: 8),

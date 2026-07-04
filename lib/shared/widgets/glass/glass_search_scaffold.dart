@@ -5,6 +5,7 @@ import '../../../core/responsive/breakpoints.dart';
 import '../desktop/desktop_stack_scaffold.dart';
 import '../feed_tab_bar.dart';
 import '../rc0_page_scaffold.dart';
+import '../wiki_mode_tag_app_bar.dart';
 
 /// Search page shell with query field and segmented result tabs.
 class GlassSearchScaffold extends StatelessWidget {
@@ -37,6 +38,7 @@ class GlassSearchScaffold extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        const WikiModeTagToolbarInset(),
         Padding(
           padding: const EdgeInsets.fromLTRB(
             AppDimensions.spacingMd,

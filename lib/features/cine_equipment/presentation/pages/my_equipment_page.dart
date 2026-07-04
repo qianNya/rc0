@@ -66,6 +66,7 @@ class _MyEquipmentPageState extends State<MyEquipmentPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            const WikiModeTagToolbarInset(),
             WikiModeTagTabBar(
               tabs: _tabs,
               selectedIndex: _tabIndex,

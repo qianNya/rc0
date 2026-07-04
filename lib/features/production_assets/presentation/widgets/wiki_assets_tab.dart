@@ -6,6 +6,7 @@ import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../shared/widgets/glass/glass_card.dart';
 import '../../../../shared/widgets/shell_insets.dart';
+import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 import '../../data/asset_catalog.dart';
 import '../../data/asset_repository.dart';
 import '../../domain/user_asset_category.dart';
@@ -132,7 +133,7 @@ class _WikiAssetsTabState extends State<WikiAssetsTab> {
 
     final topPadding = widget.embeddedInShell
         ? 0.0
-        : MediaQuery.paddingOf(context).top + AppDimensions.spacingSm;
+        : wikiModeTagContentInsetHeight(context) + AppDimensions.spacingSm;
 
     return ColoredBox(
       color: Colors.transparent,

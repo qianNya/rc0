@@ -35,12 +35,16 @@ abstract final class AppDimensions {
   static const double bottomNavSecondaryTabGap = spacingSm;
   static const double bottomNavIndicatorInsetH = 6;
   static const double bottomNavIndicatorInsetV = 6;
+
   /// Icon-only bottom-nav tab slot width.
   static const double bottomNavTabSlotWidth = 56;
+
   /// Horizontal padding inside the floating bottom-nav pill.
   static const double bottomNavBarInsetH = 6;
+
   /// Horizontal padding for labeled bottom-nav tabs (icon + caption).
   static const double bottomNavLabeledTabPaddingH = 14;
+
   /// Max width for centered floating bottom nav on tablet / wide phones.
   static const double floatingBottomNavMaxWidth = 420;
   static const double floatingBottomNavEditorMaxWidth = 560;
@@ -50,6 +54,7 @@ abstract final class AppDimensions {
     final tabsWidth = tabWidths.fold<double>(0, (sum, width) => sum + width);
     return bottomNavBarInsetH * 2 + tabsWidth;
   }
+
   static const double floatingBottomClearance = 72;
   static const double feedTabBarHeight = 40;
   static const double titleBarHeight = 40;

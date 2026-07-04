@@ -15,6 +15,8 @@ class CharacterCategoryChips extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onChanged;
 
+  static const double chipBarHeight = 40;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -25,7 +27,7 @@ class CharacterCategoryChips extends StatelessWidget {
         : AppColors.surfaceSecondary;
 
     return SizedBox(
-      height: 40,
+      height: chipBarHeight,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         clipBehavior: Clip.hardEdge,

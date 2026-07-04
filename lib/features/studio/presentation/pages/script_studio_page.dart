@@ -10,6 +10,7 @@ import '../widgets/script_studio_action_cards.dart';
 import '../widgets/script_studio_app_bar.dart';
 import '../widgets/script_studio_quick_start.dart';
 import '../widgets/script_studio_recent_section.dart';
+import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 
 class ScriptStudioPage extends StatefulWidget {
   const ScriptStudioPage({super.key});
@@ -92,7 +93,10 @@ class _ScriptStudioPageState extends State<ScriptStudioPage> {
     return ScriptStudioHubScaffold(
       appBar: const ScriptStudioAppBar(),
       body: ListView(
-        padding: const EdgeInsets.only(bottom: AppDimensions.spacingMd),
+        padding: EdgeInsets.only(
+          top: wikiModeTagContentInsetHeight(context),
+          bottom: AppDimensions.spacingMd,
+        ),
         children: [
           const ScriptStudioActionCards(),
           ScriptStudioRecentSection(

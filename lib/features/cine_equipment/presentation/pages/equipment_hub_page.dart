@@ -127,6 +127,7 @@ class _EquipmentHubPageState extends State<EquipmentHubPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            const WikiModeTagToolbarInset(),
             WikiModeTagTabBar(
               tabs: _tabs,
               selectedIndex: _tabIndex,

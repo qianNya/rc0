@@ -29,9 +29,11 @@ class ShellBottomFadeOverlay extends StatelessWidget {
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final fadeMid = isDark
-        ? const Color(0x99000000)
-        : AppColors.background.withValues(alpha: 0.6);
-    final fadeEnd = isDark ? const Color(0xFF000000) : AppColors.background;
+        ? const Color(0x44000000)
+        : AppColors.background.withValues(alpha: 0.18);
+    final fadeEnd = isDark
+        ? const Color(0x66000000)
+        : AppColors.background.withValues(alpha: 0.28);
 
     return Positioned(
       left: 0,

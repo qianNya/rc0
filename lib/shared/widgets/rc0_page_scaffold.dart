@@ -24,7 +24,7 @@ class Rc0PageScaffold extends StatelessWidget {
     this.glassTitleMode = GlassTitleMode.auto,
     required this.body,
     this.backgroundColor,
-    this.overlayAppBar = false,
+    this.overlayAppBar = true,
     this.bottomNavigationBar,
     this.floatingActionButton,
     this.floatingActionButtonLocation,
@@ -48,7 +48,7 @@ class Rc0PageScaffold extends StatelessWidget {
   final Widget body;
   final Color? backgroundColor;
 
-  /// Hero / immersive pages: body scrolls under a transparent app bar.
+  /// Hero / immersive pages: body scrolls under floating app bar (default).
   final bool overlayAppBar;
 
   final Widget? bottomNavigationBar;
@@ -104,7 +104,6 @@ class Rc0PageScaffold extends StatelessWidget {
     return ScrollNotificationObserver(
       child: WikiModeTagPageScaffold(
         appBar: resolvedAppBar,
-        underlapAppBar: overlayAppBar,
         systemOverlayStyle: overlayStyle,
         bottomNavigationBar: bottomNavigationBar,
         floatingActionButton: floatingActionButton,

@@ -290,6 +290,7 @@ class _MyGalleryPageState extends State<MyGalleryPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (!includeHeader) const WikiModeTagToolbarInset(),
         if (includeHeader)
           GalleryPageHeader(
             onUpload: _pickAndUpload,

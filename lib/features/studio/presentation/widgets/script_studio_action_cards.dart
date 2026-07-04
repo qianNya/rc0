@@ -16,9 +16,7 @@ class ScriptStudioActionCards extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spacingMd),
       child: Column(
         children: [
-          _PrimaryCreateCard(
-            onTap: () => context.go(AppRoutes.studioCreate),
-          ),
+          _PrimaryCreateCard(onTap: () => context.go(AppRoutes.studioCreate)),
           const SizedBox(height: AppDimensions.spacingMd),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -29,8 +27,7 @@ class ScriptStudioActionCards extends StatelessWidget {
                   glowColor: AppColors.accent,
                   title: 'AI 导入剧本',
                   subtitle: '智能拆解剧本内容',
-                  onTap: () =>
-                      context.push(AppRoutes.comingSoon('AI 导入剧本')),
+                  onTap: () => context.push(AppRoutes.comingSoon('AI 导入剧本')),
                 ),
               ),
               const SizedBox(width: AppDimensions.spacingMd),

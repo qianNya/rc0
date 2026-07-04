@@ -80,6 +80,7 @@ class _ActionWikiPageState extends State<ActionWikiPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          const WikiModeTagToolbarInset(),
           Text(
             'Anime Character Model Demo',
             style: AppTextStyles.title.copyWith(fontSize: 20),

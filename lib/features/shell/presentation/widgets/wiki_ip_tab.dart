@@ -9,6 +9,7 @@ import '../../../../core/utils/state_listeners.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/inline_error_banner.dart';
 import '../../../../shared/widgets/shell_insets.dart';
+import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 import '../../../ip/data/ip_repository.dart';
 import '../../../ip/presentation/widgets/ip_grid_card.dart';
 
@@ -82,7 +83,7 @@ class _WikiIpTabState extends State<WikiIpTab> with AutomaticKeepAliveClientMixi
             child: Padding(
               padding: EdgeInsets.fromLTRB(
                 AppDimensions.spacingMd,
-                MediaQuery.paddingOf(context).top + AppDimensions.spacingSm,
+                wikiModeTagContentInsetHeight(context) + AppDimensions.spacingSm,
                 AppDimensions.spacingMd,
                 AppDimensions.spacingSm,
               ),

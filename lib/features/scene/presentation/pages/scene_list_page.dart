@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/router/routes.dart';
-import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/data/app_catalog.dart';
@@ -24,6 +23,7 @@ import '../widgets/scene_create_sheet.dart';
 import '../widgets/scene_map_pick.dart';
 import '../widgets/scene_map_sheet.dart';
 import '../widgets/scene_masonry_grid.dart';
+import '../widgets/scene_wiki_app_bar.dart';
 
 class SceneListPage extends StatefulWidget {
   const SceneListPage({super.key, this.embeddedInHub = false});
@@ -154,23 +154,27 @@ class _SceneListPageState extends State<SceneListPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final hot = _repo.hotScenes;
     final recommended = _recommended;
-    final body = _buildBody(
-      context,
-      hot: hot,
-      recommended: recommended,
+    final chromeTop = wikiModeTagContentInsetHeight(context);
+    final body = Padding(
+      padding: EdgeInsets.only(top: chromeTop),
+      child: _buildBody(
+        context,
+        hot: hot,
+        recommended: recommended,
+      ),
     );
 
     if (widget.embeddedInHub) {
-      return WikiModeTagPageScaffold(
-        appBar: const WikiModeTagAppBar(title: '场景'),
+      return SceneHubScaffold(
+        appBar: const SceneHubAppBar(),
         body: body,
       );
     }
 
     return DesktopStackScaffold(
+      overlayAppBar: true,
       title: const Text('场景库'),
       onBack: () => popOrGoDiscovery(context),
       actions: [

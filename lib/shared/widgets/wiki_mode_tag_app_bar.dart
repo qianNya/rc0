@@ -8,6 +8,7 @@ import '../../app/theme/app_dimensions.dart';
 import '../../app/theme/system_ui_style.dart';
 import '../../app/theme/app_theme.dart';
 import 'glass_title_chip.dart';
+import 'status_bar_spacer.dart';
 
 /// Frosted pill title chip for Wiki-style floating headers.
 class WikiModeTagTitleChip extends StatelessWidget {
@@ -296,20 +297,48 @@ class WikiModeTagAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 }
 
-/// Full height of status bar + floating toolbar chrome.
-double wikiModeTagChromeHeight(BuildContext context) {
-  final statusTop = MediaQuery.paddingOf(context).top;
-  return statusTop + kToolbarHeight;
+/// System status bar inset (blank placeholder pixels for edge-to-edge layouts).
+double wikiModeTagStatusBarHeight(BuildContext context) {
+  return MediaQuery.paddingOf(context).top;
 }
 
-/// Content padding top: clears floating chrome (no extra gap).
-double wikiModeTagContentInsetHeight(BuildContext context) {
-  return wikiModeTagChromeHeight(context);
+/// Floating toolbar row height (below the status bar).
+double wikiModeTagToolbarHeight({double? toolbarHeight}) {
+  return toolbarHeight ?? kToolbarHeight;
+}
+
+/// Full height of status bar + floating toolbar chrome.
+double wikiModeTagChromeHeight(
+  BuildContext context, {
+  double? toolbarHeight,
+}) {
+  return wikiModeTagStatusBarHeight(context) +
+      wikiModeTagToolbarHeight(toolbarHeight: toolbarHeight);
+}
+
+/// Scroll / hero bleed: extends content under floating chrome.
+double wikiModeTagContentInsetHeight(
+  BuildContext context, {
+  double? toolbarHeight,
+}) {
+  return wikiModeTagChromeHeight(context, toolbarHeight: toolbarHeight);
+}
+
+/// Body inset below floating toolbar (status bar handled by app bar spacer).
+double wikiModeTagFloatingToolbarInsetHeight(
+  BuildContext context, {
+  double? toolbarHeight,
+}) {
+  return wikiModeTagToolbarHeight(toolbarHeight: toolbarHeight);
 }
 
 /// Overlap inset for content that intentionally bleeds under floating chrome.
-double wikiModeTagBleedInsetHeight(BuildContext context) {
-  return wikiModeTagChromeHeight(context) - AppDimensions.spacingXl;
+double wikiModeTagBleedInsetHeight(
+  BuildContext context, {
+  double? toolbarHeight,
+}) {
+  return wikiModeTagChromeHeight(context, toolbarHeight: toolbarHeight) -
+      AppDimensions.spacingXl;
 }
 
 /// Standard body padding when the page does not use [WikiModeTagPageScaffold].
@@ -329,14 +358,64 @@ EdgeInsets wikiModeTagBodyPadding(
   return EdgeInsets.fromLTRB(horizontal, top, horizontal, bottom);
 }
 
-/// Transparent spacer: status bar + toolbar height (clears floating app bar).
+/// Transparent spacer matching the system status bar height.
+typedef WikiModeTagStatusBarSpacer = StatusBarSpacer;
+
+/// Clears full floating chrome (status bar + toolbar) for standard list/column pages.
 class WikiModeTagToolbarInset extends StatelessWidget {
-  const WikiModeTagToolbarInset({super.key});
+  const WikiModeTagToolbarInset({super.key, this.toolbarHeight});
+
+  final double? toolbarHeight;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(height: wikiModeTagContentInsetHeight(context));
+    return SizedBox(
+      height: wikiModeTagChromeHeight(
+        context,
+        toolbarHeight: toolbarHeight,
+      ),
+    );
   }
+}
+
+/// Clears only the floating toolbar row (content may bleed under the status bar).
+class WikiModeTagFloatingToolbarInset extends StatelessWidget {
+  const WikiModeTagFloatingToolbarInset({super.key, this.toolbarHeight});
+
+  final double? toolbarHeight;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: wikiModeTagFloatingToolbarInsetHeight(
+        context,
+        toolbarHeight: toolbarHeight,
+      ),
+    );
+  }
+}
+
+/// Wraps a wiki app bar with status-bar placeholder + floating toolbar chrome.
+PreferredSizeWidget wrapWikiModeTagAppBar(
+  BuildContext context,
+  PreferredSizeWidget appBar,
+) {
+  final toolbarHeight = appBar.preferredSize.height;
+  final chromeHeight = wikiModeTagChromeHeight(
+    context,
+    toolbarHeight: toolbarHeight,
+  );
+
+  return PreferredSize(
+    preferredSize: Size.fromHeight(chromeHeight),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const WikiModeTagStatusBarSpacer(),
+        SizedBox(height: toolbarHeight, child: appBar),
+      ],
+    ),
+  );
 }
 
 /// Wiki-style page shell: floating frosted chrome, transparent app bar.
@@ -345,7 +424,6 @@ class WikiModeTagPageScaffold extends StatelessWidget {
     super.key,
     required this.appBar,
     required this.body,
-    this.underlapAppBar = false,
     this.systemOverlayStyle,
     this.bottomNavigationBar,
     this.floatingActionButton,
@@ -354,9 +432,6 @@ class WikiModeTagPageScaffold extends StatelessWidget {
 
   final PreferredSizeWidget appBar;
   final Widget body;
-
-  /// Hero pages: body scrolls under the app bar (no toolbar inset).
-  final bool underlapAppBar;
   final SystemUiOverlayStyle? systemOverlayStyle;
   final Widget? bottomNavigationBar;
   final Widget? floatingActionButton;
@@ -364,18 +439,7 @@ class WikiModeTagPageScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Widget content;
-    if (underlapAppBar) {
-      content = body;
-    } else {
-      content = Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const WikiModeTagToolbarInset(),
-          Expanded(child: body),
-        ],
-      );
-    }
+    final resolvedAppBar = wrapWikiModeTagAppBar(context, appBar);
 
     return Theme(
       data: AppTheme.light.copyWith(
@@ -388,8 +452,8 @@ class WikiModeTagPageScaffold extends StatelessWidget {
           backgroundColor: Colors.transparent,
           extendBody: true,
           extendBodyBehindAppBar: true,
-          appBar: appBar,
-          body: SizedBox.expand(child: content),
+          appBar: resolvedAppBar,
+          body: SizedBox.expand(child: body),
           bottomNavigationBar: bottomNavigationBar,
           floatingActionButton: floatingActionButton,
           floatingActionButtonLocation: floatingActionButtonLocation,

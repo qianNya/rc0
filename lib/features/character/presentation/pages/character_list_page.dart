@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/router/routes.dart';
-import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
+import '../../../../app/theme/app_theme.dart';
+import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 import '../../../auth/data/auth_repository.dart';
-import '../../../studio/presentation/widgets/studio_editor_shell_glass_button.dart';
+import '../../../studio/presentation/widgets/script_studio_header_components.dart';
 import '../widgets/character_library_body.dart';
+import '../widgets/character_wiki_app_bar.dart';
 
 class CharacterListPage extends StatefulWidget {
   const CharacterListPage({
@@ -43,38 +44,47 @@ class _CharacterListPageState extends State<CharacterListPage> {
 
   @override
   Widget build(BuildContext context) {
-    final body = CharacterLibraryBody(
-      mode: CharacterLibraryMode.discovery,
-      workId: widget.workId,
-      embeddedInHub: widget.embeddedInHub,
-      showAiFab: widget.embeddedInHub,
+    final chromeTop = wikiModeTagContentInsetHeight(context);
+    final title = widget.workId != null ? 'IP 角色' : '角色库';
+
+    final body = Padding(
+      padding: EdgeInsets.only(top: chromeTop),
+      child: CharacterLibraryBody(
+        mode: CharacterLibraryMode.wiki,
+        workId: widget.workId,
+        embeddedInHub: true,
+        externalChromeInset: true,
+        lightTone: true,
+        showAiFab: true,
+      ),
     );
 
-    if (widget.embeddedInHub) return body;
+    if (widget.embeddedInHub) {
+      return Theme(data: AppTheme.light, child: body);
+    }
 
-    return DesktopStackScaffold(
-      title: Text(widget.workId != null ? 'IP 角色' : '角色库'),
-      onBack: () => popOrGoDiscovery(context),
-      actions: [
-        IconButton(
-          tooltip: '我的角色',
-          icon: const Icon(Icons.folder_outlined),
-          onPressed: () => context.push(AppRoutes.myCharacters),
+    return Theme(
+      data: AppTheme.light,
+      child: CharacterHubScaffold(
+        appBar: CharacterHubAppBar(
+          title: title,
+          actions: [
+            WikiModeTagIconButton(
+              icon: Icons.folder_outlined,
+              tooltip: '我的角色',
+              onPressed: () => context.push(AppRoutes.myCharacters),
+            ),
+            if (_auth.isLoggedIn)
+              WikiModeTagIconButton(
+                icon: Icons.add,
+                tooltip: '新建角色',
+                onPressed: () => context.push(AppRoutes.characterCreate),
+              ),
+            const ScriptStudioHeaderActionButtons(trailingSpacing: 8),
+          ],
         ),
-        if (_auth.isLoggedIn)
-          IconButton(
-            tooltip: '新建角色',
-            icon: const Icon(Icons.add),
-            onPressed: () => context.push(AppRoutes.characterCreate),
-          ),
-      ],
-      floatingActionButton: StudioEditorShellGlassButton(
-        label: 'AI 角色',
-        icon: Icons.auto_awesome,
-        minWidth: 120,
-        onPressed: () => context.push(AppRoutes.characterAi),
+        body: body,
       ),
-      body: body,
     );
   }
 }

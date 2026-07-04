@@ -157,6 +157,7 @@ class _CommunityMobileView extends StatelessWidget {
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        const WikiModeTagToolbarInset(),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
           child: Row(

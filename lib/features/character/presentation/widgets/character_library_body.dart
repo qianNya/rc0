@@ -4,11 +4,12 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
-import '../../../../core/responsive/feed_grid_layout.dart';
 import '../../../../core/data/app_catalog.dart';
+import '../../../../core/responsive/feed_grid_layout.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/rc0_widgets.dart';
 import '../../../../shared/widgets/shell_insets.dart';
+import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../studio/presentation/widgets/studio_editor_shell_glass_button.dart';
 import '../../data/character_local_store.dart';
@@ -31,6 +32,8 @@ class CharacterLibraryBody extends StatefulWidget {
     this.embeddedInHub = false,
     this.keepAlive = false,
     this.showAiFab = false,
+    this.externalChromeInset = false,
+    this.lightTone = false,
   });
 
   final CharacterLibraryMode mode;
@@ -38,6 +41,12 @@ class CharacterLibraryBody extends StatefulWidget {
   final bool embeddedInHub;
   final bool keepAlive;
   final bool showAiFab;
+
+  /// Parent scaffold already applied [wikiModeTagContentInsetHeight] padding.
+  final bool externalChromeInset;
+
+  /// Force light surfaces/text for wiki-style character library pages.
+  final bool lightTone;
 
   @override
   State<CharacterLibraryBody> createState() => _CharacterLibraryBodyState();
@@ -162,14 +171,26 @@ class _CharacterLibraryBodyState extends State<CharacterLibraryBody>
 
   void _openAi() => context.push(AppRoutes.characterAi);
 
-  Widget _buildTopBar(bool isDark) {
+  double _topBarInset(BuildContext context) {
+    if (widget.externalChromeInset) {
+      return AppDimensions.spacingSm;
+    }
+    if (widget.embeddedInHub) {
+      return wikiModeTagContentInsetHeight(context) + AppDimensions.spacingSm;
+    }
+    return AppDimensions.spacingSm;
+  }
+
+  Widget _buildTopBar() {
+    final useLight = widget.lightTone || widget.mode == CharacterLibraryMode.wiki;
+    final fieldFill =
+        useLight ? AppColors.surfaceSecondary : AppColors.surfaceSecondary;
+
     if (widget.mode == CharacterLibraryMode.wiki) {
       return Padding(
         padding: EdgeInsets.fromLTRB(
           AppDimensions.spacingMd,
-          widget.embeddedInHub
-              ? MediaQuery.paddingOf(context).top + AppDimensions.spacingSm
-              : AppDimensions.spacingSm,
+          _topBarInset(context),
           AppDimensions.spacingMd,
           AppDimensions.spacingXs,
         ),
@@ -178,9 +199,7 @@ class _CharacterLibraryBodyState extends State<CharacterLibraryBody>
             Expanded(
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: isDark
-                      ? AppColors.characterCardDark
-                      : AppColors.surfaceSecondary,
+                  color: fieldFill,
                   borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
                 ),
                 child: AppSearchField(
@@ -192,7 +211,7 @@ class _CharacterLibraryBodyState extends State<CharacterLibraryBody>
             ),
             const SizedBox(width: 8),
             Material(
-              color: isDark ? AppColors.characterCardDark : AppColors.surfaceSecondary,
+              color: fieldFill,
               borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
               child: InkWell(
                 onTap: _showFilterHint,
@@ -212,9 +231,7 @@ class _CharacterLibraryBodyState extends State<CharacterLibraryBody>
     return Padding(
       padding: EdgeInsets.fromLTRB(
         AppDimensions.spacingMd,
-        widget.embeddedInHub
-            ? MediaQuery.paddingOf(context).top + AppDimensions.spacingSm
-            : AppDimensions.spacingSm,
+        _topBarInset(context),
         AppDimensions.spacingMd,
         AppDimensions.spacingSm,
       ),
@@ -263,6 +280,7 @@ class _CharacterLibraryBodyState extends State<CharacterLibraryBody>
     if (widget.mode == CharacterLibraryMode.wiki) {
       return ListView(
         physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.only(bottom: _scrollBottomPadding(context)),
         children: [
           SizedBox(height: MediaQuery.sizeOf(context).height * 0.12),
           EmptyStateView(
@@ -301,6 +319,74 @@ class _CharacterLibraryBodyState extends State<CharacterLibraryBody>
     );
   }
 
+  double _floatingChipsBottom(BuildContext context) {
+    return ShellInsets.of(context) + AppDimensions.spacingSm;
+  }
+
+  double _scrollBottomPadding(BuildContext context) {
+    return ShellInsets.scrollBottom(
+      context,
+      extra: CharacterCategoryChips.chipBarHeight + AppDimensions.spacingMd,
+    );
+  }
+
+  Widget _buildWikiShell(List<CharacterEntry> filtered, bool useLight) {
+    final scrollBody = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildTopBar(),
+        Expanded(child: _buildContent(filtered)),
+      ],
+    );
+
+    final painted = ColoredBox(
+      color: widget.embeddedInHub
+          ? Colors.transparent
+          : (useLight
+              ? AppColors.background
+              : Theme.of(context).scaffoldBackgroundColor),
+      child: scrollBody,
+    );
+
+    final chips = Positioned(
+      left: 0,
+      right: 0,
+      bottom: _floatingChipsBottom(context),
+      child: CharacterCategoryChips(
+        chips: _categoryChips,
+        selectedIndex: _categoryIndex,
+        onChanged: (index) => setState(() => _categoryIndex = index),
+      ),
+    );
+
+    if (!widget.showAiFab) {
+      return Stack(
+        fit: StackFit.expand,
+        children: [painted, chips],
+      );
+    }
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        painted,
+        chips,
+        Positioned(
+          right: AppDimensions.spacingMd,
+          bottom: _floatingChipsBottom(context) +
+              CharacterCategoryChips.chipBarHeight +
+              AppDimensions.spacingSm,
+          child: StudioEditorShellGlassButton(
+            label: 'AI 角色',
+            icon: Icons.auto_awesome,
+            minWidth: 120,
+            onPressed: _openAi,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildWikiGrid(List<CharacterEntry> filtered) {
     return RefreshIndicator(
       onRefresh: _load,
@@ -315,10 +401,7 @@ class _CharacterLibraryBodyState extends State<CharacterLibraryBody>
                 AppDimensions.spacingMd,
                 0,
                 AppDimensions.spacingMd,
-                ShellInsets.scrollBottom(
-                  context,
-                  extra: AppDimensions.spacingXl * 3,
-                ),
+                _scrollBottomPadding(context),
               ),
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: columns,
@@ -418,13 +501,17 @@ class _CharacterLibraryBodyState extends State<CharacterLibraryBody>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final filtered = _filteredItems;
+    final useLight = widget.lightTone || widget.mode == CharacterLibraryMode.wiki;
+
+    if (widget.mode == CharacterLibraryMode.wiki) {
+      return _buildWikiShell(filtered, useLight);
+    }
 
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildTopBar(isDark),
+        _buildTopBar(),
         CharacterCategoryChips(
           chips: _categoryChips,
           selectedIndex: _categoryIndex,
@@ -438,8 +525,8 @@ class _CharacterLibraryBodyState extends State<CharacterLibraryBody>
     final body = ColoredBox(
       color: widget.embeddedInHub
           ? Colors.transparent
-          : (isDark
-              ? AppColors.characterBackgroundDark
+          : (useLight
+              ? AppColors.background
               : Theme.of(context).scaffoldBackgroundColor),
       child: content,
     );
@@ -447,6 +534,7 @@ class _CharacterLibraryBodyState extends State<CharacterLibraryBody>
     if (!widget.showAiFab) return body;
 
     return Stack(
+      fit: StackFit.expand,
       children: [
         body,
         Positioned(

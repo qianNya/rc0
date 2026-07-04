@@ -10,6 +10,7 @@ import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
 import '../../../../shared/widgets/feed_tab_bar.dart';
+import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../data/scene_local_store.dart';
 import '../../data/scene_repository.dart';
@@ -139,6 +140,7 @@ class _MyScenesPageState extends State<MyScenesPage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return DesktopStackScaffold(
+      overlayAppBar: true,
       title: const Text('我的场景'),
       onBack: () => popOrGoDiscovery(context),
       actions: [
@@ -154,10 +156,11 @@ class _MyScenesPageState extends State<MyScenesPage> {
             : Theme.of(context).scaffoldBackgroundColor,
         child: Column(
           children: [
+            const WikiModeTagToolbarInset(),
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 AppDimensions.spacingMd,
-                AppDimensions.spacingMd,
+                AppDimensions.spacingSm,
                 AppDimensions.spacingMd,
                 0,
               ),
