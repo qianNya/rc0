@@ -18,6 +18,7 @@ class ShootPresetPickerHeaderCard extends StatelessWidget {
     this.officialCount,
     this.onCreateTap,
     this.onLightingTap,
+    this.onEquipmentTap,
     this.isManage = false,
   });
 
@@ -29,6 +30,7 @@ class ShootPresetPickerHeaderCard extends StatelessWidget {
   final int? officialCount;
   final VoidCallback? onCreateTap;
   final VoidCallback? onLightingTap;
+  final VoidCallback? onEquipmentTap;
   final bool isManage;
 
   @override
@@ -109,17 +111,23 @@ class ShootPresetPickerHeaderCard extends StatelessWidget {
                                 ),
                               ),
                             ),
-                          if (onLightingTap != null) ...[
+                          if (onLightingTap != null || onEquipmentTap != null) ...[
                             const SizedBox(height: 8),
-                            GestureDetector(
-                              onTap: onLightingTap,
-                              child: Text(
-                                '打光方案请前往灯光库 →',
-                                style: AppTextStyles.label.copyWith(
-                                  fontSize: 12,
-                                  color: ScriptStudioColors.accentGlow,
-                                ),
-                              ),
+                            Wrap(
+                              spacing: 12,
+                              runSpacing: 4,
+                              children: [
+                                if (onEquipmentTap != null)
+                                  _RelatedHubLink(
+                                    label: '机身镜头请前往设备库 →',
+                                    onTap: onEquipmentTap!,
+                                  ),
+                                if (onLightingTap != null)
+                                  _RelatedHubLink(
+                                    label: '打光方案请前往灯光库 →',
+                                    onTap: onLightingTap!,
+                                  ),
+                              ],
                             ),
                           ],
                         ],
@@ -173,6 +181,30 @@ class _PresetIconBadge extends StatelessWidget {
           Icons.camera_outlined,
           size: 32,
           color: ScriptStudioColors.iconForeground,
+        ),
+      ),
+    );
+  }
+}
+
+class _RelatedHubLink extends StatelessWidget {
+  const _RelatedHubLink({
+    required this.label,
+    required this.onTap,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Text(
+        label,
+        style: AppTextStyles.label.copyWith(
+          fontSize: 12,
+          color: ScriptStudioColors.accentGlow,
         ),
       ),
     );

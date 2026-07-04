@@ -1,5 +1,7 @@
 import '../data/screenplay_draft.dart';
 import '../../lighting/data/lighting_scheme_mapper.dart';
+import '../../cine_equipment/data/equipment_draft_binding.dart';
+import '../../cine_equipment/data/equipment_setup_mapper.dart';
 import '../domain/cine_params.dart';
 import '../domain/shoot_params.dart';
 
@@ -22,7 +24,18 @@ abstract final class AiPromptBuilder {
     if (action.isNotEmpty) parts.add(action);
 
     final cine = frame.cineParams;
-    _addCinePart(parts, cine);
+    final cineSetup = cineSetupFromDraftFrame(frame);
+    final hasEquipment =
+        cineSetup != null && !cineSetup.isEmpty;
+    _addCinePart(parts, cine, skipLensMm: hasEquipment);
+
+    if (hasEquipment) {
+      final equipmentPrompt =
+          EquipmentSetupMapper.promptDescription(cineSetup);
+      if (equipmentPrompt.isNotEmpty) {
+        parts.add(equipmentPrompt);
+      }
+    }
 
     final location = scene.location.trim();
     if (location.isNotEmpty) parts.add(location);
@@ -56,7 +69,11 @@ abstract final class AiPromptBuilder {
     return parts.join(', ');
   }
 
-  static void _addCinePart(List<String> parts, CineParams cine) {
+  static void _addCinePart(
+    List<String> parts,
+    CineParams cine, {
+    bool skipLensMm = false,
+  }) {
     if (cine.shotType != null && cine.shotType!.isNotEmpty) {
       parts.add('${cine.shotType} shot');
     }
@@ -66,7 +83,7 @@ abstract final class AiPromptBuilder {
     if (cine.movement != null && cine.movement!.isNotEmpty) {
       parts.add('${cine.movement} camera movement');
     }
-    if (cine.lensMm != null && cine.lensMm!.isNotEmpty) {
+    if (!skipLensMm && cine.lensMm != null && cine.lensMm!.isNotEmpty) {
       parts.add('${cine.lensMm} lens');
     }
     if (cine.composition != null && cine.composition!.isNotEmpty) {

@@ -11,6 +11,7 @@ import '../../../../core/theme/theme_mode_notifier.dart';
 import '../../../../core/utils/state_listeners.dart';
 import '../../../../core/responsive/breakpoints.dart';
 import '../../../../shared/widgets/desktop_shell_app_bar.dart';
+import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 import '../../../../shared/widgets/feed_tab_bar.dart';
 import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
 import '../../../../shared/widgets/glass/glass_card.dart';
@@ -574,10 +575,20 @@ class _ProfilePageState extends State<ProfilePage> {
     }
 
     if (widget.embeddedInHub) {
-      return Scaffold(body: body);
+      return Scaffold(
+        backgroundColor: Colors.transparent,
+        extendBody: true,
+        body: SizedBox.expand(child: body),
+      );
     }
 
-    return Scaffold(body: body);
+    return WikiModeTagPageScaffold(
+      appBar: const DesktopShellAppBar(
+        title: Text('我的'),
+        automaticallyImplyLeading: false,
+      ),
+      body: body,
+    );
   }
 }
 

@@ -66,6 +66,8 @@ func getTuanjiePlayer() -> Rc0TuanjiePlayerUtils {
 
   private var isReady = false
   private var isLoaded = false
+  private var canReceiveMessages = false
+  private var pendingMessages: [(gameObject: String, method: String, message: String)] = []
 
   func isInitialized() -> Bool {
     #if !RC0_TUANJIE_STUB
@@ -93,6 +95,7 @@ func getTuanjiePlayer() -> Rc0TuanjiePlayerUtils {
       argv: gArgv,
       appLaunchOpts: gLaunchOpts
     )
+    framework.pause(true)
     if let appController = framework.appController() {
       if let window = appController.window {
         window.windowLevel = UIWindow.Level(UIWindow.Level.normal.rawValue - 1)
@@ -114,7 +117,6 @@ func getTuanjiePlayer() -> Rc0TuanjiePlayerUtils {
       unityWarmedUp = true
       self.isReady = true
       self.isLoaded = true
-      self.ufw?.pause(false)
       completion(self.controller?.rootView)
     }
     #else
@@ -125,12 +127,36 @@ func getTuanjiePlayer() -> Rc0TuanjiePlayerUtils {
   func resume() {
     #if !RC0_TUANJIE_STUB
     ufw?.pause(false)
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
+      guard let self else { return }
+      self.canReceiveMessages = true
+      self.flushPendingMessages()
+    }
     #endif
   }
 
   func postMessage(gameObject: String, method: String, message: String) {
     #if !RC0_TUANJIE_STUB
+    guard isReady, canReceiveMessages else {
+      pendingMessages.append((gameObject, method, message))
+      return
+    }
     ufw?.sendMessageToGO(withName: gameObject, functionName: method, message: message)
+    #endif
+  }
+
+  private func flushPendingMessages() {
+    #if !RC0_TUANJIE_STUB
+    guard canReceiveMessages else { return }
+    let batch = pendingMessages
+    pendingMessages.removeAll()
+    for item in batch {
+      ufw?.sendMessageToGO(
+        withName: item.gameObject,
+        functionName: item.method,
+        message: item.message
+      )
+    }
     #endif
   }
 

@@ -11,7 +11,7 @@ import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/glass/glass_sheet.dart';
 import '../../../../shared/widgets/rc0_widgets.dart';
-import '../../../../shared/widgets/status_bar_spacer.dart';
+import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../studio/presentation/widgets/script_studio_glass_widgets.dart';
 import '../../data/scene_local_store.dart';
@@ -164,11 +164,9 @@ class _SceneListPageState extends State<SceneListPage> {
     );
 
     if (widget.embeddedInHub) {
-      return ColoredBox(
-        color: isDark
-            ? AppColors.characterBackgroundDark
-            : Theme.of(context).scaffoldBackgroundColor,
-        child: body,
+      return WikiModeTagPageScaffold(
+        appBar: const WikiModeTagAppBar(title: '场景'),
+        body: body,
       );
     }
 
@@ -209,7 +207,6 @@ class _SceneListPageState extends State<SceneListPage> {
   }) {
     return Column(
       children: [
-        if (widget.embeddedInHub) const StatusBarSpacer(),
         Padding(
           padding: const EdgeInsets.fromLTRB(
             AppDimensions.spacingMd,

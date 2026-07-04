@@ -10,10 +10,27 @@ LOCK="$PROJECT/Temp/UnityLockfile"
 
 mkdir -p "$PROJECT/Logs"
 
-if [[ -f "$LOCK" ]]; then
-  echo "Tuanjie already has this project open (lock: $LOCK)." >&2
-  echo "Close the Tuanjie Editor, or export manually:" >&2
-  echo "  File → Build Settings → iOS → Export → $PROJECT/ios" >&2
+editor_holding_project() {
+  pgrep -f "Tuanjie.*-projectpath[[:space:]]+$PROJECT" >/dev/null 2>&1 ||
+    pgrep -f "Tuanjie.*-projectPath[[:space:]]+$PROJECT" >/dev/null 2>&1
+}
+
+print_editor_open_help() {
+  echo "" >&2
+  echo "Tuanjie Editor is already running with this project." >&2
+  echo "" >&2
+  echo "Option A — export inside the open Editor (recommended):" >&2
+  echo "  Menu: RC0 → Export iOS → ios/" >&2
+  echo "  Then run: ./scripts/build_tuanjie_ios.sh device" >&2
+  echo "" >&2
+  echo "Option B — close Tuanjie completely, then rerun:" >&2
+  echo "  ./scripts/export_tuanjie_ios.sh" >&2
+  echo "" >&2
+  echo "Manual path: File → Build Settings → iOS → Export → $PROJECT/ios" >&2
+}
+
+if [[ -f "$LOCK" ]] || editor_holding_project; then
+  print_editor_open_help
   exit 2
 fi
 

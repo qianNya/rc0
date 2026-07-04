@@ -53,6 +53,14 @@ ScreenplayDraft screenplayDraftFromTreeDocument(ScreenplayTreeDocument doc) {
       if (rig is Map<String, dynamic>) {
         draft.lightingRig = Map<String, dynamic>.from(rig);
       }
+      final cineSetupId = screenplayMap['cine_setup_id'] as String?;
+      if (cineSetupId != null && cineSetupId.isNotEmpty) {
+        draft.cineSetupId = cineSetupId;
+      }
+      final cineSetup = screenplayMap['cine_setup'];
+      if (cineSetup is Map<String, dynamic>) {
+        draft.cineSetup = Map<String, dynamic>.from(cineSetup);
+      }
 
       final linkedRaw = screenplayMap['linked_characters'];
     if (linkedRaw is List) {
@@ -136,6 +144,15 @@ ScreenplayDraft screenplayDraftFromTreeDocument(ScreenplayTreeDocument doc) {
         final rig = frameMap['lighting_rig'];
         if (rig is Map<String, dynamic>) {
           frameDraft.lightingRig = Map<String, dynamic>.from(rig);
+        }
+
+        final cineSetupId = frameMap['cine_setup_id'] as String?;
+        if (cineSetupId != null && cineSetupId.isNotEmpty) {
+          frameDraft.cineSetupId = cineSetupId;
+        }
+        final cineSetup = frameMap['cine_setup'];
+        if (cineSetup is Map<String, dynamic>) {
+          frameDraft.cineSetup = Map<String, dynamic>.from(cineSetup);
         }
 
         final frameOverride = frameMap['shoot_override'];

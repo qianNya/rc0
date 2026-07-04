@@ -55,9 +55,11 @@ namespace RC0.Runtime.Modules
         {
             if (_camera != null) return;
             var go = new GameObject("RC0_MainCamera");
+            go.tag = "MainCamera";
             _camera = go.AddComponent<Camera>();
             _camera.clearFlags = CameraClearFlags.SolidColor;
             _camera.backgroundColor = new Color(0.07f, 0.06f, 0.09f);
+            _camera.depth = 10;
             _interaction = go.AddComponent<CameraInteractionController>();
             ResetCamera();
         }

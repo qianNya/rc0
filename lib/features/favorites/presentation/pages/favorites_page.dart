@@ -64,12 +64,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
       title: const Text('我的收藏'),
       onBack: () => popOrGoDiscovery(context),
       centerTitle: false,
-      body: SafeArea(
-        top: false,
-        bottom: false,
-        child: Padding(
-          padding: EdgeInsets.all(isDesktop ? 32 : 16),
-          child: Column(
+      body: Padding(
+        padding: EdgeInsets.all(isDesktop ? 32 : 16),
+        child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 12),
@@ -99,7 +96,6 @@ class _FavoritesPageState extends State<FavoritesPage> {
             ],
           ),
         ),
-      ),
     );
   }
 }

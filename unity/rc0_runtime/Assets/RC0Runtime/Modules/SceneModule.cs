@@ -40,6 +40,7 @@ namespace RC0.Runtime.Modules
 
         void EnsureEnvironment()
         {
+            SuppressTemplateScene();
             if (_environmentRoot != null) return;
             _environmentRoot = new GameObject("RC0_Environment");
             var floor = GameObject.CreatePrimitive(PrimitiveType.Plane);
@@ -50,6 +51,19 @@ namespace RC0.Runtime.Modules
             if (renderer != null)
             {
                 renderer.material.color = new Color(0.16f, 0.15f, 0.22f);
+            }
+        }
+
+        static void SuppressTemplateScene()
+        {
+            var cube = GameObject.Find("Cube");
+            if (cube != null) cube.SetActive(false);
+
+            var templateCamera = GameObject.Find("Main Camera");
+            if (templateCamera != null)
+            {
+                var camera = templateCamera.GetComponent<Camera>();
+                if (camera != null) camera.enabled = false;
             }
         }
     }

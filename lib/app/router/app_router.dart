@@ -3,6 +3,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/lighting/presentation/lighting_editor_controller.dart';
 import '../../features/lighting/presentation/pages/lighting_wiki_page.dart';
+import '../../features/cine_equipment/presentation/pages/equipment_detail_page.dart';
+import '../../features/cine_equipment/presentation/pages/equipment_hub_page.dart';
+import '../../features/cine_equipment/presentation/pages/my_equipment_page.dart';
 import '../../features/action/presentation/pages/action_wiki_page.dart';
 import '../../features/auth/data/auth_repository.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
@@ -42,6 +45,7 @@ import '../../features/search/presentation/pages/search_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
 import '../../features/shell/presentation/pages/adaptive_shell_page.dart';
 import '../../features/shell/presentation/pages/wiki_hub_page.dart';
+import '../../features/production_assets/presentation/pages/assets_hub_page.dart';
 import '../../features/studio/presentation/pages/script_studio_create_page.dart';
 import '../../features/studio/presentation/pages/script_studio_page.dart';
 import '../../features/tasks/presentation/pages/tasks_page.dart';
@@ -419,6 +423,40 @@ abstract final class AppRouter {
         },
       ),
       GoRoute(
+        path: AppRoutes.equipment,
+        name: 'equipment-hub',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) {
+          final qp = state.uri.queryParameters;
+          final scope = qp['scope'] == 'apply'
+              ? EquipmentApplyScope.apply
+              : EquipmentApplyScope.browse;
+          return EquipmentHubPage(
+            applyScope: scope,
+            initialSetupId: qp['setupId'],
+            actIndex: int.tryParse(qp['act'] ?? ''),
+            sceneIndex: int.tryParse(qp['scene'] ?? ''),
+            frameIndex: int.tryParse(qp['frame'] ?? ''),
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.equipmentDetail,
+        name: 'equipment-detail',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) {
+          final kind = state.pathParameters['kind'] ?? '';
+          final id = state.pathParameters['id'] ?? '';
+          return EquipmentDetailPage(kind: kind, id: id);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.myEquipment,
+        name: 'my-equipment',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const MyEquipmentPage(),
+      ),
+      GoRoute(
         path: AppRoutes.preset,
         name: 'preset-list',
         parentNavigatorKey: rootNavigatorKey,
@@ -634,6 +672,12 @@ abstract final class AppRouter {
               GoRoute(
                 path: AppRoutes.discovery,
                 name: 'discovery',
+                redirect: (context, state) {
+                  final hubTab =
+                      int.tryParse(state.uri.queryParameters['hubTab'] ?? '');
+                  if (hubTab == 3) return AppRoutes.assets;
+                  return null;
+                },
                 pageBuilder: (context, state) {
                   final hubTab =
                       int.tryParse(state.uri.queryParameters['hubTab'] ?? '') ??
@@ -719,6 +763,22 @@ abstract final class AppRouter {
                   key: state.pageKey,
                   child: const CommunityPage(embeddedInHub: true),
                 ),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.assets,
+                name: 'assets',
+                pageBuilder: (context, state) {
+                  final tab =
+                      int.tryParse(state.uri.queryParameters['tab'] ?? '') ?? 0;
+                  return NoTransitionPage(
+                    key: state.pageKey,
+                    child: AssetsHubPage(initialTabIndex: tab),
+                  );
+                },
               ),
             ],
           ),

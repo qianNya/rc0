@@ -1,17 +1,13 @@
 import 'package:flutter/material.dart';
 
-import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_dimensions.dart';
-import '../../../../app/theme/app_text_styles.dart';
-import '../../../lighting/presentation/utils/lighting_navigation.dart';
-import '../../../../core/data/preset_catalog.dart';
 import '../../../screenplay/domain/shoot_params.dart';
 import '../../../screenplay/presentation/widgets/screenplay_shoot_params_chips.dart';
 import '../utils/shoot_preset_navigation.dart';
+import 'shoot_param_carousel_panel.dart';
 
 typedef ShootParamsChanged = void Function(ShootParams params);
 
-/// Selectable preset cards for device / aspect ratio / lighting.
+/// Selectable preset params via four-column visual carousel.
 class ShootParamPresetCards extends StatelessWidget {
   const ShootParamPresetCards({
     super.key,
@@ -30,158 +26,11 @@ class ShootParamPresetCards extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final inherited = inheritedHint != null;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (inheritedHint != null) ...[
-          Text(inheritedHint!, style: AppTextStyles.bodySecondary.copyWith(fontSize: 12)),
-          const SizedBox(height: 8),
-        ],
-        _ParamRow(
-          label: '设备',
-          options: PresetCatalog.devicePresets,
-          selected: params.device,
-          compact: compact,
-          inherited: inherited,
-          readOnly: readOnly,
-          onSelected: (value) => onChanged(params.copyWith(device: value)),
-        ),
-        SizedBox(height: compact ? 10 : 14),
-        _ParamRow(
-          label: '画幅',
-          options: PresetCatalog.aspectRatioPresets,
-          selected: params.aspectRatio,
-          compact: compact,
-          inherited: inherited,
-          readOnly: readOnly,
-          onSelected: (value) => onChanged(params.copyWith(aspectRatio: value)),
-        ),
-        SizedBox(height: compact ? 10 : 14),
-        _LightingHubRow(
-          selected: params.lighting,
-          readOnly: readOnly,
-          onSelected: (value) => onChanged(params.copyWith(lighting: value)),
-        ),
-      ],
-    );
-  }
-}
-
-class _ParamRow extends StatelessWidget {
-  const _ParamRow({
-    required this.label,
-    required this.options,
-    required this.selected,
-    required this.onSelected,
-    required this.compact,
-    required this.inherited,
-    required this.readOnly,
-  });
-
-  final String label;
-  final List<String> options;
-  final String? selected;
-  final ValueChanged<String> onSelected;
-  final bool compact;
-  final bool inherited;
-  final bool readOnly;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: AppTextStyles.label.copyWith(fontSize: compact ? 12 : 13)),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: options.map((option) {
-            final isSelected = selected == option;
-            final borderColor = isSelected
-                ? AppColors.accent
-                : (inherited ? AppColors.border : AppColors.border);
-            final bgColor = isSelected
-                ? AppColors.accent.withValues(alpha: 0.08)
-                : (inherited && !isSelected
-                    ? AppColors.surface
-                    : AppColors.surface);
-            return Material(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-              child: InkWell(
-                onTap: readOnly ? null : () => onSelected(option),
-                borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-                child: Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: compact ? 10 : 12,
-                    vertical: compact ? 6 : 8,
-                  ),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-                    border: Border.all(
-                      color: isSelected ? AppColors.accent : borderColor,
-                      width: isSelected ? 1.5 : 1,
-                    ),
-                  ),
-                  child: Text(
-                    option,
-                    style: AppTextStyles.label.copyWith(
-                      fontSize: compact ? 12 : 13,
-                      color: isSelected
-                          ? AppColors.accent
-                          : (inherited
-                              ? AppColors.textSecondary
-                              : AppColors.textPrimary),
-                    ),
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-}
-
-class _LightingHubRow extends StatelessWidget {
-  const _LightingHubRow({
-    required this.selected,
-    required this.readOnly,
-    required this.onSelected,
-  });
-
-  final String? selected;
-  final bool readOnly;
-  final ValueChanged<String> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final label = selected?.trim().isNotEmpty == true ? selected! : '未选择';
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('打光', style: AppTextStyles.label.copyWith(fontSize: 13)),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: Text(label, style: AppTextStyles.bodySecondary),
-            ),
-            if (!readOnly)
-              TextButton(
-                onPressed: () async {
-                  final scheme = await openLightingHub(context);
-                  if (scheme == null || !context.mounted) return;
-                  onSelected(scheme.displaySummary);
-                },
-                child: const Text('前往灯光库'),
-              ),
-          ],
-        ),
-      ],
+    return ShootParamCarouselPanel(
+      params: params,
+      onChanged: onChanged,
+      inheritedHint: inheritedHint,
+      readOnly: readOnly,
     );
   }
 }
@@ -231,7 +80,7 @@ class ShootParamOverrideSection extends StatelessWidget {
       children: [
         Row(
           children: [
-            const Text('参数', style: AppTextStyles.label),
+            Text('参数', style: Theme.of(context).textTheme.labelLarge),
             const Spacer(),
             if (_hasOverride)
               TextButton(

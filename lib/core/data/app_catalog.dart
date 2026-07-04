@@ -71,7 +71,7 @@ abstract final class AppCatalog {
 
   static const feedTabs = ['发现', '关注', '推荐'];
 
-  static const wikiHubTabs = ['发现', 'IP', '角色', '相关'];
+  static const wikiHubTabs = ['发现', 'IP', '角色'];
 
   static final wikiRelatedLinks = [
     WikiRelatedLinkItem(
@@ -116,6 +116,15 @@ abstract final class AppCatalog {
       iconColor: Color(0xFFFFB020),
       backgroundColor: Color(0xFFFFF4E0),
       usePush: false,
+    ),
+    WikiRelatedLinkItem(
+      label: '设备库',
+      subtitle: '机身、镜头与摄影机组合',
+      icon: Icons.videocam_outlined,
+      route: AppRoutes.equipment,
+      iconColor: Color(0xFF5E5CE6),
+      backgroundColor: Color(0xFFEEEDFF),
+      usePush: true,
     ),
     WikiRelatedLinkItem(
       label: '摄影预设',
@@ -294,6 +303,12 @@ abstract final class AppCatalog {
       icon: Icons.wb_incandescent_outlined,
       backgroundColor: Color(0xFFFFF4E0),
       iconColor: Color(0xFFFFB020),
+    ),
+    DiscoveryQuickActionItem(
+      label: '设备库',
+      icon: Icons.videocam_outlined,
+      backgroundColor: Color(0xFFEEEDFF),
+      iconColor: Color(0xFF5E5CE6),
     ),
     DiscoveryQuickActionItem(
       label: '我的素材',

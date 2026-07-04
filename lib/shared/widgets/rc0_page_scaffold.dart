@@ -1,17 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../app/theme/app_colors.dart';
+import '../../app/theme/system_ui_style.dart';
 import 'glass_title_chip.dart';
 import 'rc0_app_bar.dart';
-import 'shell_insets.dart';
-import 'status_bar_spacer.dart';
+import 'wiki_mode_tag_app_bar.dart';
 
-/// Standard stack-page shell: floating [Rc0AppBar] glass chrome over content.
-///
-/// Mobile layout matches [DesktopStackScaffold] and script-studio hub pages:
-/// `extendBodyBehindAppBar` + [AppBarContentInset] so content never overlaps
-/// the system status bar or floating top nav.
+/// Standard page shell — global [WikiModeTagPageScaffold] chrome.
 class Rc0PageScaffold extends StatelessWidget {
   const Rc0PageScaffold({
     super.key,
@@ -24,6 +19,7 @@ class Rc0PageScaffold extends StatelessWidget {
     this.automaticallyImplyLeading,
     this.appBarForegroundColor,
     this.frosted,
+    this.toolbarHeight,
     this.systemOverlayStyle,
     this.glassTitleMode = GlassTitleMode.auto,
     required this.body,
@@ -32,7 +28,6 @@ class Rc0PageScaffold extends StatelessWidget {
     this.bottomNavigationBar,
     this.floatingActionButton,
     this.floatingActionButtonLocation,
-    this.includeShellBottomSpacer = true,
   });
 
   /// Custom app bar. When set, [title]/[leading]/[actions]/[onBack] are ignored.
@@ -46,6 +41,7 @@ class Rc0PageScaffold extends StatelessWidget {
   final bool? automaticallyImplyLeading;
   final Color? appBarForegroundColor;
   final bool? frosted;
+  final double? toolbarHeight;
   final SystemUiOverlayStyle? systemOverlayStyle;
   final GlassTitleMode glassTitleMode;
 
@@ -58,9 +54,8 @@ class Rc0PageScaffold extends StatelessWidget {
   final Widget? bottomNavigationBar;
   final Widget? floatingActionButton;
   final FloatingActionButtonLocation? floatingActionButtonLocation;
-  final bool includeShellBottomSpacer;
 
-  PreferredSizeWidget? _resolveAppBar() {
+  PreferredSizeWidget? _resolveAppBar(BuildContext context) {
     if (appBar != null) return appBar;
     if (title == null &&
         leading == null &&
@@ -69,74 +64,52 @@ class Rc0PageScaffold extends StatelessWidget {
       return null;
     }
 
-    final resolvedLeading = leading ??
-        (onBack != null
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: onBack,
-              )
-            : null);
-
     return Rc0AppBar(
       title: title,
-      leading: resolvedLeading,
+      leading: leading,
+      onBack: onBack,
       automaticallyImplyLeading:
           automaticallyImplyLeading ?? (onBack != null && leading == null),
       actions: actions,
       centerTitle: centerTitle,
-      frosted: frosted ?? !overlayAppBar,
+      toolbarHeight: toolbarHeight,
       foregroundColor: appBarForegroundColor,
-      iconTheme: appBarForegroundColor != null
-          ? IconThemeData(color: appBarForegroundColor)
-          : null,
-      actionsIconTheme: appBarForegroundColor != null
-          ? IconThemeData(color: appBarForegroundColor)
-          : null,
       systemOverlayStyle: systemOverlayStyle,
       glassTitleMode: glassTitleMode,
     );
   }
 
-  Widget _buildBody(PreferredSizeWidget? resolvedAppBar) {
+  @override
+  Widget build(BuildContext context) {
+    final resolvedAppBar = _resolveAppBar(context);
+    final brightness = Theme.of(context).brightness;
+    final overlayStyle =
+        systemOverlayStyle ?? AppSystemUi.styleFor(brightness);
+
     if (resolvedAppBar == null) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(child: body),
-          if (includeShellBottomSpacer) const ShellBottomSpacer(),
-        ],
+      return ScrollNotificationObserver(
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          extendBody: true,
+          body: SizedBox.expand(
+            child: body,
+          ),
+          bottomNavigationBar: bottomNavigationBar,
+          floatingActionButton: floatingActionButton,
+          floatingActionButtonLocation: floatingActionButtonLocation,
+        ),
       );
     }
 
-    if (overlayAppBar) {
-      return body;
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        AppBarContentInset(
-          toolbarHeight: resolvedAppBar.preferredSize.height,
-        ),
-        Expanded(child: body),
-        if (includeShellBottomSpacer) const ShellBottomSpacer(),
-      ],
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final resolvedAppBar = _resolveAppBar();
-
     return ScrollNotificationObserver(
-      child: Scaffold(
-        backgroundColor: backgroundColor ?? AppColors.background,
-        extendBodyBehindAppBar: resolvedAppBar != null && !overlayAppBar,
+      child: WikiModeTagPageScaffold(
         appBar: resolvedAppBar,
-        body: _buildBody(resolvedAppBar),
+        underlapAppBar: overlayAppBar,
+        systemOverlayStyle: overlayStyle,
         bottomNavigationBar: bottomNavigationBar,
         floatingActionButton: floatingActionButton,
         floatingActionButtonLocation: floatingActionButtonLocation,
+        body: body,
       ),
     );
   }

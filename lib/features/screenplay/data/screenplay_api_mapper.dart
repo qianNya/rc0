@@ -1021,6 +1021,16 @@ abstract final class ScreenplayApiMapper {
     } else {
       screenplayMap.remove('lighting_rig');
     }
+    if (draft.cineSetupId != null && draft.cineSetupId!.isNotEmpty) {
+      screenplayMap['cine_setup_id'] = draft.cineSetupId;
+    } else {
+      screenplayMap.remove('cine_setup_id');
+    }
+    if (draft.cineSetup != null && draft.cineSetup!.isNotEmpty) {
+      screenplayMap['cine_setup'] = draft.cineSetup;
+    } else {
+      screenplayMap.remove('cine_setup');
+    }
 
     final acts = copy['acts'] as List<dynamic>? ?? [];
     for (var actIndex = 0;
@@ -1091,6 +1101,18 @@ abstract final class ScreenplayApiMapper {
             frameMap['lighting_rig'] = frameDraft.lightingRig;
           } else {
             frameMap.remove('lighting_rig');
+          }
+          if (frameDraft.cineSetupId != null &&
+              frameDraft.cineSetupId!.isNotEmpty) {
+            frameMap['cine_setup_id'] = frameDraft.cineSetupId;
+          } else {
+            frameMap.remove('cine_setup_id');
+          }
+          if (frameDraft.cineSetup != null &&
+              frameDraft.cineSetup!.isNotEmpty) {
+            frameMap['cine_setup'] = frameDraft.cineSetup;
+          } else {
+            frameMap.remove('cine_setup');
           }
         }
       }

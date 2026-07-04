@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/routes.dart';
@@ -9,7 +8,6 @@ import '../../../../core/data/app_catalog.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/responsive/responsive_builder.dart';
 import '../../../../core/utils/state_listeners.dart';
-import '../../../../app/theme/system_ui_style.dart';
 import '../../data/feed_repository.dart';
 import '../../domain/explore_feed_query.dart';
 import '../../../screenplay/data/screenplay_local_repository.dart';
@@ -24,6 +22,7 @@ import '../widgets/explore_desktop_card.dart';
 import '../widgets/explore_desktop_header.dart';
 import '../widgets/explore_desktop_right_panel.dart';
 import '../../../../shared/widgets/shell_insets.dart';
+import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 import '../widgets/explore_app_bar.dart';
 import '../widgets/explore_featured_carousel.dart';
 import '../widgets/explore_featured_section.dart';
@@ -255,8 +254,6 @@ class _ExploreMobileView extends StatelessWidget {
         showInlineFeedTabs ||
         localIds.isNotEmpty ||
         selectionController.selectionMode;
-    final chromeTop =
-        MediaQuery.paddingOf(context).top + kToolbarHeight;
 
     Widget buildFeedScroll() {
       return RefreshIndicator(
@@ -280,8 +277,8 @@ class _ExploreMobileView extends StatelessWidget {
                   physics: const AlwaysScrollableScrollPhysics(),
                   slivers: [
                     SliverToBoxAdapter(
-                      child: ExploreFeaturedCarousel(
-                        bleedUnderHeader: embeddedInHub,
+                      child: const ExploreFeaturedCarousel(
+                        bleedUnderHeader: false,
                       ),
                     ),
                     const SliverToBoxAdapter(
@@ -312,7 +309,7 @@ class _ExploreMobileView extends StatelessWidget {
                       onUpload: onUpload,
                       onRefreshRemote: onRefreshRemote,
                       selectionController: selectionController,
-                      overlayMetrics: embeddedInHub,
+                      overlayMetrics: false,
                     ),
                     ListenableBuilder(
                       listenable: selectionController,
@@ -335,115 +332,77 @@ class _ExploreMobileView extends StatelessWidget {
       );
     }
 
-    final Widget body;
-    if (embeddedInHub) {
-      body = buildFeedScroll();
-    } else {
-      body = Column(
+    Widget buildBodyContent() {
+      final scroll = buildFeedScroll();
+      if (!showSecondaryBar) return scroll;
+
+      final bar = Padding(
+        padding: const EdgeInsets.only(top: 4, right: 4),
+        child: SizedBox(
+          height: AppDimensions.shellBarHeight,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              if (showInlineFeedTabs)
+                Expanded(
+                  child: FeedTabBar(
+                    tabs: AppCatalog.feedTabs,
+                    selectedIndex: feedTabIndex,
+                    onChanged: onFeedTabChanged,
+                    underlineStyle: true,
+                    embedded: true,
+                  ),
+                )
+              else
+                const Spacer(),
+              ScreenplaySelectionAppBarActions(
+                controller: selectionController,
+                localIds: localIds,
+                onSelectionChanged: onSelectionChanged,
+              ),
+            ],
+          ),
+        ),
+      );
+
+      if (embeddedInHub) {
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            scroll,
+            Positioned(top: 0, left: 0, right: 0, child: bar),
+          ],
+        );
+      }
+
+      return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const _ExploreTopInset(),
-          if (showSecondaryBar)
-            Padding(
-              padding: const EdgeInsets.only(top: 4, right: 4),
-              child: SizedBox(
-                height: AppDimensions.shellBarHeight,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    if (showInlineFeedTabs)
-                      Expanded(
-                        child: FeedTabBar(
-                          tabs: AppCatalog.feedTabs,
-                          selectedIndex: feedTabIndex,
-                          onChanged: onFeedTabChanged,
-                          underlineStyle: true,
-                          embedded: true,
-                        ),
-                      )
-                    else
-                      const Spacer(),
-                    ScreenplaySelectionAppBarActions(
-                      controller: selectionController,
-                      localIds: localIds,
-                      onSelectionChanged: onSelectionChanged,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          Expanded(child: buildFeedScroll()),
+          bar,
+          Expanded(child: scroll),
         ],
       );
     }
 
-    final scaffold = AnnotatedRegion<SystemUiOverlayStyle>(
-      value: embeddedInHub
-          ? AppSystemUi.lightStyle
-          : AppSystemUi.styleFor(Theme.of(context).brightness),
-      child: Scaffold(
-        backgroundColor: embeddedInHub
-            ? Colors.transparent
-            : Theme.of(context).scaffoldBackgroundColor,
-        extendBodyBehindAppBar: true,
-        appBar: ExploreAppBar(embeddedInHub: embeddedInHub),
-        body: embeddedInHub && showSecondaryBar
-            ? Stack(
-                fit: StackFit.expand,
-                children: [
-                  body,
-                  Positioned(
-                    top: chromeTop,
-                    left: 0,
-                    right: 0,
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 4, right: 4),
-                      child: SizedBox(
-                        height: AppDimensions.shellBarHeight,
-                        child: ScreenplaySelectionAppBarActions(
-                          controller: selectionController,
-                          localIds: localIds,
-                          onSelectionChanged: onSelectionChanged,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              )
-            : body,
-        bottomNavigationBar: embeddedInHub
-            ? null
-            : ScreenplaySelectionBottomBar(
-                controller: selectionController,
-                onDelete: () => onDeleteSelected(),
-              ),
-      ),
+    final selectionBar = ScreenplaySelectionBottomBar(
+      controller: selectionController,
+      onDelete: () => onDeleteSelected(),
     );
 
     if (embeddedInHub) {
       return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(child: scaffold),
-          ScreenplaySelectionBottomBar(
-            controller: selectionController,
-            onDelete: () => onDeleteSelected(),
-          ),
+          Expanded(child: buildBodyContent()),
+          selectionBar,
         ],
       );
     }
 
-    return scaffold;
-  }
-}
-
-class _ExploreTopInset extends StatelessWidget {
-  const _ExploreTopInset();
-
-  @override
-  Widget build(BuildContext context) {
-    final statusTop = MediaQuery.paddingOf(context).top;
-    return SizedBox(
-      height: statusTop + kToolbarHeight - AppDimensions.spacingXl,
+    return WikiModeTagPageScaffold(
+      appBar: const ExploreAppBar(embeddedInHub: false),
+      body: buildBodyContent(),
+      bottomNavigationBar: selectionBar,
     );
   }
 }
@@ -536,7 +495,7 @@ class _ExploreDesktopFeedPanel extends StatelessWidget {
               selectionController: selectionController,
               bottomPadding: ExploreDesktopChrome.gap,
               gridSpacing: ExploreDesktopChrome.gap,
-              overlayMetrics: embeddedInHub,
+              overlayMetrics: false,
             ),
             if (remoteHasMore && !remoteLoading)
               Padding(

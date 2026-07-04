@@ -16,8 +16,8 @@ PODS:
     - Flutter
   - rc0_unity_widget (0.1.0):
     - Flutter
-    - TuanjieLibrary/Full
-  - TuanjieLibrary/Full (1.0.0)
+    - TuanjieLibrary/Stub
+  - TuanjieLibrary/Stub (1.0.0)
   - video_thumbnail (0.0.1):
     - Flutter
     - libwebp
@@ -26,7 +26,7 @@ DEPENDENCIES:
   - Flutter (from `Flutter`)
   - open_filex (from `.symlinks/plugins/open_filex/ios`)
   - rc0_unity_widget (from `.symlinks/plugins/rc0_unity_widget/ios`)
-  - TuanjieLibrary/Full (from `../packages/rc0_unity_widget/ios`)
+  - TuanjieLibrary/Stub (from `../packages/rc0_unity_widget/ios`)
   - video_thumbnail (from `.symlinks/plugins/video_thumbnail/ios`)
 
 SPEC REPOS:
@@ -49,10 +49,10 @@ SPEC CHECKSUMS:
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   libwebp: 02b23773aedb6ff1fd38cec7a77b81414c6842a8
   open_filex: 6e26e659846ec990262224a12ef1c528bb4edbe4
-  rc0_unity_widget: 523aea992f54dd7f8da309bfef39054f1a58a614
-  TuanjieLibrary: 831aa91a5cc633aae161b62ae51841e7216d846b
+  rc0_unity_widget: eb3d34bb72815d8051a7da3896595d8a8a1f986b
+  TuanjieLibrary: 67b8961ffd1b229f67cc3e12a771582e44557385
   video_thumbnail: c4e2a3c539e247d4de13cd545344fd2d26ffafd1
 
-PODFILE CHECKSUM: 2d57288966bc2acdf2465d131e271f32e69ec746
+PODFILE CHECKSUM: 868ff8e5522f750f6223b2380ff6faed2a425d28
 
 COCOAPODS: 1.16.2

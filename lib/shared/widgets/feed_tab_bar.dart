@@ -16,6 +16,7 @@ class FeedTabBar extends StatelessWidget {
     required this.onChanged,
     this.underlineStyle = false,
     this.embedded = false,
+    this.bareTrack = false,
     this.margin,
   });
 
@@ -26,6 +27,9 @@ class FeedTabBar extends StatelessWidget {
 
   /// When true, renders tabs without an outer [LiquidGlassSurface] wrapper.
   final bool embedded;
+
+  /// When true with [embedded], omits the glass track behind tab chips.
+  final bool bareTrack;
   final EdgeInsetsGeometry? margin;
 
   @override
@@ -59,11 +63,12 @@ class FeedTabBar extends StatelessWidget {
         : AppDimensions.feedTabBarHeight;
 
     if (embedded) {
+      final trackChild = bareTrack ? tabList : _buildGlassTrack(tabList);
       return SizedBox(
         height: barHeight,
         child: Padding(
           padding: margin ?? EdgeInsets.zero,
-          child: _buildGlassTrack(tabList),
+          child: trackChild,
         ),
       );
     }
@@ -112,13 +117,16 @@ class FeedTabBar extends StatelessWidget {
     required Color selectedFill,
     required Color border,
   }) {
+    final listPadding = bareTrack && embedded
+        ? EdgeInsets.zero
+        : const EdgeInsets.symmetric(
+            horizontal: AppDimensions.spacingMd,
+            vertical: AppDimensions.spacingSm,
+          );
     return ListView.separated(
       scrollDirection: Axis.horizontal,
       clipBehavior: Clip.hardEdge,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppDimensions.spacingMd,
-        vertical: AppDimensions.spacingSm,
-      ),
+      padding: listPadding,
       itemCount: tabs.length,
       separatorBuilder: (_, _) => const SizedBox(width: AppDimensions.spacingSm),
       itemBuilder: (context, index) {

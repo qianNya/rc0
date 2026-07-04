@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../app/theme/app_dimensions.dart';
-import '../../app/theme/system_ui_style.dart';
 import 'glass_title_chip.dart';
-import 'glass_app_bar_background.dart';
+import 'wiki_mode_tag_app_bar.dart';
 
-/// iOS-style glass navigation bar wrapping [AppBar].
+/// Global top bar — delegates to [WikiModeTagAppBar] (transparent wiki chrome).
+@Deprecated('Use WikiModeTagAppBar directly')
 class Rc0AppBar extends StatelessWidget implements PreferredSizeWidget {
   const Rc0AppBar({
     super.key,
@@ -22,9 +21,10 @@ class Rc0AppBar extends StatelessWidget implements PreferredSizeWidget {
     this.titleTextStyle,
     this.iconTheme,
     this.actionsIconTheme,
-    this.frosted = true,
+    this.frosted,
     this.systemOverlayStyle,
     this.glassTitleMode = GlassTitleMode.auto,
+    this.onBack,
   });
 
   final Widget? title;
@@ -39,41 +39,40 @@ class Rc0AppBar extends StatelessWidget implements PreferredSizeWidget {
   final TextStyle? titleTextStyle;
   final IconThemeData? iconTheme;
   final IconThemeData? actionsIconTheme;
-  final bool frosted;
+  final bool? frosted;
   final SystemUiOverlayStyle? systemOverlayStyle;
   final GlassTitleMode glassTitleMode;
+  final VoidCallback? onBack;
 
   @override
   Size get preferredSize {
-    final toolbar = toolbarHeight ?? AppDimensions.bottomNavFloatingHeight;
+    final toolbar = toolbarHeight ?? kToolbarHeight;
     final bottomHeight = bottom?.preferredSize.height ?? 0;
     return Size.fromHeight(toolbar + bottomHeight);
   }
 
   @override
   Widget build(BuildContext context) {
-    final brightness = Theme.of(context).brightness;
+    final resolvedTitle = wikiModeTagTitleWidget(title, mode: glassTitleMode);
+    final titleWidget = titleTextStyle != null && resolvedTitle is WikiModeTagTitleChip
+        ? WikiModeTagTitleChip(
+            text: resolvedTitle.text,
+            style: titleTextStyle,
+          )
+        : resolvedTitle;
 
-    return AppBar(
-      title: GlassTitleChip.maybeWrap(title, mode: glassTitleMode),
-      leading: leading,
+    return WikiModeTagAppBar(
+      titleWidget: titleWidget,
+      leading: wikiModeTagLeading(
+        context,
+        leading: leading,
+        onBack: onBack,
+        automaticallyImplyLeading: automaticallyImplyLeading,
+      ),
       actions: actions,
-      bottom: bottom,
-      centerTitle: centerTitle,
-      automaticallyImplyLeading: automaticallyImplyLeading,
       leadingWidth: leadingWidth,
-      toolbarHeight: toolbarHeight ?? AppDimensions.bottomNavFloatingHeight,
-      foregroundColor: foregroundColor,
-      titleTextStyle: titleTextStyle,
-      iconTheme: iconTheme,
-      actionsIconTheme: actionsIconTheme,
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      surfaceTintColor: Colors.transparent,
-      flexibleSpace: frosted ? const GlassAppBarBackground() : null,
-      systemOverlayStyle:
-          systemOverlayStyle ?? AppSystemUi.styleFor(brightness),
+      toolbarHeight: toolbarHeight,
+      systemOverlayStyle: systemOverlayStyle,
     );
   }
 }

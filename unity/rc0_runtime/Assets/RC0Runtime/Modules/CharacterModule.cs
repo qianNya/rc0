@@ -150,10 +150,11 @@ namespace RC0.Runtime.Modules
 
         static string ResolveBundledPath(string bundledKey)
         {
+            var root = Application.streamingAssetsPath;
             return bundledKey switch
             {
-                "aku_aku" => Path.Combine(Application.streamingAssetsPath, "model/aku_aku/scene.gltf"),
-                "yt" => Path.Combine(Application.streamingAssetsPath, "model/yt/羽蜕-浅憩之处.gltf"),
+                "aku_aku" => $"{root}/model/aku_aku/scene.gltf",
+                "yt" => $"{root}/model/yt/羽蜕-浅憩之处.gltf",
                 _ => null,
             };
         }

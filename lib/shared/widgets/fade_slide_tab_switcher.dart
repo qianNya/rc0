@@ -152,7 +152,7 @@ class _ShellBranchTransitionState extends State<ShellBranchTransition>
       opacity: curve,
       child: SlideTransition(
         position: slide,
-        child: widget.navigationShell,
+        child: SizedBox.expand(child: widget.navigationShell),
       ),
     );
   }

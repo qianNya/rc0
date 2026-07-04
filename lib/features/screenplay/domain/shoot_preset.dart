@@ -87,6 +87,7 @@ class ShootPreset {
       if (params.device != null && params.device!.isNotEmpty) params.device!,
       if (params.aspectRatio != null && params.aspectRatio!.isNotEmpty)
         params.aspectRatio!,
+      if (params.lensMm != null && params.lensMm!.isNotEmpty) params.lensMm!,
       if (params.lighting != null && params.lighting!.isNotEmpty)
         params.lighting!,
     ];

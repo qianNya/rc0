@@ -51,7 +51,6 @@ class ScriptStudioCreatePage extends StatelessWidget {
         final fallbackTitle = _isEditing ? '编辑剧本' : '新建剧本';
 
         return Rc0PageScaffold(
-          includeShellBottomSpacer: false,
           body: ScriptEditorOutlineTab(
             draft: controller.draft,
             actions: actions,

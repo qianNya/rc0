@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/routes.dart';
-import '../../../../shared/widgets/rc0_app_bar.dart';
+import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 import '../../../screenplay/data/screenplay_draft.dart';
 import '../../../screenplay/data/screenplay_local_repository.dart';
 import '../screenplay_editor_host.dart';
@@ -43,14 +43,14 @@ class ScriptStudioHubAppBar extends StatelessWidget
     final scriptId = controller.editScriptId ?? '';
     final draft = controller.draft;
 
-    return Rc0AppBar(
+    return WikiModeTagAppBar(
       toolbarHeight: toolbarHeight,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back, size: 22),
+      leading: WikiModeTagIconButton(
+        icon: Icons.arrow_back,
         onPressed: onBack,
+        tooltip: '返回',
       ),
-      leadingWidth: 48,
-      title: ListenableBuilder(
+      titleWidget: ListenableBuilder(
         listenable: controller.titleController,
         builder: (context, _) {
           final rawTitle = controller.titleController.text.trim();
@@ -59,7 +59,7 @@ class ScriptStudioHubAppBar extends StatelessWidget
               '$statusLabel · ${draftHierarchySummary(draft)}';
 
           return Align(
-            alignment: Alignment.centerLeft,
+            alignment: Alignment.center,
             child: ScriptStudioHubInfoStrip(
               height: toolbarHeight,
               draft: draft,

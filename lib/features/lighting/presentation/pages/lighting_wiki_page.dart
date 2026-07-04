@@ -281,8 +281,6 @@ class _LightingWikiPageState extends State<LightingWikiPage> {
     final bottomSafe = MediaQuery.paddingOf(context).bottom;
 
     return WikiModeTagPageScaffold(
-      bleedUnderAppBar: true,
-      pageBackgroundColor: const Color(0xFF121018),
       appBar: WikiModeTagAppBar(
         title: '灯光',
         leading: WikiModeTagIconButton(

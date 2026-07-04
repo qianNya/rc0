@@ -58,6 +58,9 @@ namespace RC0.Runtime.Core
             _registry.Dispatch(command);
         }
 
+        /// <summary>Unity SendMessage entry from native iOS bridge.</summary>
+        public void OnFlutterMessage(string json) => HandleFlutterJson(json);
+
         public void EmitEvent(string sessionId, string moduleId, string eventName,
             Dictionary<string, object> payload)
         {

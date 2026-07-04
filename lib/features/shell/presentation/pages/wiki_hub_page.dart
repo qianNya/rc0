@@ -3,9 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
 import '../../../character/presentation/widgets/wiki/wiki_character_library_tab.dart';
 import '../../../explore/presentation/pages/explore_page.dart';
-import '../widgets/wiki_hub_theme.dart';
+import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 import '../widgets/wiki_ip_tab.dart';
-import '../widgets/wiki_related_tab.dart';
 
 class WikiHubPage extends StatefulWidget {
   const WikiHubPage({super.key, this.initialTabIndex = 0});
@@ -19,8 +18,7 @@ class WikiHubPage extends StatefulWidget {
 enum _WikiSection {
   discovery,
   ip,
-  character,
-  related;
+  character;
 
   static _WikiSection fromIndex(int raw) {
     final max = _WikiSection.values.length - 1;
@@ -63,8 +61,6 @@ class _WikiHubPageState extends State<WikiHubPage> {
         return const WikiIpTab();
       case _WikiSection.character:
         return const WikiCharacterLibraryTab();
-      case _WikiSection.related:
-        return const WikiRelatedTab();
     }
   }
 
@@ -79,20 +75,27 @@ class _WikiHubPageState extends State<WikiHubPage> {
   Widget build(BuildContext context) {
     _loadedSections.add(_activeSection);
 
-    return WikiHubTheme(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: FadeSlideIndexedStack(
-              index: _activeSection.index,
-              children: _WikiSection.values
-                  .map(_buildLazySection)
-                  .toList(growable: false),
+    final title = switch (_activeSection) {
+      _WikiSection.discovery => '发现',
+      _WikiSection.ip => 'IP',
+      _WikiSection.character => '角色',
+    };
+
+    return WikiModeTagPageScaffold(
+      appBar: WikiModeTagAppBar(title: title),
+      body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: FadeSlideIndexedStack(
+                index: _activeSection.index,
+                children: _WikiSection.values
+                    .map(_buildLazySection)
+                    .toList(growable: false),
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
     );
   }
 }

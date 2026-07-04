@@ -84,7 +84,9 @@ namespace RC0.Runtime.Loading
 
         static GltfRoot ParseRoot(byte[] jsonBytes)
         {
+            if (jsonBytes == null || jsonBytes.Length == 0) return null;
             var json = Encoding.UTF8.GetString(jsonBytes);
+            if (string.IsNullOrWhiteSpace(json)) return null;
             return JsonUtility.FromJson<GltfRoot>(json);
         }
 
@@ -422,30 +424,71 @@ namespace RC0.Runtime.Loading
                 yield break;
             }
 
-#if UNITY_IOS && !UNITY_EDITOR
-            if (path.StartsWith(Application.streamingAssetsPath, StringComparison.Ordinal))
-            {
-                using var request = UnityWebRequest.Get(path);
-                yield return request.SendWebRequest();
-                if (request.result != UnityWebRequest.Result.Success)
-                {
-                    onComplete?.Invoke(null);
-                    yield break;
-                }
+            var normalized = NormalizePath(path);
 
-                onComplete?.Invoke(request.downloadHandler.data);
+#if UNITY_IOS && !UNITY_EDITOR
+            if (IsUnderStreamingAssets(normalized))
+            {
+                yield return ReadStreamingAssetBytesAsync(normalized, onComplete);
                 yield break;
             }
 #endif
+
             try
             {
-                onComplete?.Invoke(File.ReadAllBytes(path));
+                onComplete?.Invoke(File.Exists(normalized) ? File.ReadAllBytes(normalized) : null);
             }
             catch (Exception)
             {
                 onComplete?.Invoke(null);
             }
         }
+
+        static bool IsUnderStreamingAssets(string path)
+        {
+            var root = Application.streamingAssetsPath;
+            return !string.IsNullOrEmpty(root) &&
+                   path.StartsWith(root, StringComparison.Ordinal);
+        }
+
+#if UNITY_IOS && !UNITY_EDITOR
+        static IEnumerator ReadStreamingAssetBytesAsync(string path, Action<byte[]> onComplete)
+        {
+            byte[] data = null;
+            var root = Application.streamingAssetsPath;
+            var candidates = new List<string> { path };
+
+            if (!path.Contains("://", StringComparison.Ordinal))
+            {
+                candidates.Add("file://" + path);
+            }
+
+            if (path.StartsWith(root, StringComparison.Ordinal))
+            {
+                var relative = path.Substring(root.Length).TrimStart('/', '\\');
+                if (!string.IsNullOrEmpty(relative))
+                {
+                    candidates.Add(Path.Combine(root, relative));
+                }
+            }
+
+            foreach (var url in candidates)
+            {
+                using var request = UnityWebRequest.Get(url);
+                yield return request.SendWebRequest();
+                if (request.result != UnityWebRequest.Result.Success) continue;
+
+                var bytes = request.downloadHandler?.data;
+                if (bytes != null && bytes.Length > 0)
+                {
+                    data = bytes;
+                    break;
+                }
+            }
+
+            onComplete?.Invoke(data);
+        }
+#endif
 
         static string NormalizePath(string path)
         {

@@ -24,6 +24,7 @@ import '../../domain/gallery_image.dart';
 import '../../domain/image_tag.dart';
 import '../widgets/gallery_category_chips.dart';
 import '../widgets/gallery_masonry_grid.dart';
+import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 import '../widgets/gallery_page_header.dart';
 import '../widgets/gallery_tags_tab.dart';
 import '../widgets/gallery_works_tab.dart';
@@ -351,15 +352,9 @@ class _MyGalleryPageState extends State<MyGalleryPage> {
         );
       }
 
-      return Scaffold(
-        body: SafeArea(
-          child: Column(
-            children: [
-              const GalleryPageHeader(),
-              Expanded(child: body),
-            ],
-          ),
-        ),
+      return WikiModeTagPageScaffold(
+        appBar: const GalleryPageHeader(),
+        body: body,
       );
     }
 
@@ -388,11 +383,12 @@ class _MyGalleryPageState extends State<MyGalleryPage> {
       );
     }
 
-    return Scaffold(
-      body: SafeArea(
-        bottom: false,
-        child: body,
+    return WikiModeTagPageScaffold(
+      appBar: GalleryPageHeader(
+        onUpload: _pickAndUpload,
+        uploading: _uploading,
       ),
+      body: body,
     );
   }
 

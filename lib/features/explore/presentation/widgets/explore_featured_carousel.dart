@@ -8,6 +8,7 @@ import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/data/app_catalog.dart';
 import '../../../../core/responsive/breakpoints.dart';
 import '../../../../shared/widgets/pose_cover_image.dart';
+import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 
 class ExploreFeaturedCarousel extends StatefulWidget {
   const ExploreFeaturedCarousel({
@@ -33,7 +34,7 @@ class _ExploreFeaturedCarouselState extends State<ExploreFeaturedCarousel> {
 
     final height = Breakpoints.isDesktop(context) ? 240.0 : 188.0;
     final headerBleed = widget.bleedUnderHeader
-        ? MediaQuery.paddingOf(context).top + kToolbarHeight
+        ? wikiModeTagContentInsetHeight(context)
         : 0.0;
     final horizontalPadding =
         widget.bleedUnderHeader ? 0.0 : AppDimensions.spacingMd;
@@ -42,6 +43,16 @@ class _ExploreFeaturedCarouselState extends State<ExploreFeaturedCarousel> {
             bottom: Radius.circular(AppDimensions.radiusMd),
           )
         : BorderRadius.circular(AppDimensions.radiusMd);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final placeholderColors = isDark
+        ? const [
+            AppColors.explorePlaceholderStart,
+            AppColors.explorePlaceholderEnd,
+          ]
+        : const [
+            Color(0xFFE4EBFA),
+            Color(0xFFC9D6F2),
+          ];
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -75,14 +86,11 @@ class _ExploreFeaturedCarouselState extends State<ExploreFeaturedCarousel> {
                           )
                         else
                           Container(
-                            decoration: const BoxDecoration(
+                            decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
-                                colors: [
-                                  AppColors.explorePlaceholderStart,
-                                  AppColors.explorePlaceholderEnd,
-                                ],
+                                colors: placeholderColors,
                               ),
                             ),
                             child: const Icon(
@@ -151,8 +159,8 @@ class _ExploreFeaturedCarouselState extends State<ExploreFeaturedCarousel> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: _index == i
-                        ? Colors.white
-                        : Colors.white.withValues(alpha: 0.35),
+                        ? AppColors.accent
+                        : AppColors.textTertiary.withValues(alpha: 0.45),
                   ),
                 ),
             ],

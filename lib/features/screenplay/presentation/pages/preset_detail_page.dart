@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
@@ -87,6 +88,39 @@ class _PresetDetailPageState extends State<PresetDetailPage> {
                 Text('拍摄参数', style: AppTextStyles.label),
                 const SizedBox(height: AppDimensions.spacingSm),
                 Text(_formatParams(preset), style: AppTextStyles.body),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppDimensions.spacingMd),
+          GlassCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('相关资源', style: AppTextStyles.label),
+                const SizedBox(height: AppDimensions.spacingSm),
+                Wrap(
+                  spacing: AppDimensions.spacingSm,
+                  runSpacing: AppDimensions.spacingSm,
+                  children: [
+                    ActionChip(
+                      avatar: const Icon(Icons.videocam_outlined, size: 18),
+                      label: const Text('设备库'),
+                      onPressed: () => context.push(AppRoutes.equipment),
+                    ),
+                    ActionChip(
+                      avatar: const Icon(Icons.wb_incandescent_outlined, size: 18),
+                      label: const Text('灯光库'),
+                      onPressed: () => context.push(AppRoutes.lighting),
+                    ),
+                    ActionChip(
+                      avatar: const Icon(Icons.tune_outlined, size: 18),
+                      label: const Text('管理预设'),
+                      onPressed: () => context.push(
+                        AppRoutes.shootPresetPicker(mode: 'manage'),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),

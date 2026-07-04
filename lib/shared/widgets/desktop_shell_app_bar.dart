@@ -1,20 +1,10 @@
-import 'dart:io' show Platform;
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-import '../../app/theme/app_colors.dart';
-import '../../app/theme/app_dimensions.dart';
-import '../../core/platform/platform_features.dart';
-import '../../core/responsive/breakpoints.dart';
-import '../../features/shell/presentation/widgets/desktop_title_bar.dart';
 import 'glass_title_chip.dart';
 import 'rc0_app_bar.dart';
-import 'rc0_page_scaffold.dart';
-import 'desktop/desktop_card.dart';
-import 'desktop/desktop_chrome.dart';
+import 'wiki_mode_tag_app_bar.dart';
 
-/// Shell 分支页顶栏：标题/操作与窗口控件合并为一行。
+/// Shell branch top bar — global wiki floating chrome.
 class DesktopShellAppBar extends StatelessWidget implements PreferredSizeWidget {
   const DesktopShellAppBar({
     super.key,
@@ -23,8 +13,9 @@ class DesktopShellAppBar extends StatelessWidget implements PreferredSizeWidget 
     this.actions = const [],
     this.centerTitle = true,
     this.automaticallyImplyLeading = true,
-    this.titleBarHeight = kDesktopTitleBarHeight,
+    this.titleBarHeight = kToolbarHeight,
     this.glassTitleMode = GlassTitleMode.auto,
+    this.onBack,
   });
 
   final Widget? title;
@@ -34,74 +25,27 @@ class DesktopShellAppBar extends StatelessWidget implements PreferredSizeWidget 
   final bool automaticallyImplyLeading;
   final double titleBarHeight;
   final GlassTitleMode glassTitleMode;
-
-  bool get _isMacOS => !kIsWeb && Platform.isMacOS;
+  final VoidCallback? onBack;
 
   @override
-  Size get preferredSize => Size.fromHeight(
-        shouldUseDesktopWindowChrome
-            ? titleBarHeight
-            : AppDimensions.bottomNavFloatingHeight,
-      );
+  Size get preferredSize => Size.fromHeight(titleBarHeight);
 
   @override
   Widget build(BuildContext context) {
-    if (!Breakpoints.isDesktop(context) || !shouldUseDesktopWindowChrome) {
-      return Rc0AppBar(
-        title: title,
-        leading: leading,
-        actions: actions,
-        centerTitle: centerTitle,
-        automaticallyImplyLeading: automaticallyImplyLeading,
-        glassTitleMode: glassTitleMode,
-      );
-    }
-
-    final resolvedLeading = leading ??
-        (automaticallyImplyLeading && Navigator.of(context).canPop()
-            ? const BackButton()
-            : null);
-
-    return DesktopCard(
-      clipChild: true,
-      child: DesktopMergedTitleBar(
-        height: titleBarHeight,
-        decoration: const BoxDecoration(color: AppColors.surface),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: DesktopChrome.gap),
-          child: Row(
-            children: [
-              if (_isMacOS) const DesktopWindowControls(),
-              ...(resolvedLeading != null
-                  ? [resolvedLeading]
-                  : const <Widget>[]),
-              Expanded(
-                child: centerTitle
-                    ? Center(
-                        child: GlassTitleChip.maybeWrap(
-                          title,
-                          mode: glassTitleMode,
-                        ),
-                      )
-                    : Align(
-                        alignment: Alignment.centerLeft,
-                        child: GlassTitleChip.maybeWrap(
-                          title,
-                          mode: glassTitleMode,
-                        ),
-                      ),
-              ),
-              ...actions,
-              if (!_isMacOS) const SizedBox(width: DesktopChrome.gap),
-            ],
-          ),
-        ),
-      ),
+    return Rc0AppBar(
+      title: title,
+      leading: leading,
+      actions: actions,
+      centerTitle: centerTitle,
+      automaticallyImplyLeading: automaticallyImplyLeading,
+      onBack: onBack,
+      toolbarHeight: titleBarHeight,
+      glassTitleMode: glassTitleMode,
     );
   }
 }
 
-/// Shell Tab 页标准布局：顶栏卡片 + 内容卡片。
+/// Shell tab layout — wiki floating app bar + scrollable body.
 class DesktopShellTabScaffold extends StatelessWidget {
   const DesktopShellTabScaffold({
     super.key,
@@ -118,29 +62,11 @@ class DesktopShellTabScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!Breakpoints.isDesktop(context) || !shouldUseDesktopWindowChrome) {
-      return Rc0PageScaffold(
-        appBar: appBar,
-        body: body,
-        floatingActionButton: floatingActionButton,
-        bottomNavigationBar: bottomNavigationBar,
-      );
-    }
-
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      floatingActionButton: floatingActionButton,
+    return WikiModeTagPageScaffold(
+      appBar: appBar,
       bottomNavigationBar: bottomNavigationBar,
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          appBar,
-          const SizedBox(height: DesktopChrome.gap),
-          Expanded(
-            child: DesktopCard(child: body),
-          ),
-        ],
-      ),
+      floatingActionButton: floatingActionButton,
+      body: body,
     );
   }
 }

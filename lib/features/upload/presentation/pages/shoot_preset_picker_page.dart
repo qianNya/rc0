@@ -12,10 +12,13 @@ import '../../../../core/utils/state_listeners.dart';
 import '../../../../shared/widgets/glass/glass.dart';
 import '../../../../shared/widgets/glass/glass_sheet.dart';
 import '../../../../shared/widgets/rc0_page_scaffold.dart';
+import '../../../cine_equipment/presentation/utils/equipment_navigation.dart';
 import '../../../lighting/presentation/utils/lighting_navigation.dart';
 import '../../../screenplay/data/shoot_preset_repository.dart';
+import '../../../screenplay/domain/shoot_params.dart';
 import '../../../screenplay/domain/shoot_preset.dart';
 import '../widgets/preset_marketplace_widgets.dart';
+import '../widgets/shoot_param_carousel_panel.dart';
 import '../widgets/shoot_preset_edit_sheet.dart';
 import '../widgets/shoot_preset_picker_header_card.dart';
 enum ShootPresetPickerMode { select, manage }
@@ -42,6 +45,7 @@ class _ShootPresetPickerPageState extends State<ShootPresetPickerPage> {
   _MarketTab _tab = _MarketTab.mine;
   String _categoryId = 'all';
   String _query = '';
+  ShootParams _manageDraftParams = PresetCatalog.defaultShootParams;
 
   @override
   void initState() {
@@ -249,13 +253,17 @@ class _ShootPresetPickerPageState extends State<ShootPresetPickerPage> {
 
   String get _subtitle {
     if (_isManage) return '编辑、复制与同步自定义摄影预设';
-    return '选择设备与画幅 · 打光请使用灯光库';
+    return '选择设备与画幅 · 机身镜头见设备库 · 打光见灯光库';
   }
 
   void _onBack() => popOrGoStudio(context);
 
   void _openLightingHub() {
     openLightingHub(context, scope: 'browse');
+  }
+
+  void _openEquipmentHub() {
+    openEquipmentHub(context, scope: 'browse');
   }
 
   Widget _buildHeader() {
@@ -267,7 +275,8 @@ class _ShootPresetPickerPageState extends State<ShootPresetPickerPage> {
       myPresetCount: _repo.userPresets.length,
       officialCount: _repo.builtinPresets.length,
       onCreateTap: _createPreset,
-      onLightingTap: _isManage ? null : _openLightingHub,
+      onLightingTap: _openLightingHub,
+      onEquipmentTap: _openEquipmentHub,
       isManage: _isManage,
     );
   }
@@ -277,7 +286,6 @@ class _ShootPresetPickerPageState extends State<ShootPresetPickerPage> {
     Widget? floatingActionButton,
   }) {
     return Rc0PageScaffold(
-      includeShellBottomSpacer: false,
       floatingActionButton: floatingActionButton,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -351,6 +359,56 @@ class _ShootPresetPickerPageState extends State<ShootPresetPickerPage> {
       body: ListView(
         padding: const EdgeInsets.all(AppDimensions.spacingMd),
         children: [
+          GlassCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('参数配置', style: AppTextStyles.label),
+                const SizedBox(height: AppDimensions.spacingSm),
+                ShootParamCarouselPanel(
+                  params: _manageDraftParams,
+                  onChanged: (params) =>
+                      setState(() => _manageDraftParams = params),
+                  embedded: true,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppDimensions.spacingSm),
+          Row(
+            children: [
+              TextButton.icon(
+                onPressed: _openEquipmentHub,
+                icon: const Icon(Icons.videocam_outlined, size: 18),
+                label: const Text('设备库'),
+              ),
+              TextButton.icon(
+                onPressed: _openLightingHub,
+                icon: const Icon(Icons.wb_incandescent_outlined, size: 18),
+                label: const Text('灯光库'),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppDimensions.spacingMd),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: () async {
+                final result = await ShootPresetEditSheet.show(
+                  context,
+                  mode: ShootPresetEditMode.create,
+                  initialParams: _manageDraftParams,
+                );
+                if (result?.preset != null) {
+                  setState(() {
+                    _manageDraftParams = result!.params ?? _manageDraftParams;
+                  });
+                }
+              },
+              child: const Text('用当前参数新建'),
+            ),
+          ),
+          const Divider(height: 24),
           if (_repo.lastError != null) ...[
             Text(
               _repo.lastError!,
@@ -365,7 +423,10 @@ class _ShootPresetPickerPageState extends State<ShootPresetPickerPage> {
           for (final preset in user) ...[
             PresetMyRowCard(
               preset: preset,
-              onTap: () => _editPreset(preset),
+              onTap: () {
+                setState(() => _manageDraftParams = preset.params);
+                _editPreset(preset);
+              },
               onLongPress: () => _showMyPresetMenu(preset),
             ),
             const SizedBox(height: 8),

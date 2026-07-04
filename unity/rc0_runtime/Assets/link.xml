@@ -1,0 +1,7 @@
+<linker>
+  <assembly fullname="Assembly-CSharp">
+    <namespace fullname="RC0.Runtime.Core" preserve="all" />
+    <namespace fullname="RC0.Runtime.Modules" preserve="all" />
+    <namespace fullname="RC0.Runtime.Loading" preserve="all" />
+  </assembly>
+</linker>

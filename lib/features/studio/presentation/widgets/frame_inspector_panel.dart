@@ -6,6 +6,12 @@ import '../../../lighting/domain/lighting_scheme.dart';
 import '../../../lighting/data/lighting_draft_binding.dart';
 import '../../../lighting/presentation/utils/lighting_navigation.dart';
 import '../../../lighting/presentation/widgets/lighting_picker_sheet.dart';
+import '../../../cine_equipment/data/equipment_draft_binding.dart';
+import '../../../cine_equipment/domain/cine_camera_setup.dart';
+import '../../../cine_equipment/presentation/utils/equipment_navigation.dart';
+import '../../../cine_equipment/presentation/widgets/camera_control_sheet.dart';
+import '../../../cine_equipment/presentation/widgets/equipment_picker_sheet.dart';
+import '../../../cine_equipment/data/equipment_setup_mapper.dart';
 import '../../../scene/presentation/widgets/scene_picker_sheet.dart';
 import '../../../screenplay/data/screenplay_scene_binding.dart';
 import '../../../upload/presentation/widgets/editor/screenplay_characters_section.dart';
@@ -198,6 +204,18 @@ class _FrameInspectorPanelState extends State<FrameInspectorPanel> {
                   ),
                   const SizedBox(height: 16),
                   _LightingSchemeSection(
+                    frame: frame,
+                    actIndex: actIndex,
+                    sceneIndex: sceneIndex,
+                    frameIndex: frameIndex,
+                    draft: widget.actions.draft,
+                    onChanged: () {
+                      widget.onChanged();
+                      setState(() {});
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _CineSetupSection(
                     frame: frame,
                     actIndex: actIndex,
                     sceneIndex: sceneIndex,
@@ -796,6 +814,96 @@ class _LightingSchemeSection extends StatelessWidget {
                 await _applyScheme(context, scheme);
               },
               child: const Text('灯光库'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(_label, style: AppTextStyles.bodySecondary),
+      ],
+    );
+  }
+}
+
+class _CineSetupSection extends StatelessWidget {
+  const _CineSetupSection({
+    required this.frame,
+    required this.actIndex,
+    required this.sceneIndex,
+    required this.frameIndex,
+    required this.draft,
+    required this.onChanged,
+  });
+
+  final FrameDraft frame;
+  final int actIndex;
+  final int sceneIndex;
+  final int frameIndex;
+  final ScreenplayDraft draft;
+  final VoidCallback onChanged;
+
+  String get _label {
+    final setup = cineSetupFromDraftFrame(frame);
+    if (setup != null && !setup.isEmpty) {
+      return EquipmentSetupMapper.displaySummary(setup);
+    }
+    return '未设置';
+  }
+
+  Future<void> _applySetup(BuildContext context, CineCameraSetup setup) async {
+    applyCineSetupToDraft(
+      draft,
+      setup,
+      actIndex: actIndex,
+      sceneIndex: sceneIndex,
+      frameIndex: frameIndex,
+    );
+    onChanged();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Expanded(
+              child: Text('摄影机组合', style: AppTextStyles.label),
+            ),
+            TextButton(
+              onPressed: () async {
+                final setup = await EquipmentPickerSheet.show(context);
+                if (setup == null || !context.mounted) return;
+                await _applySetup(context, setup);
+              },
+              child: const Text('快速选择'),
+            ),
+            TextButton(
+              onPressed: () async {
+                final setup = await CameraControlSheet.show(
+                  context,
+                  initialSetup: cineSetupFromDraftFrame(frame),
+                  onSave: (saved) {},
+                );
+                if (setup == null || !context.mounted) return;
+                await _applySetup(context, setup);
+              },
+              child: const Text('摄影机控制'),
+            ),
+            TextButton(
+              onPressed: () async {
+                final setup = await openEquipmentHub(
+                  context,
+                  setupId: frame.cineSetupId,
+                  scope: 'apply',
+                  actIndex: actIndex,
+                  sceneIndex: sceneIndex,
+                  frameIndex: frameIndex,
+                );
+                if (setup == null || !context.mounted) return;
+                await _applySetup(context, setup);
+              },
+              child: const Text('设备库'),
             ),
           ],
         ),

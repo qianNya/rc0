@@ -24,7 +24,7 @@ class FramePromptSection extends StatelessWidget {
         const Text('AI 渲染提示词', style: AppTextStyles.label),
         const SizedBox(height: 4),
         Text(
-          '设备与打光请使用「摄影预设」；此处仅用于 AI 生图 Prompt。',
+          '机身镜头见「设备库」，打光见「灯光库」；画幅等设备参数见「摄影预设」。此处仅用于 AI 生图 Prompt。',
           style: AppTextStyles.bodySecondary.copyWith(fontSize: 12),
         ),
         const SizedBox(height: 12),

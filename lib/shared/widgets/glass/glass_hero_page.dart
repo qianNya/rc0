@@ -110,25 +110,15 @@ class GlassHeroPage extends StatelessWidget {
 
     return Rc0PageScaffold(
       overlayAppBar: extendBodyBehindAppBar,
-      includeShellBottomSpacer: bottomBar == null,
       appBar: Rc0AppBar(
         title: title,
         leading: leading ??
             (onBack != null
-                ? IconButton(
-                    icon: const Icon(Icons.arrow_back),
-                    onPressed: onBack,
-                  )
+                ? null
                 : null),
+        onBack: onBack,
         automaticallyImplyLeading: onBack != null && leading == null,
         actions: actions,
-        frosted: !extendBodyBehindAppBar,
-        foregroundColor:
-            extendBodyBehindAppBar ? Colors.white : null,
-        iconTheme: extendBodyBehindAppBar
-            ? const IconThemeData(color: Colors.white)
-            : null,
-        bottom: tabBar,
         systemOverlayStyle:
             extendBodyBehindAppBar ? AppSystemUi.darkStyle : null,
       ),

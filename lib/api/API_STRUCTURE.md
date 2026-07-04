@@ -12,6 +12,8 @@
 | `lib/api/character/` | 角色库 CRUD、作品/图片关联 |
 | `lib/api/scene/` | 场景库 CRUD、图片关联 |
 | `lib/api/screenplay/` | 剧本 CRUD、层级树、分步 act/scene/frame、发布 |
+| `lib/api/cine-equipment/` | 设备库：品牌/机身/镜头/组合/收藏 |
+| `lib/api/production-assets/` | 制片资产：用户自定义分类与用户资产项 CRUD |
 | `lib/api/community/` | 点赞 / 收藏切换 |
 | `lib/api/feed/` | 发现 Feed、全局搜索 |
 | `lib/api/frame/` | 单帧详情、下载、场景帧列表 |

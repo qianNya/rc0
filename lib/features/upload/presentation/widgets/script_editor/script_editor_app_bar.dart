@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../../app/router/routes.dart';
-import '../../../../../app/theme/app_colors.dart';
 import '../../../../../app/theme/app_text_styles.dart';
 import '../../../../../core/responsive/breakpoints.dart';
-import '../../../../../shared/widgets/rc0_app_bar.dart';
+import '../../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 import '../../../../screenplay/data/screenplay_local_repository.dart';
 
 class ScriptEditorAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -38,35 +37,21 @@ class ScriptEditorAppBar extends StatelessWidget implements PreferredSizeWidget 
     final projects = ScreenplayLocalRepository.instance.localScreenplays;
     final isMobile = Breakpoints.isMobile(context);
 
-    return Rc0AppBar(
+    return WikiModeTagAppBar(
       toolbarHeight: subtitle != null ? 72 : kToolbarHeight,
       leading: TextButton(
         onPressed: onCancel,
         child: const Text('取消'),
       ),
-      leadingWidth: 72,
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      titleWidget: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
           PopupMenuButton<String>(
             tooltip: '切换剧本',
             offset: const Offset(0, 40),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Flexible(
-                  child: Text(
-                    title,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                const Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
-              ],
+            child: WikiModeTagTitleChip(
+              text: title,
             ),
             itemBuilder: (context) => [
               for (final script in projects)
@@ -95,9 +80,9 @@ class ScriptEditorAppBar extends StatelessWidget implements PreferredSizeWidget 
       ),
       actions: [
         if (onOpenSettings != null)
-          IconButton(
+          WikiModeTagIconButton(
+            icon: Icons.settings_outlined,
             onPressed: onOpenSettings,
-            icon: const Icon(Icons.settings_outlined),
             tooltip: '项目设置',
           ),
         if (!isMobile)
@@ -106,6 +91,7 @@ class ScriptEditorAppBar extends StatelessWidget implements PreferredSizeWidget 
             child: const Text('批量编辑'),
           ),
         PopupMenuButton<String>(
+          tooltip: '更多',
           itemBuilder: (context) => [
             if (isMobile)
               const PopupMenuItem(
@@ -125,6 +111,7 @@ class ScriptEditorAppBar extends StatelessWidget implements PreferredSizeWidget 
               onBatchEdit();
             }
           },
+          child: const Icon(Icons.more_horiz),
         ),
       ],
     );

@@ -34,6 +34,11 @@ class ScriptStudioModuleRail extends StatelessWidget {
       label: '预设',
       route: AppRoutes.shootPresetPicker(mode: 'manage'),
     ),
+    _RailItem(
+      icon: Icons.videocam_outlined,
+      label: '设备',
+      route: AppRoutes.equipment,
+    ),
   ];
 
   @override

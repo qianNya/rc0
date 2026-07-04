@@ -3,6 +3,8 @@ abstract final class AppRoutes {
   // Primary shell routes (L1)
   static const String discovery = '/discovery';
   static const String discoveryCharacterWiki = '/discovery?hubTab=2';
+  static const String discoveryAssetsWiki = '/assets';
+  static const String assets = '/assets';
   static const String library = '/library';
   /// @deprecated Use [scenes] shell tab instead.
   static const String screenplays = '/screenplays';
@@ -57,6 +59,9 @@ abstract final class AppRoutes {
   static const String scenes = '/scenes';
   static const String action = '/action';
   static const String lighting = '/lighting';
+  static const String equipment = '/equipment';
+  static const String equipmentDetail = '/equipment/:kind/:id';
+  static const String myEquipment = '/my-equipment';
   static const String sceneDetail = '/scenes/:id';
   static const String sceneCreate = '/scenes/create';
   static const String sceneEdit = '/scenes/:id/edit';
@@ -115,6 +120,8 @@ abstract final class AppRoutes {
   static String characterEditPath(int id) => '/character/$id/edit';
   static String sceneDetailPath(String id) => '/scenes/$id';
   static String sceneEditPath(String id) => '/scenes/$id/edit';
+  static String equipmentDetailPath(String kind, String id) =>
+      '/equipment/$kind/$id';
   static String charactersForWork(int workId) =>
       '$character?work_id=$workId';
 
@@ -164,6 +171,8 @@ abstract final class AppRoutes {
 
   static String discoveryHubTab(int tab) => '$discovery?hubTab=$tab';
 
+  static String assetsHubTab(int tab) => '$assets?tab=$tab';
+
   static String lightingWithContext({
     String? schemeId,
     int? characterId,
@@ -183,6 +192,23 @@ abstract final class AppRoutes {
     if (sceneIndex != null) query['scene'] = '$sceneIndex';
     if (frameIndex != null) query['frame'] = '$frameIndex';
     return Uri(path: lighting, queryParameters: query).toString();
+  }
+
+  static String equipmentWithContext({
+    String? setupId,
+    String scope = 'browse',
+    int? actIndex,
+    int? sceneIndex,
+    int? frameIndex,
+  }) {
+    final query = <String, String>{'scope': scope};
+    if (setupId != null && setupId.isNotEmpty) {
+      query['setupId'] = setupId;
+    }
+    if (actIndex != null) query['act'] = '$actIndex';
+    if (sceneIndex != null) query['scene'] = '$sceneIndex';
+    if (frameIndex != null) query['frame'] = '$frameIndex';
+    return Uri(path: equipment, queryParameters: query).toString();
   }
 
   static String favoritesTab(int tab) => '$favorites?tab=$tab';

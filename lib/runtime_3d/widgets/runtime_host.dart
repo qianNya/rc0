@@ -56,6 +56,7 @@ class _RuntimeHostState extends State<RuntimeHost> {
   Object? _syncToken;
   bool? _unityLinked;
   bool _checkingUnity = true;
+  bool _unityViewReady = false;
 
   @override
   void initState() {
@@ -74,17 +75,24 @@ class _RuntimeHostState extends State<RuntimeHost> {
       _unityLinked = linked;
       _checkingUnity = false;
     });
-    if (linked) {
-      await _syncAll();
-    } else {
+    if (!linked) {
       widget.onAnimationsChanged?.call(const []);
     }
+  }
+
+  Future<void> _onUnityViewReady() async {
+    if (_unityLinked != true || !mounted) return;
+    // Unity embed + RuntimeBootstrapLoader need a frame after PlatformView attach.
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+    if (!mounted || _unityLinked != true) return;
+    _unityViewReady = true;
+    await _syncAll();
   }
 
   @override
   void didUpdateWidget(covariant RuntimeHost oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (_unityLinked != true) return;
+    if (_unityLinked != true || !_unityViewReady) return;
 
     final token = Object.hash(
       widget.mode,
@@ -180,6 +188,7 @@ class _RuntimeHostState extends State<RuntimeHost> {
     final child = _unityLinked == true
         ? Rc0UnityView(
             sessionId: _sessionId,
+            onViewCreated: (_) => unawaited(_onUnityViewReady()),
             placeholder: ColoredBox(color: widget.backgroundColor),
           )
         : RuntimePreviewFallback(

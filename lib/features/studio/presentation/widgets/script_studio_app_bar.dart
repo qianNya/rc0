@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 import 'script_studio_header_components.dart';
-import 'script_studio_theme.dart';
 
 /// Shared transparent glass app bar for Script Studio and related hubs.
 class ScriptStudioAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -48,20 +47,15 @@ class ScriptStudioHubScaffold extends StatelessWidget {
     super.key,
     required this.appBar,
     required this.body,
-    this.includeShellBottomSpacer = false,
   });
 
   final PreferredSizeWidget appBar;
   final Widget body;
-  final bool includeShellBottomSpacer;
 
   @override
   Widget build(BuildContext context) {
     return WikiModeTagPageScaffold(
       appBar: appBar,
-      pageBackgroundColor: ScriptStudioColors.background,
-      bleedUnderAppBar: true,
-      includeShellBottomSpacer: includeShellBottomSpacer,
       body: body,
     );
   }

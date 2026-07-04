@@ -12,6 +12,8 @@ Pod::Spec.new do |s|
   unity_ios = File.expand_path('../../../unity/rc0_runtime/ios', pod_root)
   device_fw = '../../../unity/rc0_runtime/ios/build/Release-iphoneos/TuanjieFramework.framework'
   sim_fw = '../../../unity/rc0_runtime/ios/build/Release-iphonesimulator/TuanjieFramework.framework'
+  device_ready = File.exist?(File.join(unity_ios, 'build/Release-iphoneos/TuanjieFramework.framework/TuanjieFramework'))
+  sim_ready = File.exist?(File.join(unity_ios, 'build/Release-iphonesimulator/TuanjieFramework.framework/TuanjieFramework'))
 
   s.subspec 'Stub' do |stub|
     stub.source_files = 'Stub/**/*.{m,mm}'
@@ -22,30 +24,38 @@ Pod::Spec.new do |s|
 
   s.subspec 'Full' do |full|
     frameworks = []
-    if File.exist?(File.join(unity_ios, 'build/Release-iphoneos/TuanjieFramework.framework/TuanjieFramework'))
-      frameworks << device_fw
-    end
-    if File.exist?(File.join(unity_ios, 'build/Release-iphonesimulator/TuanjieFramework.framework/TuanjieFramework'))
-      frameworks << sim_fw
-    end
+    frameworks << device_fw if device_ready
+    frameworks << sim_fw if sim_ready
+    full.vendored_frameworks = frameworks unless frameworks.empty?
 
-    unless frameworks.empty?
-      full.vendored_frameworks = frameworks
-    end
-
-    # Data must live inside TuanjieFramework.framework/Data (IL2CPP reads
-    # .../TuanjieFramework.framework/Data/Managed/Metadata/global-metadata.dat).
-    # Bundled by scripts/build_tuanjie_ios.sh after xcodebuild.
-
-    full.pod_target_xcconfig = {
-      'FRAMEWORK_SEARCH_PATHS' => '$(inherited) "$(PODS_ROOT)/../UnityLibrary/build/Release-iphoneos" "$(PODS_ROOT)/../UnityLibrary/build/Release-iphonesimulator"',
-      'OTHER_LDFLAGS' => '$(inherited) -framework TuanjieFramework',
+    xcconfig = {
       'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386',
+      'OTHER_SWIFT_FLAGS[sdk=iphonesimulator*]' => '$(inherited) -D RC0_TUANJIE_STUB',
     }
-    full.user_target_xcconfig = {
-      'FRAMEWORK_SEARCH_PATHS' => '$(inherited) "$(PODS_ROOT)/../UnityLibrary/build/Release-iphoneos" "$(PODS_ROOT)/../UnityLibrary/build/Release-iphonesimulator"',
-      'OTHER_LDFLAGS' => '$(inherited) -framework TuanjieFramework',
-    }
+    user_xcconfig = {}
+    if device_ready
+      xcconfig.merge!({
+        'FRAMEWORK_SEARCH_PATHS[sdk=iphoneos*]' => '$(inherited) "$(PODS_ROOT)/../UnityLibrary/build/Release-iphoneos"',
+        'OTHER_LDFLAGS[sdk=iphoneos*]' => '$(inherited) -framework TuanjieFramework',
+      })
+      user_xcconfig.merge!({
+        'FRAMEWORK_SEARCH_PATHS[sdk=iphoneos*]' => '$(inherited) "$(PODS_ROOT)/../UnityLibrary/build/Release-iphoneos"',
+        'OTHER_LDFLAGS[sdk=iphoneos*]' => '$(inherited) -framework TuanjieFramework',
+      })
+    end
+    if sim_ready
+      xcconfig.merge!({
+        'FRAMEWORK_SEARCH_PATHS[sdk=iphonesimulator*]' => '$(inherited) "$(PODS_ROOT)/../UnityLibrary/build/Release-iphonesimulator"',
+        'OTHER_LDFLAGS[sdk=iphonesimulator*]' => '$(inherited) -framework TuanjieFramework',
+        'OTHER_SWIFT_FLAGS[sdk=iphonesimulator*]' => '$(inherited)',
+      })
+      user_xcconfig.merge!({
+        'FRAMEWORK_SEARCH_PATHS[sdk=iphonesimulator*]' => '$(inherited) "$(PODS_ROOT)/../UnityLibrary/build/Release-iphonesimulator"',
+        'OTHER_LDFLAGS[sdk=iphonesimulator*]' => '$(inherited) -framework TuanjieFramework',
+      })
+    end
+    full.pod_target_xcconfig = xcconfig
+    full.user_target_xcconfig = user_xcconfig unless user_xcconfig.empty?
   end
 
   s.default_subspec = 'Stub'

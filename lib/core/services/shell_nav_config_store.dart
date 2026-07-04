@@ -12,8 +12,10 @@ abstract final class ShellNavOptionId {
   static const gallery = 'gallery';
   static const screenplay = 'screenplay';
   static const preset = 'preset';
+  static const equipment = 'equipment';
   static const character = 'character';
   static const action = 'action';
+  static const assets = 'assets';
   static const storyboard = 'storyboard';
   static const favorites = 'favorites';
   static const community = 'community';
@@ -85,6 +87,14 @@ abstract final class ShellNavCatalog {
       group: '主页',
     ),
     ShellNavOption(
+      id: ShellNavOptionId.assets,
+      label: '资产',
+      icon: Icons.inventory_2_outlined,
+      selectedIcon: Icons.inventory_2,
+      branchIndex: 6,
+      group: '主页',
+    ),
+    ShellNavOption(
       id: ShellNavOptionId.profile,
       label: '我的',
       icon: Icons.person_outline,
@@ -115,6 +125,15 @@ abstract final class ShellNavCatalog {
       icon: Icons.tune_outlined,
       selectedIcon: Icons.tune,
       route: AppRoutes.shootPresetPicker(mode: 'manage'),
+      usePush: true,
+      group: '发现',
+    ),
+    ShellNavOption(
+      id: ShellNavOptionId.equipment,
+      label: '设备',
+      icon: Icons.videocam_outlined,
+      selectedIcon: Icons.videocam,
+      route: AppRoutes.equipment,
       usePush: true,
       group: '发现',
     ),
@@ -166,6 +185,7 @@ abstract final class ShellNavCatalog {
   static const defaultActiveIds = [
     ShellNavOptionId.wiki,
     ShellNavOptionId.scene,
+    ShellNavOptionId.assets,
     ShellNavOptionId.profile,
   ];
 

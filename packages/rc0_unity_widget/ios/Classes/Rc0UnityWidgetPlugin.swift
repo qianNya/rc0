@@ -102,16 +102,19 @@ class Rc0UnityViewFactory: NSObject, FlutterPlatformViewFactory {
 }
 
 class Rc0UnityPlatformViewController: NSObject, FlutterPlatformView {
-  private let rootView: UIView
+  private let rootView: Rc0UnityContainerView
   private let sessionId: String
 
   init(frame: CGRect, sessionId: String) {
     self.sessionId = sessionId
-    rootView = UIView(frame: frame)
+    rootView = Rc0UnityContainerView(frame: frame)
     rootView.backgroundColor = UIColor(red: 0.07, green: 0.06, blue: 0.09, alpha: 1)
     super.init()
     globalUnityControllers.append(self)
-    attachUnityView()
+    rootView.onBoundsReady = { [weak self] in
+      self?.attachUnityView()
+    }
+    rootView.checkBoundsReady()
   }
 
   deinit {
@@ -128,7 +131,9 @@ class Rc0UnityPlatformViewController: NSObject, FlutterPlatformView {
       unityView.frame = self.rootView.bounds
       unityView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
       self.rootView.addSubview(unityView)
-      getTuanjiePlayer().resume()
+      if self.rootView.bounds.width > 0, self.rootView.bounds.height > 0 {
+        getTuanjiePlayer().resume()
+      }
     }
   }
 
@@ -137,5 +142,26 @@ class Rc0UnityPlatformViewController: NSObject, FlutterPlatformView {
     #if !RC0_TUANJIE_STUB
     getTuanjiePlayer().controller?.rootView?.removeFromSuperview()
     #endif
+  }
+}
+
+/// Waits for Flutter PlatformView layout before attaching Unity (avoids 0×0 Metal textures).
+private final class Rc0UnityContainerView: UIView {
+  var onBoundsReady: (() -> Void)?
+  private var didNotify = false
+
+  func checkBoundsReady() {
+    guard !didNotify else { return }
+    guard bounds.width > 0, bounds.height > 0 else { return }
+    didNotify = true
+    onBoundsReady?()
+  }
+
+  override func layoutSubviews() {
+    super.layoutSubviews()
+    checkBoundsReady()
+    if didNotify, bounds.width > 0, bounds.height > 0 {
+      getTuanjiePlayer().resume()
+    }
   }
 }

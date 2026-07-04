@@ -21,6 +21,7 @@ const shellTabRoutes = {
   AppRoutes.profile,
   AppRoutes.action,
   AppRoutes.community,
+  AppRoutes.assets,
 };
 
 String desktopSidebarActiveId(Uri uri) {
@@ -28,6 +29,10 @@ String desktopSidebarActiveId(Uri uri) {
   final hubTab = int.tryParse(uri.queryParameters['hubTab'] ?? '');
   if (location.startsWith(AppRoutes.discovery) && hubTab == 2) {
     return 'character_wiki';
+  }
+  if (location.startsWith(AppRoutes.assets) ||
+      (location.startsWith(AppRoutes.discovery) && hubTab == 3)) {
+    return 'assets_wiki';
   }
   if (location.startsWith(AppRoutes.studio) ||
       location.startsWith('/studio/edit/')) {
@@ -45,6 +50,10 @@ String desktopSidebarActiveId(Uri uri) {
   if (location.startsWith(AppRoutes.scenes) ||
       location.startsWith('/my-scenes')) {
     return 'scene_library';
+  }
+  if (location.startsWith(AppRoutes.equipment) ||
+      location.startsWith(AppRoutes.myEquipment)) {
+    return 'equipment';
   }
   if (location.startsWith(AppRoutes.action)) return 'action_wiki';
   if (location.startsWith(AppRoutes.library)) return 'library';
@@ -122,6 +131,12 @@ const desktopSidebarSections = [
         route: AppRoutes.discoveryCharacterWiki,
       ),
       DesktopSidebarItem(
+        id: 'assets_wiki',
+        label: '资产',
+        icon: Icons.inventory_2_outlined,
+        route: AppRoutes.assets,
+      ),
+      DesktopSidebarItem(
         id: 'ip_wiki',
         label: 'IP 参考',
         icon: Icons.bookmarks_outlined,
@@ -149,6 +164,18 @@ const desktopSidebarSections = [
         label: '灯光',
         icon: Icons.wb_incandescent_outlined,
         route: AppRoutes.lighting,
+      ),
+      DesktopSidebarItem(
+        id: 'equipment',
+        label: '设备库',
+        icon: Icons.videocam_outlined,
+        route: AppRoutes.equipment,
+      ),
+      DesktopSidebarItem(
+        id: 'my_equipment',
+        label: '我的设备',
+        icon: Icons.camera_outlined,
+        route: AppRoutes.myEquipment,
       ),
       DesktopSidebarItem(
         id: 'preset_flow',

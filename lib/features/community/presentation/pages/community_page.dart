@@ -20,7 +20,7 @@ import '../../../../shared/widgets/profile_widgets.dart';
 import '../../../../shared/widgets/rc0_widgets.dart';
 import '../../../../shared/widgets/template_grid_card.dart';
 import '../../../../shared/widgets/shell_insets.dart';
-import '../../../../shared/widgets/status_bar_spacer.dart';
+import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 import '../utils/community_screenplay_filters.dart';
 import '../widgets/community_category_chips.dart';
 import '../widgets/community_featured_banner.dart';
@@ -157,7 +157,6 @@ class _CommunityMobileView extends StatelessWidget {
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const StatusBarSpacer(),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
           child: Row(
@@ -216,16 +215,18 @@ class _CommunityMobileView extends StatelessWidget {
       ],
     );
 
-    if (embeddedInHub) {
-      return content;
-    }
-
-    return Scaffold(
-      body: SafeArea(
-        top: false,
-        bottom: false,
-        child: content,
+    return WikiModeTagPageScaffold(
+      appBar: WikiModeTagAppBar(
+        title: '社区',
+        leading: embeddedInHub
+            ? null
+            : WikiModeTagIconButton(
+                icon: Icons.arrow_back_ios_new_rounded,
+                tooltip: '返回',
+                onPressed: () => popOrGoDiscovery(context),
+              ),
       ),
+      body: content,
     );
   }
 }

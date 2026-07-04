@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/studio_route_utils.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
+import '../widgets/wiki_hub_theme.dart';
 import '../../../../core/responsive/breakpoints.dart';
 import '../../../../core/services/shell_nav_config_store.dart';
 import '../../../../shared/widgets/app_bottom_nav_bar.dart';
@@ -235,8 +236,10 @@ class _AdaptiveShellPageState extends State<AdaptiveShellPage> {
                 const DesktopSidebar(),
                 const SizedBox(width: DesktopChrome.gap),
                 Expanded(
-                  child: ShellBranchTransition(
-                    navigationShell: navigationShell,
+                  child: SizedBox.expand(
+                    child: ShellBranchTransition(
+                      navigationShell: navigationShell,
+                    ),
                   ),
                 ),
               ],
@@ -249,20 +252,24 @@ class _AdaptiveShellPageState extends State<AdaptiveShellPage> {
     final bottomClearance = ShellInsets.mobileTabBarClearance(context);
 
     return ScrollNotificationObserver(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        extendBody: true,
-        body: Stack(
-          fit: StackFit.expand,
-          children: [
-            ShellInsets(
-              bottomClearance: bottomClearance,
-              child: ShellBranchTransition(navigationShell: navigationShell),
-            ),
-            const ShellBottomFadeOverlay(),
-          ],
+      child: WikiHubTheme(
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          extendBody: true,
+          body: Stack(
+            fit: StackFit.expand,
+            children: [
+              ShellInsets(
+                bottomClearance: bottomClearance,
+                child: SizedBox.expand(
+                  child: ShellBranchTransition(navigationShell: navigationShell),
+                ),
+              ),
+              const ShellBottomFadeOverlay(),
+            ],
+          ),
+          bottomNavigationBar: _buildMobileBottomBar(context),
         ),
-        bottomNavigationBar: _buildMobileBottomBar(context),
       ),
     );
   }

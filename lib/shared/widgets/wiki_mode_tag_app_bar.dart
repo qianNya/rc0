@@ -6,7 +6,8 @@ import 'package:flutter/services.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_dimensions.dart';
 import '../../app/theme/system_ui_style.dart';
-import 'shell_insets.dart';
+import '../../app/theme/app_theme.dart';
+import 'glass_title_chip.dart';
 
 /// Frosted pill title chip for Wiki-style floating headers.
 class WikiModeTagTitleChip extends StatelessWidget {
@@ -55,6 +56,121 @@ class WikiModeTagTitleChip extends StatelessWidget {
             child: Text(text, style: textStyle),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Maps legacy title widgets to [WikiModeTagTitleChip] when appropriate.
+Widget wikiModeTagTitleWidget(
+  Widget? title, {
+  GlassTitleMode mode = GlassTitleMode.auto,
+}) {
+  if (title == null) return const SizedBox.shrink();
+  if (title is WikiModeTagTitleChip) return title;
+  if (mode == GlassTitleMode.off) return title;
+  if (title is Text) {
+    final plain = title.data ?? title.textSpan?.toPlainText() ?? '';
+    if (plain.isNotEmpty) {
+      return WikiModeTagTitleChip(text: plain, style: title.style);
+    }
+  }
+  if (mode == GlassTitleMode.force && title is Text) {
+    final plain = title.data ?? title.textSpan?.toPlainText() ?? '';
+    return WikiModeTagTitleChip(text: plain, style: title.style);
+  }
+  return title;
+}
+
+/// Maps legacy leading controls to [WikiModeTagIconButton] when possible.
+Widget? wikiModeTagLeading(
+  BuildContext context, {
+  Widget? leading,
+  VoidCallback? onBack,
+  bool automaticallyImplyLeading = true,
+}) {
+  if (leading != null) {
+    if (leading is IconButton) {
+      final icon = leading.icon;
+      if (icon is Icon && icon.icon != null) {
+        return WikiModeTagIconButton(
+          icon: icon.icon!,
+          onPressed: leading.onPressed,
+          tooltip: leading.tooltip,
+        );
+      }
+    }
+    if (leading is BackButton) {
+      return WikiModeTagIconButton(
+        icon: Icons.arrow_back,
+        onPressed: leading.onPressed ?? () => Navigator.maybePop(context),
+        tooltip: '返回',
+      );
+    }
+    return leading;
+  }
+  if (onBack != null) {
+    return WikiModeTagIconButton(
+      icon: Icons.arrow_back,
+      onPressed: onBack,
+      tooltip: '返回',
+    );
+  }
+  if (automaticallyImplyLeading && Navigator.of(context).canPop()) {
+    return WikiModeTagIconButton(
+      icon: Icons.arrow_back,
+      onPressed: () => Navigator.of(context).maybePop(),
+      tooltip: '返回',
+    );
+  }
+  return null;
+}
+
+/// Horizontal wiki mode-tag tabs for in-page section switching (body chrome).
+class WikiModeTagTabBar extends StatelessWidget {
+  const WikiModeTagTabBar({
+    super.key,
+    required this.tabs,
+    required this.selectedIndex,
+    required this.onChanged,
+  });
+
+  final List<String> tabs;
+  final int selectedIndex;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final mutedStyle = TextStyle(
+      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
+      fontSize: 17,
+      fontWeight: FontWeight.w600,
+      letterSpacing: -0.2,
+    );
+
+    return SizedBox(
+      height: 40,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        shrinkWrap: true,
+        clipBehavior: Clip.hardEdge,
+        padding: EdgeInsets.zero,
+        itemCount: tabs.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 6),
+        itemBuilder: (context, index) {
+          final selected = selectedIndex == index;
+          return GestureDetector(
+            onTap: () => onChanged(index),
+            child: Opacity(
+              opacity: selected ? 1 : 0.72,
+              child: WikiModeTagTitleChip(
+                text: tabs[index],
+                style: selected ? null : mutedStyle,
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -130,40 +246,52 @@ class WikiModeTagIconButton extends StatelessWidget {
 class WikiModeTagAppBar extends StatelessWidget implements PreferredSizeWidget {
   const WikiModeTagAppBar({
     super.key,
-    required this.title,
+    this.title,
+    this.titleWidget,
     this.leading,
     this.actions,
     this.leadingWidth,
+    this.toolbarHeight,
     this.systemOverlayStyle,
-  });
+  }) : assert(
+          title != null || titleWidget != null,
+          'Provide either title or titleWidget',
+        );
 
-  final String title;
+  final String? title;
+  final Widget? titleWidget;
   final Widget? leading;
   final List<Widget>? actions;
   final double? leadingWidth;
+  final double? toolbarHeight;
   final SystemUiOverlayStyle? systemOverlayStyle;
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+  Size get preferredSize =>
+      Size.fromHeight(toolbarHeight ?? kToolbarHeight);
 
   @override
   Widget build(BuildContext context) {
-    final brightness = Theme.of(context).brightness;
+    final resolvedTitle = titleWidget ??
+        WikiModeTagTitleChip(text: title!);
+    final barHeight = toolbarHeight ?? kToolbarHeight;
 
-    return AppBar(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      surfaceTintColor: Colors.transparent,
-      forceMaterialTransparency: true,
-      centerTitle: true,
-      automaticallyImplyLeading: false,
-      leadingWidth: leadingWidth,
-      systemOverlayStyle:
-          systemOverlayStyle ?? AppSystemUi.styleFor(brightness),
-      title: WikiModeTagTitleChip(text: title),
-      leading: leading,
-      actions: actions,
+    return Material(
+      type: MaterialType.transparency,
+      child: SizedBox(
+        height: barHeight,
+        child: NavigationToolbar(
+          leading: leading,
+          middle: resolvedTitle,
+          centerMiddle: true,
+          trailing: actions == null
+              ? null
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: actions!,
+                ),
+        ),
+      ),
     );
   }
 }
@@ -184,7 +312,7 @@ double wikiModeTagBleedInsetHeight(BuildContext context) {
   return wikiModeTagChromeHeight(context) - AppDimensions.spacingXl;
 }
 
-/// Standard body padding for wiki-mode-tag pages with [bleedUnderAppBar].
+/// Standard body padding when the page does not use [WikiModeTagPageScaffold].
 ///
 /// [tight] uses [wikiModeTagBleedInsetHeight] so content sits closer to
 /// floating chrome (wiki / explore embedded style).
@@ -201,7 +329,7 @@ EdgeInsets wikiModeTagBodyPadding(
   return EdgeInsets.fromLTRB(horizontal, top, horizontal, bottom);
 }
 
-/// Top spacing below [WikiModeTagAppBar] when [extendBodyBehindAppBar] is true.
+/// Transparent spacer: status bar + toolbar height (clears floating app bar).
 class WikiModeTagToolbarInset extends StatelessWidget {
   const WikiModeTagToolbarInset({super.key});
 
@@ -211,52 +339,61 @@ class WikiModeTagToolbarInset extends StatelessWidget {
   }
 }
 
-/// Wiki-style page shell: floating frosted chrome, no title-bar fill.
+/// Wiki-style page shell: floating frosted chrome, transparent app bar.
 class WikiModeTagPageScaffold extends StatelessWidget {
   const WikiModeTagPageScaffold({
     super.key,
     required this.appBar,
     required this.body,
-    this.pageBackgroundColor,
-    this.bleedUnderAppBar = false,
-    this.includeShellBottomSpacer = false,
+    this.underlapAppBar = false,
+    this.systemOverlayStyle,
+    this.bottomNavigationBar,
+    this.floatingActionButton,
+    this.floatingActionButtonLocation,
   });
 
   final PreferredSizeWidget appBar;
   final Widget body;
-  final Color? pageBackgroundColor;
 
-  /// When true, [body] is full-bleed under the app bar (caller handles inset).
-  final bool bleedUnderAppBar;
-  final bool includeShellBottomSpacer;
+  /// Hero pages: body scrolls under the app bar (no toolbar inset).
+  final bool underlapAppBar;
+  final SystemUiOverlayStyle? systemOverlayStyle;
+  final Widget? bottomNavigationBar;
+  final Widget? floatingActionButton;
+  final FloatingActionButtonLocation? floatingActionButtonLocation;
 
   @override
   Widget build(BuildContext context) {
-    final background = pageBackgroundColor ?? AppColors.surface;
-
     final Widget content;
-    if (bleedUnderAppBar) {
-      content = ColoredBox(color: background, child: body);
+    if (underlapAppBar) {
+      content = body;
     } else {
       content = Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const WikiModeTagToolbarInset(),
-          Expanded(
-            child: ColoredBox(color: background, child: body),
-          ),
-          if (includeShellBottomSpacer) const ShellBottomSpacer(),
+          Expanded(child: body),
         ],
       );
     }
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: AppSystemUi.lightStyle,
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        extendBodyBehindAppBar: true,
-        appBar: appBar,
-        body: content,
+    return Theme(
+      data: AppTheme.light.copyWith(
+        scaffoldBackgroundColor: Colors.transparent,
+        canvasColor: AppColors.background,
+      ),
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: systemOverlayStyle ?? AppSystemUi.lightStyle,
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          extendBody: true,
+          extendBodyBehindAppBar: true,
+          appBar: appBar,
+          body: SizedBox.expand(child: content),
+          bottomNavigationBar: bottomNavigationBar,
+          floatingActionButton: floatingActionButton,
+          floatingActionButtonLocation: floatingActionButtonLocation,
+        ),
       ),
     );
   }

@@ -33,9 +33,12 @@ def unity_framework_ready?(sdk)
   File.exist?(fw)
 end
 
-# 默认 Stub（模拟器友好）。真机 Unity：RC0_TUANJIE_SUBSPEC=Full
+device_fw_ready = unity_framework_ready?('iphoneos')
+sim_fw_ready = unity_framework_ready?('iphonesimulator')
+
+# 默认：有真机 framework 用 Full（模拟器自动 Stub）；仅模拟器 framework 时也 Full
 tuanjie_subspec = ENV.fetch('RC0_TUANJIE_SUBSPEC') {
-  unity_framework_ready?('iphoneos') || unity_framework_ready?('iphonesimulator') ? 'Full' : 'Stub'
+  device_fw_ready || sim_fw_ready ? 'Full' : 'Stub'
 }
 
 target 'Runner' do
@@ -49,30 +52,54 @@ target 'Runner' do
   end
 end
 
+def strip_tuanjie_ldflags(flags)
+  flags.to_s
+    .gsub(/-framework\s+"?TuanjieFramework"?/, '')
+    .gsub(/\s+/, ' ')
+    .strip
+end
+
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
       config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'i386'
-      if tuanjie_subspec == 'Stub' && target.name == 'rc0_unity_widget'
-        flags = config.build_settings['OTHER_SWIFT_FLAGS'] || '$(inherited)'
-        config.build_settings['OTHER_SWIFT_FLAGS'] = "#{flags} -D RC0_TUANJIE_STUB"
-      elsif tuanjie_subspec == 'Full' && target.name == 'rc0_unity_widget'
+
+      next unless tuanjie_subspec == 'Full'
+
+      base_ldflags = strip_tuanjie_ldflags(config.build_settings['OTHER_LDFLAGS'] || '$(inherited)')
+      config.build_settings['OTHER_LDFLAGS'] = base_ldflags
+
+      if device_fw_ready
+        config.build_settings['OTHER_LDFLAGS[sdk=iphoneos*]'] =
+          "#{base_ldflags} -framework TuanjieFramework".strip
         paths = config.build_settings['FRAMEWORK_SEARCH_PATHS'] || '$(inherited)'
-        config.build_settings['FRAMEWORK_SEARCH_PATHS'] =
-          "#{paths} \"$(PODS_ROOT)/../UnityLibrary/build/Release-iphoneos\" \"$(PODS_ROOT)/../UnityLibrary/build/Release-iphonesimulator\""
-        ldflags = config.build_settings['OTHER_LDFLAGS'] || '$(inherited)'
-        config.build_settings['OTHER_LDFLAGS'] = "#{ldflags} -framework TuanjieFramework"
-        flags = config.build_settings['OTHER_SWIFT_FLAGS'] || '$(inherited)'
-        config.build_settings['OTHER_SWIFT_FLAGS'] = flags.gsub('-D RC0_TUANJIE_STUB', '').strip
+        config.build_settings['FRAMEWORK_SEARCH_PATHS[sdk=iphoneos*]'] =
+          "#{paths} \"$(PODS_ROOT)/../UnityLibrary/build/Release-iphoneos\""
+      end
+
+      sim_ldflags = base_ldflags
+      sim_flags = config.build_settings['OTHER_SWIFT_FLAGS'] || '$(inherited)'
+      if sim_fw_ready
+        config.build_settings['OTHER_LDFLAGS[sdk=iphonesimulator*]'] =
+          "#{sim_ldflags} -framework TuanjieFramework".strip
+        paths = config.build_settings['FRAMEWORK_SEARCH_PATHS'] || '$(inherited)'
+        config.build_settings['FRAMEWORK_SEARCH_PATHS[sdk=iphonesimulator*]'] =
+          "#{paths} \"$(PODS_ROOT)/../UnityLibrary/build/Release-iphonesimulator\""
+        config.build_settings['OTHER_SWIFT_FLAGS[sdk=iphonesimulator*]'] =
+          sim_flags.gsub('-D RC0_TUANJIE_STUB', '').strip
+      else
+        config.build_settings['OTHER_LDFLAGS[sdk=iphonesimulator*]'] = sim_ldflags
+        config.build_settings['OTHER_SWIFT_FLAGS[sdk=iphonesimulator*]'] =
+          "#{sim_flags} -D RC0_TUANJIE_STUB".gsub(/\s+/, ' ').strip
       end
     end
   end
 
-  if tuanjie_subspec == 'Full'
+  if tuanjie_subspec == 'Full' && device_fw_ready
     frameworks_sh = File.join(installer.sandbox.root, 'Target Support Files/Pods-Runner/Pods-Runner-frameworks.sh')
-  if File.exist?(frameworks_sh)
+    if File.exist?(frameworks_sh)
       fw_install = '  install_framework "${PODS_ROOT}/../UnityLibrary/build/Release-iphoneos/TuanjieFramework.framework"'
       unless File.read(frameworks_sh).include?('TuanjieFramework.framework')
         File.write(

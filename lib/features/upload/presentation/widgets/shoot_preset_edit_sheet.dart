@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/data/preset_catalog.dart';
+import '../../../../shared/widgets/glass/glass_sheet.dart';
 import '../../../screenplay/data/shoot_preset_repository.dart';
 import '../../../screenplay/domain/shoot_params.dart';
 import '../../../screenplay/domain/shoot_preset.dart';
-import 'upload_shoot_param_cards.dart';
+import 'shoot_param_carousel_panel.dart';
 
 enum ShootPresetEditMode { create, edit, customize }
 
@@ -27,21 +28,12 @@ class ShootPresetEditSheet extends StatefulWidget {
     ShootPreset? initialPreset,
     ShootParams? initialParams,
   }) {
-    return showModalBottomSheet<({ShootParams? params, ShootPreset? preset})?>(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (_) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: ShootPresetEditSheet(
-          mode: mode,
-          initialPreset: initialPreset,
-          initialParams: initialParams,
-        ),
+    return showGlassSheet<({ShootParams? params, ShootPreset? preset})?>(
+      context,
+      child: ShootPresetEditSheet(
+        mode: mode,
+        initialPreset: initialPreset,
+        initialParams: initialParams,
       ),
     );
   }
@@ -140,58 +132,49 @@ class _ShootPresetEditSheetState extends State<ShootPresetEditSheet> {
   Widget build(BuildContext context) {
     final isCustomize = widget.mode == ShootPresetEditMode.customize;
 
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
           children: [
-            Row(
-              children: [
-                Text(_title, style: AppTextStyles.title),
-                const Spacer(),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close),
-                ),
-              ],
-            ),
-            if (!isCustomize) ...[
-              const SizedBox(height: 8),
-              TextField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: '预设名称',
-                  hintText: '例如：夜景街拍',
-                ),
-              ),
-            ],
-            const SizedBox(height: 16),
-            ShootParamPresetCards(
-              params: _params,
-              onChanged: (params) => setState(() => _params = params),
-            ),
-            const SizedBox(height: 20),
-            if (isCustomize)
-              FilledButton(
-                onPressed: _saving ? null : () => _save(applyOnly: true),
-                child: const Text('应用'),
-              )
-            else ...[
-              FilledButton(
+            Text(_title, style: AppTextStyles.title),
+            const Spacer(),
+            if (!isCustomize)
+              TextButton(
                 onPressed: _saving ? null : () => _save(applyOnly: false),
                 child: Text(_saving ? '保存中…' : '保存'),
               ),
-              const SizedBox(height: 8),
-              OutlinedButton(
-                onPressed: _saving ? null : () => _save(applyOnly: true),
-                child: const Text('仅应用，不保存'),
-              ),
-            ],
+            IconButton(
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(Icons.close),
+            ),
           ],
         ),
-      ),
+        if (!isCustomize) ...[
+          const SizedBox(height: 8),
+          TextField(
+            controller: _nameController,
+            decoration: const InputDecoration(
+              labelText: '预设名称',
+              hintText: '例如：夜景街拍',
+            ),
+          ),
+        ],
+        const SizedBox(height: 16),
+        ShootParamCarouselPanel(
+          params: _params,
+          onChanged: (params) => setState(() => _params = params),
+          embedded: true,
+        ),
+        if (isCustomize) ...[
+          const SizedBox(height: 20),
+          FilledButton(
+            onPressed: _saving ? null : () => _save(applyOnly: true),
+            child: const Text('应用'),
+          ),
+        ],
+      ],
     );
   }
 }

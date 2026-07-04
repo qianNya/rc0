@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_dimensions.dart';
 import '../../core/responsive/breakpoints.dart';
 
@@ -26,6 +27,12 @@ class ShellBottomFadeOverlay extends StatelessWidget {
     final height = heightOf(context);
     if (height <= 0) return const SizedBox.shrink();
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fadeMid = isDark
+        ? const Color(0x99000000)
+        : AppColors.background.withValues(alpha: 0.6);
+    final fadeEnd = isDark ? const Color(0xFF000000) : AppColors.background;
+
     return Positioned(
       left: 0,
       right: 0,
@@ -36,14 +43,14 @@ class ShellBottomFadeOverlay extends StatelessWidget {
           child: ShaderMask(
             blendMode: BlendMode.dstIn,
             shaderCallback: (bounds) {
-              return const LinearGradient(
+              return LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                stops: [0, 0.55, 1],
+                stops: const [0, 0.55, 1],
                 colors: [
-                  Color(0x00000000),
-                  Color(0x99000000),
-                  Color(0xFF000000),
+                  const Color(0x00000000),
+                  fadeMid,
+                  fadeEnd,
                 ],
               ).createShader(bounds);
             },

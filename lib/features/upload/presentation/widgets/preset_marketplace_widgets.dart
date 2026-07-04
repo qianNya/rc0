@@ -4,6 +4,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/utils/compact_count.dart';
+import '../../../../shared/widgets/glass/glass_card.dart';
 import '../../../screenplay/domain/shoot_preset.dart';
 import 'preset_cover.dart';
 
@@ -249,73 +250,60 @@ class PresetRecentCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: 168,
-      child: Material(
-        color: selected
-            ? AppColors.accent.withValues(alpha: 0.08)
-            : Theme.of(context).colorScheme.surface,
+      child: GlassCard(
+        onTap: onTap,
+        selected: selected,
+        padding: EdgeInsets.zero,
         borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-              border: Border.all(
-                color: selected ? AppColors.accent : AppColors.border,
-                width: selected ? 1.5 : 1,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              height: 96,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  PresetCover(preset: preset, expand: true),
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: Icon(
+                      Icons.star_rounded,
+                      size: 18,
+                      color: Colors.amber.shade400,
+                    ),
+                  ),
+                ],
               ),
             ),
-            child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SizedBox(
-                height: 96,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    PresetCover(preset: preset, expand: true),
-                    Positioned(
-                      top: 6,
-                      right: 6,
-                      child: Icon(
-                        Icons.star_rounded,
-                        size: 18,
-                        color: Colors.amber.shade400,
-                      ),
-                    ),
-                  ],
-                ),
+            Padding(
+              padding: const EdgeInsets.all(AppDimensions.spacingSm),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    preset.label,
+                    style: AppTextStyles.label.copyWith(fontSize: 13),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    preset.deviceLabel,
+                    style: AppTextStyles.bodySecondary.copyWith(fontSize: 11),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    preset.aspectLightingLabel,
+                    style: AppTextStyles.bodySecondary.copyWith(fontSize: 11),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
-              Padding(
-                padding: const EdgeInsets.all(AppDimensions.spacingSm),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      preset.label,
-                      style: AppTextStyles.label.copyWith(fontSize: 13),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      preset.deviceLabel,
-                      style: AppTextStyles.bodySecondary.copyWith(fontSize: 11),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      preset.aspectLightingLabel,
-                      style: AppTextStyles.bodySecondary.copyWith(fontSize: 11),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -329,40 +317,27 @@ class PresetCreateTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.accent.withValues(alpha: 0.06),
+    return GlassCard(
+      onTap: onTap,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
       borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-            border: Border.all(
-              color: AppColors.accent.withValues(alpha: 0.25),
-              width: 1,
+      child: Row(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: AppColors.accent.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
             ),
+            child: const Icon(Icons.add, color: AppColors.accent, size: 28),
           ),
-          child: Row(
-            children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: AppColors.accent.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-                ),
-                child: const Icon(Icons.add, color: AppColors.accent, size: 28),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                '创建预设',
-                style: AppTextStyles.label.copyWith(color: AppColors.accent),
-              ),
-            ],
+          const SizedBox(width: 12),
+          Text(
+            '创建预设',
+            style: AppTextStyles.label.copyWith(color: AppColors.accent),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -391,70 +366,60 @@ class PresetMyRowCard extends StatelessWidget {
                 ? '收藏 ${preset.favoriteCount} 次'
                 : preset.displaySubtitle);
 
-    return Material(
-      color: Theme.of(context).colorScheme.surface,
+    return GlassCard(
+      onTap: onTap,
+      onLongPress: onLongPress,
+      padding: const EdgeInsets.all(AppDimensions.spacingSm),
       borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-      child: InkWell(
-        onTap: onTap,
-        onLongPress: onLongPress,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-        child: Container(
-          padding: const EdgeInsets.all(AppDimensions.spacingSm),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Row(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-                child: SizedBox(
-                  width: 56,
-                  height: 56,
-                  child: PresetCover(
-                    preset: preset,
-                    expand: true,
-                    borderRadius: AppDimensions.radiusSm,
-                  ),
-                ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+            child: SizedBox(
+              width: 56,
+              height: 56,
+              child: PresetCover(
+                preset: preset,
+                expand: true,
+                borderRadius: AppDimensions.radiusSm,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            preset.label,
-                            style: AppTextStyles.label.copyWith(fontSize: 14),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Icon(
-                          Icons.star_rounded,
-                          size: 16,
-                          color: AppColors.accent.withValues(alpha: 0.7),
-                        ),
-                      ],
+                    Expanded(
+                      child: Text(
+                        preset.label,
+                        style: AppTextStyles.label.copyWith(fontSize: 14),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      preset.deviceLabel,
-                      style: AppTextStyles.bodySecondary.copyWith(fontSize: 12),
-                    ),
-                    Text(
-                      secondary,
-                      style: AppTextStyles.bodySecondary.copyWith(fontSize: 11),
+                    Icon(
+                      Icons.star_rounded,
+                      size: 16,
+                      color: AppColors.accent.withValues(alpha: 0.7),
                     ),
                   ],
                 ),
-              ),
-            ],
+                const SizedBox(height: 2),
+                Text(
+                  preset.deviceLabel,
+                  style: AppTextStyles.bodySecondary.copyWith(fontSize: 12),
+                ),
+                Text(
+                  secondary,
+                  style: AppTextStyles.bodySecondary.copyWith(fontSize: 11),
+                ),
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -479,72 +444,59 @@ class PresetOfficialCard extends StatelessWidget {
     final width = compact ? 148.0 : 168.0;
     return SizedBox(
       width: width,
-      child: Material(
-        color: selected
-            ? AppColors.accent.withValues(alpha: 0.08)
-            : Theme.of(context).colorScheme.surface,
+      child: GlassCard(
+        onTap: onTap,
+        selected: selected,
+        padding: EdgeInsets.zero,
         borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-              border: Border.all(
-                color: selected ? AppColors.accent : AppColors.border,
-                width: selected ? 1.5 : 1,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              height: compact ? 100 : 112,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  PresetCover(preset: preset, expand: true),
+                  const Positioned(
+                    top: 6,
+                    left: 6,
+                    child: PresetOfficialBadge(),
+                  ),
+                ],
               ),
             ),
-            child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SizedBox(
-                height: compact ? 100 : 112,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    PresetCover(preset: preset, expand: true),
-                    const Positioned(
-                      top: 6,
-                      left: 6,
-                      child: PresetOfficialBadge(),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(AppDimensions.spacingSm),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+            Padding(
+              padding: const EdgeInsets.all(AppDimensions.spacingSm),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    preset.label,
+                    style: AppTextStyles.label.copyWith(fontSize: 13),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    preset.deviceLabel,
+                    style: AppTextStyles.bodySecondary.copyWith(fontSize: 11),
+                  ),
+                  if (preset.aspectLightingLabel.isNotEmpty)
                     Text(
-                      preset.label,
-                      style: AppTextStyles.label.copyWith(fontSize: 13),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      preset.deviceLabel,
+                      preset.aspectLightingLabel,
                       style: AppTextStyles.bodySecondary.copyWith(fontSize: 11),
                     ),
-                    if (preset.aspectLightingLabel.isNotEmpty)
-                      Text(
-                        preset.aspectLightingLabel,
-                        style: AppTextStyles.bodySecondary.copyWith(fontSize: 11),
-                      ),
-                    const SizedBox(height: 6),
-                    _PresetStatsRow(
-                      likeCount: preset.likeCount,
-                      usageCount: preset.usageCount,
-                      rating: preset.rating,
-                    ),
-                  ],
-                ),
+                  const SizedBox(height: 6),
+                  _PresetStatsRow(
+                    likeCount: preset.likeCount,
+                    usageCount: preset.usageCount,
+                    rating: preset.rating,
+                  ),
+                ],
               ),
-            ],
-          ),
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -575,10 +527,9 @@ class PresetCommunityCard extends StatelessWidget {
       );
     }
 
-    return Material(
-      color: Theme.of(context).colorScheme.surface,
+    return GlassCard(
+      padding: EdgeInsets.zero,
       borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -696,57 +647,54 @@ class _PresetCommunityCompactCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: 168,
-      child: Material(
-        color: Theme.of(context).colorScheme.surface,
+      child: GlassCard(
+        onTap: onUse,
+        padding: EdgeInsets.zero,
         borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onUse,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SizedBox(
-                height: 96,
-                child: PresetCover(preset: preset, expand: true),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(AppDimensions.spacingSm),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              height: 96,
+              child: PresetCover(preset: preset, expand: true),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(AppDimensions.spacingSm),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '🔥 ${preset.label}',
+                    style: AppTextStyles.label.copyWith(fontSize: 12),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (preset.authorName != null)
                     Text(
-                      '🔥 ${preset.label}',
-                      style: AppTextStyles.label.copyWith(fontSize: 12),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      'by ${preset.authorName}',
+                      style: AppTextStyles.bodySecondary.copyWith(fontSize: 10),
                     ),
-                    if (preset.authorName != null)
-                      Text(
-                        'by ${preset.authorName}',
-                        style: AppTextStyles.bodySecondary.copyWith(fontSize: 10),
-                      ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        if (preset.likeCount != null)
-                          Text(
-                            '❤ ${formatCompactCount(preset.likeCount!)}',
-                            style: AppTextStyles.bodySecondary.copyWith(fontSize: 10),
-                          ),
-                        if (preset.downloadCount != null) ...[
-                          const SizedBox(width: 8),
-                          Text(
-                            '↓ ${formatCompactCount(preset.downloadCount!)}',
-                            style: AppTextStyles.bodySecondary.copyWith(fontSize: 10),
-                          ),
-                        ],
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      if (preset.likeCount != null)
+                        Text(
+                          '❤ ${formatCompactCount(preset.likeCount!)}',
+                          style: AppTextStyles.bodySecondary.copyWith(fontSize: 10),
+                        ),
+                      if (preset.downloadCount != null) ...[
+                        const SizedBox(width: 8),
+                        Text(
+                          '↓ ${formatCompactCount(preset.downloadCount!)}',
+                          style: AppTextStyles.bodySecondary.copyWith(fontSize: 10),
+                        ),
                       ],
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -767,62 +715,59 @@ class PresetListTileCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Theme.of(context).colorScheme.surface,
+    return GlassCard(
+      onTap: onTap,
+      onLongPress: onLongPress,
+      padding: EdgeInsets.zero,
       borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        onLongPress: onLongPress,
-        child: Row(
-          children: [
-            SizedBox(
-              width: 88,
-              height: 88,
-              child: Stack(
-                fit: StackFit.expand,
+      child: Row(
+        children: [
+          SizedBox(
+            width: 88,
+            height: 88,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                PresetCover(preset: preset, expand: true),
+                if (preset.isOfficial)
+                  const Positioned(
+                    top: 4,
+                    left: 4,
+                    child: PresetOfficialBadge(),
+                  ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(AppDimensions.spacingMd),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  PresetCover(preset: preset, expand: true),
-                  if (preset.isOfficial)
-                    const Positioned(
-                      top: 4,
-                      left: 4,
-                      child: PresetOfficialBadge(),
+                  Text(preset.label, style: AppTextStyles.label),
+                  const SizedBox(height: 2),
+                  Text(
+                    preset.deviceLabel,
+                    style: AppTextStyles.bodySecondary.copyWith(fontSize: 12),
+                  ),
+                  if (preset.aspectLightingLabel.isNotEmpty)
+                    Text(
+                      preset.aspectLightingLabel,
+                      style: AppTextStyles.bodySecondary.copyWith(fontSize: 12),
                     ),
+                  const SizedBox(height: 6),
+                  _PresetStatsRow(
+                    likeCount: preset.likeCount,
+                    usageCount: preset.usageCount,
+                    downloadCount: preset.downloadCount,
+                    rating: preset.rating,
+                    authorName: preset.authorName,
+                  ),
                 ],
               ),
             ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(AppDimensions.spacingMd),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(preset.label, style: AppTextStyles.label),
-                    const SizedBox(height: 2),
-                    Text(
-                      preset.deviceLabel,
-                      style: AppTextStyles.bodySecondary.copyWith(fontSize: 12),
-                    ),
-                    if (preset.aspectLightingLabel.isNotEmpty)
-                      Text(
-                        preset.aspectLightingLabel,
-                        style: AppTextStyles.bodySecondary.copyWith(fontSize: 12),
-                      ),
-                    const SizedBox(height: 6),
-                    _PresetStatsRow(
-                      likeCount: preset.likeCount,
-                      usageCount: preset.usageCount,
-                      downloadCount: preset.downloadCount,
-                      rating: preset.rating,
-                      authorName: preset.authorName,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

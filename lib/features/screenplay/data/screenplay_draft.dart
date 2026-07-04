@@ -26,6 +26,8 @@ class FrameDraft {
     List<UploadImageFile>? referenceImages,
     this.lightingSchemeId,
     this.lightingRig,
+    this.cineSetupId,
+    this.cineSetup,
   })  : cineParams = cineParams ?? const CineParams(),
         tags = tags != null ? Set<String>.from(tags) : <String>{},
         referenceImages = referenceImages ?? [];
@@ -46,6 +48,8 @@ class FrameDraft {
   final List<UploadImageFile> referenceImages;
   String? lightingSchemeId;
   Map<String, dynamic>? lightingRig;
+  String? cineSetupId;
+  Map<String, dynamic>? cineSetup;
 
   FrameDraft copyDeep() {
     return FrameDraft(
@@ -77,6 +81,9 @@ class FrameDraft {
       lightingRig: lightingRig != null
           ? Map<String, dynamic>.from(lightingRig!)
           : null,
+      cineSetupId: cineSetupId,
+      cineSetup:
+          cineSetup != null ? Map<String, dynamic>.from(cineSetup!) : null,
     );
   }
 }
@@ -285,6 +292,8 @@ class ScreenplayDraft {
     List<ScreenplaySceneLink>? linkedScenes,
     this.lightingSchemeId,
     this.lightingRig,
+    this.cineSetupId,
+    this.cineSetup,
   })  : tags = Set<String>.from(tags ?? {'站姿'}),
         acts = acts ?? [ActDraft()],
         defaultParams = defaultParams ?? AppCatalog.defaultShootParams,
@@ -375,6 +384,8 @@ class ScreenplayDraft {
   final List<ScreenplaySceneLink> linkedScenes;
   String? lightingSchemeId;
   Map<String, dynamic>? lightingRig;
+  String? cineSetupId;
+  Map<String, dynamic>? cineSetup;
 
   /// Explicit cover; null means use the first frame/image as default.
   UploadImageFile? coverImage;
@@ -402,6 +413,9 @@ class ScreenplayDraft {
       lightingRig: lightingRig != null
           ? Map<String, dynamic>.from(lightingRig!)
           : null,
+      cineSetupId: cineSetupId,
+      cineSetup:
+          cineSetup != null ? Map<String, dynamic>.from(cineSetup!) : null,
       linkedCharacters: linkedCharacters
           .map((c) => ScreenplayCharacterLink(id: c.id, name: c.name))
           .toList(),
