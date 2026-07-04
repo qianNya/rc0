@@ -80,16 +80,12 @@ class _SceneAiPageState extends State<SceneAiPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return DesktopStackScaffold(
       overlayAppBar: true,
       title: const Text('AI 场景'),
       onBack: () => popOrGoDiscovery(context),
       body: ColoredBox(
-        color: isDark
-            ? AppColors.characterBackgroundDark
-            : Theme.of(context).scaffoldBackgroundColor,
+        color: AppColors.pageBackground,
         child: ListView(
           padding: EdgeInsets.fromLTRB(
             AppDimensions.spacingMd,

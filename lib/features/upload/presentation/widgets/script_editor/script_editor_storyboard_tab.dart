@@ -77,8 +77,9 @@ class _ScriptEditorStoryboardTabState extends State<ScriptEditorStoryboardTab> {
   @override
   Widget build(BuildContext context) {
     final refs = _filteredRefs;
-    final shellBottom =
-        widget.embeddedInHub ? ShellInsets.of(context) : 0.0;
+    final shellBottom = widget.embeddedInHub
+        ? ShellInsets.scrollBottom(context, extra: AppDimensions.spacingMd)
+        : AppDimensions.spacingMd;
     final totalSec = draftTotalDurationSec(widget.draft);
 
     return Column(

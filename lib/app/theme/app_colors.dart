@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 /// Design tokens — purple accent, light neutrals.
 abstract final class AppColors {
   static const Color background = Color(0xFFFAFAFA);
+
+  /// Page canvas behind scroll content — always light-toned regardless of theme.
+  static const Color pageBackground = background;
+
   static const Color surface = Color(0xFFFFFFFF);
   static const Color surfaceSecondary = Color(0xFFF5F5F5);
   static const Color accent = Color(0xFF6B4FE0);

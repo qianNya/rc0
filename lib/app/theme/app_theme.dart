@@ -21,7 +21,7 @@ abstract final class AppTheme {
 
   static ThemeData get dark => _buildTheme(
         brightness: Brightness.dark,
-        background: AppColors.backgroundDark,
+        background: AppColors.pageBackground,
         surface: AppColors.surfaceDark,
         surfaceSecondary: AppColors.surfaceSecondaryDark,
         textPrimary: AppColors.textPrimaryDark,

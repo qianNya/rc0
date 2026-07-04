@@ -150,8 +150,6 @@ class _MyCharactersPageState extends State<MyCharactersPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return AnimatedBuilder(
       animation: Listenable.merge([_repo, _auth]),
       builder: (context, _) {
@@ -169,9 +167,7 @@ class _MyCharactersPageState extends State<MyCharactersPage> {
               ),
           ],
           body: ColoredBox(
-            color: isDark
-                ? AppColors.characterBackgroundDark
-                : Theme.of(context).scaffoldBackgroundColor,
+            color: AppColors.pageBackground,
             child: Column(
               children: [
                 Padding(

@@ -87,9 +87,7 @@ class _CharacterAiPageState extends State<CharacterAiPage> {
       title: const Text('AI 角色'),
       onBack: () => popOrGoDiscovery(context),
       body: ColoredBox(
-        color: isDark
-            ? AppColors.characterBackgroundDark
-            : Theme.of(context).scaffoldBackgroundColor,
+        color: AppColors.pageBackground,
         child: ListView(
           padding: const EdgeInsets.all(AppDimensions.spacingMd),
           children: [

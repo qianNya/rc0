@@ -132,8 +132,9 @@ class _ScriptEditorTimelineTabState extends State<ScriptEditorTimelineTab> {
       );
     }
 
-    final shellBottom =
-        widget.embeddedInHub ? ShellInsets.of(context) : 0.0;
+    final shellBottom = widget.embeddedInHub
+        ? ShellInsets.scrollBottom(context, extra: AppDimensions.spacingMd)
+        : AppDimensions.spacingMd;
 
     return Column(
       children: [

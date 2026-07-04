@@ -10,6 +10,7 @@ import '../widgets/script_studio_action_cards.dart';
 import '../widgets/script_studio_app_bar.dart';
 import '../widgets/script_studio_quick_start.dart';
 import '../widgets/script_studio_recent_section.dart';
+import '../../../../shared/widgets/shell_insets.dart';
 import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 
 class ScriptStudioPage extends StatefulWidget {
@@ -95,7 +96,6 @@ class _ScriptStudioPageState extends State<ScriptStudioPage> {
       body: ListView(
         padding: EdgeInsets.only(
           top: wikiModeTagContentInsetHeight(context),
-          bottom: AppDimensions.spacingMd,
         ),
         children: [
           const ScriptStudioActionCards(),
@@ -104,6 +104,7 @@ class _ScriptStudioPageState extends State<ScriptStudioPage> {
             onDataChanged: _onChanged,
           ),
           const ScriptStudioQuickStart(),
+          const ShellBottomSpacer(extra: AppDimensions.spacingMd),
         ],
       ),
     );

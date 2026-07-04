@@ -7,15 +7,13 @@ import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../core/data/app_catalog.dart';
-import '../../../../core/responsive/breakpoints.dart';
 import '../../../../core/utils/image_url_utils.dart';
 import '../../../../core/utils/state_listeners.dart';
-import '../../../../shared/widgets/desktop_shell_app_bar.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
-import '../../../../shared/widgets/feed_tab_bar.dart';
 import '../../../../shared/widgets/inline_error_banner.dart';
 import '../../../../shared/widgets/image_preview.dart';
+import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../upload/data/image_pick_service.dart';
 import '../../data/image_gallery_repository.dart';
@@ -24,7 +22,6 @@ import '../../domain/gallery_image.dart';
 import '../../domain/image_tag.dart';
 import '../widgets/gallery_category_chips.dart';
 import '../widgets/gallery_masonry_grid.dart';
-import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 import '../widgets/gallery_page_header.dart';
 import '../widgets/gallery_tags_tab.dart';
 import '../widgets/gallery_works_tab.dart';
@@ -245,12 +242,24 @@ class _MyGalleryPageState extends State<MyGalleryPage> {
     return '$value';
   }
 
+  double _contentTopClearance(BuildContext context) {
+    return wikiModeTagChromeHeight(context);
+  }
+
+  Widget _padTabContent(Widget child) {
+    return Padding(
+      padding: EdgeInsets.only(top: _contentTopClearance(context)),
+      child: child,
+    );
+  }
+
   Widget _buildImagesTabScroll({
     required List<GalleryImage> filtered,
     required bool loading,
     required String? error,
     required Color? secondary,
   }) {
+    final topClearance = _contentTopClearance(context);
     return RefreshIndicator(
       onRefresh: _refresh,
       child: NotificationListener<ScrollNotification>(
@@ -265,6 +274,7 @@ class _MyGalleryPageState extends State<MyGalleryPage> {
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
+            SliverToBoxAdapter(child: SizedBox(height: topClearance)),
             ..._buildImagesTab(
               filtered: filtered,
               loading: loading,
@@ -281,81 +291,67 @@ class _MyGalleryPageState extends State<MyGalleryPage> {
   }
 
   Widget _buildGalleryBody({
-    required bool includeHeader,
     required List<GalleryImage> filtered,
     required bool loading,
     required String? error,
     required Color? secondary,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return FadeSlideIndexedStack(
+      index: _mainTabIndex,
       children: [
-        if (!includeHeader) const WikiModeTagToolbarInset(),
-        if (includeHeader)
-          GalleryPageHeader(
-            onUpload: _pickAndUpload,
-            uploading: _uploading,
-          ),
-        FeedTabBar(
-          tabs: AppCatalog.galleryTabs,
-          selectedIndex: _mainTabIndex,
-          onChanged: _onMainTabChanged,
-          underlineStyle: true,
-          embedded: true,
+        _buildImagesTabScroll(
+          filtered: filtered,
+          loading: loading,
+          error: error,
+          secondary: secondary,
         ),
-        Expanded(
-          child: FadeSlideIndexedStack(
-            index: _mainTabIndex,
-            children: [
-              _buildImagesTabScroll(
-                filtered: filtered,
-                loading: loading,
-                error: error,
-                secondary: secondary,
-              ),
-              if (_ipTabVisited)
-                IpTab(key: _ipTabKey)
-              else
-                const SizedBox.shrink(),
-              if (_worksTabVisited)
-                GalleryWorksTab(key: _worksTabKey)
-              else
-                const SizedBox.shrink(),
-              if (_tagsTabVisited)
-                GalleryTagsTab(onTagSelected: _onTagSelectedFromList)
-              else
-                const SizedBox.shrink(),
-            ],
-          ),
-        ),
+        if (_ipTabVisited)
+          _padTabContent(IpTab(key: _ipTabKey))
+        else
+          const SizedBox.shrink(),
+        if (_worksTabVisited)
+          _padTabContent(GalleryWorksTab(key: _worksTabKey))
+        else
+          const SizedBox.shrink(),
+        if (_tagsTabVisited)
+          _padTabContent(GalleryTagsTab(onTagSelected: _onTagSelectedFromList))
+        else
+          const SizedBox.shrink(),
       ],
+    );
+  }
+
+  GalleryHubAppBar _buildAppBar({required bool showTabs}) {
+    return GalleryHubAppBar(
+      onUpload: _auth.isLoggedIn ? _pickAndUpload : null,
+      uploading: _uploading,
+      showTabs: showTabs,
+      tabs: AppCatalog.galleryTabs,
+      selectedTabIndex: _mainTabIndex,
+      onTabChanged: _onMainTabChanged,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = Breakpoints.isDesktop(context);
-
     if (!_auth.isLoggedIn) {
-      final body = EmptyStateView(
-        icon: Icons.photo_library_outlined,
-        title: '登录后查看图库',
-        subtitle: '上传与管理你的参考图片',
-        actionLabel: '去登录',
-        onAction: () =>
-            context.go(AppRoutes.loginWithRedirect(AppRoutes.library)),
-      );
-
-      if (isDesktop) {
-        return DesktopShellTabScaffold(
-          appBar: const GalleryPageHeader(),
-          body: body,
-        );
-      }
-
-      return WikiModeTagPageScaffold(
-        appBar: const GalleryPageHeader(),
-        body: body,
+      return GalleryHubScaffold(
+        appBar: _buildAppBar(showTabs: false),
+        body: Padding(
+          padding: EdgeInsets.only(
+            top: _contentTopClearance(context),
+            left: AppDimensions.spacingMd,
+            right: AppDimensions.spacingMd,
+          ),
+          child: EmptyStateView(
+            icon: Icons.photo_library_outlined,
+            title: '登录后查看图库',
+            subtitle: '上传与管理你的参考图片',
+            actionLabel: '去登录',
+            onAction: () =>
+                context.go(AppRoutes.loginWithRedirect(AppRoutes.library)),
+          ),
+        ),
       );
     }
 
@@ -366,30 +362,14 @@ class _MyGalleryPageState extends State<MyGalleryPage> {
     final secondary =
         theme.textTheme.bodyMedium?.color ?? AppColors.textSecondary;
 
-    final body = _buildGalleryBody(
-      includeHeader: !isDesktop,
-      filtered: filtered,
-      loading: loading,
-      error: error,
-      secondary: secondary,
-    );
-
-    if (isDesktop) {
-      return DesktopShellTabScaffold(
-        appBar: GalleryPageHeader(
-          onUpload: _pickAndUpload,
-          uploading: _uploading,
-        ),
-        body: body,
-      );
-    }
-
-    return WikiModeTagPageScaffold(
-      appBar: GalleryPageHeader(
-        onUpload: _pickAndUpload,
-        uploading: _uploading,
+    return GalleryHubScaffold(
+      appBar: _buildAppBar(showTabs: true),
+      body: _buildGalleryBody(
+        filtered: filtered,
+        loading: loading,
+        error: error,
+        secondary: secondary,
       ),
-      body: body,
     );
   }
 

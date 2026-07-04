@@ -288,9 +288,10 @@ class _ScriptEditorOutlineTabState extends State<ScriptEditorOutlineTab> {
   }
 
   double _scrollBottomPadding(BuildContext context) {
-    final shell = ShellInsets.of(context);
-    if (shell > 0) return shell;
-    return 12;
+    return ShellInsets.scrollBottom(
+      context,
+      extra: AppDimensions.spacingMd,
+    );
   }
 
   int get _modeIndex {

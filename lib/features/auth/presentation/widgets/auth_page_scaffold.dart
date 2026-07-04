@@ -62,7 +62,7 @@ class AuthPageScaffold extends StatelessWidget {
   /// A soft accent-tinted backdrop so the frosted [GlassCard] form has
   /// something to blur, producing the liquid-glass effect.
   Widget _withBackdrop(BuildContext context, Widget child) {
-    final base = Theme.of(context).scaffoldBackgroundColor;
+    final base = AppColors.pageBackground;
     return DecoratedBox(
       decoration: BoxDecoration(
         gradient: LinearGradient(

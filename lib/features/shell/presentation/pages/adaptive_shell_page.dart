@@ -227,7 +227,7 @@ class _AdaptiveShellPageState extends State<AdaptiveShellPage> {
     if (useSidebar) {
       return ScrollNotificationObserver(
         child: Scaffold(
-          backgroundColor: AppColors.background,
+          backgroundColor: AppColors.pageBackground,
           body: Padding(
             padding: const EdgeInsets.all(DesktopChrome.gap),
             child: Row(
@@ -249,7 +249,10 @@ class _AdaptiveShellPageState extends State<AdaptiveShellPage> {
       );
     }
 
-    final bottomClearance = ShellInsets.mobileTabBarClearance(context);
+    final bottomClearance = ShellInsets.mobileTabBarClearance(context) +
+        (isStudioEditorRoute(GoRouter.of(context).state)
+            ? AppDimensions.bottomNavSecondaryTabGap
+            : 0);
 
     return ScrollNotificationObserver(
       child: WikiHubTheme(
@@ -259,6 +262,7 @@ class _AdaptiveShellPageState extends State<AdaptiveShellPage> {
           body: Stack(
             fit: StackFit.expand,
             children: [
+              const ColoredBox(color: AppColors.pageBackground),
               ShellInsets(
                 bottomClearance: bottomClearance,
                 child: SizedBox.expand(

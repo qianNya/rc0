@@ -137,8 +137,6 @@ class _MyScenesPageState extends State<MyScenesPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return DesktopStackScaffold(
       overlayAppBar: true,
       title: const Text('我的场景'),
@@ -151,9 +149,7 @@ class _MyScenesPageState extends State<MyScenesPage> {
           ),
       ],
       body: ColoredBox(
-        color: isDark
-            ? AppColors.characterBackgroundDark
-            : Theme.of(context).scaffoldBackgroundColor,
+        color: AppColors.pageBackground,
         child: Column(
           children: [
             const WikiModeTagToolbarInset(),

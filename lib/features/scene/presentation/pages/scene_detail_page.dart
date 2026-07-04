@@ -89,7 +89,6 @@ class _SceneDetailPageState extends State<SceneDetailPage> {
   @override
   Widget build(BuildContext context) {
     final entry = _entry;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final coverPath = (_localCover != null && _localCover!.isNotEmpty)
         ? _localCover!
         : entry?.coverUrl ?? '';
@@ -205,9 +204,7 @@ class _SceneDetailPageState extends State<SceneDetailPage> {
                         tabs: AppCatalog.sceneDetailTabs,
                         selectedIndex: _tabIndex,
                         onChanged: (index) => setState(() => _tabIndex = index),
-                        backgroundColor: isDark
-                            ? AppColors.characterBackgroundDark
-                            : Theme.of(context).scaffoldBackgroundColor,
+                        backgroundColor: AppColors.pageBackground,
                       ),
                     ),
                     SliverFillRemaining(

@@ -13,8 +13,8 @@ class WikiHubTheme extends StatelessWidget {
 
   static ThemeData themeOf(BuildContext context) {
     return AppTheme.light.copyWith(
-      scaffoldBackgroundColor: AppColors.background,
-      canvasColor: AppColors.background,
+      scaffoldBackgroundColor: AppColors.pageBackground,
+      canvasColor: AppColors.pageBackground,
     );
   }
 

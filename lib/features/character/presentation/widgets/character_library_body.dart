@@ -342,9 +342,7 @@ class _CharacterLibraryBodyState extends State<CharacterLibraryBody>
     final painted = ColoredBox(
       color: widget.embeddedInHub
           ? Colors.transparent
-          : (useLight
-              ? AppColors.background
-              : Theme.of(context).scaffoldBackgroundColor),
+          : AppColors.pageBackground,
       child: scrollBody,
     );
 
@@ -525,9 +523,7 @@ class _CharacterLibraryBodyState extends State<CharacterLibraryBody>
     final body = ColoredBox(
       color: widget.embeddedInHub
           ? Colors.transparent
-          : (useLight
-              ? AppColors.background
-              : Theme.of(context).scaffoldBackgroundColor),
+          : AppColors.pageBackground,
       child: content,
     );
 

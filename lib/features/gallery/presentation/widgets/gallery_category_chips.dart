@@ -28,7 +28,7 @@ class GalleryCategoryChips extends StatelessWidget {
         : AppColors.surfaceSecondary;
 
     return Material(
-      color: theme.scaffoldBackgroundColor,
+      color: Colors.transparent,
       elevation: 0,
       surfaceTintColor: Colors.transparent,
       child: SizedBox(

@@ -444,7 +444,7 @@ class WikiModeTagPageScaffold extends StatelessWidget {
     return Theme(
       data: AppTheme.light.copyWith(
         scaffoldBackgroundColor: Colors.transparent,
-        canvasColor: AppColors.background,
+        canvasColor: AppColors.pageBackground,
       ),
       child: AnnotatedRegion<SystemUiOverlayStyle>(
         value: systemOverlayStyle ?? AppSystemUi.lightStyle,
@@ -453,7 +453,10 @@ class WikiModeTagPageScaffold extends StatelessWidget {
           extendBody: true,
           extendBodyBehindAppBar: true,
           appBar: resolvedAppBar,
-          body: SizedBox.expand(child: body),
+          body: ColoredBox(
+            color: AppColors.pageBackground,
+            child: SizedBox.expand(child: body),
+          ),
           bottomNavigationBar: bottomNavigationBar,
           floatingActionButton: floatingActionButton,
           floatingActionButtonLocation: floatingActionButtonLocation,

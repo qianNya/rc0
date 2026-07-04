@@ -116,7 +116,6 @@ class _CharacterDetailPageState extends State<CharacterDetailPage> {
   Widget build(BuildContext context) {
     final entry = _entry;
     final snapshot = _snapshot;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final immersive = entry != null && snapshot != null;
 
@@ -190,9 +189,7 @@ class _CharacterDetailPageState extends State<CharacterDetailPage> {
                         tabs: AppCatalog.characterDetailTabs,
                         selectedIndex: _tabIndex,
                         onChanged: (index) => setState(() => _tabIndex = index),
-                        backgroundColor: isDark
-                            ? AppColors.characterBackgroundDark
-                            : Theme.of(context).scaffoldBackgroundColor,
+                        backgroundColor: AppColors.pageBackground,
                       ),
                     ),
                     SliverFillRemaining(

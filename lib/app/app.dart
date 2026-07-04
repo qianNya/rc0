@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../core/theme/theme_mode_notifier.dart';
 import 'router/app_router.dart';
+import 'theme/app_colors.dart';
 import 'theme/app_theme.dart';
 import 'theme/system_ui_style.dart';
 
@@ -45,7 +46,10 @@ class _Rc0AppState extends State<Rc0App> {
 
         return AnnotatedRegion<SystemUiOverlayStyle>(
           value: AppSystemUi.styleFor(brightness),
-          child: child ?? const SizedBox.shrink(),
+          child: ColoredBox(
+            color: AppColors.pageBackground,
+            child: child ?? const SizedBox.shrink(),
+          ),
         );
       },
     );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../app/theme/app_colors.dart';
 import '../../app/theme/system_ui_style.dart';
 import 'glass_title_chip.dart';
 import 'rc0_app_bar.dart';
@@ -79,12 +80,20 @@ class Rc0PageScaffold extends StatelessWidget {
     );
   }
 
+  Widget _pageBody() {
+    return ColoredBox(
+      color: backgroundColor ?? AppColors.pageBackground,
+      child: body,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final resolvedAppBar = _resolveAppBar(context);
     final brightness = Theme.of(context).brightness;
     final overlayStyle =
         systemOverlayStyle ?? AppSystemUi.styleFor(brightness);
+    final pageBody = _pageBody();
 
     if (resolvedAppBar == null) {
       return ScrollNotificationObserver(
@@ -92,7 +101,7 @@ class Rc0PageScaffold extends StatelessWidget {
           backgroundColor: Colors.transparent,
           extendBody: true,
           body: SizedBox.expand(
-            child: body,
+            child: pageBody,
           ),
           bottomNavigationBar: bottomNavigationBar,
           floatingActionButton: floatingActionButton,
@@ -108,7 +117,7 @@ class Rc0PageScaffold extends StatelessWidget {
         bottomNavigationBar: bottomNavigationBar,
         floatingActionButton: floatingActionButton,
         floatingActionButtonLocation: floatingActionButtonLocation,
-        body: body,
+        body: pageBody,
       ),
     );
   }

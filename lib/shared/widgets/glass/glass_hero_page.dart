@@ -145,9 +145,8 @@ class _GlassHeroTabDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Material(
-      color: isDark ? AppColors.backgroundDark : AppColors.background,
+      color: AppColors.pageBackground,
       child: tabBar,
     );
   }
