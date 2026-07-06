@@ -3,16 +3,16 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/lighting/presentation/lighting_editor_controller.dart';
 import '../../features/lighting/presentation/pages/lighting_wiki_page.dart';
-import '../../features/cine_equipment/presentation/pages/equipment_detail_page.dart';
-import '../../features/cine_equipment/presentation/pages/equipment_hub_page.dart';
-import '../../features/cine_equipment/presentation/pages/my_equipment_page.dart';
+import '../../features/gallery/presentation/pages/media_vault_image_detail_page.dart';
+import '../../features/gallery/presentation/pages/media_vault_page.dart';
+import '../../features/gallery/presentation/pages/image_analysis_page.dart';
+import '../../features/gallery/presentation/pages/image_detail_page.dart';
+import '../../features/gear_cabinet/presentation/pages/gear_cabinet_page.dart';
+import '../../features/gear_cabinet/presentation/pages/gear_device_detail_page.dart';
 import '../../features/action/presentation/pages/action_wiki_page.dart';
 import '../../features/auth/data/auth_repository.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
-import '../../features/gallery/presentation/pages/image_analysis_page.dart';
-import '../../features/gallery/presentation/pages/image_detail_page.dart';
-import '../../features/gallery/presentation/pages/my_gallery_page.dart';
 import '../../features/community/presentation/pages/community_page.dart';
 import '../../features/character/presentation/pages/character_ai_page.dart';
 import '../../features/character/presentation/pages/character_create_page.dart';
@@ -28,11 +28,11 @@ import '../../features/scene/presentation/pages/scene_edit_page.dart';
 import '../../features/scene/presentation/pages/scene_list_page.dart';
 import '../../features/ip/presentation/pages/ip_detail_page.dart';
 import '../../features/ip/presentation/pages/ip_edit_page.dart';
+import '../../features/inbox/presentation/pages/inbox_page.dart';
+import '../../features/labs/presentation/pages/feature_labs_page.dart';
 import '../../features/favorites/presentation/pages/favorites_page.dart';
-import '../../features/messages/presentation/pages/messages_page.dart';
 import '../../features/profile/presentation/pages/edit_profile_page.dart';
 import '../../features/profile/presentation/pages/profile_about_page.dart';
-import '../../features/profile/presentation/pages/profile_coming_soon_page.dart';
 import '../../features/profile/presentation/pages/profile_likes_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/profile/presentation/pages/profile_works_page.dart';
@@ -48,7 +48,6 @@ import '../../features/shell/presentation/pages/wiki_hub_page.dart';
 import '../../features/production_assets/presentation/pages/assets_hub_page.dart';
 import '../../features/studio/presentation/pages/script_studio_create_page.dart';
 import '../../features/studio/presentation/pages/script_studio_page.dart';
-import '../../features/tasks/presentation/pages/tasks_page.dart';
 import '../../features/user/presentation/pages/user_profile_page.dart';
 import '../../features/upload/presentation/pages/ai_creation_hub_page.dart';
 import '../../features/upload/presentation/pages/frame_editor_detail_page.dart';
@@ -63,9 +62,9 @@ abstract final class AppRouter {
 
   static const _protectedRoutes = <String>[
     AppRoutes.library,
+    AppRoutes.gallery,
     AppRoutes.favorites,
-    AppRoutes.tasks,
-    AppRoutes.messages,
+    AppRoutes.inbox,
     AppRoutes.profileWorks,
     AppRoutes.profileLikes,
     AppRoutes.profileEdit,
@@ -141,7 +140,7 @@ abstract final class AppRouter {
       ),
       GoRoute(
         path: AppRoutes.wikiScript,
-        redirect: (_, _) => AppRoutes.scriptList,
+        redirect: (_, _) => AppRoutes.community,
       ),
       GoRoute(
         path: AppRoutes.wikiCharacter,
@@ -166,8 +165,7 @@ abstract final class AppRouter {
       GoRoute(
         path: AppRoutes.scriptList,
         name: 'script-list',
-        parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) => const CommunityPage(),
+        redirect: (_, _) => AppRoutes.community,
       ),
       GoRoute(
         path: AppRoutes.scriptExport,
@@ -425,36 +423,32 @@ abstract final class AppRouter {
       GoRoute(
         path: AppRoutes.equipment,
         name: 'equipment-hub',
-        parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) {
-          final qp = state.uri.queryParameters;
-          final scope = qp['scope'] == 'apply'
-              ? EquipmentApplyScope.apply
-              : EquipmentApplyScope.browse;
-          return EquipmentHubPage(
-            applyScope: scope,
-            initialSetupId: qp['setupId'],
-            actIndex: int.tryParse(qp['act'] ?? ''),
-            sceneIndex: int.tryParse(qp['scene'] ?? ''),
-            frameIndex: int.tryParse(qp['frame'] ?? ''),
-          );
-        },
+        redirect: (_, _) => AppRoutes.library,
       ),
       GoRoute(
         path: AppRoutes.equipmentDetail,
         name: 'equipment-detail',
-        parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) {
-          final kind = state.pathParameters['kind'] ?? '';
-          final id = state.pathParameters['id'] ?? '';
-          return EquipmentDetailPage(kind: kind, id: id);
-        },
+        redirect: (_, _) => AppRoutes.library,
       ),
       GoRoute(
         path: AppRoutes.myEquipment,
         name: 'my-equipment',
+        redirect: (_, _) => AppRoutes.library,
+      ),
+      GoRoute(
+        path: AppRoutes.gallery,
+        name: 'gallery',
         parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) => const MyEquipmentPage(),
+        builder: (context, state) => const MediaVaultPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.mediaVaultImageDetail,
+        name: 'media-vault-image-detail',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return MediaVaultImageDetailPage(imageId: id);
+        },
       ),
       GoRoute(
         path: AppRoutes.preset,
@@ -536,25 +530,55 @@ abstract final class AppRouter {
         builder: (context, state) => const ProfileAboutPage(),
       ),
       GoRoute(
-        path: AppRoutes.profileComingSoon,
-        name: 'profile-coming-soon',
+        path: AppRoutes.inbox,
+        name: 'inbox',
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) {
-          final title = state.uri.queryParameters['title'] ?? '功能';
-          return ProfileComingSoonPage(title: title);
+          final tab =
+              int.tryParse(state.uri.queryParameters['tab'] ?? '') ?? 0;
+          return InboxPage(initialTab: tab);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.profileComingSoon,
+        name: 'profile-coming-soon',
+        redirect: (context, state) {
+          final title = state.uri.queryParameters['title'];
+          if (title != null && title.isNotEmpty) {
+            return AppRoutes.comingSoon(title);
+          }
+          return AppRoutes.labs;
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.labs,
+        name: 'feature-labs',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) {
+          final feature = state.uri.queryParameters['feature'] ??
+              state.uri.queryParameters['highlight'];
+          return FeatureLabsPage(highlightFeatureId: feature);
         },
       ),
       GoRoute(
         path: AppRoutes.library,
         name: 'library',
         parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) => const MyGalleryPage(),
+        builder: (context, state) => const GearCabinetPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.gearDeviceDetail,
+        name: 'gear-device-detail',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return GearDeviceDetailPage(deviceId: id);
+        },
       ),
       GoRoute(
         path: AppRoutes.messages,
         name: 'messages',
-        parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) => const MessagesPage(),
+        redirect: (_, _) => AppRoutes.inboxTab(0),
       ),
       GoRoute(
         path: AppRoutes.favorites,
@@ -569,8 +593,7 @@ abstract final class AppRouter {
       GoRoute(
         path: AppRoutes.tasks,
         name: 'tasks',
-        parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) => const TasksPage(),
+        redirect: (_, _) => AppRoutes.inboxTab(1),
       ),
       GoRoute(
         path: AppRoutes.poseDetail,

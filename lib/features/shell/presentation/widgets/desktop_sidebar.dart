@@ -38,8 +38,10 @@ String desktopSidebarActiveId(Uri uri) {
       location.startsWith('/studio/edit/')) {
     return 'scene_flow';
   }
-  if (location.startsWith(AppRoutes.scriptList) ||
-      location.startsWith('/script/')) {
+  if (location == AppRoutes.scriptList) {
+    return 'community';
+  }
+  if (location.startsWith('/script/')) {
     return 'script_wiki';
   }
   if (location.startsWith(AppRoutes.character) ||
@@ -51,12 +53,12 @@ String desktopSidebarActiveId(Uri uri) {
       location.startsWith('/my-scenes')) {
     return 'scene_library';
   }
-  if (location.startsWith(AppRoutes.equipment) ||
+  if (location.startsWith(AppRoutes.library) ||
+      location.startsWith(AppRoutes.equipment) ||
       location.startsWith(AppRoutes.myEquipment)) {
     return 'equipment';
   }
-  if (location.startsWith(AppRoutes.action)) return 'action_wiki';
-  if (location.startsWith(AppRoutes.library)) return 'library';
+  if (location.startsWith(AppRoutes.gallery)) return 'library';
   if (location.startsWith(AppRoutes.community)) return 'community';
   if (location.startsWith(AppRoutes.profile)) return 'profile';
   if (location.startsWith(AppRoutes.favorites)) return 'my_favorites';
@@ -119,12 +121,6 @@ const desktopSidebarSections = [
         route: AppRoutes.studio,
       ),
       DesktopSidebarItem(
-        id: 'script_wiki',
-        label: '剧本 Wiki',
-        icon: Icons.auto_stories_outlined,
-        route: AppRoutes.scriptList,
-      ),
-      DesktopSidebarItem(
         id: 'character_wiki',
         label: '角色 Wiki',
         icon: Icons.group_outlined,
@@ -169,13 +165,7 @@ const desktopSidebarSections = [
         id: 'equipment',
         label: '设备库',
         icon: Icons.videocam_outlined,
-        route: AppRoutes.equipment,
-      ),
-      DesktopSidebarItem(
-        id: 'my_equipment',
-        label: '我的设备',
-        icon: Icons.camera_outlined,
-        route: AppRoutes.myEquipment,
+        route: AppRoutes.library,
       ),
       DesktopSidebarItem(
         id: 'preset_flow',
@@ -198,7 +188,7 @@ const desktopSidebarSections = [
         id: 'library',
         label: '素材图库',
         icon: Icons.grid_view_outlined,
-        route: AppRoutes.library,
+        route: AppRoutes.gallery,
       ),
       DesktopSidebarItem(
         id: 'global_search',
@@ -216,7 +206,7 @@ const desktopSidebarSections = [
         id: 'downloads',
         label: '下载',
         icon: Icons.download_outlined,
-        route: AppRoutes.profileComingSoon,
+        route: '/labs?feature=downloads',
       ),
     ],
   ),
@@ -256,7 +246,7 @@ const desktopSidebarSections = [
         id: 'analytics',
         label: '数据分析',
         icon: Icons.insights_outlined,
-        route: AppRoutes.profileComingSoon,
+        route: '/labs?feature=analytics',
       ),
       DesktopSidebarItem(
         id: 'settings',
@@ -290,10 +280,6 @@ class DesktopSidebar extends StatelessWidget {
     final routePath = Uri.parse(route).path;
     if (shellTabRoutes.contains(routePath)) {
       context.go(route);
-      return;
-    }
-    if (route == AppRoutes.profileComingSoon) {
-      context.push(AppRoutes.comingSoon(item.label));
       return;
     }
     context.push(route);

@@ -111,7 +111,7 @@ class ScriptEditorBottomToolbar extends StatelessWidget {
                 child: const Text('导出剧本'),
               ),
               TextButton(
-                onPressed: () => context.push(AppRoutes.comingSoon('版本历史')),
+                onPressed: () => context.push(AppRoutes.labsFeature('version_history')),
                 child: const Text('版本历史'),
               ),
             ],

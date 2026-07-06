@@ -17,7 +17,7 @@ class ScriptStudioModuleRail extends StatelessWidget {
     const _RailItem(
       icon: Icons.perm_media_outlined,
       label: '素材库',
-      route: AppRoutes.library,
+      route: AppRoutes.gallery,
     ),
     const _RailItem(
       icon: Icons.person_outline,
@@ -37,7 +37,7 @@ class ScriptStudioModuleRail extends StatelessWidget {
     _RailItem(
       icon: Icons.videocam_outlined,
       label: '设备',
-      route: AppRoutes.equipment,
+      route: AppRoutes.library,
     ),
   ];
 
@@ -57,8 +57,7 @@ class ScriptStudioModuleRail extends StatelessWidget {
             const Spacer(),
             IconButton(
               tooltip: '帮助',
-              onPressed: () =>
-                  context.push(AppRoutes.comingSoon('帮助中心')),
+              onPressed: () => context.push(AppRoutes.labsFeature('help_center')),
               icon: const Icon(Icons.help_outline, size: 20),
             ),
             const SizedBox(height: AppDimensions.spacingSm),
@@ -75,14 +74,12 @@ class _RailItem {
     required this.label,
     this.isActive = false,
     this.route,
-    this.comingSoonTitle,
   });
 
   final IconData icon;
   final String label;
   final bool isActive;
   final String? route;
-  final String? comingSoonTitle;
 }
 
 class _RailButton extends StatelessWidget {
@@ -99,10 +96,9 @@ class _RailButton extends StatelessWidget {
         onTap: item.isActive
             ? null
             : () {
-                if (item.route != null) {
-                  context.push(item.route!);
-                } else if (item.comingSoonTitle != null) {
-                  context.push(AppRoutes.comingSoon(item.comingSoonTitle!));
+                final route = item.route;
+                if (route != null) {
+                  context.push(route);
                 }
               },
         child: Container(

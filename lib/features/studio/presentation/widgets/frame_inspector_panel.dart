@@ -8,7 +8,6 @@ import '../../../lighting/presentation/utils/lighting_navigation.dart';
 import '../../../lighting/presentation/widgets/lighting_picker_sheet.dart';
 import '../../../cine_equipment/data/equipment_draft_binding.dart';
 import '../../../cine_equipment/domain/cine_camera_setup.dart';
-import '../../../cine_equipment/presentation/utils/equipment_navigation.dart';
 import '../../../cine_equipment/presentation/widgets/camera_control_sheet.dart';
 import '../../../cine_equipment/presentation/widgets/equipment_picker_sheet.dart';
 import '../../../cine_equipment/data/equipment_setup_mapper.dart';
@@ -376,7 +375,7 @@ class _FrameInspectorPanelState extends State<FrameInspectorPanel> {
                       final msg = await FrameGenerationRepository.instance
                           .generateVideoForFrame();
                       if (context.mounted && msg != null) {
-                        context.push(AppRoutes.comingSoon('生成视频'));
+                        context.push(AppRoutes.labsFeature('gen_video'));
                       }
                     },
                   ),
@@ -892,14 +891,7 @@ class _CineSetupSection extends StatelessWidget {
             ),
             TextButton(
               onPressed: () async {
-                final setup = await openEquipmentHub(
-                  context,
-                  setupId: frame.cineSetupId,
-                  scope: 'apply',
-                  actIndex: actIndex,
-                  sceneIndex: sceneIndex,
-                  frameIndex: frameIndex,
-                );
+                final setup = await EquipmentPickerSheet.show(context);
                 if (setup == null || !context.mounted) return;
                 await _applySetup(context, setup);
               },

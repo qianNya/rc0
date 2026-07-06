@@ -61,6 +61,7 @@ class ImageGalleryRepository extends ChangeNotifier {
       createAt: dto.createAt,
       tags: dto.tags,
       tagIds: dto.tagIds,
+      primaryFile: dto.primaryFile,
     );
   }
 
@@ -162,6 +163,7 @@ class ImageGalleryRepository extends ChangeNotifier {
         createAt: resp.createAt,
         tags: resp.tags,
         tagIds: resp.tagIds,
+        primaryFile: pickPrimaryImageFile(resp.files),
       ),
       error: null,
     );

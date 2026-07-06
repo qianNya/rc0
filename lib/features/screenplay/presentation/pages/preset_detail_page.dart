@@ -105,7 +105,7 @@ class _PresetDetailPageState extends State<PresetDetailPage> {
                     ActionChip(
                       avatar: const Icon(Icons.videocam_outlined, size: 18),
                       label: const Text('设备库'),
-                      onPressed: () => context.push(AppRoutes.equipment),
+                      onPressed: () => context.push(AppRoutes.library),
                     ),
                     ActionChip(
                       avatar: const Icon(Icons.wb_incandescent_outlined, size: 18),

@@ -6,15 +6,16 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/data/app_catalog.dart';
-import '../../../../core/responsive/breakpoints.dart';
 import '../../../../shared/widgets/pose_cover_image.dart';
-import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 
 class ExploreFeaturedCarousel extends StatefulWidget {
   const ExploreFeaturedCarousel({
     super.key,
     this.bleedUnderHeader = false,
   });
+
+  /// Cinematic hero frame — width : height.
+  static const double aspectRatio = 2.35;
 
   /// When true, hero extends under the transparent status bar + app bar.
   final bool bleedUnderHeader;
@@ -32,10 +33,6 @@ class _ExploreFeaturedCarouselState extends State<ExploreFeaturedCarousel> {
     final banners = AppCatalog.discoveryBanners;
     if (banners.isEmpty) return const SizedBox.shrink();
 
-    final height = Breakpoints.isDesktop(context) ? 240.0 : 188.0;
-    final headerBleed = widget.bleedUnderHeader
-        ? wikiModeTagContentInsetHeight(context)
-        : 0.0;
     final horizontalPadding =
         widget.bleedUnderHeader ? 0.0 : AppDimensions.spacingMd;
     final cardRadius = widget.bleedUnderHeader
@@ -54,119 +51,134 @@ class _ExploreFeaturedCarouselState extends State<ExploreFeaturedCarousel> {
             Color(0xFFC9D6F2),
           ];
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        horizontalPadding,
-        0,
-        horizontalPadding,
-        0,
-      ),
-      child: Column(
-        children: [
-          SizedBox(
-            height: height + headerBleed,
-            child: PageView.builder(
-              itemCount: banners.length,
-              onPageChanged: (i) => setState(() => _index = i),
-              itemBuilder: (context, index) {
-                final banner = banners[index];
-                return GestureDetector(
-                  onTap: () => context.go(AppRoutes.community),
-                  child: ClipRRect(
-                    borderRadius: cardRadius,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        if (banner.imagePath != null &&
-                            banner.imagePath!.isNotEmpty)
-                          PoseCoverImage(
-                            imagePath: banner.imagePath,
-                            expand: true,
-                            borderRadius: 0,
-                          )
-                        else
-                          Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: placeholderColors,
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.landscape_outlined,
-                              size: 64,
-                              color: Colors.white24,
-                            ),
-                          ),
-                        Positioned(
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          child: Container(
-                            padding: const EdgeInsets.fromLTRB(16, 32, 16, 16),
-                            decoration: const BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Colors.transparent,
-                                  AppColors.scrimStrong,
-                                ],
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  banner.eyebrow,
-                                  style: AppTextStyles.bodySecondary.copyWith(
-                                    color: Colors.white70,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  banner.title,
-                                  style: AppTextStyles.title.copyWith(
-                                    color: Colors.white,
-                                    fontSize: 18,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final frameWidth = widget.bleedUnderHeader
+            ? MediaQuery.sizeOf(context).width
+            : constraints.maxWidth - horizontalPadding * 2;
+        final height = frameWidth / ExploreFeaturedCarousel.aspectRatio;
+
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            horizontalPadding,
+            0,
+            horizontalPadding,
+            0,
           ),
-          const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          child: Column(
             children: [
-              for (var i = 0; i < banners.length; i++)
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  width: _index == i ? 8 : 6,
-                  height: _index == i ? 8 : 6,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _index == i
-                        ? AppColors.accent
-                        : AppColors.textTertiary.withValues(alpha: 0.45),
-                  ),
+              SizedBox(
+                height: height,
+                child: PageView.builder(
+                  itemCount: banners.length,
+                  onPageChanged: (i) => setState(() => _index = i),
+                  itemBuilder: (context, index) {
+                    final banner = banners[index];
+                    return GestureDetector(
+                      onTap: () => context.go(AppRoutes.community),
+                      child: ClipRRect(
+                        borderRadius: cardRadius,
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            if (banner.imagePath != null &&
+                                banner.imagePath!.isNotEmpty)
+                              PoseCoverImage(
+                                imagePath: banner.imagePath,
+                                expand: true,
+                                borderRadius: 0,
+                              )
+                            else
+                              Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: placeholderColors,
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.landscape_outlined,
+                                  size: 64,
+                                  color: Colors.white24,
+                                ),
+                              ),
+                            Positioned(
+                              left: 0,
+                              right: 0,
+                              bottom: 0,
+                              child: Container(
+                                padding: const EdgeInsets.fromLTRB(
+                                  16,
+                                  32,
+                                  16,
+                                  16,
+                                ),
+                                decoration: const BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      Colors.transparent,
+                                      AppColors.scrimStrong,
+                                    ],
+                                  ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      banner.eyebrow,
+                                      style:
+                                          AppTextStyles.bodySecondary.copyWith(
+                                        color: Colors.white70,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      banner.title,
+                                      style: AppTextStyles.title.copyWith(
+                                        color: Colors.white,
+                                        fontSize: 18,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  for (var i = 0; i < banners.length; i++)
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      width: _index == i ? 8 : 6,
+                      height: _index == i ? 8 : 6,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _index == i
+                            ? AppColors.accent
+                            : AppColors.textTertiary.withValues(alpha: 0.45),
+                      ),
+                    ),
+                ],
+              ),
             ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

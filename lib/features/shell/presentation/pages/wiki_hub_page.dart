@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
+import '../../../character/presentation/pages/character_list_page.dart';
 import '../../../character/presentation/widgets/character_wiki_app_bar.dart';
-import '../../../character/presentation/widgets/wiki/wiki_character_library_tab.dart';
 import '../../../explore/presentation/pages/explore_page.dart';
 import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 import '../widgets/wiki_ip_tab.dart';
@@ -61,7 +61,7 @@ class _WikiHubPageState extends State<WikiHubPage> {
       case _WikiSection.ip:
         return const WikiIpTab();
       case _WikiSection.character:
-        return const WikiCharacterLibraryTab();
+        return const CharacterListPage(embeddedInHub: true);
     }
   }
 

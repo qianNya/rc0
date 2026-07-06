@@ -291,7 +291,7 @@ class _LightingWikiPageState extends State<LightingWikiPage> {
         actions: [
           WikiModeTagIconButton(
             icon: Icons.school_outlined,
-            onPressed: () => context.push(AppRoutes.comingSoon('灯光学院')),
+            onPressed: () => context.push(AppRoutes.labsFeature('lighting_academy')),
             tooltip: '灯光学院',
           ),
           Padding(

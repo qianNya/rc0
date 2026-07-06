@@ -13,6 +13,7 @@ import '../../../../core/location/device_location_service.dart';
 import '../../../../core/location/location_snackbar.dart';
 import '../../../../core/location/map_city_catalog.dart';
 import '../../../../core/location/map_place_service.dart';
+import '../../../../core/location/map_tile_config.dart';
 import '../../../../core/location/map_nearby_place.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/glass/glass_button.dart';
@@ -302,10 +303,7 @@ class _SceneMapViewState extends State<SceneMapView> {
                 },
               ),
             children: [
-              TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.rc0.app',
-              ),
+              ...MapTileConfig.layers(),
               MarkerLayer(
                 markers: [
                   if (_userLocation != null)

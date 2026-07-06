@@ -52,9 +52,10 @@ class _CharacterListPageState extends State<CharacterListPage> {
       child: CharacterLibraryBody(
         mode: CharacterLibraryMode.wiki,
         workId: widget.workId,
-        embeddedInHub: true,
+        embeddedInHub: widget.embeddedInHub,
         externalChromeInset: true,
         lightTone: true,
+        keepAlive: widget.embeddedInHub,
         showAiFab: true,
       ),
     );

@@ -70,4 +70,63 @@ void main() {
     expect(resp.list, hasLength(1));
     expect(resp.list.first.slug, 'all');
   });
+
+  test('ImageFileInfo parses storage metadata from files array', () {
+    final file = ImageFileInfo.fromJson({
+      'id': 9,
+      'image_id': 42,
+      'file_role': 2,
+      'storage': 'minio',
+      'bucket': 'rc0-images',
+      'object_key': 'images/abc.jpg',
+      'url': 'http://192.168.3.42:9090/rc0/abc.jpg',
+      'mime': 'image/jpeg',
+      'file_size': 2457600,
+      'width': 4032,
+      'height': 3024,
+      'checksum': 'd41d8cd98f00b204',
+    });
+
+    expect(file.imageId, 42);
+    expect(file.storage, 'minio');
+    expect(file.bucket, 'rc0-images');
+    expect(file.objectKey, 'images/abc.jpg');
+    expect(file.mime, 'image/jpeg');
+    expect(file.fileSize, 2457600);
+    expect(file.width, 4032);
+    expect(file.height, 3024);
+    expect(file.checksum, 'd41d8cd98f00b204');
+    expect(imageFileRoleLabel(file.fileRole), '显示');
+    expect(formatImageFileSize(file.fileSize), '2.3 MB');
+  });
+
+  test('GalleryImageItem picks display file metadata', () {
+    final item = GalleryImageItem.fromJson({
+      'id': 7,
+      'title': 'portrait',
+      'files': [
+        {
+          'file_role': 4,
+          'url': 'http://minio.local/thumb.jpg',
+          'width': 320,
+          'height': 240,
+          'mime': 'image/jpeg',
+          'file_size': 12000,
+        },
+        {
+          'file_role': 2,
+          'url': 'http://minio.local/display.jpg',
+          'width': 4032,
+          'height': 3024,
+          'mime': 'image/jpeg',
+          'file_size': 2457600,
+          'storage': 'minio',
+          'bucket': 'rc0-images',
+        },
+      ],
+    });
+
+    expect(item.primaryFile?.width, 4032);
+    expect(item.primaryFile?.storage, 'minio');
+  });
 }

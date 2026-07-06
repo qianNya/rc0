@@ -86,10 +86,10 @@ const List<ShellNavItem> desktopNavItems = [
     selectedIcon: Icons.grid_view,
   ),
   ShellNavItem(
-    stackRoute: AppRoutes.tasks,
-    label: '任务',
-    icon: Icons.task_alt_outlined,
-    selectedIcon: Icons.task_alt,
+    stackRoute: AppRoutes.inbox,
+    label: '收件箱',
+    icon: Icons.inbox_outlined,
+    selectedIcon: Icons.inbox,
     desktopOnly: true,
   ),
   ShellNavItem(

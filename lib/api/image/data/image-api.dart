@@ -4,24 +4,93 @@ const kImageFileRoleDisplay = 2;
 const kImageFileRoleFeed = 3;
 const kImageFileRoleThumb = 4;
 
+String imageFileRoleLabel(int role) => switch (role) {
+      kImageFileRoleOriginal => '原图',
+      kImageFileRoleDisplay => '显示',
+      kImageFileRoleFeed => 'Feed',
+      kImageFileRoleThumb => '缩略图',
+      _ => '文件',
+    };
+
+String formatImageFileSize(int? bytes) {
+  if (bytes == null || bytes <= 0) return '—';
+  if (bytes < 1024) return '$bytes B';
+  if (bytes < 1024 * 1024) {
+    return '${(bytes / 1024).toStringAsFixed(1)} KB';
+  }
+  return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+}
+
+String mimeToShortLabel(String? mime) {
+  final value = mime?.trim() ?? '';
+  if (value.isEmpty) return '—';
+  final slash = value.indexOf('/');
+  if (slash >= 0 && slash < value.length - 1) {
+    return value.substring(slash + 1).toUpperCase();
+  }
+  return value.toUpperCase();
+}
+
 class ImageFileInfo {
   const ImageFileInfo({
     required this.id,
     required this.fileRole,
     required this.url,
+    this.imageId,
+    this.storage = '',
+    this.bucket = '',
+    this.objectKey = '',
+    this.mime = '',
+    this.fileSize,
+    this.width,
+    this.height,
+    this.checksum = '',
   });
 
   final int id;
+  final int? imageId;
   final int fileRole;
+  final String storage;
+  final String bucket;
+  final String objectKey;
   final String url;
+  final String mime;
+  final int? fileSize;
+  final int? width;
+  final int? height;
+  final String checksum;
 
   factory ImageFileInfo.fromJson(Map<String, dynamic> m) {
     return ImageFileInfo(
       id: (m['id'] as num?)?.toInt() ?? 0,
+      imageId: (m['image_id'] as num?)?.toInt(),
       fileRole: (m['file_role'] as num?)?.toInt() ?? kImageFileRoleOriginal,
+      storage: m['storage'] as String? ?? '',
+      bucket: m['bucket'] as String? ?? '',
+      objectKey: m['object_key'] as String? ?? '',
       url: m['url'] as String? ?? '',
+      mime: m['mime'] as String? ?? '',
+      fileSize: (m['file_size'] as num?)?.toInt(),
+      width: (m['width'] as num?)?.toInt(),
+      height: (m['height'] as num?)?.toInt(),
+      checksum: m['checksum'] as String? ?? m['md5'] as String? ?? '',
     );
   }
+}
+
+ImageFileInfo? pickPrimaryImageFile(List<ImageFileInfo> files) {
+  if (files.isEmpty) return null;
+  for (final role in [
+    kImageFileRoleDisplay,
+    kImageFileRoleOriginal,
+    kImageFileRoleFeed,
+    kImageFileRoleThumb,
+  ]) {
+    for (final file in files) {
+      if (file.fileRole == role) return file;
+    }
+  }
+  return files.first;
 }
 
 List<ImageFileInfo> parseImageFiles(dynamic raw) {
@@ -152,6 +221,7 @@ class GalleryImageItem {
   final String createAt;
   final List<String> tags;
   final List<int> tagIds;
+  final List<ImageFileInfo> files;
 
   GalleryImageItem({
     required this.id,
@@ -162,11 +232,15 @@ class GalleryImageItem {
     required this.createAt,
     this.tags = const [],
     this.tagIds = const [],
+    this.files = const [],
   });
+
+  ImageFileInfo? get primaryFile => pickPrimaryImageFile(files);
 
   factory GalleryImageItem.fromJson(Map<String, dynamic> m) {
     final bundle = ImageFilesBundle.fromApiJson(m);
     final rawTags = m['tags'];
+    final files = parseImageFiles(m['files']);
     return GalleryImageItem(
       id: m['id'] ?? 0,
       title: m['title'] ?? '',
@@ -177,6 +251,7 @@ class GalleryImageItem {
       createAt: m['create_at']?.toString() ?? '',
       tags: parseImageTagNames(rawTags),
       tagIds: parseImageTagIds(rawTags),
+      files: files,
     );
   }
 }

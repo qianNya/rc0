@@ -1,4 +1,10 @@
 /// Central route paths — shared across mobile & desktop shells.
+///
+/// Layering:
+/// - L0 Shell: discovery, studio, scenes, profile, action, community, assets
+/// - L1 Wiki tabs: discovery?hubTab=0|1|2 (embedded, no separate routes)
+/// - L2 Stack: CRUD, read, inbox, labs, auth
+/// - L3 Editor: studio/edit/... with GoRouter `extra` for live controllers
 abstract final class AppRoutes {
   // Primary shell routes (L1)
   static const String discovery = '/discovery';
@@ -6,6 +12,15 @@ abstract final class AppRoutes {
   static const String discoveryAssetsWiki = '/assets';
   static const String assets = '/assets';
   static const String library = '/library';
+  static const String gallery = '/gallery';
+  static const String mediaVaultImageDetail = '/gallery/media/:id';
+  static const String gearDeviceDetail = '/library/device/:id';
+  /// @deprecated Redirects to [library] (gear cabinet).
+  static const String equipment = '/equipment';
+  /// @deprecated Redirects to [library].
+  static const String equipmentDetail = '/equipment/:kind/:id';
+  /// @deprecated Redirects to [library].
+  static const String myEquipment = '/my-equipment';
   /// @deprecated Use [scenes] shell tab instead.
   static const String screenplays = '/screenplays';
   static const String studio = '/studio';
@@ -14,6 +29,8 @@ abstract final class AppRoutes {
   static const String studioEditorCreate = '/studio-editor/create';
   static const String create = '/create';
   static const String createAiHubPath = '/create/ai';
+  static const String inbox = '/inbox';
+  static const String labs = '/labs';
   static const String messages = '/messages';
   static const String profile = '/profile';
 
@@ -37,6 +54,7 @@ abstract final class AppRoutes {
   // Wiki domain routes (剧本 + 角色 + IP)
   static const String wikiScript = '/wiki/script';
   static const String wikiCharacter = '/wiki/character';
+  /// @deprecated List route — redirects to [community]. Use [script] for read detail.
   static const String scriptList = '/script';
   static const String scriptDetail = '/script/:id';
   static const String scriptSceneDetail = '/script/:id/scene/:sid';
@@ -59,9 +77,6 @@ abstract final class AppRoutes {
   static const String scenes = '/scenes';
   static const String action = '/action';
   static const String lighting = '/lighting';
-  static const String equipment = '/equipment';
-  static const String equipmentDetail = '/equipment/:kind/:id';
-  static const String myEquipment = '/my-equipment';
   static const String sceneDetail = '/scenes/:id';
   static const String sceneCreate = '/scenes/create';
   static const String sceneEdit = '/scenes/:id/edit';
@@ -97,6 +112,7 @@ abstract final class AppRoutes {
   static const String profileLikes = '/profile/likes';
   static const String profileEdit = '/profile/edit';
   static const String profileAbout = '/profile/about';
+  /// @deprecated Redirects to [labs].
   static const String profileComingSoon = '/profile/coming-soon';
 
   static const String login = '/login';
@@ -120,6 +136,8 @@ abstract final class AppRoutes {
   static String characterEditPath(int id) => '/character/$id/edit';
   static String sceneDetailPath(String id) => '/scenes/$id';
   static String sceneEditPath(String id) => '/scenes/$id/edit';
+  static String mediaVaultImageDetailPath(String id) => '/gallery/media/$id';
+  static String gearDeviceDetailPath(String id) => '/library/device/$id';
   static String equipmentDetailPath(String kind, String id) =>
       '/equipment/$kind/$id';
   static String charactersForWork(int workId) =>
@@ -201,19 +219,44 @@ abstract final class AppRoutes {
     int? sceneIndex,
     int? frameIndex,
   }) {
-    final query = <String, String>{'scope': scope};
-    if (setupId != null && setupId.isNotEmpty) {
-      query['setupId'] = setupId;
-    }
-    if (actIndex != null) query['act'] = '$actIndex';
-    if (sceneIndex != null) query['scene'] = '$sceneIndex';
-    if (frameIndex != null) query['frame'] = '$frameIndex';
-    return Uri(path: equipment, queryParameters: query).toString();
+    // Legacy wiki equipment hub — now routes to gear cabinet.
+    return library;
   }
 
   static String favoritesTab(int tab) => '$favorites?tab=$tab';
-  static String comingSoon(String title) =>
-      '$profileComingSoon?title=${Uri.encodeComponent(title)}';
+  static String inboxTab(int tab) => '$inbox?tab=$tab';
+  static String labsFeature(String featureId) => '$labs?feature=$featureId';
+  static String comingSoon(String title) {
+    final id = _legacyLabsTitleToId(title);
+    if (id != null) return labsFeature(id);
+    return '$labs?highlight=${Uri.encodeComponent(title)}';
+  }
+
+  static String? _legacyLabsTitleToId(String title) {
+    return switch (title) {
+      'AI 导入剧本' => 'import_script',
+      'AI 生成大纲' => 'gen_outline',
+      'AI 扩写剧情' => 'gen_plot',
+      'AI 生成分镜' => 'gen_storyboard',
+      '生成提示词' => 'gen_prompt',
+      '生成图片' => 'gen_image',
+      '生成视频' => 'gen_video',
+      '角色一致性' => 'character_consistency',
+      '会员' => 'membership',
+      '关注列表' => 'following',
+      '粉丝列表' => 'followers',
+      '版本历史' => 'version_history',
+      '下载' => 'downloads',
+      '数据分析' => 'analytics',
+      '帮助中心' => 'help_center',
+      '帮助与反馈' => 'help_feedback',
+      '灯光学院' => 'lighting_academy',
+      '关联角色' => 'image_character_link',
+      '分镜' => 'storyboard',
+      'AI 工具' => 'import_script',
+      _ => null,
+    };
+  }
   static String loginWithRedirect(String from) =>
       '$login?from=${Uri.encodeComponent(from)}';
   static String registerWithRedirect(String from) =>

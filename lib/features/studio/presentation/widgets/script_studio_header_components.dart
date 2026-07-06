@@ -44,7 +44,7 @@ class ScriptStudioHeaderActionButtons extends StatelessWidget {
         StudioGlassIconButton(
           icon: Icons.notifications_outlined,
           tooltip: '消息',
-          onPressed: () => context.push(AppRoutes.messages),
+          onPressed: () => context.push(AppRoutes.inbox),
         ),
         if (trailingSpacing > 0) SizedBox(width: trailingSpacing),
       ],

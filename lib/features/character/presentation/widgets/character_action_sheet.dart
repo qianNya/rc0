@@ -56,7 +56,7 @@ Future<void> showCharacterActionSheet({
             title: const Text('生成剧本'),
             onTap: () {
               Navigator.pop(context);
-              context.push(AppRoutes.comingSoon('AI 生成剧本'));
+              context.push(AppRoutes.createAiHubPath);
             },
           ),
           ListTile(

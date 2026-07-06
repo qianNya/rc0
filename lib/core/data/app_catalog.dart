@@ -75,12 +75,13 @@ abstract final class AppCatalog {
 
   static final wikiRelatedLinks = [
     WikiRelatedLinkItem(
-      label: '剧本 Wiki',
+      label: '社区剧本',
       subtitle: '社区剧本与模板参考',
       icon: Icons.auto_stories_outlined,
-      route: AppRoutes.scriptList,
+      route: AppRoutes.community,
       iconColor: Color(0xFF4A90D9),
       backgroundColor: Color(0xFFE8F4FF),
+      usePush: false,
     ),
     WikiRelatedLinkItem(
       label: '社区作品',
@@ -119,9 +120,9 @@ abstract final class AppCatalog {
     ),
     WikiRelatedLinkItem(
       label: '设备库',
-      subtitle: '机身、镜头与摄影机组合',
+      subtitle: '摄影设备柜 · 房间与格层管理',
       icon: Icons.videocam_outlined,
-      route: AppRoutes.equipment,
+      route: AppRoutes.library,
       iconColor: Color(0xFF5E5CE6),
       backgroundColor: Color(0xFFEEEDFF),
       usePush: true,
@@ -138,7 +139,7 @@ abstract final class AppCatalog {
       label: '素材图库',
       subtitle: '参考图与灵感收藏',
       icon: Icons.photo_library_outlined,
-      route: AppRoutes.library,
+      route: AppRoutes.gallery,
       iconColor: Color(0xFF3B9EFF),
       backgroundColor: Color(0xFFE3F0FF),
     ),

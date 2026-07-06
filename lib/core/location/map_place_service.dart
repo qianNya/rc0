@@ -5,10 +5,20 @@ import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 
 import 'map_nearby_place.dart';
+import 'map_tile_config.dart';
 
-const _userAgent = 'com.rc0.app/1.0 (scene-map; contact@rc0.app)';
 const _nominatimBase = 'https://nominatim.openstreetmap.org';
 const _overpassUrl = 'https://overpass-api.de/api/interpreter';
+const _nearbyCacheTtl = Duration(seconds: 60);
+
+final _nearbyCache = <String, _CachedNearbyPlaces>{};
+
+class _CachedNearbyPlaces {
+  const _CachedNearbyPlaces(this.result, this.expiresAt);
+
+  final MapPlaceLookupResult result;
+  final DateTime expiresAt;
+}
 
 /// Looks up buildings and named places near a coordinate via OSM APIs.
 abstract final class MapPlaceService {
@@ -17,6 +27,12 @@ abstract final class MapPlaceService {
     int radiusMeters = 200,
     int limit = 12,
   }) async {
+    final cacheKey = _cacheKey(center);
+    final cached = _nearbyCache[cacheKey];
+    if (cached != null && cached.expiresAt.isAfter(DateTime.now())) {
+      return cached.result;
+    }
+
     try {
       final reverse = await _reverseGeocode(center);
       final overpass = await _overpassNamedFeatures(
@@ -51,13 +67,29 @@ abstract final class MapPlaceService {
       final places = merged.isEmpty
           ? <MapNearbyPlace>[_coordinateFallback(center)]
           : merged.take(limit).toList(growable: false);
-      return MapPlaceLookupResult(places: places);
+      final result = MapPlaceLookupResult(places: places);
+      _rememberNearby(cacheKey, result);
+      return result;
     } catch (_) {
-      return MapPlaceLookupResult(
+      final result = MapPlaceLookupResult(
         places: [_coordinateFallback(center)],
         error: '附近建筑查询失败，已使用地图坐标',
       );
+      _rememberNearby(cacheKey, result);
+      return result;
     }
+  }
+
+  static String _cacheKey(LatLng center) {
+    return '${center.latitude.toStringAsFixed(5)},'
+        '${center.longitude.toStringAsFixed(5)}';
+  }
+
+  static void _rememberNearby(String key, MapPlaceLookupResult result) {
+    _nearbyCache[key] = _CachedNearbyPlaces(
+      result,
+      DateTime.now().add(_nearbyCacheTtl),
+    );
   }
 
   static MapNearbyPlace _coordinateFallback(LatLng center) {
@@ -84,7 +116,7 @@ abstract final class MapPlaceService {
     );
 
     final response = await http
-        .get(uri, headers: {'User-Agent': _userAgent})
+        .get(uri, headers: {'User-Agent': MapTileConfig.userAgent})
         .timeout(const Duration(seconds: 8));
     if (response.statusCode != 200) return null;
 
@@ -118,7 +150,7 @@ out center ${limit + 4};
         .post(
           Uri.parse(_overpassUrl),
           headers: {
-            'User-Agent': _userAgent,
+            'User-Agent': MapTileConfig.userAgent,
             'Content-Type': 'application/x-www-form-urlencoded',
           },
           body: {'data': query},

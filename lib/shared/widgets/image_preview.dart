@@ -56,9 +56,11 @@ class ImagePreviewOptions {
     this.favoriteKeys,
     this.syncInfos,
     this.tagStates,
+    this.metadatas,
     this.enableTagEditing = false,
     this.onLoadSuggestedTags,
     this.onSaveImageTags,
+    this.onLoadMetadata,
     this.onUpload,
     this.onDownloadToLocal,
   });
@@ -67,6 +69,7 @@ class ImagePreviewOptions {
   final List<String>? favoriteKeys;
   final List<ImagePreviewSyncInfo>? syncInfos;
   final List<ImagePreviewTagState>? tagStates;
+  final List<ImagePreviewMetaInfo>? metadatas;
   final bool enableTagEditing;
   final Future<List<String>> Function()? onLoadSuggestedTags;
   final Future<({List<String> tags, List<int> tagIds, String? error})> Function(
@@ -74,6 +77,7 @@ class ImagePreviewOptions {
     Set<String> desiredTags,
     List<int> currentTagIds,
   )? onSaveImageTags;
+  final Future<ImagePreviewMetaInfo?> Function(int index)? onLoadMetadata;
   final Future<bool> Function(int index)? onUpload;
   final Future<bool> Function(int index)? onDownloadToLocal;
 }
@@ -84,18 +88,21 @@ class ImagePreviewOptions {
   List<String>? favoriteKeys,
   List<ImagePreviewSyncInfo>? syncInfos,
   List<ImagePreviewTagState>? tagStates,
+  List<ImagePreviewMetaInfo>? metadatas,
 }) _filterPreviewGallery(
   List<String> imagePaths,
   List<String>? captions,
   List<String>? favoriteKeys,
   List<ImagePreviewSyncInfo>? syncInfos,
   List<ImagePreviewTagState>? tagStates,
+  List<ImagePreviewMetaInfo>? metadatas,
 ) {
   final paths = <String>[];
   final filteredCaptions = captions != null ? <String>[] : null;
   final filteredKeys = favoriteKeys != null ? <String>[] : null;
   final filteredSync = syncInfos != null ? <ImagePreviewSyncInfo>[] : null;
   final filteredTags = tagStates != null ? <ImagePreviewTagState>[] : null;
+  final filteredMeta = metadatas != null ? <ImagePreviewMetaInfo>[] : null;
 
   for (var i = 0; i < imagePaths.length; i++) {
     final path = imagePaths[i];
@@ -125,6 +132,13 @@ class ImagePreviewOptions {
         filteredTags.add(const ImagePreviewTagState());
       }
     }
+    if (filteredMeta != null) {
+      if (metadatas != null && i < metadatas.length) {
+        filteredMeta.add(metadatas[i]);
+      } else {
+        filteredMeta.add(const ImagePreviewMetaInfo());
+      }
+    }
   }
 
   return (
@@ -133,6 +147,7 @@ class ImagePreviewOptions {
     favoriteKeys: filteredKeys,
     syncInfos: filteredSync,
     tagStates: filteredTags,
+    metadatas: filteredMeta,
   );
 }
 
@@ -150,6 +165,7 @@ Future<void> showImagePreview(
     options?.favoriteKeys,
     options?.syncInfos,
     options?.tagStates,
+    options?.metadatas,
   );
   if (filtered.paths.isEmpty) return Future.value();
 
@@ -171,9 +187,11 @@ Future<void> showImagePreview(
             favoriteKeys: filtered.favoriteKeys,
             syncInfos: filtered.syncInfos,
             tagStates: filtered.tagStates,
+            metadatas: filtered.metadatas,
             enableTagEditing: options?.enableTagEditing ?? false,
             onLoadSuggestedTags: options?.onLoadSuggestedTags,
             onSaveImageTags: options?.onSaveImageTags,
+            onLoadMetadata: options?.onLoadMetadata,
             onUpload: options?.onUpload,
             onDownloadToLocal: options?.onDownloadToLocal,
           ),
@@ -194,9 +212,11 @@ class _ImagePreviewPage extends StatefulWidget {
     this.favoriteKeys,
     this.syncInfos,
     this.tagStates,
+    this.metadatas,
     this.enableTagEditing = false,
     this.onLoadSuggestedTags,
     this.onSaveImageTags,
+    this.onLoadMetadata,
     this.onUpload,
     this.onDownloadToLocal,
   });
@@ -208,6 +228,7 @@ class _ImagePreviewPage extends StatefulWidget {
   final List<String>? favoriteKeys;
   final List<ImagePreviewSyncInfo>? syncInfos;
   final List<ImagePreviewTagState>? tagStates;
+  final List<ImagePreviewMetaInfo>? metadatas;
   final bool enableTagEditing;
   final Future<List<String>> Function()? onLoadSuggestedTags;
   final Future<({List<String> tags, List<int> tagIds, String? error})> Function(
@@ -215,6 +236,7 @@ class _ImagePreviewPage extends StatefulWidget {
     Set<String> desiredTags,
     List<int> currentTagIds,
   )? onSaveImageTags;
+  final Future<ImagePreviewMetaInfo?> Function(int index)? onLoadMetadata;
   final Future<bool> Function(int index)? onUpload;
   final Future<bool> Function(int index)? onDownloadToLocal;
 
@@ -230,8 +252,10 @@ class _ImagePreviewPageState extends State<_ImagePreviewPage> {
   bool _pageScrollEnabled = true;
   _ViewMode _viewMode = _ViewMode.single;
   bool _actionLoading = false;
+  bool _metaExpanded = false;
   List<ImagePreviewSyncInfo>? _syncInfos;
   List<ImagePreviewTagState>? _tagStates;
+  List<ImagePreviewMetaInfo>? _metadatas;
 
   final _saveService = ImageSaveService.instance;
 
@@ -246,6 +270,9 @@ class _ImagePreviewPageState extends State<_ImagePreviewPage> {
     _tagStates = widget.tagStates == null
         ? null
         : List<ImagePreviewTagState>.from(widget.tagStates!);
+    _metadatas = widget.metadatas == null
+        ? null
+        : List<ImagePreviewMetaInfo>.from(widget.metadatas!);
     _currentIndex = widget.initialIndex;
     _pageController = PageController(initialPage: widget.initialIndex);
     _thumbController = ScrollController();
@@ -253,7 +280,27 @@ class _ImagePreviewPageState extends State<_ImagePreviewPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
       _scrollThumbToCurrent(animate: false);
+      _refreshMetadata(_currentIndex);
     });
+  }
+
+  Future<void> _refreshMetadata(int index) async {
+    final loader = widget.onLoadMetadata;
+    if (loader == null || _metadatas == null) return;
+    final loaded = await loader(index);
+    if (!mounted || loaded == null) return;
+    setState(() {
+      if (index < _metadatas!.length) {
+        _metadatas![index] = loaded;
+      }
+    });
+  }
+
+  ImagePreviewMetaInfo? get _currentMeta {
+    final metas = _metadatas;
+    if (metas == null || _currentIndex >= metas.length) return null;
+    final meta = metas[_currentIndex];
+    return meta.hasPrimaryInfo || meta.hasSecondaryInfo ? meta : null;
   }
 
   @override
@@ -786,8 +833,10 @@ class _ImagePreviewPageState extends State<_ImagePreviewPage> {
                               setState(() {
                                 _currentIndex = index;
                                 _pageScrollEnabled = true;
+                                _metaExpanded = false;
                               });
                               _scrollThumbToCurrent();
+                              _refreshMetadata(index);
                             },
                             onScaleChanged: _onZoomScaleChanged,
                             onPrevious: _goPrevious,
@@ -801,6 +850,13 @@ class _ImagePreviewPageState extends State<_ImagePreviewPage> {
                     imagePaths: widget.imagePaths,
                     currentIndex: _currentIndex,
                     onTap: _goToPage,
+                  ),
+                if (_viewMode == _ViewMode.single && _currentMeta != null)
+                  _PreviewMetaPanel(
+                    meta: _currentMeta!,
+                    expanded: _metaExpanded,
+                    onToggle: () =>
+                        setState(() => _metaExpanded = !_metaExpanded),
                   ),
                 if (_viewMode == _ViewMode.single)
                   _PreviewBottomBar(
@@ -1102,6 +1158,170 @@ class _PreviewGridOverlay extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _PreviewMetaPanel extends StatelessWidget {
+  const _PreviewMetaPanel({
+    required this.meta,
+    required this.expanded,
+    required this.onToggle,
+  });
+
+  final ImagePreviewMetaInfo meta;
+  final bool expanded;
+  final VoidCallback onToggle;
+
+  void _copy(BuildContext context, String? value) {
+    if (value == null || value.isEmpty || value == '—') return;
+    Clipboard.setData(ClipboardData(text: value));
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(const SnackBar(content: Text('已复制')));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final chips = <String>[
+      if (meta.imageId != null) '#${meta.imageId}',
+      meta.fileRoleLabel,
+      meta.resolutionLabel,
+      meta.formatLabel,
+      meta.fileSizeLabel,
+    ].where((e) => e.isNotEmpty && e != '—').toList(growable: false);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.white12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            InkWell(
+              onTap: meta.hasSecondaryInfo ? onToggle : null,
+              borderRadius: BorderRadius.circular(14),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      children: chips
+                          .map(
+                            (label) => Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                label,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                    if (meta.mime != null && meta.mime!.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        meta.mime!,
+                        style: const TextStyle(
+                          color: Colors.white60,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                    if (meta.hasSecondaryInfo)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Row(
+                          children: [
+                            Text(
+                              expanded ? '收起详情' : '查看存储详情',
+                              style: const TextStyle(
+                                color: Colors.white54,
+                                fontSize: 11,
+                              ),
+                            ),
+                            Icon(
+                              expanded
+                                  ? Icons.expand_less_rounded
+                                  : Icons.expand_more_rounded,
+                              size: 16,
+                              color: Colors.white54,
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            if (expanded && meta.hasSecondaryInfo)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+                child: Column(
+                  children: [
+                    for (final row in meta.secondaryRows)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(
+                              width: 56,
+                              child: Text(
+                                row.label,
+                                style: const TextStyle(
+                                  color: Colors.white38,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: GestureDetector(
+                                onLongPress: () => _copy(
+                                  context,
+                                  row.value == meta.shortUrl
+                                      ? meta.url
+                                      : row.value == meta.shortChecksum
+                                          ? meta.checksum
+                                          : row.value,
+                                ),
+                                child: Text(
+                                  row.value,
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 11,
+                                    height: 1.35,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }

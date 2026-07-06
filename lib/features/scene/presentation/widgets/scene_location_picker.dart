@@ -7,6 +7,7 @@ import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/location/device_location_service.dart';
 import '../../../../core/location/location_snackbar.dart';
 import '../../../../core/location/map_city_catalog.dart';
+import '../../../../core/location/map_tile_config.dart';
 import '../../../../shared/widgets/primary_button.dart';
 import '../../../studio/presentation/widgets/script_studio_glass_widgets.dart';
 
@@ -92,11 +93,7 @@ class _SceneLocationPickerState extends State<SceneLocationPicker> {
                     onTap: _onTap,
                   ),
                   children: [
-                    TileLayer(
-                      urlTemplate:
-                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                      userAgentPackageName: 'com.rc0.app',
-                    ),
+                    ...MapTileConfig.layers(),
                     MarkerLayer(
                       markers: [
                         if (_userLocation != null)

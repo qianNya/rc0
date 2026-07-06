@@ -16,7 +16,6 @@ abstract final class ShellNavOptionId {
   static const character = 'character';
   static const action = 'action';
   static const assets = 'assets';
-  static const storyboard = 'storyboard';
   static const favorites = 'favorites';
   static const community = 'community';
 }
@@ -104,10 +103,10 @@ abstract final class ShellNavCatalog {
     ),
     ShellNavOption(
       id: ShellNavOptionId.gallery,
-      label: '图片',
+      label: '图库',
       icon: Icons.photo_library_outlined,
       selectedIcon: Icons.photo_library,
-      route: AppRoutes.library,
+      route: AppRoutes.gallery,
       usePush: true,
       group: '发现',
     ),
@@ -116,7 +115,7 @@ abstract final class ShellNavCatalog {
       label: '剧本',
       icon: Icons.movie_creation_outlined,
       selectedIcon: Icons.movie_creation,
-      branchIndex: 2,
+      branchIndex: 5,
       group: '发现',
     ),
     ShellNavOption(
@@ -133,7 +132,7 @@ abstract final class ShellNavCatalog {
       label: '设备',
       icon: Icons.videocam_outlined,
       selectedIcon: Icons.videocam,
-      route: AppRoutes.equipment,
+      route: AppRoutes.library,
       usePush: true,
       group: '发现',
     ),
@@ -144,15 +143,6 @@ abstract final class ShellNavCatalog {
       selectedIcon: Icons.person,
       route: '${AppRoutes.discovery}?hubTab=2',
       usePush: false,
-      group: '发现',
-    ),
-    ShellNavOption(
-      id: ShellNavOptionId.storyboard,
-      label: '分镜',
-      icon: Icons.grid_view_rounded,
-      selectedIcon: Icons.grid_view,
-      route: AppRoutes.comingSoon('分镜'),
-      usePush: true,
       group: '发现',
     ),
     ShellNavOption(

@@ -101,7 +101,7 @@ Future<void> showSceneActionSheet({
           title: const Text('关联角色'),
           onTap: () {
             Navigator.pop(context);
-            context.push(AppRoutes.comingSoon('关联角色'));
+            context.push(AppRoutes.labsFeature('image_character_link'));
           },
         ),
       ],

@@ -82,7 +82,7 @@ class _ExploreDesktopHeaderState extends State<ExploreDesktopHeader> {
                 WikiModeTagIconButton(
                   icon: Icons.notifications_outlined,
                   tooltip: '通知',
-                  onPressed: () => context.push(AppRoutes.messages),
+                  onPressed: () => context.push(AppRoutes.inbox),
                 ),
                 Padding(
                   padding: const EdgeInsets.only(right: 8),

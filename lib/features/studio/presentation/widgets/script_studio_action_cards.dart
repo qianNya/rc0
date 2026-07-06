@@ -27,7 +27,7 @@ class ScriptStudioActionCards extends StatelessWidget {
                   glowColor: AppColors.accent,
                   title: 'AI 导入剧本',
                   subtitle: '智能拆解剧本内容',
-                  onTap: () => context.push(AppRoutes.comingSoon('AI 导入剧本')),
+                  onTap: () => context.push(AppRoutes.createAiHubPath),
                 ),
               ),
               const SizedBox(width: AppDimensions.spacingMd),

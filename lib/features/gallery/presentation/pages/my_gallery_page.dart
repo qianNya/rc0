@@ -111,7 +111,7 @@ class _MyGalleryPageState extends State<MyGalleryPage> {
 
   Future<void> _pickAndUpload() async {
     if (!_auth.isLoggedIn) {
-      context.go(AppRoutes.loginWithRedirect(AppRoutes.library));
+      context.go(AppRoutes.loginWithRedirect(AppRoutes.gallery));
       return;
     }
     if (_uploading) return;
@@ -349,7 +349,7 @@ class _MyGalleryPageState extends State<MyGalleryPage> {
             subtitle: '上传与管理你的参考图片',
             actionLabel: '去登录',
             onAction: () =>
-                context.go(AppRoutes.loginWithRedirect(AppRoutes.library)),
+                context.go(AppRoutes.loginWithRedirect(AppRoutes.gallery)),
           ),
         ),
       );

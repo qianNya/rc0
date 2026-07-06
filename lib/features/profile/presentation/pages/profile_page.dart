@@ -101,8 +101,8 @@ class _ProfilePageState extends State<ProfilePage> {
       ..showSnackBar(SnackBar(content: Text(msg)));
   }
 
-  void _comingSoon(String title) {
-    context.push(AppRoutes.comingSoon(title));
+  void _openLabs(String featureId) {
+    context.push(AppRoutes.labsFeature(featureId));
   }
 
   Future<void> _manualUpdate() async {
@@ -350,7 +350,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   icon: Icons.photo_library_outlined,
                   iconColor: AppColors.catBlue,
                   iconBackground: AppColors.catBlueBg,
-                  onTap: () => context.push(AppRoutes.library),
+                  onTap: () => context.push(AppRoutes.gallery),
                 ),
               ),
               Expanded(
@@ -391,7 +391,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   icon: Icons.auto_fix_high_outlined,
                   iconColor: AppColors.catPink,
                   iconBackground: AppColors.catPinkBg,
-                  onTap: () => _comingSoon('AI 工具'),
+                  onTap: () => context.push(AppRoutes.createAiHubPath),
                 ),
               ),
               Expanded(
@@ -400,7 +400,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   icon: Icons.headset_mic_outlined,
                   iconColor: AppColors.catOrange,
                   iconBackground: AppColors.catOrangeBg,
-                  onTap: () => _comingSoon('帮助与反馈'),
+                  onTap: () => _openLabs('help_feedback'),
                 ),
               ),
             ],
@@ -462,15 +462,15 @@ class _ProfilePageState extends State<ProfilePage> {
             onEdit: profileReady
                 ? () => context.push(AppRoutes.profileEdit)
                 : null,
-            onMembership: () => _comingSoon('会员'),
+            onMembership: () => _openLabs('membership'),
             onScan: () => _showSnack('扫码功能即将上线'),
             onSettings: () => _showSettingsSheet(
               context,
               loggedIn: profileReady,
             ),
             onWorksTap: () => context.push(AppRoutes.profileWorks),
-            onFollowingTap: () => _comingSoon('关注列表'),
-            onFollowersTap: () => _comingSoon('粉丝列表'),
+            onFollowingTap: () => _openLabs('following'),
+            onFollowersTap: () => _openLabs('followers'),
             onLikesTap: profileReady
                 ? () => context.push(AppRoutes.profileLikes)
                 : () => context.go(

@@ -12,11 +12,11 @@ class ExploreQuickActions extends StatelessWidget {
   void _onTap(BuildContext context, String label) {
     switch (label) {
       case '图片':
-        context.push(AppRoutes.library);
+        context.push(AppRoutes.gallery);
       case '剧本':
         context.go(AppRoutes.scenes);
       case '分镜':
-        context.push(AppRoutes.comingSoon('分镜'));
+        context.push(AppRoutes.labsFeature('storyboard'));
       case '预设':
         context.push(AppRoutes.shootPresetPicker(mode: 'manage'));
       case '用户':

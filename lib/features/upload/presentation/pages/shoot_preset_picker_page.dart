@@ -263,7 +263,7 @@ class _ShootPresetPickerPageState extends State<ShootPresetPickerPage> {
   }
 
   void _openEquipmentHub() {
-    openEquipmentHub(context, scope: 'browse');
+    openGearCabinet(context);
   }
 
   Widget _buildHeader() {
