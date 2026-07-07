@@ -7,7 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../api/cine-preset/api/cine-preset-api.dart' as cine_api;
 import '../../../api/cine-preset/data/cine-preset-api.dart';
 import '../../../core/data/preset_catalog.dart';
-import '../../auth/data/auth_repository.dart';
+import '../../../core/auth/auth_bridge.dart';
 import '../domain/shoot_params.dart';
 import '../domain/shoot_preset.dart';
 import 'shoot_preset_mapper.dart';
@@ -76,7 +76,7 @@ class ShootPresetRepository extends ChangeNotifier {
     notifyListeners();
 
     // Do not block app startup on preset API — phone may be off-LAN.
-    if (AuthRepository.instance.hasAuthToken) {
+    if (AuthBridge.hasAuthToken) {
       unawaited(refreshFromApi());
     }
   }
@@ -99,7 +99,7 @@ class ShootPresetRepository extends ChangeNotifier {
       fail: (msg) => _lastError ??= msg,
     );
 
-    if (AuthRepository.instance.isLoggedIn) {
+    if (AuthBridge.isLoggedIn) {
       await cine_api.listMyCinePresets(
         ok: (items) => user.addAll(items.map(shootPresetFromApi)),
         fail: (msg) => _lastError ??= msg,
@@ -190,7 +190,7 @@ class ShootPresetRepository extends ChangeNotifier {
     required ShootParams params,
     String? subtitle,
   }) async {
-    if (!AuthRepository.instance.isLoggedIn) {
+    if (!AuthBridge.isLoggedIn) {
       return _createLocal(label: label, params: params, subtitle: subtitle);
     }
 
@@ -224,7 +224,7 @@ class ShootPresetRepository extends ChangeNotifier {
     if (existing == null) return (preset: null, error: '预设不存在');
     if (existing.isBuiltIn) return (preset: null, error: '官方预设不可编辑');
 
-    if (existing.remoteId != null && AuthRepository.instance.isLoggedIn) {
+    if (existing.remoteId != null && AuthBridge.isLoggedIn) {
       String? error;
       ShootPreset? updated;
       await cine_api.updateCinePreset(
@@ -263,7 +263,7 @@ class ShootPresetRepository extends ChangeNotifier {
     if (existing == null) return '预设不存在';
     if (existing.isBuiltIn) return '官方预设不可删除';
 
-    if (existing.remoteId != null && AuthRepository.instance.isLoggedIn) {
+    if (existing.remoteId != null && AuthBridge.isLoggedIn) {
       String? error;
       await cine_api.deleteCinePreset(
         existing.remoteId!,

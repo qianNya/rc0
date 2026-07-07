@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../api/cine-equipment/api/cine-equipment-api.dart' as equip_api;
 import '../../../api/cine-equipment/data/cine-equipment-api.dart';
-import '../../auth/data/auth_repository.dart';
+import '../../../core/auth/auth_bridge.dart';
 import '../domain/camera_body.dart';
 import '../domain/cine_camera_setup.dart';
 import '../domain/equipment_brand.dart';
@@ -158,7 +158,7 @@ class EquipmentRepository extends ChangeNotifier {
     _loaded = true;
     notifyListeners();
 
-    if (AuthRepository.instance.hasAuthToken) {
+    if (AuthBridge.hasAuthToken) {
       unawaited(refreshFromApi());
     }
   }
@@ -192,7 +192,7 @@ class EquipmentRepository extends ChangeNotifier {
       fail: (msg) => _lastError ??= msg,
     );
 
-    if (AuthRepository.instance.isLoggedIn) {
+    if (AuthBridge.isLoggedIn) {
       await equip_api.listMyCineCameraSetups(
         ok: (items) => userSetups.addAll(items.map(setupFromApi)),
         fail: (msg) => _lastError ??= msg,
@@ -236,7 +236,7 @@ class EquipmentRepository extends ChangeNotifier {
       _builtinSetups.addAll(EquipmentCatalog.builtInSetups);
     }
 
-    if (userSetups.isNotEmpty || AuthRepository.instance.isLoggedIn) {
+    if (userSetups.isNotEmpty || AuthBridge.isLoggedIn) {
       _userSetups
         ..clear()
         ..addAll(userSetups);
@@ -284,7 +284,7 @@ class EquipmentRepository extends ChangeNotifier {
   }
 
   Future<void> saveUserSetup(CineCameraSetup setup) async {
-    if (AuthRepository.instance.isLoggedIn && setup.remoteId == null) {
+    if (AuthBridge.isLoggedIn && setup.remoteId == null) {
       String? error;
       CineCameraSetup? created;
       await equip_api.createCineCameraSetup(
@@ -304,7 +304,7 @@ class EquipmentRepository extends ChangeNotifier {
     final index = _userSetups.indexWhere((s) => s.id == setup.id);
     final copy = setup.copyWith(isBuiltIn: false);
     if (index >= 0) {
-      if (copy.remoteId != null && AuthRepository.instance.isLoggedIn) {
+      if (copy.remoteId != null && AuthBridge.isLoggedIn) {
         String? error;
         CineCameraSetup? updated;
         await equip_api.updateCineCameraSetup(
@@ -334,10 +334,10 @@ class EquipmentRepository extends ChangeNotifier {
 
   Future<String?> deleteUserSetup(String id) async {
     final existing = findSetupById(id);
-    if (existing == null) return '组合不存在';
-    if (existing.isBuiltIn) return '官方组合不可删除';
+    if (existing == null) return '?????';
+    if (existing.isBuiltIn) return '????????';
 
-    if (existing.remoteId != null && AuthRepository.instance.isLoggedIn) {
+    if (existing.remoteId != null && AuthBridge.isLoggedIn) {
       String? error;
       await equip_api.deleteCineCameraSetup(
         existing.remoteId!,
@@ -378,7 +378,7 @@ class EquipmentRepository extends ChangeNotifier {
     await _persistFavorites();
     notifyListeners();
 
-    if (AuthRepository.instance.isLoggedIn) {
+    if (AuthBridge.isLoggedIn) {
       await equip_api.toggleCineEquipmentFavorite(
         body: CineEquipmentFavoriteToggleBody(
           itemKind: equipmentItemKindApi(kind),

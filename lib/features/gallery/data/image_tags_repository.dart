@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../../api/image/api/image-api.dart' as image_api;
 import '../../../api/image/data/image-api.dart';
 import '../../../core/network/api_callback.dart';
-import '../../auth/data/auth_repository.dart';
+import '../../../core/auth/auth_bridge.dart';
 import '../domain/image_tag.dart';
 import 'image_gallery_repository.dart';
 
@@ -23,11 +23,11 @@ class ImageTagsRepository extends ChangeNotifier {
   String get namespace => _namespace;
 
   Future<void> initialize() async {
-    AuthRepository.instance.addListener(_onAuthChanged);
+    AuthBridge.addListener(_onAuthChanged);
   }
 
   void _onAuthChanged() {
-    if (!AuthRepository.instance.isLoggedIn) {
+    if (!AuthBridge.isLoggedIn) {
       _tags.clear();
       _error = null;
       notifyListeners();
@@ -47,7 +47,7 @@ class ImageTagsRepository extends ChangeNotifier {
   List<String> get suggestedNames => _tags.map((t) => t.name).toList();
 
   Future<void> loadTags({String namespace = 'general'}) async {
-    if (!AuthRepository.instance.isLoggedIn) {
+    if (!AuthBridge.isLoggedIn) {
       _tags.clear();
       _error = null;
       notifyListeners();
@@ -115,7 +115,7 @@ class ImageTagsRepository extends ChangeNotifier {
     required List<int> currentTagIds,
     required Set<String> desiredNames,
   }) async {
-    if (!AuthRepository.instance.isLoggedIn) {
+    if (!AuthBridge.isLoggedIn) {
       return '请先登录';
     }
 

@@ -4,7 +4,7 @@ import '../../../api/image/api/image-api.dart' as image_api;
 import '../../../api/work/api/work-api.dart' as work_api;
 import '../../../api/work/data/work-api.dart';
 import '../../../core/network/api_callback.dart';
-import '../../auth/data/auth_repository.dart';
+import '../../../core/auth/auth_bridge.dart';
 import '../domain/ip_entry.dart';
 
 class IpRepository extends ChangeNotifier {
@@ -28,11 +28,11 @@ class IpRepository extends ChangeNotifier {
   bool get hasMore => _items.length < _total.toInt();
 
   Future<void> initialize() async {
-    AuthRepository.instance.addListener(_onAuthChanged);
+    AuthBridge.addListener(_onAuthChanged);
   }
 
   void _onAuthChanged() {
-    if (!AuthRepository.instance.isLoggedIn) {
+    if (!AuthBridge.isLoggedIn) {
       // IP list is public; only clear on logout if needed for user-owned data later.
     }
   }
@@ -121,7 +121,7 @@ class IpRepository extends ChangeNotifier {
     required int releaseYear,
     required String summary,
   }) async {
-    if (!AuthRepository.instance.isLoggedIn) {
+    if (!AuthBridge.isLoggedIn) {
       return (ip: null, error: '请先登录');
     }
 
@@ -156,7 +156,7 @@ class IpRepository extends ChangeNotifier {
     required int releaseYear,
     required String summary,
   }) async {
-    if (!AuthRepository.instance.isLoggedIn) {
+    if (!AuthBridge.isLoggedIn) {
       return (ip: null, error: '请先登录');
     }
 
@@ -188,7 +188,7 @@ class IpRepository extends ChangeNotifier {
   }
 
   Future<String?> delete(int id) async {
-    if (!AuthRepository.instance.isLoggedIn) {
+    if (!AuthBridge.isLoggedIn) {
       return '请先登录';
     }
 

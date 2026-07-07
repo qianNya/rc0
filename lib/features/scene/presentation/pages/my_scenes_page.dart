@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/providers/auth_providers.dart';
 import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -11,7 +13,6 @@ import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
 import '../../../../shared/widgets/feed_tab_bar.dart';
 import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
-import '../../../auth/data/auth_repository.dart';
 import '../../data/scene_local_store.dart';
 import '../../data/scene_repository.dart';
 import '../../domain/scene_entry.dart';
@@ -20,16 +21,15 @@ import '../widgets/scene_action_sheet.dart';
 import '../widgets/scene_create_sheet.dart';
 import '../widgets/scene_masonry_grid.dart';
 
-class MyScenesPage extends StatefulWidget {
+class MyScenesPage extends ConsumerStatefulWidget {
   const MyScenesPage({super.key});
 
   @override
-  State<MyScenesPage> createState() => _MyScenesPageState();
+  ConsumerState<MyScenesPage> createState() => _MyScenesPageState();
 }
 
-class _MyScenesPageState extends State<MyScenesPage> {
+class _MyScenesPageState extends ConsumerState<MyScenesPage> {
   final _repo = SceneRepository.instance;
-  final _auth = AuthRepository.instance;
   int _tabIndex = 0;
   Set<String> _ownedIds = {};
   Set<String> _favorites = {};
@@ -94,13 +94,14 @@ class _MyScenesPageState extends State<MyScenesPage> {
   }
 
   Widget _buildSceneTabBody(int tabIndex) {
+    final isLoggedIn = ref.watch(isLoggedInProvider);
     final filtered = _filteredForTab(tabIndex);
     if (filtered.isEmpty) {
       return EmptyStateView(
         icon: Icons.landscape_outlined,
         title: '暂无场景',
-        actionLabel: _auth.isLoggedIn ? '新建场景' : null,
-        onAction: _auth.isLoggedIn ? _openCreateScene : null,
+        actionLabel: isLoggedIn ? '新建场景' : null,
+        onAction: isLoggedIn ? _openCreateScene : null,
       );
     }
 
@@ -120,7 +121,7 @@ class _MyScenesPageState extends State<MyScenesPage> {
               context: context,
               entry: entry,
               repo: _repo,
-              isLoggedIn: _auth.isLoggedIn,
+              isLoggedIn: isLoggedIn,
               isFavorite: _favorites.contains(entry.id),
               onToggleFavorite: () async {
                 final next = !_favorites.contains(entry.id);
@@ -137,12 +138,13 @@ class _MyScenesPageState extends State<MyScenesPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isLoggedIn = ref.watch(isLoggedInProvider);
     return DesktopStackScaffold(
       overlayAppBar: true,
       title: const Text('我的场景'),
       onBack: () => popOrGoDiscovery(context),
       actions: [
-        if (_auth.isLoggedIn)
+        if (isLoggedIn)
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: _openCreateScene,

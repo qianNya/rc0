@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../app/providers/auth_providers.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/utils/state_listeners.dart';
-import '../../../auth/data/auth_repository.dart';
 import '../../../screenplay/data/screenplay_local_repository.dart';
 import '../../../user/data/user_screenplays_repository.dart';
 import '../widgets/script_studio_action_cards.dart';
@@ -13,16 +14,15 @@ import '../widgets/script_studio_recent_section.dart';
 import '../../../../shared/widgets/shell_insets.dart';
 import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 
-class ScriptStudioPage extends StatefulWidget {
+class ScriptStudioPage extends ConsumerStatefulWidget {
   const ScriptStudioPage({super.key});
 
   @override
-  State<ScriptStudioPage> createState() => _ScriptStudioPageState();
+  ConsumerState<ScriptStudioPage> createState() => _ScriptStudioPageState();
 }
 
-class _ScriptStudioPageState extends State<ScriptStudioPage> {
+class _ScriptStudioPageState extends ConsumerState<ScriptStudioPage> {
   final _local = ScreenplayLocalRepository.instance;
-  final _auth = AuthRepository.instance;
   final _screenplays = UserScreenplaysRepository.instance;
   int? _userId;
 
@@ -30,7 +30,6 @@ class _ScriptStudioPageState extends State<ScriptStudioPage> {
   void initState() {
     super.initState();
     _local.addListener(_onChanged);
-    _auth.addListener(_onAuthChanged);
     _screenplays.addListener(_onChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadRemoteRecent());
   }
@@ -38,33 +37,29 @@ class _ScriptStudioPageState extends State<ScriptStudioPage> {
   @override
   void dispose() {
     _local.removeListener(_onChanged);
-    _auth.removeListener(_onAuthChanged);
     _screenplays.removeListener(_onChanged);
     super.dispose();
   }
 
   void _onChanged() => scheduleSetState(this);
-  void _onAuthChanged() {
-    scheduleSetState(this);
-    _loadRemoteRecent();
-  }
 
   Future<void> _loadRemoteRecent() async {
-    final profile = _auth.profile;
-    if (!_auth.isLoggedIn || profile == null) {
-      _userId = null;
+    final session = ref.read(authSessionProvider);
+    if (!session.isLoggedIn || session.profile == null) {
+      if (mounted) setState(() => _userId = null);
       return;
     }
-    final userId = profile.id.toInt();
-    _userId = userId;
+    final userId = session.profile!.id.toInt();
+    if (mounted) setState(() => _userId = userId);
     await _screenplays.loadFirstPage(userId);
   }
 
   List<Screenplay> get _recentProjects {
     final local = List<Screenplay>.from(_local.localScreenplays);
-    final remote = _userId != null ? _screenplays.itemsFor(_userId!) : const <Screenplay>[];
+    final remote = _userId != null
+        ? _screenplays.itemsFor(_userId!)
+        : const <Screenplay>[];
 
-    // If a local draft has already been published, keep local copy first.
     final localRemoteIds = local
         .map((s) => s.remoteScreenplayId)
         .whereType<int>()
@@ -72,7 +67,9 @@ class _ScriptStudioPageState extends State<ScriptStudioPage> {
     final merged = <Screenplay>[
       ...local,
       ...remote.where(
-        (s) => s.remoteScreenplayId == null || !localRemoteIds.contains(s.remoteScreenplayId),
+        (s) =>
+            s.remoteScreenplayId == null ||
+            !localRemoteIds.contains(s.remoteScreenplayId),
       ),
     ];
 
@@ -91,6 +88,13 @@ class _ScriptStudioPageState extends State<ScriptStudioPage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(authSessionProvider, (previous, next) {
+      if (previous?.isLoggedIn != next.isLoggedIn ||
+          previous?.profile?.id != next.profile?.id) {
+        _loadRemoteRecent();
+      }
+    });
+
     return ScriptStudioHubScaffold(
       appBar: const ScriptStudioAppBar(),
       body: ListView(

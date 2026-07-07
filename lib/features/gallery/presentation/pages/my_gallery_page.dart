@@ -1,8 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/providers/auth_providers.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
@@ -14,7 +16,6 @@ import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
 import '../../../../shared/widgets/inline_error_banner.dart';
 import '../../../../shared/widgets/image_preview.dart';
 import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
-import '../../../auth/data/auth_repository.dart';
 import '../../../upload/data/image_pick_service.dart';
 import '../../data/image_gallery_repository.dart';
 import '../../data/image_tags_repository.dart';
@@ -27,15 +28,14 @@ import '../widgets/gallery_tags_tab.dart';
 import '../widgets/gallery_works_tab.dart';
 import '../../../ip/presentation/widgets/ip_tab.dart';
 
-class MyGalleryPage extends StatefulWidget {
+class MyGalleryPage extends ConsumerStatefulWidget {
   const MyGalleryPage({super.key});
 
   @override
-  State<MyGalleryPage> createState() => _MyGalleryPageState();
+  ConsumerState<MyGalleryPage> createState() => _MyGalleryPageState();
 }
 
-class _MyGalleryPageState extends State<MyGalleryPage> {
-  final _auth = AuthRepository.instance;
+class _MyGalleryPageState extends ConsumerState<MyGalleryPage> {
   final _gallery = ImageGalleryRepository.instance;
   final _tags = ImageTagsRepository.instance;
   final _picker = ImagePickService();
@@ -52,7 +52,6 @@ class _MyGalleryPageState extends State<MyGalleryPage> {
   @override
   void initState() {
     super.initState();
-    _auth.addListener(_onDataChanged);
     _gallery.addListener(_onDataChanged);
     _tags.addListener(_onDataChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) => _load());
@@ -60,7 +59,6 @@ class _MyGalleryPageState extends State<MyGalleryPage> {
 
   @override
   void dispose() {
-    _auth.removeListener(_onDataChanged);
     _gallery.removeListener(_onDataChanged);
     _tags.removeListener(_onDataChanged);
     super.dispose();
@@ -69,7 +67,7 @@ class _MyGalleryPageState extends State<MyGalleryPage> {
   void _onDataChanged() => scheduleSetState(this);
 
   Future<void> _load() async {
-    if (!_auth.isLoggedIn) return;
+    if (!ref.read(isLoggedInProvider)) return;
     await Future.wait([
       _gallery.loadFirstPage(),
       _tags.loadTags(),
@@ -77,7 +75,7 @@ class _MyGalleryPageState extends State<MyGalleryPage> {
   }
 
   Future<void> _refresh() async {
-    if (!_auth.isLoggedIn) return;
+    if (!ref.read(isLoggedInProvider)) return;
     await _load();
     if (_mainTabIndex == 1) {
       await _ipTabKey.currentState?.load();
@@ -110,7 +108,7 @@ class _MyGalleryPageState extends State<MyGalleryPage> {
   }
 
   Future<void> _pickAndUpload() async {
-    if (!_auth.isLoggedIn) {
+    if (!ref.read(isLoggedInProvider)) {
       context.go(AppRoutes.loginWithRedirect(AppRoutes.gallery));
       return;
     }
@@ -323,7 +321,7 @@ class _MyGalleryPageState extends State<MyGalleryPage> {
 
   GalleryHubAppBar _buildAppBar({required bool showTabs}) {
     return GalleryHubAppBar(
-      onUpload: _auth.isLoggedIn ? _pickAndUpload : null,
+      onUpload: ref.watch(isLoggedInProvider) ? _pickAndUpload : null,
       uploading: _uploading,
       showTabs: showTabs,
       tabs: AppCatalog.galleryTabs,
@@ -334,7 +332,7 @@ class _MyGalleryPageState extends State<MyGalleryPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_auth.isLoggedIn) {
+    if (!ref.read(isLoggedInProvider)) {
       return GalleryHubScaffold(
         appBar: _buildAppBar(showTabs: false),
         body: Padding(

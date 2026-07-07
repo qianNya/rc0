@@ -18,6 +18,7 @@
 | `lib/api/feed/` | 发现 Feed、全局搜索 |
 | `lib/api/frame/` | 单帧详情、下载、场景帧列表 |
 | `lib/api/image/` | 图片上传与 presigned 下载 |
+| `lib/api/media-vault/` | 图库流：专辑、收藏/回收站状态、存储指标 |
 | `lib/api/system/` | 健康检查 |
 
 ## 约定

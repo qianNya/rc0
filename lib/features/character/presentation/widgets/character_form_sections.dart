@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../shared/widgets/rc0_image.dart';
 import '../../domain/character_utils.dart';
 import '../../../upload/data/image_pick_service.dart';
 import '../../../upload/domain/upload_image_file.dart';
@@ -100,7 +101,7 @@ class _CharacterFormSectionsState extends State<CharacterFormSections> {
 
   Widget _buildImage(String path) {
     if (path.startsWith('http://') || path.startsWith('https://')) {
-      return Image.network(path, fit: BoxFit.cover);
+      return Rc0Image(path: path, fit: BoxFit.cover);
     }
     if (!kIsWeb) {
       return Image.file(File(path), fit: BoxFit.cover);

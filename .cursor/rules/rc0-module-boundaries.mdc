@@ -1,0 +1,14 @@
+---
+description: rc0 frontend/backend module boundary rules for refactor work
+alwaysApply: true
+---
+
+# rc0 Module Boundaries
+
+- Frontend features must not import another feature's implementation layer. Use `rc0_core` contracts, ports, events, or app-level module registration instead.
+- Shared visual primitives belong in `rc0_ui` or `lib/shared`, not inside `studio` or any feature-specific presentation folder.
+- `screenplay` owns tree/domain/persistence. The editor owns editing UI. Media file types and upload/display resolution belong in `rc0_media`.
+- Avoid new singleton `.instance` repositories. New state should use Riverpod-style providers; legacy `ChangeNotifier` can only remain during migration.
+- Backend handlers must stay thin: no SQL, no repository calls, no cross-domain orchestration.
+- Backend cross-domain work goes through services only. Repositories stay table/domain focused and must not call other repositories across domains.
+- Media/image logic belongs in the media service/crate, not in screenplay service or handlers.

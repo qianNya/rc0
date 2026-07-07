@@ -14,6 +14,8 @@ class MediaVaultDetailPanel extends StatelessWidget {
     required this.image,
     required this.onClose,
     required this.onFavorite,
+    this.onAddToAlbum,
+    this.onMoveToTrash,
     this.related = const [],
     this.onRelatedTap,
     this.width = 320,
@@ -22,6 +24,8 @@ class MediaVaultDetailPanel extends StatelessWidget {
   final MediaVaultImage image;
   final VoidCallback onClose;
   final VoidCallback onFavorite;
+  final VoidCallback? onAddToAlbum;
+  final VoidCallback? onMoveToTrash;
   final List<MediaVaultImage> related;
   final ValueChanged<MediaVaultImage>? onRelatedTap;
   final double width;
@@ -69,10 +73,10 @@ class MediaVaultDetailPanel extends StatelessWidget {
                     tooltip: '分享',
                   ),
                   IconButton(
-                    icon: const Icon(Icons.more_horiz_rounded, size: 20),
+                    icon: const Icon(Icons.delete_outline_rounded, size: 20),
                     color: MediaVaultColors.textSecondary,
-                    onPressed: () {},
-                    tooltip: '更多',
+                    onPressed: onMoveToTrash,
+                    tooltip: '移入回收站',
                   ),
                 ],
               ),
@@ -214,7 +218,7 @@ class MediaVaultDetailPanel extends StatelessWidget {
                   ],
                   const SizedBox(height: AppDimensions.spacingLg),
                   FilledButton(
-                    onPressed: () {},
+                    onPressed: onAddToAlbum,
                     style: FilledButton.styleFrom(
                       backgroundColor: MediaVaultColors.accent,
                       foregroundColor: Colors.white,

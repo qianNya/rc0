@@ -5,8 +5,8 @@ import 'package:flutter/foundation.dart';
 import '../../../api/image/api/image-api.dart' as image_api;
 import '../../../api/image/data/image-api.dart';
 import '../../../core/network/api_callback.dart';
-import '../../auth/data/auth_repository.dart';
-import '../../screenplay/data/data_upload_repository.dart';
+import '../../../core/auth/auth_bridge.dart';
+import '../../../core/media/app_media_upload_service.dart';
 import '../domain/gallery_image.dart';
 
 class ImageGalleryRepository extends ChangeNotifier {
@@ -37,12 +37,20 @@ class ImageGalleryRepository extends ChangeNotifier {
     }
   }
 
+  void removeItem(int imageId) {
+    final index = _items.indexWhere((e) => e.id == imageId);
+    if (index < 0) return;
+    _items.removeAt(index);
+    _total = (_total - 1).clamp(0, 1 << 30);
+    notifyListeners();
+  }
+
   Future<void> initialize() async {
-    AuthRepository.instance.addListener(_onAuthChanged);
+    AuthBridge.addListener(_onAuthChanged);
   }
 
   void _onAuthChanged() {
-    if (!AuthRepository.instance.isLoggedIn) {
+    if (!AuthBridge.isLoggedIn) {
       _items.clear();
       _error = null;
       _page = 1;
@@ -66,7 +74,7 @@ class ImageGalleryRepository extends ChangeNotifier {
   }
 
   Future<void> loadFirstPage({int pageSize = 20}) async {
-    if (!AuthRepository.instance.isLoggedIn) {
+    if (!AuthBridge.isLoggedIn) {
       _items.clear();
       _error = null;
       notifyListeners();
@@ -96,7 +104,7 @@ class ImageGalleryRepository extends ChangeNotifier {
 
   Future<void> loadMore() async {
     if (_loading || _loadingMore || !hasMore) return;
-    if (!AuthRepository.instance.isLoggedIn) return;
+    if (!AuthBridge.isLoggedIn) return;
 
     _loadingMore = true;
     notifyListeners();
@@ -194,16 +202,18 @@ class ImageGalleryRepository extends ChangeNotifier {
   Future<({GalleryImage? image, String? error})> uploadStandalone(
     File file,
   ) async {
-    if (!AuthRepository.instance.isLoggedIn) {
+    if (!AuthBridge.isLoggedIn) {
       return (image: null, error: '请先登录');
     }
 
-    final uploaded = await DataUploadRepository.instance.uploadImage(file);
-    if (uploaded.error != null || uploaded.object == null) {
+    final uploaded = await AppMediaUploadService.instance.uploadLocalFile(
+      file.path,
+    );
+    if (uploaded.error != null || uploaded.result == null) {
       return (image: null, error: uploaded.error ?? '上传失败');
     }
 
-    final imageId = uploaded.object!.imageId;
+    final imageId = uploaded.result!.imageId;
     final detail = await fetchDetail(imageId);
     if (detail.image != null) {
       _items.insert(0, detail.image!);

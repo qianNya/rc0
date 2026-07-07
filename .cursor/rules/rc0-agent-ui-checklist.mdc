@@ -5,6 +5,8 @@ alwaysApply: true
 
 # Agent 执行清单（强制）
 
+设计规范 SSOT：`docs/design/UI_STYLE_GUIDE.md`（视觉）· `docs/design/UX_GUIDELINES.md`（体验）· `docs/design/PRODUCT_CONCEPT.md`（产品创意）。
+
 1. 内容优先：先看内容层，再放导航与控制层。
 2. 导航/Tab/搜索必须浮动，禁止贴边实心条。
 3. 圆角使用连续曲率（24/28/32/Pill），避免 4/6/8。
@@ -15,6 +17,7 @@ alwaysApply: true
 8. 颜色/间距/圆角/阴影/动画全部使用 token。
 9. 提示弹出（SnackBar/Toast/反馈条）必须走统一全局反馈样式。
 10. 页面必须具备空/加载/错误三态；数据经 Repository。
-11. 若页面更像 Material 设置页/后台面板，立即重构。
+11. 明暗两套模式下玻璃文字必须可读；同屏 blur 层 ≤ 2。
+12. 若页面更像 Material 设置页/后台面板，立即重构。
 
 通过标准：更接近 Apple Music / visionOS 空间体验，界面退后、内容主导。

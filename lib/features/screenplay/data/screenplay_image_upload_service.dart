@@ -1,8 +1,8 @@
 import 'dart:io';
 
+import '../../../core/auth/auth_bridge.dart';
+import '../../../core/media/app_media_upload_service.dart';
 import '../../../core/domain/screenplay/screenplay_image_resolver.dart';
-import '../../auth/data/auth_repository.dart';
-import 'data_upload_repository.dart';
 import 'screenplay_local_repository.dart';
 import 'screenplay_publish_service.dart';
 import 'screenplay_tree_document.dart';
@@ -19,7 +19,7 @@ class ScreenplayImageUploadService {
     required int sceneIdx,
     required int frameIdx,
   }) async {
-    if (!AuthRepository.instance.isLoggedIn) {
+    if (!AuthBridge.isLoggedIn) {
       return (document: null, error: '请先登录');
     }
 
@@ -36,20 +36,20 @@ class ScreenplayImageUploadService {
     }
 
     final uploaded =
-        await DataUploadRepository.instance.uploadImage(File(uploadSrc));
-    if (uploaded.error != null || uploaded.object == null) {
+        await AppMediaUploadService.instance.uploadLocalFile(uploadSrc);
+    if (uploaded.error != null || uploaded.result == null) {
       return (document: null, error: uploaded.error ?? '上传失败');
     }
 
-    frameMap['acgn_image_id'] = uploaded.object!.imageId;
-    if (uploaded.object!.displayUrl.isNotEmpty) {
-      frameMap['image_url'] = uploaded.object!.displayUrl;
+    frameMap['acgn_image_id'] = uploaded.result!.imageId;
+    if (uploaded.result!.displayUrl.isNotEmpty) {
+      frameMap['image_url'] = uploaded.result!.displayUrl;
     }
-    if (uploaded.object!.thumbUrl.isNotEmpty) {
-      frameMap['thumbnail_url'] = uploaded.object!.thumbUrl;
+    if (uploaded.result!.thumbUrl.isNotEmpty) {
+      frameMap['thumbnail_url'] = uploaded.result!.thumbUrl;
     }
-    if (uploaded.object!.displayFileId != null) {
-      frameMap['acgn_image_file_id'] = uploaded.object!.displayFileId;
+    if (uploaded.result!.displayFileId != null) {
+      frameMap['acgn_image_file_id'] = uploaded.result!.displayFileId;
     }
 
     return _persistAndMaybeSync(
@@ -60,7 +60,7 @@ class ScreenplayImageUploadService {
   Future<({ScreenplayTreeDocument? document, String? error})> uploadCoverImage({
     required ScreenplayTreeDocument document,
   }) async {
-    if (!AuthRepository.instance.isLoggedIn) {
+    if (!AuthBridge.isLoggedIn) {
       return (document: null, error: '请先登录');
     }
 
@@ -74,9 +74,9 @@ class ScreenplayImageUploadService {
 
     final remoteId = document.meta.remoteScreenplayId;
     if (remoteId != null) {
-      final uploaded = await DataUploadRepository.instance.uploadScreenplayCover(
-        remoteId,
-        File(uploadSrc),
+      final uploaded = await AppMediaUploadService.instance.uploadScreenplayCover(
+        screenplayId: remoteId,
+        localPath: uploadSrc,
       );
       if (uploaded.error != null || uploaded.coverUrl == null) {
         return (document: null, error: uploaded.error ?? '上传失败');

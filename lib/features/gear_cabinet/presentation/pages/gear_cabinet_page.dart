@@ -37,6 +37,7 @@ class _GearCabinetPageState extends State<GearCabinetPage>
   String? _focusedCabinetId;
   double _pinchScale = 1.0;
   bool _loading = true;
+  bool _editLayout = false;
 
   @override
   void initState() {
@@ -118,6 +119,24 @@ class _GearCabinetPageState extends State<GearCabinetPage>
     );
   }
 
+  Future<void> _saveLayout() async {
+    final error = await _repo.saveLayout();
+    if (!mounted) return;
+    if (error != null) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(error)));
+      return;
+    }
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(const SnackBar(content: Text('布局已保存')));
+  }
+
+  void _toggleEditLayout() {
+    setState(() => _editLayout = !_editLayout);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Theme(
@@ -136,6 +155,11 @@ class _GearCabinetPageState extends State<GearCabinetPage>
             onSearch: _openSearch,
             onFilter: () => _showComingSoon('筛选'),
             onAdd: () => _showComingSoon('添加设备'),
+            onSaveLayout: _saveLayout,
+            layoutDirty: _repo.layoutDirty,
+            savingLayout: _repo.savingLayout,
+            editMode: _editLayout,
+            onToggleEdit: _toggleEditLayout,
           ),
           body: _loading
               ? const Center(
@@ -281,6 +305,10 @@ class _GearCabinetPageState extends State<GearCabinetPage>
                         cabinets: room.cabinets,
                         onCabinetTap: _focusCabinet,
                         onAddCabinet: () => _showComingSoon('添加柜子'),
+                        editMode: _editLayout,
+                        onReorder: (oldIndex, newIndex) {
+                          _repo.reorderCabinets(_roomType, oldIndex, newIndex);
+                        },
                       ),
                     ),
                   ],
@@ -293,6 +321,15 @@ class _GearCabinetPageState extends State<GearCabinetPage>
                         cabinet: _focusedCabinet!,
                         onDeviceTap: _openDevice,
                         scale: _pinchScale,
+                        editMode: _editLayout,
+                        onDeviceReorder: (shelfId, oldIndex, newIndex) {
+                          _repo.reorderDevices(
+                            cabinetId: _focusedCabinet!.id,
+                            shelfId: shelfId,
+                            oldIndex: oldIndex,
+                            newIndex: newIndex,
+                          );
+                        },
                       )
                     : const SizedBox.shrink(),
               ),

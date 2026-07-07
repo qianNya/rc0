@@ -3,18 +3,19 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/providers/auth_providers.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
-import '../../../auth/data/auth_repository.dart';
 import 'explore_desktop_card.dart';
 
 /// Desktop explore chrome — wiki floating title + search row.
-class ExploreDesktopHeader extends StatefulWidget {
+class ExploreDesktopHeader extends ConsumerStatefulWidget {
   const ExploreDesktopHeader({
     super.key,
     required this.onSearch,
@@ -27,10 +28,11 @@ class ExploreDesktopHeader extends StatefulWidget {
   final String initialQuery;
 
   @override
-  State<ExploreDesktopHeader> createState() => _ExploreDesktopHeaderState();
+  ConsumerState<ExploreDesktopHeader> createState() =>
+      _ExploreDesktopHeaderState();
 }
 
-class _ExploreDesktopHeaderState extends State<ExploreDesktopHeader> {
+class _ExploreDesktopHeaderState extends ConsumerState<ExploreDesktopHeader> {
   late final TextEditingController _searchController;
   final _focusNode = FocusNode();
 
@@ -55,9 +57,10 @@ class _ExploreDesktopHeaderState extends State<ExploreDesktopHeader> {
 
   @override
   Widget build(BuildContext context) {
-    final auth = AuthRepository.instance;
-    final profile = auth.profile;
-    final nickname = profile?.nickname ?? profile?.username ?? '未登录';
+    final session = ref.watch(authSessionProvider);
+    final profile = session.profile;
+    final nickname =
+        session.displayName ?? (session.isLoggedIn ? '已登录' : '未登录');
     final searchShortcut = _isMacOS ? '⌘ K' : 'Ctrl K';
 
     return Column(

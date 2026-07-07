@@ -44,7 +44,20 @@ dependencies:
   video_thumbnail: ^0.5.3
   rc0_unity_widget:
     path: packages/rc0_unity_widget
+  rc0_core:
+    path: packages/rc0_core
+  rc0_media:
+    path: packages/rc0_media
+  rc0_network:
+    path: packages/rc0_network
+  rc0_feature_editor:
+    path: packages/rc0_feature_editor
+  rc0_ui:
+    path: packages/rc0_ui
+  rc0_runtime_3d:
+    path: packages/rc0_runtime_3d
   flutter_map: ^8.3.1
+  flutter_riverpod: ^2.6.1
   latlong2: ^0.10.1
   geolocator: ^14.0.2
   http: ^1.6.0

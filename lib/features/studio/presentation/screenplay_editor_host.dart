@@ -1,7 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:rc0_feature_editor/rc0_feature_editor.dart';
+
+import '../../../app/providers/auth_providers.dart';
 
 import '../../../app/router/routes.dart';
 import '../../../core/data/app_catalog.dart';
@@ -9,13 +13,12 @@ import '../../../core/utils/state_listeners.dart';
 import '../../../core/domain/screenplay/screenplay.dart';
 import '../../lighting/data/lighting_draft_binding.dart';
 import '../../lighting/data/lighting_repository.dart';
-import '../../auth/data/auth_repository.dart';
+import '../../screenplay/data/shoot_params_draft.dart';
 import '../../screenplay/data/screenplay_draft.dart';
 import '../../screenplay/data/screenplay_draft_tags.dart';
 import '../../screenplay/data/screenplay_local_repository.dart';
 import '../../screenplay/data/screenplay_publish_service.dart';
 import '../../screenplay/data/screenplay_tags_repository.dart';
-import '../../screenplay/data/shoot_params_draft.dart';
 import '../../screenplay/domain/shoot_params.dart';
 import '../../screenplay/presentation/widgets/publish_visibility_dialog.dart';
 import '../../upload/data/image_pick_service.dart';
@@ -30,10 +33,8 @@ import '../../upload/presentation/widgets/upload_structure_editor.dart';
 import '../domain/script_editor_selection.dart';
 import 'studio_editor_shell_bridge.dart';
 
-enum EditorSaveStatus { idle, saving, saved, error }
-
 /// Shared screenplay editing state and operations for UploadPage and Studio.
-class ScreenplayEditorController {
+class ScreenplayEditorController implements EditorControllerView {
   ScreenplayEditorController._({
     required this.draft,
     required this.titleController,
@@ -75,13 +76,18 @@ class ScreenplayEditorController {
   final String? editScriptId;
   final Screenplay? editingScript;
   final bool isPicking;
+  @override
   final bool isPublishing;
+  @override
   final EditorSaveStatus saveStatus;
+  @override
   final String? saveError;
   final List<String> poolTags;
   final bool tagsLoading;
   final String? tagsError;
+  @override
   final bool canUndo;
+  @override
   final bool canRedo;
   final VoidCallback onChanged;
   final VoidCallback onCancel;
@@ -100,21 +106,44 @@ class ScreenplayEditorController {
   final Future<void> Function(String) addScreenplayTag;
   final VoidCallback retryTags;
   final void Function(ShootParams) onShootParamsChanged;
+  @override
   final DateTime? lastSavedAt;
 
+  @override
   bool get isEditing =>
       editScriptId != null && editScriptId!.isNotEmpty;
 
+  @override
   bool get isCreateMode => !isEditing;
 
   bool get isPublished => editingScript?.isPublished ?? false;
 
+  @override
+  EditorOpenMode get openMode {
+    if (isCreateMode) return EditorOpenMode.create;
+    if (editingScript?.id != null) return EditorOpenMode.editRemote;
+    return EditorOpenMode.editLocal;
+  }
+
+  @override
   int get frameCount => countDraftFrames(draft);
 
+  @override
   String get hierarchySummary => draftHierarchySummary(draft);
+
+  @override
+  EditorSessionSnapshot get sessionSnapshot => EditorSessionSnapshot(
+        saveStatus: saveStatus,
+        isPublishing: isPublishing,
+        isPicking: isPicking,
+        canUndo: canUndo,
+        canRedo: canRedo,
+        saveError: saveError,
+        lastSavedAt: lastSavedAt,
+      );
 }
 
-class ScreenplayEditorHost extends StatefulWidget {
+class ScreenplayEditorHost extends ConsumerStatefulWidget {
   const ScreenplayEditorHost({
     super.key,
     this.editScriptId,
@@ -136,10 +165,11 @@ class ScreenplayEditorHost extends StatefulWidget {
       builder;
 
   @override
-  State<ScreenplayEditorHost> createState() => _ScreenplayEditorHostState();
+  ConsumerState<ScreenplayEditorHost> createState() =>
+      _ScreenplayEditorHostState();
 }
 
-class _ScreenplayEditorHostState extends State<ScreenplayEditorHost> {
+class _ScreenplayEditorHostState extends ConsumerState<ScreenplayEditorHost> {
   static const _maxUndoSteps = 30;
 
   final _imagePickService = ImagePickService();
@@ -182,7 +212,7 @@ class _ScreenplayEditorHostState extends State<ScreenplayEditorHost> {
   void initState() {
     super.initState();
     _tagsRepo.addListener(_onTagsRepoChanged);
-    if (AuthRepository.instance.isLoggedIn) {
+    if (ref.read(isLoggedInProvider)) {
       _tagsRepo.loadTags();
     }
     _loadDraft();
@@ -341,7 +371,7 @@ class _ScreenplayEditorHostState extends State<ScreenplayEditorHost> {
   Future<void> _addScreenplayTag(String name) async {
     addTagToDraftPool(_draft, name);
     _refresh();
-    if (AuthRepository.instance.isLoggedIn) {
+    if (ref.read(isLoggedInProvider)) {
       final error = await _tagsRepo.createTagByName(name);
       if (error != null && mounted) _showSnackBar(error);
     }
@@ -621,7 +651,7 @@ class _ScreenplayEditorHostState extends State<ScreenplayEditorHost> {
 
   Future<void> _publishToCloud() async {
     if (_isPublishing) return;
-    if (!AuthRepository.instance.isLoggedIn) {
+    if (!ref.read(isLoggedInProvider)) {
       final redirect = _effectiveLocalId != null
           ? AppRoutes.studioEdit(_effectiveLocalId!)
           : AppRoutes.studioCreate;

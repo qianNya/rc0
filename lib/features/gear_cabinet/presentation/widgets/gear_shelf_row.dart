@@ -14,11 +14,15 @@ class GearShelfRow extends StatelessWidget {
     required this.shelf,
     required this.onDeviceTap,
     this.animate = true,
+    this.editMode = false,
+    this.onDeviceReorder,
   });
 
   final GearShelf shelf;
   final ValueChanged<GearDevice> onDeviceTap;
   final bool animate;
+  final bool editMode;
+  final void Function(int oldIndex, int newIndex)? onDeviceReorder;
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +48,39 @@ class GearShelfRow extends StatelessWidget {
           const SizedBox(height: AppDimensions.spacingSm),
           LayoutBuilder(
             builder: (context, constraints) {
+              if (editMode && onDeviceReorder != null) {
+                return ReorderableListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  buildDefaultDragHandles: false,
+                  itemCount: shelf.devices.length,
+                  onReorder: onDeviceReorder!,
+                  itemBuilder: (context, i) {
+                    final gap = AppDimensions.spacingSm;
+                    final count = shelf.devices.length.clamp(1, 4);
+                    final itemWidth =
+                        (constraints.maxWidth - gap * (count - 1)) / count;
+                    return Padding(
+                      key: ValueKey(shelf.devices[i].id),
+                      padding: EdgeInsets.only(
+                        right: i < shelf.devices.length - 1 ? gap : 0,
+                      ),
+                      child: SizedBox(
+                        width: itemWidth,
+                        child: ReorderableDragStartListener(
+                          index: i,
+                          child: GearDeviceCard(
+                            device: shelf.devices[i],
+                            onTap: () => onDeviceTap(shelf.devices[i]),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              }
+
               final count = shelf.devices.length.clamp(1, 4);
               final gap = AppDimensions.spacingSm;
               final itemWidth =

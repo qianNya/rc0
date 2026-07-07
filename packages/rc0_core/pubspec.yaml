@@ -1,0 +1,18 @@
+name: rc0_core
+description: rc0 kernel contracts — ImageRef, ports, FeatureModule, Result.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  go_router: ^17.3.0
+  meta: ^1.17.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0

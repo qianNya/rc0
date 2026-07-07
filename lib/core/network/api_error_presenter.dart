@@ -47,11 +47,12 @@ abstract final class ApiErrorPresenter {
   }
 
   static void _navigateToLogin(BuildContext context) {
+    final router = GoRouter.of(context);
     final path = GoRouterState.of(context).uri.path;
     if (path == AppRoutes.login || path == AppRoutes.register) return;
 
-    final from = AppRouter.router.routerDelegate.currentConfiguration.uri
-        .toString();
-    AppRouter.router.go(AppRoutes.loginWithRedirect(from));
+    final from =
+        router.routerDelegate.currentConfiguration.uri.toString();
+    router.go(AppRoutes.loginWithRedirect(from));
   }
 }

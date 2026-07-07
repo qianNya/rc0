@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../api/production-assets/api/production-assets-api.dart' as asset_api;
 import '../../../api/production-assets/data/production-assets-api.dart';
-import '../../auth/data/auth_repository.dart';
+import '../../../core/auth/auth_bridge.dart';
 import '../domain/asset_category_ref.dart';
 import '../domain/user_asset_category.dart';
 import '../domain/user_asset_item.dart';
@@ -50,13 +50,13 @@ class AssetRepository extends ChangeNotifier {
     _loaded = true;
     notifyListeners();
 
-    if (AuthRepository.instance.hasAuthToken) {
+    if (AuthBridge.hasAuthToken) {
       unawaited(refreshFromApi());
     }
   }
 
   Future<void> refreshFromApi() async {
-    if (!AuthRepository.instance.isLoggedIn) return;
+    if (!AuthBridge.isLoggedIn) return;
     _lastError = null;
 
     final categories = <UserAssetCategory>[];
@@ -72,13 +72,13 @@ class AssetRepository extends ChangeNotifier {
       fail: (msg) => _lastError ??= msg,
     );
 
-    if (categories.isNotEmpty || AuthRepository.instance.isLoggedIn) {
+    if (categories.isNotEmpty || AuthBridge.isLoggedIn) {
       _userCategories
         ..clear()
         ..addAll(categories);
     }
 
-    if (items.isNotEmpty || AuthRepository.instance.isLoggedIn) {
+    if (items.isNotEmpty || AuthBridge.isLoggedIn) {
       _mergeRemoteItems(items);
     }
 
@@ -148,7 +148,7 @@ class AssetRepository extends ChangeNotifier {
   Future<UserAssetCategory> createUserCategory({required String label}) async {
     final trimmed = label.trim();
 
-    if (AuthRepository.instance.isLoggedIn) {
+    if (AuthBridge.isLoggedIn) {
       UserAssetCategory? created;
       String? error;
       await asset_api.createProductionAssetCategory(
@@ -190,7 +190,7 @@ class AssetRepository extends ChangeNotifier {
     final existing = _userCategories[index];
     final updated = existing.copyWith(label: label.trim());
 
-    if (existing.remoteId != null && AuthRepository.instance.isLoggedIn) {
+    if (existing.remoteId != null && AuthBridge.isLoggedIn) {
       UserAssetCategory? remote;
       String? error;
       await asset_api.updateProductionAssetCategory(
@@ -220,7 +220,7 @@ class AssetRepository extends ChangeNotifier {
     if (index < 0) return '分类不存在';
     final existing = _userCategories[index];
 
-    if (existing.remoteId != null && AuthRepository.instance.isLoggedIn) {
+    if (existing.remoteId != null && AuthBridge.isLoggedIn) {
       String? error;
       await asset_api.deleteProductionAssetCategory(
         existing.remoteId!,
@@ -258,7 +258,7 @@ class AssetRepository extends ChangeNotifier {
       updatedAt: now,
     );
 
-    if (AuthRepository.instance.isLoggedIn) {
+    if (AuthBridge.isLoggedIn) {
       final userCategory = findUserCategoryByLocalId(_userCategories, categoryId);
       UserAssetItem? created;
       String? error;
@@ -288,7 +288,7 @@ class AssetRepository extends ChangeNotifier {
 
     final updated = item.copyWith(updatedAt: DateTime.now());
 
-    if (item.remoteId != null && AuthRepository.instance.isLoggedIn) {
+    if (item.remoteId != null && AuthBridge.isLoggedIn) {
       final userCategory =
           findUserCategoryByLocalId(_userCategories, updated.categoryId);
       UserAssetItem? remote;
@@ -320,7 +320,7 @@ class AssetRepository extends ChangeNotifier {
     if (index < 0) return '资产不存在';
     final existing = _items[index];
 
-    if (existing.remoteId != null && AuthRepository.instance.isLoggedIn) {
+    if (existing.remoteId != null && AuthBridge.isLoggedIn) {
       String? error;
       await asset_api.deleteProductionAssetItem(
         existing.remoteId!,

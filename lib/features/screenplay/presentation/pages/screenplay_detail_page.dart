@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/providers/auth_providers.dart';
 import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -12,7 +14,6 @@ import '../../../../core/network/api_auth.dart';
 import '../../../../core/responsive/responsive_builder.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../core/utils/state_listeners.dart';
-import '../../../auth/data/auth_repository.dart';
 import '../../../social/data/social_repository.dart';
 import '../../../user/data/user_profile_repository.dart';
 import '../../../screenplay/data/screenplay_bundle_service.dart';
@@ -40,16 +41,17 @@ import '../../../../shared/widgets/image_preview.dart';
 import '../../../../shared/widgets/pose_cover_image.dart';
 import '../../../../shared/widgets/primary_button.dart';
 
-class ScreenplayDetailPage extends StatefulWidget {
+class ScreenplayDetailPage extends ConsumerStatefulWidget {
   const ScreenplayDetailPage({super.key, required this.scriptId});
 
   final String scriptId;
 
   @override
-  State<ScreenplayDetailPage> createState() => _ScreenplayDetailPageState();
+  ConsumerState<ScreenplayDetailPage> createState() =>
+      _ScreenplayDetailPageState();
 }
 
-class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
+class _ScreenplayDetailPageState extends ConsumerState<ScreenplayDetailPage> {
   final _localRepository = ScreenplayLocalRepository.instance;
   final _remoteRepository = ScreenplayRemoteRepository.instance;
 
@@ -240,7 +242,7 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
   Future<void> _onLike(Screenplay script) async {
     if (_likeBusy || script.isLocal) return;
 
-    if (!AuthRepository.instance.isLoggedIn) {
+    if (!ref.read(isLoggedInProvider)) {
       context.go(
         AppRoutes.loginWithRedirect(AppRoutes.script(widget.scriptId)),
       );
@@ -260,7 +262,7 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
     final ownerId = script.ownerUserId;
     if (_followBusy || ownerId == null || ownerId <= 0) return;
 
-    if (!AuthRepository.instance.isLoggedIn) {
+    if (!ref.read(isLoggedInProvider)) {
       context.go(
         AppRoutes.loginWithRedirect(AppRoutes.script(widget.scriptId)),
       );
@@ -324,7 +326,7 @@ class _ScreenplayDetailPageState extends State<ScreenplayDetailPage> {
   Future<void> _onPublish(Screenplay script) async {
     if (_publishing) return;
 
-    if (!AuthRepository.instance.isLoggedIn) {
+    if (!ref.read(isLoggedInProvider)) {
       context.go(
         AppRoutes.loginWithRedirect(AppRoutes.script(widget.scriptId)),
       );

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/providers/auth_providers.dart';
 import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
@@ -9,7 +11,6 @@ import '../../../../app/theme/app_text_styles.dart';
 import '../../../../app/theme/system_ui_style.dart';
 import '../../../../core/responsive/breakpoints.dart';
 import '../../../../core/utils/state_listeners.dart';
-import '../../../auth/data/auth_repository.dart';
 import '../../data/profile_avatar_upload_service.dart';
 import '../../data/profile_background_upload_service.dart';
 import '../../domain/profile_display.dart';
@@ -20,15 +21,14 @@ import '../../../../shared/widgets/primary_button.dart';
 import '../../../../shared/widgets/rc0_image.dart';
 import '../../../../shared/widgets/shell_insets.dart';
 
-class EditProfilePage extends StatefulWidget {
+class EditProfilePage extends ConsumerStatefulWidget {
   const EditProfilePage({super.key});
 
   @override
-  State<EditProfilePage> createState() => _EditProfilePageState();
+  ConsumerState<EditProfilePage> createState() => _EditProfilePageState();
 }
 
-class _EditProfilePageState extends State<EditProfilePage> {
-  final _auth = AuthRepository.instance;
+class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   late final TextEditingController _nickname;
   late final TextEditingController _bio;
   late final TextEditingController _email;
@@ -46,22 +46,21 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   void initState() {
     super.initState();
-    _auth.addListener(_onAuthChanged);
-    final p = _auth.profile;
+    final session = ref.read(authSessionProvider);
+    final p = session.profile;
     _nickname = TextEditingController(text: p?.nickname ?? '');
     _bio = TextEditingController(text: p?.bio ?? '');
     _email = TextEditingController(text: p?.email ?? '');
     _phone = TextEditingController(text: p?.phone ?? '');
     _avatarUrl = p?.avatar ?? '';
     _backgroundUrl = p?.backgroundUrl ?? '';
-    if (_auth.isLoggedIn && p == null) {
+    if (session.isLoggedIn && p == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _loadProfile());
     }
   }
 
   @override
   void dispose() {
-    _auth.removeListener(_onAuthChanged);
     _nickname.dispose();
     _bio.dispose();
     _email.dispose();
@@ -69,19 +68,17 @@ class _EditProfilePageState extends State<EditProfilePage> {
     super.dispose();
   }
 
-  void _onAuthChanged() => scheduleSetState(this);
-
   Future<void> _loadProfile() async {
-    if (!_auth.isLoggedIn) return;
+    if (!ref.read(authSessionProvider).isLoggedIn) return;
     setState(() => _loading = true);
-    await _auth.refreshProfile();
+    await ref.read(authRepositoryProvider).refreshProfile();
     if (!mounted) return;
     _syncFieldsFromProfile();
     setState(() => _loading = false);
   }
 
   void _syncFieldsFromProfile() {
-    final p = _auth.profile;
+    final p = ref.read(authSessionProvider).profile;
     if (p == null) return;
     _nickname.text = p.nickname;
     _bio.text = p.bio;
@@ -155,7 +152,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   Future<void> _save() async {
     setState(() => _saving = true);
-    final err = await _auth.updateProfileFields(
+    final err = await ref.read(authRepositoryProvider).updateProfileFields(
       nickname: _nickname.text.trim(),
       bio: _bio.text.trim(),
       email: _email.text.trim(),
@@ -190,7 +187,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final profile = _auth.profile;
+    ref.listen(authSessionProvider, (previous, next) {
+      if (previous?.profile != next.profile) {
+        _syncFieldsFromProfile();
+        scheduleSetState(this);
+      }
+    });
+
+    final profile = ref.watch(authSessionProvider).profile;
     final avatarPreviewPath = _avatarPreviewPath();
     final backgroundPreviewPath = _backgroundPreviewPath();
     final busy =

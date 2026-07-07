@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../app/providers/auth_providers.dart';
 import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/theme/app_dimensions.dart';
-import '../../../auth/data/auth_repository.dart';
 import '../../../social/data/social_repository.dart';
 import '../../../user/data/user_profile_repository.dart';
 import '../../../user/data/user_screenplays_repository.dart';
@@ -13,16 +14,16 @@ import '../../../../shared/widgets/explore_feed_tile.dart';
 import '../../../../shared/widgets/primary_button.dart';
 import '../../../../shared/widgets/profile_widgets.dart';
 
-class UserProfilePage extends StatefulWidget {
+class UserProfilePage extends ConsumerStatefulWidget {
   const UserProfilePage({super.key, required this.userId});
 
   final int userId;
 
   @override
-  State<UserProfilePage> createState() => _UserProfilePageState();
+  ConsumerState<UserProfilePage> createState() => _UserProfilePageState();
 }
 
-class _UserProfilePageState extends State<UserProfilePage> {
+class _UserProfilePageState extends ConsumerState<UserProfilePage> {
   final _userRepo = UserProfileRepository.instance;
   final _screenplays = UserScreenplaysRepository.instance;
   final _social = SocialRepository.instance;
@@ -68,7 +69,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
   }
 
   bool get _isSelf {
-    final me = AuthRepository.instance.profile;
+    final me = ref.watch(authProfileProvider);
     return me != null && me.id.toInt() == widget.userId;
   }
 

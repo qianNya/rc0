@@ -1,35 +1,36 @@
 ---
-description: Liquid Glass Token 规则（颜色/圆角/材质/动效）
+description: Liquid Glass 设计 Token 规则（颜色/圆角/间距/动效/阴影），写任何 Dart UI 代码时适用
 globs: lib/**/*.dart
 alwaysApply: false
 ---
 
 # Token 规则
 
-SSOT：`lib/app/theme/` + `docs/DESIGN_SYSTEM.md`。
+SSOT：`lib/app/theme/` + `docs/design/UI_STYLE_GUIDE.md`。禁止业务层硬编码 `Color(0x...)`、数字间距、数字时长（唯一例外：`preset_cover.dart` 调色板数据表）。
 
-| 类 | 作用 |
-|---|---|
-| `AppColors` | 玻璃材质色、高光、边框、导航/Tab 语义色 |
-| `AppDimensions` | 间距、连续圆角、浮动边距、玻璃 blur |
-| `AppMotion` | 150/250/350-400ms 动效与曲线 |
+| 类 | 作用 | 关键值 |
+|---|---|---|
+| `AppColors` | 玻璃材质/高光/边框/导航语义色 | `glassSurfaceLight` `0xB8FFFFFF`、`glassSurfaceDark` `0x661E1E1E`、`accent` `#6B4FE0` |
+| `AppDimensions` | 间距/圆角/浮动边距/blur | 间距 4/8/16/24/32；`pagePadding` 20；`glassBlurSigma` 24；`glassNavBlurSigma` 16；`floatingBottomClearance` 72 |
+| `AppMotion` | 动效时长与曲线 | `fast` 150 / `normal` 250 / `slow` 400；`liquidTab` = Cubic(0.33, 1.2, 0.48, 1.0) 水滴回弹 |
+| `AppTextStyles` | 字阶 | `display` 28/w700、`title` 20/w600、`body` 16、`label` 14/w600、`caption` 12 |
+| `AppShadows` | 环境光影（非 Material elevation） | `card` / `floatingBar` / `floatingBarNav`（-4 spread 柔投影） |
 
 ## 连续曲率（Continuous Curvature）
 
-优先使用 24 / 28 / 32 / Pill；避免 4/6/8 直角化体验。
+优先 24 / 28 / 32 / Pill；避免 4/6/8 直角化。`radiusSm(8)`/`radiusMd(12)` 仅限内嵌小元素（缩略图、徽章）。
 
-导航与 Tab 需使用专门 radius token（top nav 28、bottom nav/tab 32）。
+导航专用 radius：top nav 28（`topNavFloatingRadius`）、bottom nav/tab 32。
 
 ## 颜色策略
 
-- UI 保持中性，颜色主要来自内容。
-- `AppColors.accent` 仅用于 CTA、激活态、焦点态。
-- 透明优先于不透明；禁止厚重实心面板。
+- UI 中性，颜色来自内容；`accent` 仅用于 CTA/激活态/焦点态。
+- 语义徽章：`badgeHot`/`badgeNew`/`badgeTemplate`。
+- 透明优先于不透明；禁止厚重实心面板；沉浸页用三段式 `heroScrim*` 渐变。
+- 明暗双 token：所有玻璃/文字/边框必须有 `*Dark` 对应，禁止只写单模式。
 
 ## 动画策略
 
-- 状态切换必须 Emerges / Dissolves，不可瞬时跳变。
-- Micro 150ms，Small 250ms，Medium 350~400ms。
-- 允许 Fade/Scale/Slide/Blend；避免激进 bounce/shake/overshoot。
-
-`preset_cover.dart` 调色板数据表为唯一允许的 raw `Color(0x)` 例外。
+- 状态切换必须 Emerges / Dissolves，不可瞬时跳变；总时长 ≤ 400ms。
+- 允许 Fade/Scale/Slide/Blend；禁止激进 bounce/shake/overshoot（`liquidTab` 的轻微回弹是唯一例外）。
+- 结构增删用 `AnimatedSize` / `AnimatedSwitcher`。

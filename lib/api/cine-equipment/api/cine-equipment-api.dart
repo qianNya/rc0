@@ -198,3 +198,31 @@ Future toggleCineEquipmentFavorite({
     eventually: eventually,
   );
 }
+
+Future getGearCabinetLayout({
+  Function(GearCabinetLayoutItem)? ok,
+  Function(String)? fail,
+  Function? eventually,
+}) async {
+  await apiGet(
+    '/cine-equipment/layout',
+    ok: (data) => ok?.call(GearCabinetLayoutItem.fromJson(data)),
+    fail: fail,
+    eventually: eventually,
+  );
+}
+
+Future saveGearCabinetLayout({
+  required GearCabinetLayoutSaveBody body,
+  Function(GearCabinetLayoutItem)? ok,
+  Function(String)? fail,
+  Function? eventually,
+}) async {
+  await apiPut(
+    '/cine-equipment/layout',
+    body.toJson(),
+    ok: (data) => ok?.call(GearCabinetLayoutItem.fromJson(data)),
+    fail: fail,
+    eventually: eventually,
+  );
+}

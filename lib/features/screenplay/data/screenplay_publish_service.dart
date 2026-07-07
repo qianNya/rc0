@@ -3,7 +3,9 @@ import 'dart:io';
 
 import '../../../api/screenplay/api/screenplay-api.dart' as screenplay_api;
 import '../../../api/screenplay/data/screenplay-api.dart' as api;
-import '../../auth/data/auth_repository.dart';
+import '../../../core/auth/auth_bridge.dart';
+import '../../../core/media/app_media_upload_service.dart';
+import '../../../core/media/upload_legacy_adapter.dart';
 import 'data_upload_repository.dart';
 import 'screenplay_api_mapper.dart';
 import 'screenplay_remote_repository.dart';
@@ -37,7 +39,7 @@ class ScreenplayPublishService {
     required int visibility,
     PublishProgressCallback? onProgress,
   }) async {
-    if (!AuthRepository.instance.isLoggedIn) {
+    if (!AuthBridge.isLoggedIn) {
       return (result: null, error: '请先登录');
     }
     if (document.meta.remoteScreenplayId != null) {
@@ -111,7 +113,7 @@ class ScreenplayPublishService {
         return (result: null, error: saved.error ?? '获取剧本树失败');
       }
 
-      final profile = AuthRepository.instance.profile;
+      final profile = AuthBridge.profile;
       final authorName = profile != null && profile.nickname.isNotEmpty
           ? profile.nickname
           : (profile?.username ?? document.meta.author);
@@ -145,7 +147,7 @@ class ScreenplayPublishService {
     int? visibility,
     PublishProgressCallback? onProgress,
   }) async {
-    if (!AuthRepository.instance.isLoggedIn) {
+    if (!AuthBridge.isLoggedIn) {
       return (result: null, error: '请先登录');
     }
 
@@ -196,7 +198,7 @@ class ScreenplayPublishService {
         return (result: null, error: saved.error ?? '同步失败');
       }
 
-      final profile = AuthRepository.instance.profile;
+      final profile = AuthBridge.profile;
       final authorName = profile != null && profile.nickname.isNotEmpty
           ? profile.nickname
           : (profile?.username ?? document.meta.author);
@@ -250,14 +252,15 @@ class ScreenplayPublishService {
     final total = refToFile.length;
     onProgress?.call('上传图片', 0, total);
 
-    final result = await DataUploadRepository.instance.uploadBatch(
-      refToFile,
+    final refToPath = refToFile.map((key, file) => MapEntry(key, file.path));
+    final result = await AppMediaUploadService.instance.uploadLocalBatch(
+      refToPath,
       onProgress: (done, batchTotal) {
         onProgress?.call('上传图片', done, batchTotal);
       },
     );
 
-    if (result.error != null || result.refToUploaded == null) {
+    if (result.error != null || result.results == null) {
       return (
         refToUploaded: null,
         coverFile: null,
@@ -266,7 +269,7 @@ class ScreenplayPublishService {
     }
 
     return (
-      refToUploaded: result.refToUploaded,
+      refToUploaded: uploadedImagesFromMediaBatch(result.results!),
       coverFile: coverFile,
       error: null,
     );
@@ -281,9 +284,9 @@ class ScreenplayPublishService {
       return (url: null, error: null);
     }
     onProgress?.call('上传封面', 0, 1);
-    final cover = await DataUploadRepository.instance.uploadScreenplayCover(
-      remoteId,
-      coverFile,
+    final cover = await AppMediaUploadService.instance.uploadScreenplayCover(
+      screenplayId: remoteId,
+      localPath: coverFile.path,
     );
     if (cover.error != null) {
       return (url: null, error: cover.error);

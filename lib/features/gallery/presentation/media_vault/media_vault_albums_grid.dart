@@ -10,11 +10,13 @@ class MediaVaultAlbumsGrid extends StatelessWidget {
     required this.albums,
     required this.onAlbumTap,
     this.onCreate,
+    this.onAlbumDelete,
   });
 
   final List<MediaAlbum> albums;
   final ValueChanged<MediaAlbum> onAlbumTap;
   final VoidCallback? onCreate;
+  final ValueChanged<MediaAlbum>? onAlbumDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -32,17 +34,28 @@ class MediaVaultAlbumsGrid extends StatelessWidget {
           return _CreateAlbumCard(onTap: onCreate);
         }
         final album = albums[index];
-        return _AlbumCard(album: album, onTap: () => onAlbumTap(album));
+        return _AlbumCard(
+          album: album,
+          onTap: () => onAlbumTap(album),
+          onLongPress: onAlbumDelete == null
+              ? null
+              : () => onAlbumDelete!(album),
+        );
       },
     );
   }
 }
 
 class _AlbumCard extends StatelessWidget {
-  const _AlbumCard({required this.album, required this.onTap});
+  const _AlbumCard({
+    required this.album,
+    required this.onTap,
+    this.onLongPress,
+  });
 
   final MediaAlbum album;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +63,7 @@ class _AlbumCard extends StatelessWidget {
         [MediaVaultColors.surface, MediaVaultColors.surfaceElevated];
     return GestureDetector(
       onTap: onTap,
+      onLongPress: onLongPress,
       child: DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),

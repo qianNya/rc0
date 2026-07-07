@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/providers/auth_providers.dart';
 import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -14,7 +16,6 @@ import '../../../../shared/widgets/feed_tab_bar.dart';
 import '../../../../shared/widgets/primary_button.dart';
 import '../../../../shared/widgets/rc0_image.dart';
 import '../../../../shared/widgets/rc0_widgets.dart';
-import '../../../auth/data/auth_repository.dart';
 import '../../data/scene_local_store.dart';
 import '../../data/scene_repository.dart';
 import '../../domain/scene_entry.dart';
@@ -22,18 +23,17 @@ import '../../domain/scene_utils.dart';
 import '../widgets/scene_detail_tabs.dart';
 import '../widgets/scene_action_sheet.dart';
 
-class SceneDetailPage extends StatefulWidget {
+class SceneDetailPage extends ConsumerStatefulWidget {
   const SceneDetailPage({super.key, required this.sceneId});
 
   final String sceneId;
 
   @override
-  State<SceneDetailPage> createState() => _SceneDetailPageState();
+  ConsumerState<SceneDetailPage> createState() => _SceneDetailPageState();
 }
 
-class _SceneDetailPageState extends State<SceneDetailPage> {
+class _SceneDetailPageState extends ConsumerState<SceneDetailPage> {
   final _repo = SceneRepository.instance;
-  final _auth = AuthRepository.instance;
   bool _loading = true;
   SceneEntry? _entry;
   bool _favorite = false;
@@ -97,7 +97,7 @@ class _SceneDetailPageState extends State<SceneDetailPage> {
       title: Text(entry?.title.isNotEmpty == true ? entry!.title : '场景详情'),
       onBack: () => popOrGoDiscovery(context),
       actions: [
-        if (_auth.isLoggedIn && entry != null && !entry.isSeed)
+        if (ref.watch(isLoggedInProvider) && entry != null && !entry.isSeed)
           IconButton(
             icon: const Icon(Icons.edit_outlined),
             onPressed: () async {
@@ -112,7 +112,7 @@ class _SceneDetailPageState extends State<SceneDetailPage> {
               context: context,
               entry: entry,
               repo: _repo,
-              isLoggedIn: _auth.isLoggedIn,
+              isLoggedIn: ref.watch(isLoggedInProvider),
               isFavorite: _favorite,
               onToggleFavorite: _toggleFavorite,
               onRefresh: _load,

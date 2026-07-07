@@ -1,0 +1,44 @@
+---
+description: rc0 UX 交互模式（页面层级/导航/三态/反馈），改路由、页面、交互流程时适用
+globs: lib/features/**/*.dart,lib/app/router/**/*.dart
+alwaysApply: false
+---
+
+# rc0 UX 模式
+
+完整规范：`docs/design/UX_GUIDELINES.md`。
+
+## 页面层级（L1–L5）
+
+- L1 Shell 主入口（`/discovery` `/studio` 等）：浮动导航常驻，走 shell branch，保留滚动位置。
+- L2 领域列表/Hub：筛选/搜索 + 浮动 Tab。
+- L3 详情/阅读：`GlassHeroPage` 沉浸式，只读 + 轻操作。
+- L4 Studio 编辑：全屏编辑态，导航退场，走 root route。
+- L5 Sheet/Picker：`GlassSheet`，单层，用完即散；禁止弹窗套弹窗（模态 ≤ 2 层）。
+
+阅读态与编辑态严格分离：详情页不承载编辑器草稿；进入编辑必须显式跳转。
+
+## 导航
+
+- 主导航 3–5 tab；创作入口独立胶囊按钮，不与消费 tab 混排。
+- 需登录的行为（发布/点赞/上传）在触发时引导登录，不做路由级拦截浏览。
+- 路径规范：列表复数（`/scenes`）、详情 `/:id`、编辑 `/edit`、AI 入口 `/ai`。
+
+## 三态强制
+
+所有列表/数据页必须有加载/空/错误三态：
+
+- 加载：骨架/渐变占位（`explorePlaceholderStart/End`），不用转圈遮罩。
+- 空：`GlassEmptyState`，一句引导 + 一个行动按钮。
+- 错误：统一错误卡 + 重试，文案经 `apiErrorMessage()` 人话化。
+
+## 反馈层级
+
+| 类型 | 载体 |
+|---|---|
+| 操作确认 | 全局统一 SnackBar，2s 自动消失 |
+| 需要决策/破坏性操作 | `GlassDialog` 二次确认，说明影响范围 |
+| 长任务（发布/导出/生成） | `GlassProgressSheet`，可取消含进度 |
+| 401 过期 | 全局去重 SnackBar + "去登录" |
+
+AI 生成是异步任务：提交后立即可继续编辑；结果回写发起上下文；失败给可行动错误 + 一键重试，禁止裸错误码。

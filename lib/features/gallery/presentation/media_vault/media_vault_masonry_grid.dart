@@ -18,6 +18,7 @@ class MediaVaultMasonryGrid extends StatefulWidget {
     super.key,
     required this.items,
     required this.onTap,
+    this.onLongPress,
     this.selectedId,
     this.columnCount = 3,
     this.onColumnCountChanged,
@@ -27,6 +28,7 @@ class MediaVaultMasonryGrid extends StatefulWidget {
 
   final List<MediaVaultImage> items;
   final ValueChanged<MediaVaultImage> onTap;
+  final ValueChanged<MediaVaultImage>? onLongPress;
   final String? selectedId;
   final int columnCount;
   final ValueChanged<int>? onColumnCountChanged;
@@ -158,6 +160,12 @@ class _MediaVaultMasonryGridState extends State<MediaVaultMasonryGrid> {
                                             selected:
                                                 item.id == widget.selectedId,
                                             onTap: () => widget.onTap(item),
+                                            onLongPress: widget.onLongPress ==
+                                                    null
+                                                ? null
+                                                : () => widget.onLongPress!(
+                                                      item,
+                                                    ),
                                           ),
                                         );
                                       },

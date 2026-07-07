@@ -1,20 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:rc0_core/rc0_core.dart';
 
-import '../../../character/data/character_repository.dart';
-import '../../../lighting/domain/lighting_scheme.dart';
-import '../../../lighting/data/lighting_draft_binding.dart';
-import '../../../lighting/presentation/utils/lighting_navigation.dart';
-import '../../../lighting/presentation/widgets/lighting_picker_sheet.dart';
-import '../../../cine_equipment/data/equipment_draft_binding.dart';
-import '../../../cine_equipment/domain/cine_camera_setup.dart';
-import '../../../cine_equipment/presentation/widgets/camera_control_sheet.dart';
-import '../../../cine_equipment/presentation/widgets/equipment_picker_sheet.dart';
-import '../../../cine_equipment/data/equipment_setup_mapper.dart';
-import '../../../scene/presentation/widgets/scene_picker_sheet.dart';
-import '../../../screenplay/data/screenplay_scene_binding.dart';
-import '../../../upload/presentation/widgets/editor/screenplay_characters_section.dart';
-import '../../../upload/presentation/widgets/editor/screenplay_scenes_section.dart';
+import '../../../../app/module_registry.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
@@ -23,11 +11,14 @@ import '../../../../core/data/app_catalog.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
 import '../../../../shared/widgets/profile_widgets.dart';
+import '../../../character/data/character_repository.dart';
 import '../../../screenplay/data/frame_generation_repository.dart';
 import '../../../screenplay/data/screenplay_draft.dart';
 import '../../../screenplay/data/shoot_params_draft.dart';
 import '../../../screenplay/domain/ai_prompt_builder.dart';
 import '../../../upload/presentation/widgets/editor/editor_read_only_info_card.dart';
+import '../../../upload/presentation/widgets/editor/screenplay_characters_section.dart';
+import '../../../upload/presentation/widgets/editor/screenplay_scenes_section.dart';
 import '../../../upload/presentation/widgets/frame_editor/frame_camera_params_grid.dart';
 import '../../../upload/presentation/widgets/frame_editor/frame_generation_actions.dart';
 import '../../../upload/presentation/widgets/frame_editor/frame_prompt_section.dart';
@@ -203,11 +194,12 @@ class _FrameInspectorPanelState extends State<FrameInspectorPanel> {
                   ),
                   const SizedBox(height: 16),
                   _LightingSchemeSection(
-                    frame: frame,
-                    actIndex: actIndex,
-                    sceneIndex: sceneIndex,
-                    frameIndex: frameIndex,
-                    draft: widget.actions.draft,
+                    target: FrameBindingTarget(
+                      draft: widget.actions.draft,
+                      actIndex: actIndex,
+                      sceneIndex: sceneIndex,
+                      frameIndex: frameIndex,
+                    ),
                     onChanged: () {
                       widget.onChanged();
                       setState(() {});
@@ -215,11 +207,12 @@ class _FrameInspectorPanelState extends State<FrameInspectorPanel> {
                   ),
                   const SizedBox(height: 16),
                   _CineSetupSection(
-                    frame: frame,
-                    actIndex: actIndex,
-                    sceneIndex: sceneIndex,
-                    frameIndex: frameIndex,
-                    draft: widget.actions.draft,
+                    target: FrameBindingTarget(
+                      draft: widget.actions.draft,
+                      actIndex: actIndex,
+                      sceneIndex: sceneIndex,
+                      frameIndex: frameIndex,
+                    ),
                     onChanged: () {
                       widget.onChanged();
                       setState(() {});
@@ -239,21 +232,29 @@ class _FrameInspectorPanelState extends State<FrameInspectorPanel> {
                     characterName: frame.characterName,
                     characterNote: frame.characterNote,
                     onPickCharacter: () async {
-                      final picked = await pickAndLinkScreenplayCharacter(
-                        context,
+                      final target = FrameBindingTarget(
                         draft: widget.actions.draft,
-                        selectedCharacterId: frame.characterId,
+                        actIndex: actIndex,
+                        sceneIndex: sceneIndex,
+                        frameIndex: frameIndex,
                       );
+                      final picked = await AppModuleRegistry.instance
+                          .port<CharacterBindingPort>()
+                          .pickAndApplyCharacter(
+                            context,
+                            target,
+                            selectedCharacterId: frame.characterId,
+                          );
                       if (!context.mounted) return;
                       if (picked == null) {
                         frame.characterId = null;
                         frame.characterName = '';
                       } else {
                         frame.characterId = picked.id;
-                        frame.characterName = picked.name;
+                        frame.characterName = picked.name ?? '';
                         if (frame.characterNote.trim().isEmpty &&
-                            picked.appearance.isNotEmpty) {
-                          frame.characterNote = picked.appearance;
+                            (picked.appearance?.isNotEmpty ?? false)) {
+                          frame.characterNote = picked.appearance!;
                         }
                       }
                       widget.onChanged();
@@ -565,16 +566,19 @@ class _SceneFieldsSection extends StatelessWidget {
                 ),
                 TextButton(
                   onPressed: () async {
-                    final picked = await ScenePickerSheet.show(
-                      context,
-                      selectedSceneId: scene.sceneLibraryId,
+                    final target = FrameBindingTarget(
+                      draft: actions.draft,
+                      actIndex: actIndex,
+                      sceneIndex: sceneIndex,
                     );
-                    if (picked == null || !context.mounted) return;
-                    applyLibrarySceneToSceneDraft(
-                      picked,
-                      scene,
-                      actions.draft,
-                    );
+                    final applied = await AppModuleRegistry.instance
+                        .port<SceneBindingPort>()
+                        .pickAndApplyLibraryScene(
+                          context,
+                          target,
+                          selectedSceneId: scene.sceneLibraryId,
+                        );
+                    if (!applied || !context.mounted) return;
                     onChanged();
                   },
                   child: const Text('更换场景'),
@@ -587,13 +591,15 @@ class _SceneFieldsSection extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: TextButton.icon(
               onPressed: () async {
-                final picked = await ScenePickerSheet.show(context);
-                if (picked == null || !context.mounted) return;
-                applyLibrarySceneToSceneDraft(
-                  picked,
-                  scene,
-                  actions.draft,
+                final target = FrameBindingTarget(
+                  draft: actions.draft,
+                  actIndex: actIndex,
+                  sceneIndex: sceneIndex,
                 );
+                final applied = await AppModuleRegistry.instance
+                    .port<SceneBindingPort>()
+                    .pickAndApplyLibraryScene(context, target);
+                if (!applied || !context.mounted) return;
                 onChanged();
               },
               icon: const Icon(Icons.landscape_outlined, size: 18),
@@ -740,48 +746,16 @@ class _CharacterSection extends StatelessWidget {
 
 class _LightingSchemeSection extends StatelessWidget {
   const _LightingSchemeSection({
-    required this.frame,
-    required this.actIndex,
-    required this.sceneIndex,
-    required this.frameIndex,
-    required this.draft,
+    required this.target,
     required this.onChanged,
   });
 
-  final FrameDraft frame;
-  final int actIndex;
-  final int sceneIndex;
-  final int frameIndex;
-  final ScreenplayDraft draft;
+  final FrameBindingTarget target;
   final VoidCallback onChanged;
-
-  String get _label {
-    final rig = lightingSchemeFromDraftFrame(frame);
-    if (rig != null) return rig.displaySummary;
-    final params = effectiveParamsForFrame(
-      draft,
-      actIndex,
-      sceneIndex,
-      frameIndex,
-    );
-    return params.lighting?.trim().isNotEmpty == true
-        ? params.lighting!
-        : '未设置';
-  }
-
-  Future<void> _applyScheme(BuildContext context, LightingScheme scheme) async {
-    applyLightingSchemeToDraft(
-      draft,
-      scheme,
-      actIndex: actIndex,
-      sceneIndex: sceneIndex,
-      frameIndex: frameIndex,
-    );
-    onChanged();
-  }
 
   @override
   Widget build(BuildContext context) {
+    final port = AppModuleRegistry.instance.port<LightingBindingPort>();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -792,32 +766,30 @@ class _LightingSchemeSection extends StatelessWidget {
             ),
             TextButton(
               onPressed: () async {
-                final scheme = await LightingPickerSheet.show(context);
-                if (scheme == null || !context.mounted) return;
-                await _applyScheme(context, scheme);
+                if (await port.pickQuick(context, target)) onChanged();
               },
               child: const Text('快速选择'),
             ),
             TextButton(
               onPressed: () async {
-                final scheme = await openLightingHub(
+                final draft = target.draft as ScreenplayDraft;
+                final frame = draft.acts[target.actIndex]
+                    .scenes[target.sceneIndex].frames[target.frameIndex!];
+                if (await port.pickFromHub(
                   context,
-                  schemeId: frame.lightingSchemeId,
+                  target,
                   characterId: frame.characterId,
-                  scope: 'apply',
-                  actIndex: actIndex,
-                  sceneIndex: sceneIndex,
-                  frameIndex: frameIndex,
-                );
-                if (scheme == null || !context.mounted) return;
-                await _applyScheme(context, scheme);
+                  schemeId: frame.lightingSchemeId,
+                )) {
+                  onChanged();
+                }
               },
               child: const Text('灯光库'),
             ),
           ],
         ),
         const SizedBox(height: 8),
-        Text(_label, style: AppTextStyles.bodySecondary),
+        Text(port.displayLabel(target), style: AppTextStyles.bodySecondary),
       ],
     );
   }
@@ -825,42 +797,20 @@ class _LightingSchemeSection extends StatelessWidget {
 
 class _CineSetupSection extends StatelessWidget {
   const _CineSetupSection({
-    required this.frame,
-    required this.actIndex,
-    required this.sceneIndex,
-    required this.frameIndex,
-    required this.draft,
+    required this.target,
     required this.onChanged,
   });
 
-  final FrameDraft frame;
-  final int actIndex;
-  final int sceneIndex;
-  final int frameIndex;
-  final ScreenplayDraft draft;
+  final FrameBindingTarget target;
   final VoidCallback onChanged;
-
-  String get _label {
-    final setup = cineSetupFromDraftFrame(frame);
-    if (setup != null && !setup.isEmpty) {
-      return EquipmentSetupMapper.displaySummary(setup);
-    }
-    return '未设置';
-  }
-
-  Future<void> _applySetup(BuildContext context, CineCameraSetup setup) async {
-    applyCineSetupToDraft(
-      draft,
-      setup,
-      actIndex: actIndex,
-      sceneIndex: sceneIndex,
-      frameIndex: frameIndex,
-    );
-    onChanged();
-  }
 
   @override
   Widget build(BuildContext context) {
+    final port = AppModuleRegistry.instance.port<CameraBindingPort>();
+    final draft = target.draft as ScreenplayDraft;
+    final frame = draft.acts[target.actIndex].scenes[target.sceneIndex]
+        .frames[target.frameIndex!];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -871,36 +821,32 @@ class _CineSetupSection extends StatelessWidget {
             ),
             TextButton(
               onPressed: () async {
-                final setup = await EquipmentPickerSheet.show(context);
-                if (setup == null || !context.mounted) return;
-                await _applySetup(context, setup);
+                if (await port.pickQuick(context, target)) onChanged();
               },
               child: const Text('快速选择'),
             ),
             TextButton(
               onPressed: () async {
-                final setup = await CameraControlSheet.show(
-                  context,
-                  initialSetup: cineSetupFromDraftFrame(frame),
-                  onSave: (saved) {},
-                );
-                if (setup == null || !context.mounted) return;
-                await _applySetup(context, setup);
+                if (await port.pickControlSheet(context, target)) onChanged();
               },
               child: const Text('摄影机控制'),
             ),
             TextButton(
               onPressed: () async {
-                final setup = await EquipmentPickerSheet.show(context);
-                if (setup == null || !context.mounted) return;
-                await _applySetup(context, setup);
+                if (await port.pickFromHub(
+                  context,
+                  target,
+                  setupId: frame.cineSetupId,
+                )) {
+                  onChanged();
+                }
               },
               child: const Text('设备库'),
             ),
           ],
         ),
         const SizedBox(height: 8),
-        Text(_label, style: AppTextStyles.bodySecondary),
+        Text(port.displayLabel(target), style: AppTextStyles.bodySecondary),
       ],
     );
   }

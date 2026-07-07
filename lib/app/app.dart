@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/theme/theme_mode_notifier.dart';
-import 'router/app_router.dart';
+import 'providers/router_providers.dart';
 import 'theme/app_colors.dart';
 import 'theme/app_theme.dart';
 import 'theme/system_ui_style.dart';
 
-class Rc0App extends StatefulWidget {
+class Rc0App extends ConsumerStatefulWidget {
   const Rc0App({super.key});
 
   @override
-  State<Rc0App> createState() => _Rc0AppState();
+  ConsumerState<Rc0App> createState() => _Rc0AppState();
 }
 
-class _Rc0AppState extends State<Rc0App> {
+class _Rc0AppState extends ConsumerState<Rc0App> {
   final _themeNotifier = ThemeModeNotifier.instance;
 
   @override
@@ -33,13 +34,15 @@ class _Rc0AppState extends State<Rc0App> {
 
   @override
   Widget build(BuildContext context) {
+    final router = ref.watch(goRouterProvider);
+
     return MaterialApp.router(
       title: 'rc0',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: _themeNotifier.themeMode,
-      routerConfig: AppRouter.router,
+      routerConfig: router,
       builder: (context, child) {
         final brightness = Theme.of(context).brightness;
         AppSystemUi.applyFor(brightness);

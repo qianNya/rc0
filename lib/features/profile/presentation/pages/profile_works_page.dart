@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/providers/auth_providers.dart';
 import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -19,7 +21,6 @@ import '../../../../shared/widgets/inline_error_banner.dart';
 import '../../../../shared/widgets/pose_cover_image.dart';
 import '../../../../shared/widgets/rc0_app_bar.dart';
 import '../../../../shared/widgets/shell_insets.dart';
-import '../../../auth/data/auth_repository.dart';
 import '../../../screenplay/data/screenplay_local_repository.dart';
 import '../../../screenplay/presentation/widgets/screenplay_delete_actions.dart';
 import '../../../screenplay/presentation/widgets/screenplay_selection_bar.dart';
@@ -33,17 +34,16 @@ enum _WorksFilter { all, published, drafts }
 ///
 /// Level 0 内容层（封面网格）主导视觉；Level 1 玻璃层（顶部导航 + 浮动筛选胶囊）
 /// 悬浮于内容之上；筛选切换走液态动效，符合 Apple Music「资料库」的空间体验。
-class ProfileWorksPage extends StatefulWidget {
+class ProfileWorksPage extends ConsumerStatefulWidget {
   const ProfileWorksPage({super.key});
 
   @override
-  State<ProfileWorksPage> createState() => _ProfileWorksPageState();
+  ConsumerState<ProfileWorksPage> createState() => _ProfileWorksPageState();
 }
 
-class _ProfileWorksPageState extends State<ProfileWorksPage> {
+class _ProfileWorksPageState extends ConsumerState<ProfileWorksPage> {
   final _local = ScreenplayLocalRepository.instance;
   final _screenplays = UserScreenplaysRepository.instance;
-  final _auth = AuthRepository.instance;
   final _selectionController = ScreenplaySelectionController();
 
   int? _userId;
@@ -70,9 +70,9 @@ class _ProfileWorksPageState extends State<ProfileWorksPage> {
   void _onChanged() => scheduleSetState(this);
 
   Future<void> _load() async {
-    final profile = _auth.profile;
-    if (!_auth.isLoggedIn || profile == null) return;
-    _userId = profile.id.toInt();
+    final session = ref.read(authSessionProvider);
+    if (!session.isLoggedIn || session.profile == null) return;
+    _userId = session.profile!.id.toInt();
     await _screenplays.loadFirstPage(_userId!);
   }
 
@@ -99,7 +99,7 @@ class _ProfileWorksPageState extends State<ProfileWorksPage> {
   }
 
   void _openVisibilitySettings(Screenplay script) {
-    final userId = _userId ?? _auth.profile?.id.toInt();
+    final userId = _userId ?? ref.read(authSessionProvider).profile?.id.toInt();
     if (userId == null) return;
     ScreenplayVisibilitySheet.show(context, screenplay: script, userId: userId);
   }
@@ -146,7 +146,7 @@ class _ProfileWorksPageState extends State<ProfileWorksPage> {
 
   @override
   Widget build(BuildContext context) {
-    final userId = _userId ?? _auth.profile?.id.toInt();
+    final userId = _userId ?? ref.read(authSessionProvider).profile?.id.toInt();
     final remote = userId != null
         ? _screenplays.itemsFor(userId)
         : <Screenplay>[];

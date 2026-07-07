@@ -1,0 +1,27 @@
+name: rc0
+repository: https://github.com/rc0/rc0
+
+packages:
+  - .
+  - packages/**
+
+command:
+  bootstrap:
+    usePubspecOverrides: true
+
+scripts:
+  analyze:
+    run: dart analyze .
+    description: Run analyzer on all packages.
+  boundaries:
+    run: dart run tool/check_module_boundaries.dart
+    description: Verify kernel packages do not import app features.
+  test:
+    run: flutter test
+    description: Run root app tests.
+  test:packages:
+    run: flutter test packages/rc0_core/test packages/rc0_media/test packages/rc0_network/test
+    description: Run kernel package unit tests.
+  codegen:
+    run: dart run build_runner build --delete-conflicting-outputs
+    description: Run build_runner in packages with codegen.

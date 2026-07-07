@@ -69,6 +69,7 @@ class MediaVaultImage {
     bool? isFavorite,
     int? rating,
     List<String>? tags,
+    String? albumId,
   }) {
     return MediaVaultImage(
       id: id,
@@ -77,7 +78,7 @@ class MediaVaultImage {
       imageUrl: imageUrl,
       thumbnailUrl: thumbnailUrl,
       tags: tags ?? this.tags,
-      albumId: albumId,
+      albumId: albumId ?? this.albumId,
       createdAt: createdAt,
       format: format,
       isFavorite: isFavorite ?? this.isFavorite,

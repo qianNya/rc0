@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../app/router/navigation_utils.dart';
 import '../../data/media_vault_repository.dart';
 import '../../domain/media_vault_image.dart';
+import '../actions/media_vault_actions.dart';
 import '../media_vault/media_vault_colors.dart';
 import '../media_vault/media_vault_detail_panel.dart';
 
@@ -56,7 +57,39 @@ class _MediaVaultImageDetailPageState extends State<MediaVaultImageDetailPage> {
                     width: double.infinity,
                     related: _related(image),
                     onClose: () => popOrGoHome(context),
-                    onFavorite: () => _repo.toggleFavorite(image.id),
+                    onFavorite: () async {
+                      final error = await _repo.toggleFavorite(image.id);
+                      if (mounted && error != null) {
+                        ScaffoldMessenger.of(context)
+                          ..hideCurrentSnackBar()
+                          ..showSnackBar(SnackBar(content: Text(error)));
+                      }
+                      if (mounted) setState(() {});
+                    },
+                    onAddToAlbum: () async {
+                      final error =
+                          await showAddImageToAlbumSheet(context, image);
+                      if (mounted && error != null) {
+                        ScaffoldMessenger.of(context)
+                          ..hideCurrentSnackBar()
+                          ..showSnackBar(SnackBar(content: Text(error)));
+                      }
+                      if (mounted) setState(() {});
+                    },
+                    onMoveToTrash: () async {
+                      final confirmed =
+                          await confirmMoveImageToTrash(context);
+                      if (!confirmed || !mounted) return;
+                      final error = await _repo.moveToTrash(image.id);
+                      if (!mounted) return;
+                      if (error != null) {
+                        ScaffoldMessenger.of(context)
+                          ..hideCurrentSnackBar()
+                          ..showSnackBar(SnackBar(content: Text(error)));
+                      } else {
+                        popOrGoHome(context);
+                      }
+                    },
                     onRelatedTap: (img) {
                       Navigator.of(context).pushReplacement(
                         MaterialPageRoute<void>(

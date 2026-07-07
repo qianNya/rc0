@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/providers/auth_providers.dart';
 import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -10,24 +12,22 @@ import '../../../../core/data/app_catalog.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/glass/glass.dart';
-import '../../../auth/data/auth_repository.dart';
 import '../../../character/data/character_repository.dart';
 import '../../../character/domain/character_entry.dart';
 import '../../data/ip_repository.dart';
 import '../../domain/ip_entry.dart';
-class IpDetailPage extends StatefulWidget {
+class IpDetailPage extends ConsumerStatefulWidget {
   const IpDetailPage({super.key, required this.ipId});
 
   final int ipId;
 
   @override
-  State<IpDetailPage> createState() => _IpDetailPageState();
+  ConsumerState<IpDetailPage> createState() => _IpDetailPageState();
 }
 
-class _IpDetailPageState extends State<IpDetailPage> {
+class _IpDetailPageState extends ConsumerState<IpDetailPage> {
   final _repo = IpRepository.instance;
   final _characterRepo = CharacterRepository.instance;
-  final _auth = AuthRepository.instance;
   IpEntry? _entry;
   List<CharacterEntry> _characters = [];
   bool _loading = true;
@@ -124,7 +124,7 @@ class _IpDetailPageState extends State<IpDetailPage> {
     final entry = _entry;
     final secondary =
         Theme.of(context).textTheme.bodyMedium?.color ?? AppColors.textSecondary;
-    final canEdit = _auth.isLoggedIn;
+    final canEdit = ref.watch(isLoggedInProvider);
 
     return DesktopStackScaffold(
       title: Text(entry?.title.isNotEmpty == true ? entry!.title : 'IP 详情'),

@@ -1,0 +1,14 @@
+---
+description: rc0 refactor documentation source-of-truth rules
+alwaysApply: true
+---
+
+# rc0 Refactor Docs
+
+- For refactor, module boundary, media asset, AI generation, plugin, or full-stack architecture work, read `docs/refactor/PRD.md` and `docs/refactor/TECHNICAL_DESIGN.md` first.
+- For UI style, UX, interaction, or new page design work, read `docs/design/UI_STYLE_GUIDE.md` and `docs/design/UX_GUIDELINES.md` first; for product positioning or feature-concept work, read `docs/design/PRODUCT_CONCEPT.md`. All UI follows Apple Liquid Glass.
+- Treat `docs/README.md` as the docs index. It marks which documents are authoritative and which are legacy/reference.
+- Do not treat legacy docs as the source of truth when they conflict with `docs/refactor/*`.
+- For API behavior, verify against the backend repo `C:/Users/qianlNya/RustroverProjects/rc0-rust/docs/openapi.yaml` and real handler/service code.
+- Do not add new scattered architecture documents. Update `docs/refactor/*` or `docs/README.md` unless the user asks for a separate artifact.
+- When archiving old docs, preserve history with `git mv` into `docs/archive/`; do not silently delete design history.

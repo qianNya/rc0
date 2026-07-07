@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:rc0_core/rc0_core.dart';
 
+import '../../../../../app/module_registry.dart';
 import '../../../../../app/router/routes.dart';
 import '../../../../../app/theme/app_colors.dart';
 import '../../../../../app/theme/app_dimensions.dart';
 import '../../../../../app/theme/app_text_styles.dart';
 import '../../../../character/domain/character_entry.dart';
-import '../../../../character/presentation/widgets/character_picker_sheet.dart';
 import '../../../../screenplay/data/screenplay_draft.dart';
 import '../../../../studio/domain/script_editor_selection.dart';
 import '../script_editor/script_editor_actions.dart';
@@ -29,21 +30,12 @@ class ScreenplayCharactersSection extends StatelessWidget {
   final bool compact;
 
   Future<void> _addCharacter(BuildContext context) async {
-    final picked = await CharacterPickerSheet.show(
-      context,
-      selectedCharacterId: null,
-    );
-    if (!context.mounted || picked == null) return;
-    _linkCharacter(picked);
+    final ref = await AppModuleRegistry.instance
+        .port<CharacterPickerPort>()
+        .pickCharacter(context);
+    if (!context.mounted || ref == null) return;
+    ensureDraftCharacterLinked(draft, id: ref.id, name: ref.name ?? '');
     onChanged();
-  }
-
-  void _linkCharacter(CharacterEntry entry) {
-    ensureDraftCharacterLinked(
-      draft,
-      id: entry.id,
-      name: entry.name,
-    );
   }
 
   void _removeCharacter(int id) {
@@ -164,12 +156,24 @@ Future<CharacterEntry?> pickAndLinkScreenplayCharacter(
   required ScreenplayDraft draft,
   int? selectedCharacterId,
 }) async {
-  final picked = await CharacterPickerSheet.show(
-    context,
-    selectedCharacterId: selectedCharacterId,
+  final ref = await AppModuleRegistry.instance
+      .port<CharacterPickerPort>()
+      .pickCharacter(context, selectedCharacterId: selectedCharacterId);
+  if (ref == null) return null;
+  ensureDraftCharacterLinked(draft, id: ref.id, name: ref.name ?? '');
+  return CharacterEntry(
+    id: ref.id,
+    workId: 0,
+    workTitle: '',
+    name: ref.name ?? '',
+    nameOrig: '',
+    slug: '',
+    gender: 0,
+    summary: '',
+    appearance: ref.appearance ?? '',
+    personality: '',
+    coverUrl: '',
+    aliases: const [],
+    sort: 0,
   );
-  if (picked != null) {
-    ensureDraftCharacterLinked(draft, id: picked.id, name: picked.name);
-  }
-  return picked;
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/providers/auth_providers.dart';
 import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -10,7 +12,6 @@ import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
 import '../../../../shared/widgets/feed_tab_bar.dart';
-import '../../../auth/data/auth_repository.dart';
 import '../../data/character_local_store.dart';
 import '../../data/character_repository.dart';
 import '../../domain/character_entry.dart';
@@ -18,16 +19,15 @@ import '../../domain/character_utils.dart';
 import '../widgets/character_action_sheet.dart';
 import '../widgets/character_masonry_grid.dart';
 
-class MyCharactersPage extends StatefulWidget {
+class MyCharactersPage extends ConsumerStatefulWidget {
   const MyCharactersPage({super.key});
 
   @override
-  State<MyCharactersPage> createState() => _MyCharactersPageState();
+  ConsumerState<MyCharactersPage> createState() => _MyCharactersPageState();
 }
 
-class _MyCharactersPageState extends State<MyCharactersPage> {
+class _MyCharactersPageState extends ConsumerState<MyCharactersPage> {
   final _repo = CharacterRepository.instance;
-  final _auth = AuthRepository.instance;
   final _scrollController = ScrollController();
   int _tabIndex = 1;
   Set<int> _ownedIds = {};
@@ -87,6 +87,7 @@ class _MyCharactersPageState extends State<MyCharactersPage> {
   }
 
   Widget _buildCharacterTabBody(int tabIndex) {
+    final isLoggedIn = ref.watch(isLoggedInProvider);
     if (tabIndex == 2) {
       return const EmptyStateView(
         icon: Icons.download_outlined,
@@ -103,8 +104,8 @@ class _MyCharactersPageState extends State<MyCharactersPage> {
       return EmptyStateView(
         icon: Icons.person_outline,
         title: '暂无角色',
-        actionLabel: _auth.isLoggedIn ? '新建角色' : null,
-        onAction: _auth.isLoggedIn
+        actionLabel: isLoggedIn ? '新建角色' : null,
+        onAction: isLoggedIn
             ? () async {
                 await context.push(AppRoutes.characterCreate);
                 if (mounted) _load();
@@ -133,7 +134,7 @@ class _MyCharactersPageState extends State<MyCharactersPage> {
               context: context,
               entry: entry,
               repo: _repo,
-              isLoggedIn: _auth.isLoggedIn,
+              isLoggedIn: isLoggedIn,
               isFavorite: _favorites.contains(entry.id),
               onToggleFavorite: () async {
                 final next = !_favorites.contains(entry.id);
@@ -150,14 +151,15 @@ class _MyCharactersPageState extends State<MyCharactersPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isLoggedIn = ref.watch(isLoggedInProvider);
     return AnimatedBuilder(
-      animation: Listenable.merge([_repo, _auth]),
+      animation: _repo,
       builder: (context, _) {
         return DesktopStackScaffold(
           title: const Text('我的角色'),
           onBack: () => popOrGoDiscovery(context),
           actions: [
-            if (_auth.isLoggedIn)
+            if (isLoggedIn)
               IconButton(
                 icon: const Icon(Icons.add),
                 onPressed: () async {

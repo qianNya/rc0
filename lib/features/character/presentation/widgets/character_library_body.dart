@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/providers/auth_providers.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
@@ -10,7 +12,6 @@ import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/rc0_widgets.dart';
 import '../../../../shared/widgets/shell_insets.dart';
 import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
-import '../../../auth/data/auth_repository.dart';
 import '../../../studio/presentation/widgets/studio_editor_shell_glass_button.dart';
 import '../../data/character_local_store.dart';
 import '../../data/character_repository.dart';
@@ -24,7 +25,7 @@ import 'wiki/wiki_character_grid_card.dart';
 enum CharacterLibraryMode { wiki, discovery }
 
 /// Shared character library body for Wiki and Discovery.
-class CharacterLibraryBody extends StatefulWidget {
+class CharacterLibraryBody extends ConsumerStatefulWidget {
   const CharacterLibraryBody({
     super.key,
     required this.mode,
@@ -49,13 +50,13 @@ class CharacterLibraryBody extends StatefulWidget {
   final bool lightTone;
 
   @override
-  State<CharacterLibraryBody> createState() => _CharacterLibraryBodyState();
+  ConsumerState<CharacterLibraryBody> createState() =>
+      _CharacterLibraryBodyState();
 }
 
-class _CharacterLibraryBodyState extends State<CharacterLibraryBody>
+class _CharacterLibraryBodyState extends ConsumerState<CharacterLibraryBody>
     with AutomaticKeepAliveClientMixin {
   final _repo = CharacterRepository.instance;
-  final _auth = AuthRepository.instance;
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
 
@@ -75,7 +76,6 @@ class _CharacterLibraryBodyState extends State<CharacterLibraryBody>
   void initState() {
     super.initState();
     _repo.addListener(_onRepoChanged);
-    _auth.addListener(_onRepoChanged);
     _scrollController.addListener(_onScroll);
     _load();
     _loadFavorites();
@@ -84,7 +84,6 @@ class _CharacterLibraryBodyState extends State<CharacterLibraryBody>
   @override
   void dispose() {
     _repo.removeListener(_onRepoChanged);
-    _auth.removeListener(_onRepoChanged);
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _searchController.dispose();
@@ -254,7 +253,7 @@ class _CharacterLibraryBodyState extends State<CharacterLibraryBody>
               onPressed: () => context.push(AppRoutes.myCharacters),
               icon: const Icon(Icons.folder_outlined),
             ),
-            if (_auth.isLoggedIn)
+            if (ref.watch(isLoggedInProvider))
               IconButton(
                 tooltip: '新建角色',
                 onPressed: () async {
@@ -287,8 +286,8 @@ class _CharacterLibraryBodyState extends State<CharacterLibraryBody>
             icon: Icons.person_outline,
             title: _repo.error ?? '暂无角色',
             subtitle: _repo.error != null ? null : '创建或收藏第一个角色',
-            actionLabel: _auth.isLoggedIn ? '新建角色' : 'AI 生成角色',
-            onAction: _auth.isLoggedIn
+            actionLabel: ref.watch(isLoggedInProvider) ? '新建角色' : 'AI 生成角色',
+            onAction: ref.watch(isLoggedInProvider)
                 ? () async {
                     await context.push(AppRoutes.characterCreate);
                     if (mounted) _load();
@@ -307,8 +306,8 @@ class _CharacterLibraryBodyState extends State<CharacterLibraryBody>
           icon: Icons.person_outline,
           title: _repo.error ?? '暂无角色',
           subtitle: _repo.error != null ? null : '创建第一个角色',
-          actionLabel: _auth.isLoggedIn ? '新建角色' : null,
-          onAction: _auth.isLoggedIn
+          actionLabel: ref.watch(isLoggedInProvider) ? '新建角色' : null,
+          onAction: ref.watch(isLoggedInProvider)
               ? () async {
                   await context.push(AppRoutes.characterCreate);
                   if (mounted) _load();
@@ -431,7 +430,7 @@ class _CharacterLibraryBodyState extends State<CharacterLibraryBody>
                     context: context,
                     entry: entry,
                     repo: _repo,
-                    isLoggedIn: _auth.isLoggedIn,
+                    isLoggedIn: ref.watch(isLoggedInProvider),
                     isFavorite: favorited,
                     onToggleFavorite: () => _toggleFavorite(entry),
                     onRefresh: _load,
@@ -467,7 +466,7 @@ class _CharacterLibraryBodyState extends State<CharacterLibraryBody>
               context: context,
               entry: entry,
               repo: _repo,
-              isLoggedIn: _auth.isLoggedIn,
+              isLoggedIn: ref.watch(isLoggedInProvider),
               isFavorite: _favorites.contains(entry.id),
               onToggleFavorite: () => _toggleFavorite(entry),
               onRefresh: _load,

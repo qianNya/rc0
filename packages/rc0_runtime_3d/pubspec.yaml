@@ -1,0 +1,17 @@
+name: rc0_runtime_3d
+description: rc0 3D runtime contracts — transition package for lib/runtime_3d migration.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  meta: ^1.17.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0

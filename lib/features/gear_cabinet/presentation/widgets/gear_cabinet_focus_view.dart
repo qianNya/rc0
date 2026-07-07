@@ -15,11 +15,15 @@ class GearCabinetFocusView extends StatelessWidget {
     required this.cabinet,
     required this.onDeviceTap,
     this.scale = 1.0,
+    this.editMode = false,
+    this.onDeviceReorder,
   });
 
   final GearCabinet cabinet;
   final ValueChanged<GearDevice> onDeviceTap;
   final double scale;
+  final bool editMode;
+  final void Function(String shelfId, int oldIndex, int newIndex)? onDeviceReorder;
 
   @override
   Widget build(BuildContext context) {
@@ -55,6 +59,14 @@ class GearCabinetFocusView extends StatelessWidget {
                 return GearShelfRow(
                   shelf: cabinet.shelves[index],
                   onDeviceTap: onDeviceTap,
+                  editMode: editMode,
+                  onDeviceReorder: onDeviceReorder == null
+                      ? null
+                      : (oldIndex, newIndex) => onDeviceReorder!(
+                            cabinet.shelves[index].id,
+                            oldIndex,
+                            newIndex,
+                          ),
                 );
               },
             ),

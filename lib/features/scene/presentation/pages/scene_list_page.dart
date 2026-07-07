@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/providers/auth_providers.dart';
 import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_dimensions.dart';
@@ -11,7 +13,6 @@ import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/glass/glass_sheet.dart';
 import '../../../../shared/widgets/rc0_widgets.dart';
 import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
-import '../../../auth/data/auth_repository.dart';
 import '../../../studio/presentation/widgets/script_studio_glass_widgets.dart';
 import '../../data/scene_local_store.dart';
 import '../../data/scene_repository.dart';
@@ -25,18 +26,17 @@ import '../widgets/scene_map_sheet.dart';
 import '../widgets/scene_masonry_grid.dart';
 import '../widgets/scene_wiki_app_bar.dart';
 
-class SceneListPage extends StatefulWidget {
+class SceneListPage extends ConsumerStatefulWidget {
   const SceneListPage({super.key, this.embeddedInHub = false});
 
   final bool embeddedInHub;
 
   @override
-  State<SceneListPage> createState() => _SceneListPageState();
+  ConsumerState<SceneListPage> createState() => _SceneListPageState();
 }
 
-class _SceneListPageState extends State<SceneListPage> {
+class _SceneListPageState extends ConsumerState<SceneListPage> {
   final _repo = SceneRepository.instance;
-  final _auth = AuthRepository.instance;
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
   int _categoryIndex = 0;
@@ -142,18 +142,19 @@ class _SceneListPageState extends State<SceneListPage> {
   }
 
   Future<void> _openMapSheet() async {
+    final isLoggedIn = ref.read(isLoggedInProvider);
     await showSceneMapSheet(
       context,
       repo: _repo,
-      isLoggedIn: _auth.isLoggedIn,
-      onCreateSceneAt:
-          _auth.isLoggedIn ? _openCreateSceneAtFromMap : null,
+      isLoggedIn: isLoggedIn,
+      onCreateSceneAt: isLoggedIn ? _openCreateSceneAtFromMap : null,
     );
     if (mounted) _load();
   }
 
   @override
   Widget build(BuildContext context) {
+    final isLoggedIn = ref.watch(isLoggedInProvider);
     final hot = _repo.hotScenes;
     final recommended = _recommended;
     final chromeTop = wikiModeTagContentInsetHeight(context);
@@ -163,6 +164,7 @@ class _SceneListPageState extends State<SceneListPage> {
         context,
         hot: hot,
         recommended: recommended,
+        isLoggedIn: isLoggedIn,
       ),
     );
 
@@ -193,7 +195,7 @@ class _SceneListPageState extends State<SceneListPage> {
           icon: Icons.folder_outlined,
           onPressed: () => context.push(AppRoutes.myScenes),
         ),
-        if (_auth.isLoggedIn)
+        if (isLoggedIn)
           StudioGlassIconButton(
             tooltip: '新建场景',
             icon: Icons.add,
@@ -208,6 +210,7 @@ class _SceneListPageState extends State<SceneListPage> {
     BuildContext context, {
     required List<SceneEntry> hot,
     required List<SceneEntry> recommended,
+    required bool isLoggedIn,
   }) {
     return Column(
       children: [
@@ -246,7 +249,7 @@ class _SceneListPageState extends State<SceneListPage> {
                   onPressed: () => context.push(AppRoutes.myScenes),
                   icon: Icons.folder_outlined,
                 ),
-                if (_auth.isLoggedIn)
+                if (isLoggedIn)
                   StudioGlassIconButton(
                     size: 36,
                     iconSize: 20,
@@ -299,10 +302,10 @@ class _SceneListPageState extends State<SceneListPage> {
                               : '创建第一个场景',
                           actionLabel: _repo.error != null
                               ? '重试'
-                              : (_auth.isLoggedIn ? '新建场景' : null),
+                              : (isLoggedIn ? '新建场景' : null),
                           onAction: _repo.error != null
                               ? _load
-                              : (_auth.isLoggedIn ? _openCreateScene : null),
+                              : (isLoggedIn ? _openCreateScene : null),
                         ),
                       ],
                     )
@@ -346,7 +349,7 @@ class _SceneListPageState extends State<SceneListPage> {
                                 context: context,
                                 entry: entry,
                                 repo: _repo,
-                                isLoggedIn: _auth.isLoggedIn,
+                                isLoggedIn: isLoggedIn,
                                 isFavorite: _favorites.contains(entry.id),
                                 onToggleFavorite: () => _toggleFavorite(entry),
                                 onRefresh: _load,
@@ -414,7 +417,7 @@ class _SceneListPageState extends State<SceneListPage> {
                               context: context,
                               entry: entry,
                               repo: _repo,
-                              isLoggedIn: _auth.isLoggedIn,
+                              isLoggedIn: isLoggedIn,
                               isFavorite: _favorites.contains(entry.id),
                               onToggleFavorite: () => _toggleFavorite(entry),
                               onRefresh: _load,

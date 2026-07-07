@@ -13,14 +13,61 @@ class GearCabinetOverview extends StatelessWidget {
     required this.cabinets,
     required this.onCabinetTap,
     this.onAddCabinet,
+    this.editMode = false,
+    this.onReorder,
   });
 
   final List<GearCabinet> cabinets;
   final ValueChanged<GearCabinet> onCabinetTap;
   final VoidCallback? onAddCabinet;
+  final bool editMode;
+  final void Function(int oldIndex, int newIndex)? onReorder;
 
   @override
   Widget build(BuildContext context) {
+    if (editMode && onReorder != null) {
+      return ReorderableListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(
+          AppDimensions.spacingMd,
+          AppDimensions.spacingSm,
+          AppDimensions.spacingMd,
+          AppDimensions.spacingLg,
+        ),
+        buildDefaultDragHandles: false,
+        itemCount: cabinets.length,
+        onReorder: onReorder!,
+        proxyDecorator: (child, index, animation) {
+          return Material(
+            color: Colors.transparent,
+            child: ScaleTransition(
+              scale: Tween<double>(begin: 1, end: 1.04).animate(animation),
+              child: child,
+            ),
+          );
+        },
+        itemBuilder: (context, index) {
+          return Padding(
+            key: ValueKey(cabinets[index].id),
+            padding: EdgeInsets.only(
+              right: index < cabinets.length - 1
+                  ? AppDimensions.spacingMd
+                  : 0,
+            ),
+            child: ReorderableDragStartListener(
+              index: index,
+              child: _CabinetThumbnail(
+                cabinet: cabinets[index],
+                index: index,
+                onTap: () => onCabinetTap(cabinets[index]),
+                editMode: true,
+              ),
+            ),
+          );
+        },
+      );
+    }
+
     return ListView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.fromLTRB(
@@ -52,11 +99,13 @@ class _CabinetThumbnail extends StatelessWidget {
     required this.cabinet,
     required this.index,
     required this.onTap,
+    this.editMode = false,
   });
 
   final GearCabinet cabinet;
   final int index;
   final VoidCallback onTap;
+  final bool editMode;
 
   @override
   Widget build(BuildContext context) {
@@ -103,6 +152,15 @@ class _CabinetThumbnail extends StatelessWidget {
                   color: GearCabinetColors.textSecondary,
                 ),
               ),
+              if (editMode)
+                const Padding(
+                  padding: EdgeInsets.only(top: 4),
+                  child: Icon(
+                    Icons.drag_handle_rounded,
+                    size: 18,
+                    color: GearCabinetColors.textTertiary,
+                  ),
+                ),
             ],
           ),
         ),

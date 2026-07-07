@@ -4,7 +4,7 @@ import '../../../api/user/api/user-api.dart' as user_api;
 import '../../../api/user/data/user-api.dart';
 import '../../../core/domain/screenplay/screenplay.dart';
 import '../../../core/network/api_callback.dart';
-import '../../auth/data/auth_repository.dart';
+import '../../../core/auth/auth_bridge.dart';
 import 'user_screenplays_fetch.dart';
 
 class UserProfileSummary {
@@ -84,7 +84,7 @@ class UserProfileRepository extends ChangeNotifier {
   UserProfileSummary? cached(int userId) => _cache[userId];
 
   Future<void> refreshMyStats() async {
-    await AuthRepository.instance.refreshProfile();
+    await AuthBridge.repository.refreshProfile();
     notifyListeners();
   }
 

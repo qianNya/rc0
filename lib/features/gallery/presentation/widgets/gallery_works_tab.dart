@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/providers/auth_providers.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
@@ -9,7 +11,6 @@ import '../../../../core/utils/state_listeners.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/inline_error_banner.dart';
 import '../../../../shared/widgets/template_grid_card.dart';
-import '../../../auth/data/auth_repository.dart';
 import '../../../screenplay/data/screenplay_local_repository.dart';
 import '../../../screenplay/presentation/widgets/screenplay_delete_actions.dart';
 import '../../../screenplay/presentation/widgets/screenplay_selection_bar.dart';
@@ -17,20 +18,19 @@ import '../../../screenplay/presentation/widgets/screenplay_selection_controller
 import '../../../screenplay/presentation/widgets/screenplay_visibility_sheet.dart';
 import '../../../user/data/user_screenplays_repository.dart';
 
-class GalleryWorksTab extends StatefulWidget {
+class GalleryWorksTab extends ConsumerStatefulWidget {
   const GalleryWorksTab({super.key, this.onSelectionChanged});
 
   final VoidCallback? onSelectionChanged;
 
   @override
-  State<GalleryWorksTab> createState() => GalleryWorksTabState();
+  ConsumerState<GalleryWorksTab> createState() => GalleryWorksTabState();
 }
 
-class GalleryWorksTabState extends State<GalleryWorksTab>
+class GalleryWorksTabState extends ConsumerState<GalleryWorksTab>
     with AutomaticKeepAliveClientMixin {
   final _local = ScreenplayLocalRepository.instance;
   final _screenplays = UserScreenplaysRepository.instance;
-  final _auth = AuthRepository.instance;
   final _selectionController = ScreenplaySelectionController();
 
   int? _userId;
@@ -65,9 +65,9 @@ class GalleryWorksTabState extends State<GalleryWorksTab>
   Future<void> deleteSelected() => _deleteSelected();
 
   Future<void> load() async {
-    final profile = _auth.profile;
-    if (!_auth.isLoggedIn || profile == null) return;
-    _userId = profile.id.toInt();
+    final session = ref.read(authSessionProvider);
+    if (!session.isLoggedIn || session.profile == null) return;
+    _userId = session.profile!.id.toInt();
     await _screenplays.loadFirstPage(_userId!);
   }
 
@@ -94,7 +94,7 @@ class GalleryWorksTabState extends State<GalleryWorksTab>
   }
 
   void _openVisibilitySettings(Screenplay script) {
-    final userId = _userId ?? _auth.profile?.id.toInt();
+    final userId = _userId ?? ref.read(authSessionProvider).profile?.id.toInt();
     if (userId == null) return;
     ScreenplayVisibilitySheet.show(
       context,
@@ -109,7 +109,7 @@ class GalleryWorksTabState extends State<GalleryWorksTab>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final userId = _userId ?? _auth.profile?.id.toInt();
+    final userId = _userId ?? ref.read(authSessionProvider).profile?.id.toInt();
     final remote = userId != null ? _screenplays.itemsFor(userId) : <Screenplay>[];
     final loading = userId != null && _screenplays.loadingFor(userId);
     final error = userId != null ? _screenplays.errorFor(userId) : null;

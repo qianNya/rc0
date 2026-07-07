@@ -5,8 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:window_manager/window_manager.dart';
 
-import 'core/network/api_auth.dart';
+import 'package:rc0_media/rc0_media.dart';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'core/media/network_image_cache_port.dart';
 import 'app/app.dart';
+import 'app/module_registry.dart';
+import 'core/network/api_auth.dart';
 import 'core/platform/platform_features.dart';
 import 'core/services/image_favorite_store.dart';
 import 'core/services/shell_nav_config_store.dart';
@@ -26,6 +32,9 @@ import 'features/screenplay/data/screenplay_local_repository.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  ImageResolver.cachePort = const NetworkImageCachePort();
+  AppModuleRegistry.initialize();
 
   if (!kIsWeb && !isDesktopOperatingSystem) {
     await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
@@ -53,7 +62,7 @@ Future<void> main() async {
   await ShellNavConfigStore.instance.initialize();
   await AuthRepository.instance.initialize();
   onApiUnauthorized = AuthRepository.instance.handleUnauthorized;
-  runApp(const Rc0App());
+  runApp(const ProviderScope(child: Rc0App()));
 
   // Local + network warm-up must not block first frame.
   unawaited(_initBackgroundServices());

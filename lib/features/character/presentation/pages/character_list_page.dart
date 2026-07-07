@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/providers/auth_providers.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
-import '../../../auth/data/auth_repository.dart';
 import '../../../studio/presentation/widgets/script_studio_header_components.dart';
 import '../widgets/character_library_body.dart';
 import '../widgets/character_wiki_app_bar.dart';
 
-class CharacterListPage extends StatefulWidget {
+class CharacterListPage extends ConsumerStatefulWidget {
   const CharacterListPage({
     super.key,
     this.workId,
@@ -20,30 +21,13 @@ class CharacterListPage extends StatefulWidget {
   final bool embeddedInHub;
 
   @override
-  State<CharacterListPage> createState() => _CharacterListPageState();
+  ConsumerState<CharacterListPage> createState() => _CharacterListPageState();
 }
 
-class _CharacterListPageState extends State<CharacterListPage> {
-  final _auth = AuthRepository.instance;
-
-  @override
-  void initState() {
-    super.initState();
-    _auth.addListener(_onAuthChanged);
-  }
-
-  @override
-  void dispose() {
-    _auth.removeListener(_onAuthChanged);
-    super.dispose();
-  }
-
-  void _onAuthChanged() {
-    if (mounted) setState(() {});
-  }
-
+class _CharacterListPageState extends ConsumerState<CharacterListPage> {
   @override
   Widget build(BuildContext context) {
+    final isLoggedIn = ref.watch(isLoggedInProvider);
     final chromeTop = wikiModeTagContentInsetHeight(context);
     final title = widget.workId != null ? 'IP 角色' : '角色库';
 
@@ -75,7 +59,7 @@ class _CharacterListPageState extends State<CharacterListPage> {
               tooltip: '我的角色',
               onPressed: () => context.push(AppRoutes.myCharacters),
             ),
-            if (_auth.isLoggedIn)
+            if (isLoggedIn)
               WikiModeTagIconButton(
                 icon: Icons.add,
                 tooltip: '新建角色',

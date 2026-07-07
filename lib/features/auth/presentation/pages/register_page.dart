@@ -1,26 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../../../app/providers/auth_providers.dart';
 
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../shared/widgets/primary_button.dart';
-import '../../data/auth_repository.dart';
 import '../widgets/auth_footer_link.dart';
 import '../widgets/auth_header.dart';
 import '../widgets/auth_page_scaffold.dart';
 import '../widgets/auth_social_row.dart';
 import '../widgets/auth_text_field.dart';
 
-class RegisterPage extends StatefulWidget {
+class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key, this.redirectFrom});
 
   final String? redirectFrom;
 
   @override
-  State<RegisterPage> createState() => _RegisterPageState();
+  ConsumerState<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _RegisterPageState extends State<RegisterPage> {
+class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -70,7 +72,7 @@ class _RegisterPageState extends State<RegisterPage> {
     }
 
     setState(() => _loading = true);
-    final error = await AuthRepository.instance.registerAndLogin(
+    final error = await ref.read(authRepositoryProvider).registerAndLogin(
       username: username,
       password: password,
       email: email.isEmpty ? null : email,

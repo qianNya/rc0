@@ -9,6 +9,8 @@ alwaysApply: true
 
 视觉与交互参考：iOS 26、visionOS、Apple Music、Photos、Journal、TV。
 
+完整设计规范（SSOT）：`docs/design/UI_STYLE_GUIDE.md`（视觉/材质/token）、`docs/design/UX_GUIDELINES.md`（体验/交互）、`docs/design/PRODUCT_CONCEPT.md`（产品创意）。涉及 UI/UX 的任何改动前先阅读这三份文档；全部界面统一使用 Apple Liquid Glass 风格。
+
 ## 核心哲学
 
 - Content is the world：内容是世界本体，UI 仅为轻量浮层。

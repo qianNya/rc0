@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/data/app_catalog.dart';
+import '../../../../shared/widgets/rc0_image.dart';
 import '../../domain/scene_utils.dart';
 import '../../../upload/data/image_pick_service.dart';
 import 'scene_location_picker.dart';
@@ -204,7 +205,10 @@ class _SceneFormSectionsState extends State<SceneFormSections> {
                       borderRadius:
                           BorderRadius.circular(AppDimensions.radiusMd),
                       child: kIsWeb
-                          ? Image.network(widget.data.coverPath, fit: BoxFit.cover)
+                          ? Rc0Image(
+                              path: widget.data.coverPath,
+                              fit: BoxFit.cover,
+                            )
                           : Image.file(
                               File(widget.data.coverPath),
                               fit: BoxFit.cover,
@@ -226,7 +230,7 @@ class _SceneFormSectionsState extends State<SceneFormSections> {
                 width: 72,
                 height: 72,
                 child: kIsWeb
-                    ? Image.network(path, fit: BoxFit.cover)
+                    ? Rc0Image(path: path, fit: BoxFit.cover)
                     : Image.file(File(path), fit: BoxFit.cover),
               ),
             if (widget.data.referencePaths.length < 9)

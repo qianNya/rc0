@@ -1,10 +1,10 @@
 import 'dart:io';
 
-import '../../auth/data/auth_repository.dart';
+import '../../../core/auth/auth_bridge.dart';
+import '../../../core/media/app_media_upload_service.dart';
 import '../../upload/data/image_pick_service.dart';
 import '../../upload/domain/upload_image_file.dart';
 import '../domain/ai_prompt_builder.dart';
-import 'data_upload_repository.dart';
 import 'screenplay_draft.dart';
 import 'shoot_params_draft.dart';
 
@@ -63,11 +63,11 @@ class FrameGenerationRepository {
 
       var image = result.added.first;
 
-      if (uploadToCloud && AuthRepository.instance.isLoggedIn) {
+      if (uploadToCloud && AuthBridge.isLoggedIn) {
         final file = File(image.path);
         if (await file.exists()) {
           final uploaded =
-              await DataUploadRepository.instance.uploadImage(file);
+              await AppMediaUploadService.instance.uploadLocalFile(file.path);
           if (uploaded.error != null) {
             return FrameGenerationResult(error: uploaded.error);
           }

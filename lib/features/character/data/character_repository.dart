@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../../api/character/api/character-api.dart' as character_api;
 import '../../../api/character/data/character-api.dart';
 import '../../../core/network/api_callback.dart';
-import '../../auth/data/auth_repository.dart';
+import '../../../core/auth/auth_bridge.dart';
 import '../domain/character_entry.dart';
 import '../domain/character_utils.dart';
 import 'character_local_store.dart';
@@ -192,7 +192,7 @@ class CharacterRepository extends ChangeNotifier {
     String personality = '',
     List<String> aliases = const [],
   }) async {
-    if (!AuthRepository.instance.isLoggedIn) {
+    if (!AuthBridge.isLoggedIn) {
       return (character: null, error: '请先登录');
     }
 
@@ -238,7 +238,7 @@ class CharacterRepository extends ChangeNotifier {
     String personality = '',
     List<String> aliases = const [],
   }) async {
-    if (!AuthRepository.instance.isLoggedIn) {
+    if (!AuthBridge.isLoggedIn) {
       return (character: null, error: '请先登录');
     }
 
@@ -275,7 +275,7 @@ class CharacterRepository extends ChangeNotifier {
   }
 
   Future<String?> delete(int id) async {
-    if (!AuthRepository.instance.isLoggedIn) {
+    if (!AuthBridge.isLoggedIn) {
       return '请先登录';
     }
 

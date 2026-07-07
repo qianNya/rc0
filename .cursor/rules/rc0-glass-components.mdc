@@ -1,36 +1,44 @@
 ---
-description: Liquid Glass 组件映射与导航/Tab 规范
-globs: lib/**/presentation/**/*.dart
+description: Liquid Glass 组件映射与导航/Tab 规范，写 presentation 层 UI 时适用
+globs: lib/**/presentation/**/*.dart,lib/shared/widgets/**/*.dart
 alwaysApply: false
 ---
 
 # Liquid Glass 组件与导航规范
 
-统一入口：`lib/shared/widgets/glass/glass.dart`。
+统一入口：`lib/shared/widgets/glass/glass.dart`。完整规范：`docs/design/UI_STYLE_GUIDE.md` 第 3 节。
 
-底层材质：`LiquidGlassSurface`（业务层禁止直接 `BackdropFilter`）。
+底层材质：`LiquidGlassSurface`（`standard` sigma 24 / `navigation` sigma 16）。业务层禁止直接 `BackdropFilter` / `ImageFilter.blur`。
 
 | 语义角色 | 组件 |
 |---|---|
-| Glass Card | `GlassCard` |
-| Glass Dialog | `GlassDialog` + `showGlassDialog` |
-| Glass Sheet | `GlassSheet` + `showGlassSheet` |
-| Glass Search | `GlassSearchScaffold` / `GlassTextField` |
-| Glass Tab | `FeedTabBar`（液态胶囊） |
-| Glass Top Nav | `Rc0AppBar` + `GlassAppBarBackground` |
-| Glass Bottom Nav | `AppBottomNavBar` + `LiquidGlassSurface` |
-| Glass Feedback | 全局 `SnackBarTheme` + `ScaffoldMessenger` |
+| 卡片 | `GlassCard`（顶部 sheen + 按压缩放） |
+| 按钮 | `GlassButton`（胶囊；`filled` 主操作用 accent） |
+| 输入框 | `GlassTextField`（无下划线） |
+| 分段控件 | `GlassSegmentedControl` |
+| 底部弹窗 | `GlassSheet` + `showGlassSheet` |
+| 对话框 | `GlassDialog` + `showGlassDialog` |
+| 长任务进度 | `GlassProgressSheet` |
+| 沉浸详情壳 | `GlassHeroPage`（Hero 图 + scrim + 浮动信息卡） |
+| 列表行 | `GlassListRow` |
+| 搜索壳 | `GlassSearchScaffold` |
+| 空状态 | `GlassEmptyState` |
+| 顶部导航 | `Rc0AppBar` + `GlassAppBarBackground` |
+| 底部导航 | `AppBottomNavBar`（水滴药丸指示器） |
+| Tab | `FeedTabBar`（液态胶囊） |
+| 图片 | `Rc0Image`（缓存 + WebP），禁止裸 `Image.network` |
 
 ## 导航与 TabBar 视觉要求
 
 - Navigation/Tab 必须浮动，不得贴边。
-- Top Nav：高度 56，radius 28，top margin 8，bottom margin 12。
-- Bottom Nav：高度 56，radius 32，bottom margin 16。
-- TabBar：胶囊化、连续圆角、轻量高光、弱边框、动态选中态。
+- Top Nav：高 56，radius 28，top margin 8，bottom margin 12。
+- Bottom Nav：高 56，radius 32，距底 16；宽屏收窄至 `floatingBottomNavMaxWidth` 420。
+- 滚动内容底部预留 `floatingBottomClearance` 72，防浮动导航遮挡。
+- 底部 tab 切换用 `AppMotion.liquidTab` 水滴回弹指示器。
 
 ## 强制与禁止
 
-- 禁止业务层直接使用 `AppBar` / `BottomNavigationBar` / `Card` 等默认壳。
-- 允许在共享封装内部使用 Material 基础能力（例如 `Rc0AppBar`）。
-- 长任务进度、键盘感知表单、滚动选择器可保留非透明 `showModalBottomSheet`。
-- 提示弹出信息（toast/snackbar）必须使用全局统一样式，不得在业务页面覆写单页私有样式。
+- 禁止业务层直接使用 `AppBar` / `BottomNavigationBar` / `Card` 等 Material 默认壳。
+- 允许共享封装内部使用 Material 基础能力（如 `Rc0AppBar`）。
+- 同屏 blur 层 ≤ 2；玻璃层复用共享组件，不新建独立 blur。
+- SnackBar/Toast 必须走全局统一样式，禁止业务页私有覆写。

@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../../api/community/api/community-api.dart' as community_api;
 import '../../../api/community/data/community-api.dart';
 import '../../../core/network/api_callback.dart';
-import '../../auth/data/auth_repository.dart';
+import '../../../core/auth/auth_bridge.dart';
 
 class ScreenplayTag {
   const ScreenplayTag({
@@ -35,11 +35,11 @@ class ScreenplayTagsRepository extends ChangeNotifier {
   String? get error => _error;
 
   Future<void> initialize() async {
-    AuthRepository.instance.addListener(_onAuthChanged);
+    AuthBridge.addListener(_onAuthChanged);
   }
 
   void _onAuthChanged() {
-    if (!AuthRepository.instance.isLoggedIn) {
+    if (!AuthBridge.isLoggedIn) {
       _tags.clear();
       _error = null;
       notifyListeners();
@@ -56,7 +56,7 @@ class ScreenplayTagsRepository extends ChangeNotifier {
   }
 
   Future<void> loadTags({String namespace = 'default'}) async {
-    if (!AuthRepository.instance.isLoggedIn) {
+    if (!AuthBridge.isLoggedIn) {
       _tags.clear();
       _error = null;
       notifyListeners();
@@ -104,7 +104,7 @@ class ScreenplayTagsRepository extends ChangeNotifier {
 
   /// Creates a tag in the remote catalog (when logged in).
   Future<String?> createTagByName(String name) async {
-    if (!AuthRepository.instance.isLoggedIn) {
+    if (!AuthBridge.isLoggedIn) {
       return '请先登录';
     }
     if (_tags.isEmpty) {
@@ -150,7 +150,7 @@ class ScreenplayTagsRepository extends ChangeNotifier {
     required List<String> currentNames,
     required Set<String> desiredNames,
   }) async {
-    if (!AuthRepository.instance.isLoggedIn) {
+    if (!AuthBridge.isLoggedIn) {
       return '请先登录';
     }
 

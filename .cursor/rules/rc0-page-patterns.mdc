@@ -1,35 +1,39 @@
 ---
-description: 内容优先页面模式（Liquid Glass 空间层级）
+description: 内容优先页面模式（Liquid Glass 空间层级），新建或改造页面时适用
 globs: lib/features/**/presentation/pages/**/*.dart
 alwaysApply: false
 ---
 
 # 页面模式
 
+完整规范：`docs/design/UX_GUIDELINES.md` + `docs/design/PRODUCT_CONCEPT.md`。
+
 ## 内容优先
 
-首屏优先展示内容（图像/分镜/角色作品），导航与控制层次后置。
+首屏优先展示内容（图像/分镜/角色作品），导航与控制层次后置。禁止先看到导航壳、后看到内容的布局。
 
-禁止先看到导航壳、后看到内容的布局。
+每个页面只服务一种心智：浏览（大图 Feed/沉浸详情）、构建（Studio 全屏编辑）、调度（Picker Sheet）。混合心智页面是设计缺陷。
 
 ## 详情页模板
 
-Hero 内容占据顶部；Glass 信息卡覆盖在 Hero 上；Tabs 浮动；内容在其下滚动。
+`GlassHeroPage`：Hero 内容占顶部；Glass 信息卡覆盖其上；Tabs 浮动；内容在其下滚动。
 
 适用：`character` / `screenplay` / `scene` / `gallery image detail`。
 
 ## 社区与探索
 
-媒体主导（大图优先），元数据与操作控件弱化；避免后台式密集卡片网格。
+媒体主导（大图优先），元数据弱化为 caption 层级；避免后台式密集卡片网格。
 
 ## 编辑器域
 
-Storyboard 是内容层，Timeline 是工具层。
-
-Timeline 不得视觉压制 Storyboard；模式切换必须有平滑动态过渡。
+- Storyboard/画面预览是内容层；Timeline/参数面板是工具层，不得视觉压制内容层。
+- 一切 AI/参数能力落点是 Frame（或 Scene 级默认值）；禁止另建孤立生成页。
+- 绑定角色/场景/预设走 Picker Sheet，选择后回到编辑上下文，不跳页。
+- 模式切换必须平滑动态过渡。
 
 ## 通用要求
 
-- 列表/数据页必须具备空/加载/错误三态。
+- 列表/数据页必须具备空/加载/错误三态（见 rc0-ux-patterns）。
 - UI 仅经 Repository，不直连 API。
 - 新页面先复用 `lib/shared/widgets/`。
+- 破坏性操作 `GlassDialog` 二次确认并说明影响范围。

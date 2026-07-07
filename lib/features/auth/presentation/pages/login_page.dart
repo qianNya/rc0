@@ -1,28 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../../../app/providers/auth_providers.dart';
 
 import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../shared/widgets/primary_button.dart';
 import '../../data/auth_credentials_store.dart';
-import '../../data/auth_repository.dart';
 import '../widgets/auth_footer_link.dart';
 import '../widgets/auth_header.dart';
 import '../widgets/auth_page_scaffold.dart';
 import '../widgets/auth_social_row.dart';
 import '../widgets/auth_text_field.dart';
 
-class LoginPage extends StatefulWidget {
+class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key, this.redirectFrom});
 
   final String? redirectFrom;
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  ConsumerState<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginPageState extends ConsumerState<LoginPage> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _loading = false;
@@ -63,7 +65,7 @@ class _LoginPageState extends State<LoginPage> {
     }
 
     setState(() => _loading = true);
-    final error = await AuthRepository.instance.login(
+    final error = await ref.read(authRepositoryProvider).login(
       username: username,
       password: password,
     );

@@ -233,3 +233,38 @@ class CineEquipmentFavoriteItem {
     );
   }
 }
+
+class GearCabinetLayoutItem {
+  GearCabinetLayoutItem({
+    required this.version,
+    required this.rooms,
+  });
+
+  final int version;
+  final Map<String, dynamic> rooms;
+
+  factory GearCabinetLayoutItem.fromJson(Map<String, dynamic> m) {
+    final roomsRaw = m['rooms'];
+    return GearCabinetLayoutItem(
+      version: (m['version'] as num?)?.toInt() ?? 1,
+      rooms: roomsRaw is Map<String, dynamic>
+          ? Map<String, dynamic>.from(roomsRaw)
+          : const {},
+    );
+  }
+}
+
+class GearCabinetLayoutSaveBody {
+  const GearCabinetLayoutSaveBody({
+    required this.version,
+    required this.rooms,
+  });
+
+  final int version;
+  final Map<String, dynamic> rooms;
+
+  Map<String, dynamic> toJson() => {
+        'version': version,
+        'rooms': rooms,
+      };
+}

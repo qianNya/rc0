@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../providers/auth_providers.dart';
+import 'editor_shell_routes.dart';
 import '../../features/lighting/presentation/lighting_editor_controller.dart';
 import '../../features/lighting/presentation/pages/lighting_wiki_page.dart';
 import '../../features/gallery/presentation/pages/media_vault_image_detail_page.dart';
@@ -10,7 +13,6 @@ import '../../features/gallery/presentation/pages/image_detail_page.dart';
 import '../../features/gear_cabinet/presentation/pages/gear_cabinet_page.dart';
 import '../../features/gear_cabinet/presentation/pages/gear_device_detail_page.dart';
 import '../../features/action/presentation/pages/action_wiki_page.dart';
-import '../../features/auth/data/auth_repository.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/community/presentation/pages/community_page.dart';
@@ -70,17 +72,19 @@ abstract final class AppRouter {
     AppRoutes.profileEdit,
   ];
 
-  static String? _redirect(BuildContext context, GoRouterState state) {
-    final auth = AuthRepository.instance;
+  static String? _redirect(Ref ref, GoRouterState state) {
+    final session = ref.read(authSessionProvider);
     final path = state.uri.path;
     final isAuthRoute =
         path == AppRoutes.login || path == AppRoutes.register;
 
-    if (!auth.isLoggedIn && _protectedRoutes.contains(path)) {
+    if (!session.isLoggedIn && _protectedRoutes.contains(path)) {
       return AppRoutes.loginWithRedirect(state.uri.toString());
     }
 
-    if (auth.isLoggedIn && auth.profile != null && isAuthRoute) {
+    if (session.isLoggedIn &&
+        session.profile != null &&
+        isAuthRoute) {
       final from = state.uri.queryParameters['from'];
       if (from != null && from.isNotEmpty) return from;
       return AppRoutes.discovery;
@@ -109,27 +113,20 @@ abstract final class AppRouter {
     );
   }
 
-  static final GoRouter router = GoRouter(
-    navigatorKey: rootNavigatorKey,
-    initialLocation: AppRoutes.discovery,
-    refreshListenable: AuthRepository.instance,
-    redirect: _redirect,
-    routes: [
+  static GoRouter buildRouter(Ref ref) {
+    final authRepo = ref.read(authRepositoryProvider);
+    return GoRouter(
+      navigatorKey: rootNavigatorKey,
+      initialLocation: AppRoutes.discovery,
+      refreshListenable: authRepo,
+      redirect: (context, state) => _redirect(ref, state),
+      routes: [
       // Legacy path redirects
       GoRoute(
         path: AppRoutes.explore,
         redirect: (_, _) => AppRoutes.discovery,
       ),
-      GoRoute(
-        path: AppRoutes.upload,
-        redirect: (context, state) {
-          final edit = state.uri.queryParameters['edit'];
-          if (edit != null && edit.isNotEmpty) {
-            return AppRoutes.studioEdit(edit);
-          }
-          return AppRoutes.studioCreate;
-        },
-      ),
+      ...EditorShellRoutes.legacyRedirects,
       GoRoute(
         path: AppRoutes.follow,
         redirect: (_, _) => AppRoutes.discovery,
@@ -606,17 +603,6 @@ abstract final class AppRouter {
         },
       ),
       GoRoute(
-        path: AppRoutes.create,
-        name: 'create',
-        redirect: (context, state) {
-          final edit = state.uri.queryParameters['edit'];
-          if (edit != null && edit.isNotEmpty) {
-            return AppRoutes.studioEdit(edit);
-          }
-          return AppRoutes.studioCreate;
-        },
-      ),
-      GoRoute(
         path: AppRoutes.studioEditScript,
         name: 'studio-edit-script',
         parentNavigatorKey: rootNavigatorKey,
@@ -713,33 +699,8 @@ abstract final class AppRouter {
               ),
             ],
           ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: AppRoutes.studio,
-                name: 'studio',
-                pageBuilder: (context, state) {
-                  final editId = state.uri.queryParameters['edit'];
-                  final child = editId != null && editId.isNotEmpty
-                      ? ScriptStudioCreatePage(editScriptId: editId)
-                      : const ScriptStudioPage();
-                  return NoTransitionPage(
-                    key: state.pageKey,
-                    child: child,
-                  );
-                },
-                routes: [
-                  GoRoute(
-                    path: 'create',
-                    name: 'studio-create',
-                    pageBuilder: (context, state) => NoTransitionPage(
-                      key: state.pageKey,
-                      child: _scriptStudioCreatePage(state),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+          EditorShellRoutes.studioShellBranch(
+            scriptStudioCreatePage: _scriptStudioCreatePage,
           ),
           StatefulShellBranch(
             routes: [
@@ -808,5 +769,6 @@ abstract final class AppRouter {
         ],
       ),
     ],
-  );
+    );
+  }
 }

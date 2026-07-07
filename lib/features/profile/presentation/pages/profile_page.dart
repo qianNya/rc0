@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import '../../../../app/providers/auth_providers.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
@@ -19,7 +21,6 @@ import '../../../../shared/widgets/glass/glass.dart';
 import '../../../../shared/widgets/glass/glass_sheet.dart';
 import '../../../../shared/widgets/shell_insets.dart';
 import '../../../../shared/widgets/theme_mode_selector.dart';
-import '../../../auth/data/auth_repository.dart';
 import '../../../favorites/data/image_favorite_repository.dart';
 import '../../../screenplay/data/screenplay_local_repository.dart';
 import '../../../user/data/user_profile_repository.dart';
@@ -31,17 +32,16 @@ import '../widgets/profile_settings_tile.dart';
 import '../widgets/profile_shortcut_item.dart';
 import '../widgets/profile_works_preview.dart';
 
-class ProfilePage extends StatefulWidget {
+class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key, this.embeddedInHub = false});
 
   final bool embeddedInHub;
 
   @override
-  State<ProfilePage> createState() => _ProfilePageState();
+  ConsumerState<ProfilePage> createState() => _ProfilePageState();
 }
 
-class _ProfilePageState extends State<ProfilePage> {
-  final _auth = AuthRepository.instance;
+class _ProfilePageState extends ConsumerState<ProfilePage> {
   final _userProfile = UserProfileRepository.instance;
   final _localScripts = ScreenplayLocalRepository.instance;
   final _imageFavorites = ImageFavoriteRepository.instance;
@@ -56,7 +56,6 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
-    _auth.addListener(_onDataChanged);
     _userProfile.addListener(_onDataChanged);
     _localScripts.addListener(_onDataChanged);
     _imageFavorites.addListener(_onDataChanged);
@@ -66,7 +65,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   void dispose() {
-    _auth.removeListener(_onDataChanged);
     _userProfile.removeListener(_onDataChanged);
     _localScripts.removeListener(_onDataChanged);
     _imageFavorites.removeListener(_onDataChanged);
@@ -76,7 +74,7 @@ class _ProfilePageState extends State<ProfilePage> {
   void _onDataChanged() => scheduleSetState(this);
 
   Future<void> _refresh() async {
-    if (_auth.isLoggedIn) {
+    if (ref.read(authSessionProvider).isLoggedIn) {
       await _userProfile.refreshMyStats();
       final fav = await _spFavorites.fetchFavorites();
       await _imageFavorites.load();
@@ -196,7 +194,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _logout() async {
-    await _auth.logout();
+    await ref.read(authRepositoryProvider).logout();
     if (!mounted) return;
     context.go(AppRoutes.discovery);
   }
@@ -412,8 +410,9 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final profile = _auth.profile;
-    final hasSession = _auth.isLoggedIn;
+    final session = ref.watch(authSessionProvider);
+    final profile = session.profile;
+    final hasSession = session.isLoggedIn;
     final profileReady = profile != null;
     final loadingProfile = hasSession && !profileReady;
 

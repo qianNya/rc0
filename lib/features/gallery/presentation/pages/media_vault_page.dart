@@ -11,6 +11,7 @@ import '../../domain/media_vault_image.dart';
 import '../../domain/media_vault_types.dart';
 import '../actions/gallery_preview_actions.dart';
 import '../actions/gallery_upload_actions.dart';
+import '../actions/media_vault_actions.dart';
 import '../media_vault/media_vault_albums_grid.dart';
 import '../media_vault/media_vault_category_tabs.dart';
 import '../media_vault/media_vault_colors.dart';
@@ -131,6 +132,59 @@ class _MediaVaultPageState extends State<MediaVaultPage> {
     if (result != null && mounted) _selectImage(result);
   }
 
+  Future<void> _createAlbum() async {
+    final error = await showCreateMediaVaultAlbumDialog(context);
+    if (!mounted) return;
+    if (error != null) {
+      _showSnack(error);
+    } else {
+      _showSnack('专辑已创建');
+    }
+  }
+
+  Future<void> _deleteAlbum(MediaAlbum album) async {
+    final confirmed = await confirmDeleteMediaVaultAlbum(context, album);
+    if (!confirmed || !mounted) return;
+    final error = await _repo.deleteAlbum(album.id);
+    if (!mounted) return;
+    if (error != null) {
+      _showSnack(error);
+    } else {
+      _showSnack('专辑已删除');
+      if (_albumFilterId == album.id) {
+        setState(() => _albumFilterId = null);
+      }
+    }
+  }
+
+  Future<void> _addSelectedToAlbum() async {
+    final image = _selected;
+    if (image == null) return;
+    final error = await showAddImageToAlbumSheet(context, image);
+    if (!mounted) return;
+    if (error != null) _showSnack(error);
+  }
+
+  Future<void> _moveSelectedToTrash() async {
+    final image = _selected;
+    if (image == null) return;
+    final confirmed = await confirmMoveImageToTrash(context);
+    if (!confirmed || !mounted) return;
+    final error = await _repo.moveToTrash(image.id);
+    if (!mounted) return;
+    if (error != null) {
+      _showSnack(error);
+    } else {
+      setState(() => _selectedId = null);
+      _showSnack('已移入回收站');
+    }
+  }
+
+  Future<void> _handleTrashImage(MediaVaultImage image) async {
+    await showTrashImageActions(context, image);
+    if (mounted) setState(() {});
+  }
+
   void _showComingSoon(String feature) {
     _showSnack('$feature — 即将推出');
   }
@@ -234,7 +288,12 @@ class _MediaVaultPageState extends State<MediaVaultPage> {
                 image: _selected!,
                 related: _relatedFor(_selected!),
                 onClose: () => setState(() => _selectedId = null),
-                onFavorite: () => _repo.toggleFavorite(_selected!.id),
+                onFavorite: () async {
+                  final error = await _repo.toggleFavorite(_selected!.id);
+                  if (error != null) _showSnack(error);
+                },
+                onAddToAlbum: _addSelectedToAlbum,
+                onMoveToTrash: _moveSelectedToTrash,
                 onRelatedTap: (img) => setState(() => _selectedId = img.id),
               ),
             ),
@@ -283,7 +342,8 @@ class _MediaVaultPageState extends State<MediaVaultPage> {
             _section = MediaVaultSection.library;
             _albumFilterId = album.id;
           }),
-          onCreate: () => _showComingSoon('新建专辑'),
+          onCreate: _createAlbum,
+          onAlbumDelete: _deleteAlbum,
         ),
       MediaVaultSection.tags => MediaVaultTagsPanel(
           tags: _repo.tags,
@@ -292,11 +352,19 @@ class _MediaVaultPageState extends State<MediaVaultPage> {
             _tagFilter = tag;
           }),
         ),
-      MediaVaultSection.trash => const EmptyStateView(
-          icon: Icons.delete_outline_rounded,
-          title: '回收站为空',
-          subtitle: '删除的图片会在这里保留 30 天',
-        ),
+      MediaVaultSection.trash => _filtered.isEmpty
+          ? const EmptyStateView(
+              icon: Icons.delete_outline_rounded,
+              title: '回收站为空',
+              subtitle: '删除的图片会在这里保留 30 天',
+            )
+          : MediaVaultMasonryGrid(
+              items: _filtered,
+              columnCount: columnCount,
+              onColumnCountChanged: (c) => setState(() => _columnCount = c),
+              onTap: _selectImage,
+              onLongPress: _handleTrashImage,
+            ),
       MediaVaultSection.favorites ||
       MediaVaultSection.library =>
         _filtered.isEmpty

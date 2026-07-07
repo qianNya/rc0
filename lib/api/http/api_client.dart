@@ -75,6 +75,25 @@ Future apiPut(
   );
 }
 
+Future apiPatch(
+  String path,
+  dynamic data, {
+  Map<String, String>? header,
+  Function(Map<String, dynamic>)? ok,
+  Function(String)? fail,
+  Function? eventually,
+}) async {
+  await _apiRequest(
+    'PATCH',
+    Uri.parse(serverHost + path),
+    data,
+    header: header,
+    ok: ok,
+    fail: fail,
+    eventually: eventually,
+  );
+}
+
 Future apiDelete(
   String path, {
   Map<String, String>? header,
@@ -169,6 +188,8 @@ Future _apiRequest(
         request = await client.postUrl(uri);
       case 'PUT':
         request = await client.putUrl(uri);
+      case 'PATCH':
+        request = await client.openUrl('PATCH', uri);
       case 'DELETE':
         request = await client.deleteUrl(uri);
       default:
@@ -179,7 +200,7 @@ Future _apiRequest(
     if (data != null) {
       strData = jsonEncode(data);
     }
-    if (method == 'POST' || method == 'PUT') {
+    if (method == 'POST' || method == 'PUT' || method == 'PATCH') {
       request.headers.set('Content-Type', 'application/json; charset=utf-8');
       request.headers.set('Content-Length', utf8.encode(strData).length);
     }

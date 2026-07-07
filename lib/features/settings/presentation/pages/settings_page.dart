@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import '../../../../app/providers/auth_providers.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/glass/glass.dart';
 import '../../../../shared/widgets/theme_mode_selector.dart';
-import '../../../auth/data/auth_repository.dart';
 
-class SettingsPage extends StatefulWidget {
+class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
 
   @override
-  State<SettingsPage> createState() => _SettingsPageState();
+  ConsumerState<SettingsPage> createState() => _SettingsPageState();
 }
 
-class _SettingsPageState extends State<SettingsPage> {
-  final _auth = AuthRepository.instance;
+class _SettingsPageState extends ConsumerState<SettingsPage> {
   String _version = '';
 
   @override
@@ -41,6 +41,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final session = ref.watch(authSessionProvider);
+    final auth = ref.read(authRepositoryProvider);
+
     return DesktopStackScaffold(
       title: const Text('设置'),
       onBack: () => context.pop(),
@@ -62,15 +65,17 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 GlassListRow(
                   title: '账号',
-                  subtitle: _auth.isLoggedIn
-                      ? (_auth.profile?.nickname ?? '已登录')
+                  subtitle: session.isLoggedIn
+                      ? (session.displayName ?? '已登录')
                       : '未登录',
                   leading: const Icon(Icons.person_outline),
                   iconColor: AppColors.catBlue,
                   iconBackground: AppColors.catBlueBg,
                   trailing: const Icon(Icons.chevron_right, size: 20),
                   onTap: () => context.push(
-                    _auth.isLoggedIn ? AppRoutes.profileEdit : AppRoutes.login,
+                    session.isLoggedIn
+                        ? AppRoutes.profileEdit
+                        : AppRoutes.login,
                   ),
                   showDivider: true,
                 ),
@@ -87,12 +92,12 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ),
           const SizedBox(height: AppDimensions.spacingMd),
-          if (_auth.isLoggedIn)
+          if (session.isLoggedIn)
             GlassButton(
               label: '退出登录',
               filled: false,
               onPressed: () async {
-                await _auth.logout();
+                await auth.logout();
                 if (context.mounted) context.go(AppRoutes.discovery);
               },
             ),

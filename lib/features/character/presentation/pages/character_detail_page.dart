@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/providers/auth_providers.dart';
 import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -13,7 +15,6 @@ import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
 import '../../../../shared/widgets/feed_tab_bar.dart';
 import '../../../../shared/widgets/rc0_image.dart';
 import '../../../../shared/widgets/rc0_widgets.dart';
-import '../../../auth/data/auth_repository.dart';
 import '../../data/character_local_store.dart';
 import '../../data/character_repository.dart';
 import '../../domain/character_detail_data.dart';
@@ -26,18 +27,18 @@ import '../widgets/detail/character_poses_tab.dart';
 import '../widgets/detail/character_scripts_tab.dart';
 import '../widgets/detail/character_works_tab.dart';
 
-class CharacterDetailPage extends StatefulWidget {
+class CharacterDetailPage extends ConsumerStatefulWidget {
   const CharacterDetailPage({super.key, required this.characterId});
 
   final int characterId;
 
   @override
-  State<CharacterDetailPage> createState() => _CharacterDetailPageState();
+  ConsumerState<CharacterDetailPage> createState() =>
+      _CharacterDetailPageState();
 }
 
-class _CharacterDetailPageState extends State<CharacterDetailPage> {
+class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
   final _repo = CharacterRepository.instance;
-  final _auth = AuthRepository.instance;
   bool _loading = true;
   String? _error;
   CharacterEntry? _entry;
@@ -141,7 +142,7 @@ class _CharacterDetailPageState extends State<CharacterDetailPage> {
               context: context,
               entry: entry,
               repo: _repo,
-              isLoggedIn: _auth.isLoggedIn,
+              isLoggedIn: ref.watch(isLoggedInProvider),
               isFavorite: _favorite,
               onToggleFavorite: _toggleFavorite,
               onRefresh: _load,

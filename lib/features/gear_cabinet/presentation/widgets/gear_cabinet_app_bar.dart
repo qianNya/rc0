@@ -14,6 +14,11 @@ class GearCabinetAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.onSearch,
     this.onFilter,
     this.onAdd,
+    this.onSaveLayout,
+    this.layoutDirty = false,
+    this.savingLayout = false,
+    this.editMode = false,
+    this.onToggleEdit,
     this.showBack = false,
     this.onBack,
   });
@@ -21,6 +26,11 @@ class GearCabinetAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onSearch;
   final VoidCallback? onFilter;
   final VoidCallback? onAdd;
+  final VoidCallback? onSaveLayout;
+  final bool layoutDirty;
+  final bool savingLayout;
+  final bool editMode;
+  final VoidCallback? onToggleEdit;
   final bool showBack;
   final VoidCallback? onBack;
 
@@ -82,6 +92,21 @@ class GearCabinetAppBar extends StatelessWidget implements PreferredSizeWidget {
                         ),
                       ),
                       const Spacer(),
+                      if (onToggleEdit != null)
+                        _IconBtn(
+                          icon: editMode
+                              ? Icons.check_rounded
+                              : Icons.swap_horiz_rounded,
+                          onPressed: onToggleEdit,
+                          tooltip: editMode ? '完成编辑' : '编辑布局',
+                        ),
+                      if (onSaveLayout != null)
+                        _IconBtn(
+                          icon: Icons.save_outlined,
+                          onPressed:
+                              layoutDirty && !savingLayout ? onSaveLayout : null,
+                          tooltip: '保存布局',
+                        ),
                       _IconBtn(
                         icon: Icons.search_rounded,
                         onPressed: onSearch,

@@ -5,8 +5,8 @@ import 'package:flutter/foundation.dart';
 import '../../../api/scene/api/scene-api.dart' as scene_api;
 import '../../../api/scene/data/scene-api.dart';
 import '../../../core/network/api_callback.dart';
-import '../../auth/data/auth_repository.dart';
-import '../../screenplay/data/data_upload_repository.dart';
+import '../../../core/auth/auth_bridge.dart';
+import '../../../core/media/app_media_upload_service.dart';
 import '../domain/scene_entry.dart';
 import '../domain/scene_utils.dart';
 import 'scene_api_mapper.dart';
@@ -291,7 +291,7 @@ class SceneRepository extends ChangeNotifier {
     double? longitude,
     Map<String, String> shootingTips = const {},
   }) async {
-    if (!AuthRepository.instance.isLoggedIn) {
+    if (!AuthBridge.isLoggedIn) {
       return (scene: null, error: '请先登录');
     }
 
@@ -352,7 +352,7 @@ class SceneRepository extends ChangeNotifier {
     double? longitude,
     Map<String, String> shootingTips = const {},
   }) async {
-    if (!AuthRepository.instance.isLoggedIn) {
+    if (!AuthBridge.isLoggedIn) {
       return (scene: null, error: '请先登录');
     }
 
@@ -406,7 +406,7 @@ class SceneRepository extends ChangeNotifier {
   }
 
   Future<String?> delete(String id) async {
-    if (!AuthRepository.instance.isLoggedIn) {
+    if (!AuthBridge.isLoggedIn) {
       return '请先登录';
     }
 
@@ -452,9 +452,9 @@ class SceneRepository extends ChangeNotifier {
     final file = File(path);
     if (!file.existsSync()) return (url: '', error: null);
 
-    final result = await DataUploadRepository.instance.uploadImage(file);
+    final result = await AppMediaUploadService.instance.uploadLocalFile(file.path);
     if (result.error != null) return (url: null, error: result.error);
-    return (url: result.object?.displayUrl ?? '', error: null);
+    return (url: result.result?.displayUrl ?? '', error: null);
   }
 
   Future<({List<String> urls, String? error})> _resolveRemoteUrls(
