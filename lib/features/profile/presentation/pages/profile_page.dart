@@ -357,7 +357,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   icon: Icons.dashboard_outlined,
                   iconColor: AppColors.catViolet,
                   iconBackground: AppColors.catVioletBg,
-                  onTap: () => context.go(AppRoutes.community),
+                  onTap: () => context.go(AppRoutes.discoveryTemplate),
                 ),
               ),
             ],

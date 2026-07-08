@@ -37,7 +37,7 @@ class ScriptStudioActionCards extends StatelessWidget {
                   glowColor: AppColors.accentDark,
                   title: '模板中心',
                   subtitle: '使用优质模板创作',
-                  onTap: () => context.go(AppRoutes.community),
+                  onTap: () => context.go(AppRoutes.discoveryTemplate),
                 ),
               ),
             ],

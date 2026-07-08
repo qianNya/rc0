@@ -94,7 +94,9 @@ rc0 是一套**面向摄影师、导演、设计师的视觉创作操作系统**
 
 ### 3.6 社区 Feed / 收藏点赞 [保留 + 重构]
 - Feed、点赞、收藏、评论（含嵌套）、浏览日志、热度（后端 `sp_like/favorite/comment/view_log`，保留）。
-- [重构] 前端 `explore/community/favorites` 通过统一 Repository/provider 读取聚合数据。
+- [已完成] 模板浏览合并至 `/discovery?section=template`（`TemplateMarketRepository` + `TemplateMarketBody`）；`/community` 重定向兼容旧链接。
+- [后续] `/community` 在后端动态/关注流 API 就绪后重建为发布/互动社交 Feed（`rc0_feature_community`）。
+- [重构] 前端 `explore/favorites` 通过统一 Repository/provider 读取聚合数据。
 - [新增] 后端落地 Redis 热点 feed/screenplay 缓存（`docs/ARCHITECTURE.md` 已规划未实现）。
 
 ### 3.7 搜索系统 [保留 + 重构]

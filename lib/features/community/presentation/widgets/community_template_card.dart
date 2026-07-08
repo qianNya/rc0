@@ -1,32 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../../../app/router/routes.dart';
-import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_dimensions.dart';
-import '../../../../core/data/app_catalog.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
-import '../../../../core/domain/screenplay/screenplay_display.dart';
-import '../../../../shared/widgets/content_card_shared.dart';
-import '../../../../shared/widgets/pose_cover_image.dart';
 import '../../../../shared/widgets/profile_widgets.dart';
+import '../../../../shared/widgets/template_grid_card.dart';
 
-String communityAspectRatioLabel(Screenplay screenplay) {
-  for (final preset in AppCatalog.aspectRatioPresets) {
-    if (screenplay.allTags.contains(preset)) return preset;
-  }
-  return '4:3';
-}
-
-String communityStructureLabel(Screenplay screenplay) {
-  final acts = screenplay.actCount;
-  final scenes = screenplay.sceneCount;
-  if (acts <= 0 && scenes <= 0) return 'Template';
-  if (acts > 0 && scenes > 0) return '$acts Acts · $scenes Scenes';
-  if (acts > 0) return '$acts Acts';
-  return '$scenes Scenes';
-}
-
+/// @deprecated Use [TemplateGridCard] directly.
 class CommunityTemplateCard extends StatelessWidget {
   const CommunityTemplateCard({
     super.key,
@@ -39,125 +17,10 @@ class CommunityTemplateCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final secondary =
-        theme.textTheme.bodyMedium?.color ?? AppColors.textSecondary;
-    final aspectLabel = communityAspectRatioLabel(screenplay);
-    final structureLabel = communityStructureLabel(screenplay);
-
-    return Material(
-      color: theme.colorScheme.surface,
-      borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () =>
-            context.push(AppRoutes.script(screenplay.detailRouteId)),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  PoseCoverImage(
-                    imagePath: screenplay.effectiveCoverImagePath,
-                    expand: true,
-                  ),
-                  if (showHotBadge)
-                    const Positioned(
-                      top: 8,
-                      left: 8,
-                      child: ContentCardBadge(type: ContentBadgeType.hot),
-                    ),
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.scrim,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        aspectLabel,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    screenplay.title,
-                    style: theme.textTheme.labelLarge?.copyWith(fontSize: 13),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 6),
-                  FeedAuthorRow(
-                    author: screenplay.author,
-                    avatarUrl: screenplay.authorAvatar,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    structureLabel,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontSize: 11,
-                      color: secondary,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.favorite_border,
-                        size: 14,
-                        color: secondary,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        formatFeedCount(screenplay.likes),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontSize: 11,
-                          color: secondary,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Icon(
-                        Icons.visibility_outlined,
-                        size: 14,
-                        color: secondary,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        formatFeedCount(screenplay.views),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontSize: 11,
-                          color: secondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+    return TemplateGridCard(
+      screenplay: screenplay,
+      compact: true,
+      showBadge: showHotBadge ? ContentBadgeType.hot : null,
     );
   }
 }

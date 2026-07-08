@@ -217,7 +217,7 @@ class _ScreenplayFavoritesTab extends StatelessWidget {
         title: '暂无剧本收藏',
         subtitle: error ?? '在社区中收藏喜欢的剧本',
         actionLabel: '去社区',
-        onAction: () => context.go(AppRoutes.community),
+        onAction: () => context.go(AppRoutes.discoveryTemplate),
       );
     }
 

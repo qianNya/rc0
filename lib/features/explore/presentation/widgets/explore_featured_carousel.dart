@@ -75,7 +75,7 @@ class _ExploreFeaturedCarouselState extends State<ExploreFeaturedCarousel> {
                   itemBuilder: (context, index) {
                     final banner = banners[index];
                     return GestureDetector(
-                      onTap: () => context.go(AppRoutes.community),
+                      onTap: () => context.go(AppRoutes.discoveryTemplate),
                       child: ClipRRect(
                         borderRadius: cardRadius,
                         child: Stack(

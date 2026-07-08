@@ -18,11 +18,13 @@ class ExploreDesktopRightPanel extends StatelessWidget {
     required this.feedItems,
     required this.onTagTap,
     required this.onCreate,
+    this.onBrowseTemplates,
   });
 
   final List<Screenplay> feedItems;
   final ValueChanged<String> onTagTap;
   final VoidCallback onCreate;
+  final VoidCallback? onBrowseTemplates;
 
   List<Screenplay> get _trending {
     final sorted = [...feedItems]
@@ -70,7 +72,10 @@ class ExploreDesktopRightPanel extends StatelessWidget {
             for (var i = 0; i < _trending.length; i++)
               _TrendingRow(rank: i + 1, screenplay: _trending[i]),
           const SizedBox(height: ExploreDesktopChrome.gap * 2),
-          _CreateBanner(onCreate: onCreate),
+          _CreateBanner(
+            onCreate: onCreate,
+            onBrowseTemplates: onBrowseTemplates,
+          ),
           const SizedBox(height: ExploreDesktopChrome.gap * 2),
           Text('最新动态', style: AppTextStyles.label),
           const SizedBox(height: ExploreDesktopChrome.gap),
@@ -144,9 +149,13 @@ class _TrendingRow extends StatelessWidget {
 }
 
 class _CreateBanner extends StatefulWidget {
-  const _CreateBanner({required this.onCreate});
+  const _CreateBanner({
+    required this.onCreate,
+    this.onBrowseTemplates,
+  });
 
   final VoidCallback onCreate;
+  final VoidCallback? onBrowseTemplates;
 
   @override
   State<_CreateBanner> createState() => _CreateBannerState();
@@ -200,14 +209,34 @@ class _CreateBannerState extends State<_CreateBanner> {
               ),
             ),
             const SizedBox(height: ExploreDesktopChrome.gap * 1.5),
-            OutlinedButton(
-              onPressed: widget.onCreate,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.white,
-                side: BorderSide.none,
-                backgroundColor: Colors.white.withValues(alpha: 0.16),
-              ),
-              child: const Text('开始创作'),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: widget.onCreate,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: BorderSide.none,
+                      backgroundColor: Colors.white.withValues(alpha: 0.16),
+                    ),
+                    child: const Text('开始创作'),
+                  ),
+                ),
+                if (widget.onBrowseTemplates != null) ...[
+                  const SizedBox(width: ExploreDesktopChrome.gap),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: widget.onBrowseTemplates,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: const BorderSide(color: Colors.white38),
+                        backgroundColor: Colors.transparent,
+                      ),
+                      child: const Text('浏览模板'),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ],
         ),

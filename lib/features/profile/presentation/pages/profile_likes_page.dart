@@ -64,7 +64,7 @@ class _ProfileLikesPageState extends State<ProfileLikesPage> {
                             _error != null ? '重试' : '去社区看看',
                         onAction: _error != null
                             ? _load
-                            : () => context.go(AppRoutes.community),
+                            : () => context.go(AppRoutes.discoveryTemplate),
                       ),
                     ],
                   )

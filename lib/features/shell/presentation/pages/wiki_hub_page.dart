@@ -8,9 +8,14 @@ import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 import '../widgets/wiki_ip_tab.dart';
 
 class WikiHubPage extends StatefulWidget {
-  const WikiHubPage({super.key, this.initialTabIndex = 0});
+  const WikiHubPage({
+    super.key,
+    this.initialTabIndex = 0,
+    this.initialDiscoverySection,
+  });
 
   final int initialTabIndex;
+  final String? initialDiscoverySection;
 
   @override
   State<WikiHubPage> createState() => _WikiHubPageState();
@@ -53,10 +58,11 @@ class _WikiHubPageState extends State<WikiHubPage> {
   Widget _buildSectionContent(_WikiSection section) {
     switch (section) {
       case _WikiSection.discovery:
-        return const ExplorePage(
+        return ExplorePage(
           embeddedInHub: true,
           showInlineSearchAction: false,
-          showInlineFeedTabs: false,
+          showInlineFeedTabs: true,
+          initialDiscoverySection: widget.initialDiscoverySection,
         );
       case _WikiSection.ip:
         return const WikiIpTab();

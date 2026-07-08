@@ -17,6 +17,7 @@
 | Screenplay | `GET/PUT /screenplays/{id}` | CRUD |
 | Tree | `PUT /screenplays/{id}/tree` | 树同步 |
 | Gallery | `GET /images` | 分页列表 |
+| Feed | `GET /feed?kind=2` | 发现页模板市场（与 `GET /screenplays?visibility=1` 等价降级源） |
 | Community | `POST /screenplays/{id}/like` | 互动 |
 
 ## 与前端对齐

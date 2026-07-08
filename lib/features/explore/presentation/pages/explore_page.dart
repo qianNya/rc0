@@ -4,12 +4,12 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../app/theme/app_dimensions.dart';
-import '../../../../core/data/app_catalog.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/responsive/responsive_builder.dart';
 import '../../../../core/utils/state_listeners.dart';
 import '../../data/feed_repository.dart';
 import '../../domain/explore_feed_query.dart';
+import '../../domain/template_feed_query.dart';
 import '../../../screenplay/data/screenplay_local_repository.dart';
 import '../../../screenplay/data/screenplay_remote_repository.dart';
 import '../../../screenplay/presentation/widgets/screenplay_delete_actions.dart';
@@ -27,6 +27,7 @@ import '../widgets/explore_app_bar.dart';
 import '../widgets/explore_featured_carousel.dart';
 import '../widgets/explore_featured_section.dart';
 import '../widgets/explore_quick_actions.dart';
+import '../widgets/template_market_body.dart';
 import 'explore_page_shared.dart';
 
 class ExplorePage extends StatefulWidget {
@@ -37,6 +38,7 @@ class ExplorePage extends StatefulWidget {
     this.showInlineFeedTabs = true,
     this.mobileFeedTabIndex,
     this.onMobileFeedTabChanged,
+    this.initialDiscoverySection,
   });
 
   final bool embeddedInHub;
@@ -44,6 +46,7 @@ class ExplorePage extends StatefulWidget {
   final bool showInlineFeedTabs;
   final int? mobileFeedTabIndex;
   final ValueChanged<int>? onMobileFeedTabChanged;
+  final String? initialDiscoverySection;
 
   @override
   State<ExplorePage> createState() => _ExplorePageState();
@@ -73,6 +76,11 @@ class _ExplorePageState extends State<ExplorePage> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialDiscoverySection ==
+        TemplateFeedQuery.discoverySectionTemplate) {
+      _feedTabIndex = TemplateFeedQuery.desktopTemplateTabIndex;
+      _mobileFeedTabIndex = TemplateFeedQuery.mobileTemplateTabIndex;
+    }
     _localRepository.addListener(_onDataChanged);
     _remoteRepository.addListener(_onDataChanged);
     _feedRepository.addListener(_onDataChanged);
@@ -152,6 +160,15 @@ class _ExplorePageState extends State<ExplorePage> {
     feedQuery: ExploreFeedQuery.forTab(_feedTabIndex),
   );
 
+  void _switchToTemplateTab() {
+    if (TemplateFeedQuery.isTemplateDesktopTab(_feedTabIndex) &&
+        TemplateFeedQuery.isTemplateMobileTab(_effectiveMobileFeedTabIndex)) {
+      return;
+    }
+    _onDesktopFeedTabChanged(TemplateFeedQuery.desktopTemplateTabIndex);
+    _handleMobileFeedTabChanged(TemplateFeedQuery.mobileTemplateTabIndex);
+  }
+
   @override
   Widget build(BuildContext context) {
     final selectionProps = (
@@ -180,6 +197,7 @@ class _ExplorePageState extends State<ExplorePage> {
         localIds: selectionProps.localIds,
         onDeleteSelected: selectionProps.onDeleteSelected,
         onSelectionChanged: _onDataChanged,
+        onSwitchToTemplateTab: _switchToTemplateTab,
       ),
       desktop: (_) => _ExploreDesktopView(
         embeddedInHub: widget.embeddedInHub,
@@ -201,6 +219,7 @@ class _ExplorePageState extends State<ExplorePage> {
         localIds: selectionProps.localIds,
         onDeleteSelected: selectionProps.onDeleteSelected,
         onSelectionChanged: _onDataChanged,
+        onSwitchToTemplateTab: _switchToTemplateTab,
       ),
     );
   }
@@ -226,6 +245,7 @@ class _ExploreMobileView extends StatelessWidget {
     required this.localIds,
     required this.onDeleteSelected,
     required this.onSelectionChanged,
+    required this.onSwitchToTemplateTab,
   });
 
   final List<Screenplay> feedItems;
@@ -243,6 +263,7 @@ class _ExploreMobileView extends StatelessWidget {
   final List<String> localIds;
   final Future<void> Function() onDeleteSelected;
   final VoidCallback onSelectionChanged;
+  final VoidCallback onSwitchToTemplateTab;
 
   final bool embeddedInHub;
   final bool showInlineSearchAction;
@@ -261,9 +282,18 @@ class _ExploreMobileView extends StatelessWidget {
         child: FadeSlideIndexedStack(
           index: feedTabIndex,
           children: [
-            for (var i = 0; i < AppCatalog.feedTabs.length; i++)
-              NotificationListener<ScrollNotification>(
-                key: ValueKey('explore-mobile-tab-$i'),
+            for (var i = 0; i < TemplateFeedQuery.mobileTabs.length; i++)
+              if (TemplateFeedQuery.isTemplateMobileTab(i))
+                KeyedSubtree(
+                  key: ValueKey('explore-mobile-template-$i'),
+                  child: const TemplateMarketBody(
+                    compact: true,
+                    showFeaturedBanner: true,
+                  ),
+                )
+              else
+                NotificationListener<ScrollNotification>(
+                  key: ValueKey('explore-mobile-tab-$i'),
                 onNotification: (notification) {
                   if (notification is ScrollEndNotification &&
                       notification.metrics.extentAfter < 240 &&
@@ -289,7 +319,7 @@ class _ExploreMobileView extends StatelessWidget {
                         title: '灵感推荐',
                         action: '更多',
                         showChevron: true,
-                        onActionTap: () => context.go(AppRoutes.community),
+                        onActionTap: onSwitchToTemplateTab,
                         titleStyle: AppTextStyles.title.copyWith(
                           fontSize: 16,
                         ),
@@ -346,7 +376,7 @@ class _ExploreMobileView extends StatelessWidget {
               if (showInlineFeedTabs)
                 Expanded(
                   child: FeedTabBar(
-                    tabs: AppCatalog.feedTabs,
+                    tabs: TemplateFeedQuery.mobileTabs,
                     selectedIndex: feedTabIndex,
                     onChanged: onFeedTabChanged,
                     underlineStyle: true,
@@ -424,6 +454,7 @@ class _ExploreDesktopFeedPanel extends StatelessWidget {
     required this.onLoadMore,
     required this.selectionController,
     this.embeddedInHub = false,
+    required this.onSwitchToTemplateTab,
   });
 
   final int feedTabIndex;
@@ -440,6 +471,7 @@ class _ExploreDesktopFeedPanel extends StatelessWidget {
   final Future<void> Function() onLoadMore;
   final ScreenplaySelectionController selectionController;
   final bool embeddedInHub;
+  final VoidCallback onSwitchToTemplateTab;
 
   @override
   Widget build(BuildContext context) {
@@ -477,7 +509,7 @@ class _ExploreDesktopFeedPanel extends StatelessWidget {
                   ),
                   const Spacer(),
                   TextButton(
-                    onPressed: () => context.go(AppRoutes.community),
+                    onPressed: onSwitchToTemplateTab,
                     child: const Text('模板市场'),
                   ),
                 ],
@@ -544,6 +576,7 @@ class _ExploreDesktopView extends StatelessWidget {
     required this.localIds,
     required this.onDeleteSelected,
     required this.onSelectionChanged,
+    required this.onSwitchToTemplateTab,
   });
 
   final List<Screenplay> feedItems;
@@ -564,6 +597,7 @@ class _ExploreDesktopView extends StatelessWidget {
   final List<String> localIds;
   final Future<void> Function() onDeleteSelected;
   final VoidCallback onSelectionChanged;
+  final VoidCallback onSwitchToTemplateTab;
 
   final bool embeddedInHub;
 
@@ -572,6 +606,12 @@ class _ExploreDesktopView extends StatelessWidget {
     final remoteOnly = feedItems.where((s) => !s.isLocal).toList();
 
     if (embeddedInHub) {
+      if (TemplateFeedQuery.isTemplateDesktopTab(feedTabIndex)) {
+        return const TemplateMarketBody(
+          compact: false,
+          showDesktopHeader: true,
+        );
+      }
       return _ExploreDesktopFeedPanel(
         key: const ValueKey('discovery-embedded'),
         feedTabIndex: feedTabIndex,
@@ -588,6 +628,7 @@ class _ExploreDesktopView extends StatelessWidget {
         onLoadMore: onLoadMore,
         selectionController: selectionController,
         embeddedInHub: true,
+        onSwitchToTemplateTab: onSwitchToTemplateTab,
       );
     }
 
@@ -643,22 +684,33 @@ class _ExploreDesktopView extends StatelessWidget {
                                 i < ExploreFeedQuery.desktopTabs.length;
                                 i++
                               )
-                                _ExploreDesktopFeedPanel(
-                                  key: ValueKey('explore-desktop-tab-$i'),
-                                  feedTabIndex: feedTabIndex,
-                                  tabIndex: i,
-                                  remoteOnly: remoteOnly,
-                                  feedItems: feedItems,
-                                  remoteLoading: remoteLoading,
-                                  remoteLoadingMore: remoteLoadingMore,
-                                  remoteError: remoteError,
-                                  remoteHasMore: remoteHasMore,
-                                  onDelete: onDelete,
-                                  onCreate: onCreate,
-                                  onRefreshRemote: onRefreshRemote,
-                                  onLoadMore: onLoadMore,
-                                  selectionController: selectionController,
-                                ),
+                                if (TemplateFeedQuery.isTemplateDesktopTab(i))
+                                  KeyedSubtree(
+                                    key: ValueKey('explore-desktop-template-$i'),
+                                    child: const TemplateMarketBody(
+                                      compact: false,
+                                      showDesktopHeader: false,
+                                      showFeaturedBanner: true,
+                                    ),
+                                  )
+                                else
+                                  _ExploreDesktopFeedPanel(
+                                    key: ValueKey('explore-desktop-tab-$i'),
+                                    feedTabIndex: feedTabIndex,
+                                    tabIndex: i,
+                                    remoteOnly: remoteOnly,
+                                    feedItems: feedItems,
+                                    remoteLoading: remoteLoading,
+                                    remoteLoadingMore: remoteLoadingMore,
+                                    remoteError: remoteError,
+                                    remoteHasMore: remoteHasMore,
+                                    onDelete: onDelete,
+                                    onCreate: onCreate,
+                                    onRefreshRemote: onRefreshRemote,
+                                    onLoadMore: onLoadMore,
+                                    selectionController: selectionController,
+                                    onSwitchToTemplateTab: onSwitchToTemplateTab,
+                                  ),
                             ],
                           ),
                         ),
@@ -671,6 +723,7 @@ class _ExploreDesktopView extends StatelessWidget {
                   feedItems: remoteOnly,
                   onTagTap: onTagTap,
                   onCreate: onCreate,
+                  onBrowseTemplates: onSwitchToTemplateTab,
                 ),
               ],
             ),

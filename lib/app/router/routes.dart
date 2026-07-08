@@ -42,7 +42,14 @@ abstract final class AppRoutes {
   static const String explore = '/';
 
   // Utility / stack routes
+  /// @deprecated Redirects to [discoveryTemplate]. Reserved for future social feed.
   static const String community = '/community';
+
+  static const String discoverySectionTemplate = 'template';
+
+  /// Discovery hub with template market tab selected.
+  static const String discoveryTemplate =
+      '$discovery?section=$discoverySectionTemplate';
   static const String settings = '/settings';
   static const String search = '/search';
   static const String favorites = '/favorites';

@@ -42,7 +42,8 @@ flowchart TB
 | 探索 | `/` | 已实现 | 本地剧本列表、标签筛选、删除 |
 | 上传/编辑 | `/upload`、`/upload?edit={id}` | 已实现 | 分层编辑器，发布与更新 |
 | 剧本详情 | `/script/:id` | 已实现 | 幕/场展开、编辑入口、图片预览 |
-| 社区 | `/community` | 已实现 | 推荐模板、分类筛选、剧本入口 |
+| 发现 | `/discovery` | 已实现 | 灵感 Feed、内嵌模板市场 Tab、剧本浏览与 Fork |
+| 社区（重定向） | `/community` | 已合并 | 重定向至 `/discovery?section=template`；未来预留发布/互动 Feed |
 | 收藏 | `/favorites` | 已实现 | 图片收藏与剧本收藏 |
 | 任务 | `/tasks` | 占位 | 空状态 UI |
 | 个人 | `/profile` | 已实现 | 资料、作品、点赞、设置与更新 |

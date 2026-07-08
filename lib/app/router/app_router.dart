@@ -15,7 +15,6 @@ import '../../features/gear_cabinet/presentation/pages/gear_device_detail_page.d
 import '../../features/action/presentation/pages/action_wiki_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
-import '../../features/community/presentation/pages/community_page.dart';
 import '../../features/character/presentation/pages/character_ai_page.dart';
 import '../../features/character/presentation/pages/character_create_page.dart';
 import '../../features/character/presentation/pages/character_detail_page.dart';
@@ -49,7 +48,6 @@ import '../../features/shell/presentation/pages/adaptive_shell_page.dart';
 import '../../features/shell/presentation/pages/wiki_hub_page.dart';
 import '../../features/production_assets/presentation/pages/assets_hub_page.dart';
 import '../../features/studio/presentation/pages/script_studio_create_page.dart';
-import '../../features/studio/presentation/pages/script_studio_page.dart';
 import '../../features/user/presentation/pages/user_profile_page.dart';
 import '../../features/upload/presentation/pages/ai_creation_hub_page.dart';
 import '../../features/upload/presentation/pages/frame_editor_detail_page.dart';
@@ -136,8 +134,13 @@ abstract final class AppRouter {
         redirect: (_, _) => AppRoutes.discovery,
       ),
       GoRoute(
+        path: AppRoutes.community,
+        name: 'community-redirect',
+        redirect: (_, _) => AppRoutes.discoveryTemplate,
+      ),
+      GoRoute(
         path: AppRoutes.wikiScript,
-        redirect: (_, _) => AppRoutes.community,
+        redirect: (_, _) => AppRoutes.discoveryTemplate,
       ),
       GoRoute(
         path: AppRoutes.wikiCharacter,
@@ -162,7 +165,7 @@ abstract final class AppRouter {
       GoRoute(
         path: AppRoutes.scriptList,
         name: 'script-list',
-        redirect: (_, _) => AppRoutes.community,
+        redirect: (_, _) => AppRoutes.discoveryTemplate,
       ),
       GoRoute(
         path: AppRoutes.scriptExport,
@@ -691,9 +694,13 @@ abstract final class AppRouter {
                   final hubTab =
                       int.tryParse(state.uri.queryParameters['hubTab'] ?? '') ??
                           0;
+                  final section = state.uri.queryParameters['section'];
                   return NoTransitionPage(
                     key: state.pageKey,
-                    child: WikiHubPage(initialTabIndex: hubTab),
+                    child: WikiHubPage(
+                      initialTabIndex: hubTab,
+                      initialDiscoverySection: section,
+                    ),
                   );
                 },
               ),
@@ -734,18 +741,6 @@ abstract final class AppRouter {
                 pageBuilder: (context, state) => NoTransitionPage(
                   key: state.pageKey,
                   child: const ActionWikiPage(embeddedInHub: true),
-                ),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: AppRoutes.community,
-                name: 'community',
-                pageBuilder: (context, state) => NoTransitionPage(
-                  key: state.pageKey,
-                  child: const CommunityPage(embeddedInHub: true),
                 ),
               ),
             ],

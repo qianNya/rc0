@@ -1,3 +1,5 @@
+import 'template_feed_query.dart';
+
 /// Maps desktop feed tab index to GET /feed query parameters.
 class ExploreFeedQuery {
   const ExploreFeedQuery({
@@ -20,6 +22,9 @@ class ExploreFeedQuery {
   ];
 
   static ExploreFeedQuery forTab(int index) {
+    if (TemplateFeedQuery.isTemplateDesktopTab(index)) {
+      return ExploreFeedQuery(sort: 'latest', kind: TemplateFeedQuery.templateFeedKind);
+    }
     switch (index) {
       case 0:
         return const ExploreFeedQuery(sort: 'hot');

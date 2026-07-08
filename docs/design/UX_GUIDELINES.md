@@ -31,10 +31,10 @@
 
 | 入口 | 路由 | 用户心智 |
 |---|---|---|
-| 发现 Wiki | `/discovery` | "找灵感、看别人怎么拍" |
+| 发现 Wiki | `/discovery` | "找灵感、看别人怎么拍"（含内嵌 **模板市场** Tab） |
 | 创作 Studio | `/studio` | "继续我的剧本" |
 | 场景/资产 | `/scenes` `/assets` | "我的可复用素材库" |
-| 社区 | `/community` | "发布、互动、被看见" |
+| 社区（deprecated） | `/community` → `/discovery?section=template` | 旧链接重定向；未来预留发布/互动 Feed |
 | 我的 | `/profile` | "我的作品与身份" |
 
 主导航保持 3–5 个（`ShellNavConfigStore` 支持用户自定义 1–5 tab）；创作入口是独立胶囊按钮，不与消费型 tab 混排——创作与消费是两种心智模式。

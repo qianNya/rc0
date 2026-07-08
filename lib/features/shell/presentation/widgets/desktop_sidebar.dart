@@ -20,7 +20,7 @@ const shellTabRoutes = {
   AppRoutes.scenes,
   AppRoutes.profile,
   AppRoutes.action,
-  AppRoutes.community,
+  AppRoutes.discoveryTemplate,
   AppRoutes.assets,
 };
 
@@ -38,7 +38,11 @@ String desktopSidebarActiveId(Uri uri) {
       location.startsWith('/studio/edit/')) {
     return 'scene_flow';
   }
-  if (location == AppRoutes.scriptList) {
+  if (location == AppRoutes.scriptList ||
+      location.startsWith(AppRoutes.community) ||
+      (location.startsWith(AppRoutes.discovery) &&
+          uri.queryParameters['section'] ==
+              AppRoutes.discoverySectionTemplate)) {
     return 'community';
   }
   if (location.startsWith('/script/')) {
@@ -59,7 +63,12 @@ String desktopSidebarActiveId(Uri uri) {
     return 'equipment';
   }
   if (location.startsWith(AppRoutes.gallery)) return 'library';
-  if (location.startsWith(AppRoutes.community)) return 'community';
+  if (location.startsWith(AppRoutes.community) ||
+      (location.startsWith(AppRoutes.discovery) &&
+          uri.queryParameters['section'] ==
+              AppRoutes.discoverySectionTemplate)) {
+    return 'community';
+  }
   if (location.startsWith(AppRoutes.profile)) return 'profile';
   if (location.startsWith(AppRoutes.favorites)) return 'my_favorites';
   return 'wiki_hub';
@@ -180,9 +189,9 @@ const desktopSidebarSections = [
     items: [
       DesktopSidebarItem(
         id: 'community',
-        label: '社区作品',
-        icon: Icons.groups_outlined,
-        route: AppRoutes.community,
+        label: '模板市场',
+        icon: Icons.storefront_outlined,
+        route: AppRoutes.discoveryTemplate,
       ),
       DesktopSidebarItem(
         id: 'library',

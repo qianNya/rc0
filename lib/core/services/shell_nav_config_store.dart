@@ -90,7 +90,7 @@ abstract final class ShellNavCatalog {
       label: '资产',
       icon: Icons.inventory_2_outlined,
       selectedIcon: Icons.inventory_2,
-      branchIndex: 6,
+      branchIndex: 5,
       group: '主页',
     ),
     ShellNavOption(
@@ -164,10 +164,11 @@ abstract final class ShellNavCatalog {
     ),
     ShellNavOption(
       id: ShellNavOptionId.community,
-      label: '社区',
-      icon: Icons.groups_outlined,
-      selectedIcon: Icons.groups,
-      branchIndex: 5,
+      label: '模板',
+      icon: Icons.storefront_outlined,
+      selectedIcon: Icons.storefront,
+      route: AppRoutes.discoveryTemplate,
+      usePush: false,
       group: '其他',
     ),
   ];
