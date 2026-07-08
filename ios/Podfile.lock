@@ -17,6 +17,7 @@ PODS:
   - rc0_unity_widget (0.1.0):
     - Flutter
     - TuanjieLibrary/Stub
+  - TuanjieLibrary/Full (1.0.0)
   - TuanjieLibrary/Stub (1.0.0)
   - video_thumbnail (0.0.1):
     - Flutter
@@ -26,7 +27,7 @@ DEPENDENCIES:
   - Flutter (from `Flutter`)
   - open_filex (from `.symlinks/plugins/open_filex/ios`)
   - rc0_unity_widget (from `.symlinks/plugins/rc0_unity_widget/ios`)
-  - TuanjieLibrary/Stub (from `../packages/rc0_unity_widget/ios`)
+  - TuanjieLibrary/Full (from `../packages/rc0_unity_widget/ios`)
   - video_thumbnail (from `.symlinks/plugins/video_thumbnail/ios`)
 
 SPEC REPOS:
