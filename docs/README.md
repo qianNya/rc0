@@ -9,6 +9,10 @@
 | `00-overview.md` | 编号化文档地图与 refactor 入口 |
 | `refactor/README.md` | 全栈重构文档索引与核心结论 |
 | `refactor/PRD.md` | rc0 全栈重构产品需求文档 |
+| `refactor/SHELL_NAV_PRD.md` | Shell 导航优化 PRD（PC 侧栏 + App 底栏） |
+| `refactor/DESKTOP_WINDOW_CHROME_PRD.md` | 桌面窗口栏 PRD（拖拽 / 缩放 / 红绿灯） |
+| `refactor/SCREENPLAY_TEMPLATE_PRD.md` | 剧本↔模板关系与全链路 PRD |
+| `refactor/CHARACTER_SYSTEM_PRD.md` | 角色体系 PRD（身份/服装/道具/风格/Tag/场景/AI） |
 | `refactor/TECHNICAL_DESIGN.md` | rc0 全栈重构技术方案 |
 | `refactor/BACKEND_KICKOFF.md` | 后端 media/screenplay/worker 启动审阅 |
 | `design/UI_STYLE_GUIDE.md` | UI 风格规范（Apple Liquid Glass 视觉/材质/token/组件） |

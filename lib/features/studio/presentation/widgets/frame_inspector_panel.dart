@@ -12,6 +12,7 @@ import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
 import '../../../../shared/widgets/profile_widgets.dart';
 import '../../../character/data/character_repository.dart';
+import '../../../character/domain/character_detail_data.dart';
 import '../../../screenplay/data/frame_generation_repository.dart';
 import '../../../screenplay/data/screenplay_draft.dart';
 import '../../../screenplay/data/shoot_params_draft.dart';
@@ -69,6 +70,7 @@ class _FrameInspectorPanelState extends State<FrameInspectorPanel> {
             onChanged: widget.onChanged,
             selection: widget.selection,
             actions: widget.actions,
+            remoteScreenplayId: widget.actions.remoteScreenplayId,
           ),
           const SizedBox(height: 16),
           const EmptyStateView(
@@ -231,6 +233,8 @@ class _FrameInspectorPanelState extends State<FrameInspectorPanel> {
                     characterId: frame.characterId,
                     characterName: frame.characterName,
                     characterNote: frame.characterNote,
+                    costumeId: frame.costumeId,
+                    propIds: frame.propIds,
                     onPickCharacter: () async {
                       final target = FrameBindingTarget(
                         draft: widget.actions.draft,
@@ -249,9 +253,12 @@ class _FrameInspectorPanelState extends State<FrameInspectorPanel> {
                       if (picked == null) {
                         frame.characterId = null;
                         frame.characterName = '';
+                        frame.costumeId = null;
+                        frame.propIds = [];
                       } else {
                         frame.characterId = picked.id;
                         frame.characterName = picked.name ?? '';
+                        frame.costumeId = picked.defaultCostumeId;
                         if (frame.characterNote.trim().isEmpty &&
                             (picked.appearance?.isNotEmpty ?? false)) {
                           frame.characterNote = picked.appearance!;
@@ -263,12 +270,24 @@ class _FrameInspectorPanelState extends State<FrameInspectorPanel> {
                     onClearCharacter: () {
                       frame.characterId = null;
                       frame.characterName = '';
+                      frame.costumeId = null;
+                      frame.propIds = [];
                       widget.onChanged();
                       setState(() {});
                     },
                     onNoteChanged: (v) {
                       frame.characterNote = v;
                       widget.onChanged();
+                    },
+                    onCostumeChanged: (id) {
+                      frame.costumeId = id;
+                      widget.onChanged();
+                      setState(() {});
+                    },
+                    onPropIdsChanged: (ids) {
+                      frame.propIds = ids;
+                      widget.onChanged();
+                      setState(() {});
                     },
                     onCreateCharacter: () async {
                       final createdId =
@@ -280,6 +299,8 @@ class _FrameInspectorPanelState extends State<FrameInspectorPanel> {
                       if (entry == null) return;
                       frame.characterId = entry.id;
                       frame.characterName = entry.name;
+                      frame.costumeId = null;
+                      frame.propIds = [];
                       if (frame.characterNote.trim().isEmpty &&
                           entry.appearance.isNotEmpty) {
                         frame.characterNote = entry.appearance;
@@ -304,21 +325,64 @@ class _FrameInspectorPanelState extends State<FrameInspectorPanel> {
                         child: Text('提示词', style: AppTextStyles.label),
                       ),
                       TextButton(
-                        onPressed: () {
+                        onPressed: () async {
                           final shootParams = effectiveParamsForFrame(
                             widget.actions.draft,
                             actIndex,
                             sceneIndex,
                             frameIndex,
                           );
+                          String? appearance;
+                          String? stylePrompt;
+                          String? negativeStyle;
+                          final propNames = <String>[];
+                          final characterId = frame.characterId;
+                          if (characterId != null) {
+                            final detail = await CharacterRepository.instance
+                                .fetchDetail(characterId);
+                            final entry = detail.character;
+                            if (entry != null) {
+                              appearance = entry.appearance;
+                              if (entry.style.promptFragment.isNotEmpty) {
+                                stylePrompt = entry.style.promptFragment;
+                              }
+                              if (entry.style.negativeFragment.isNotEmpty) {
+                                negativeStyle = entry.style.negativeFragment;
+                              }
+                            }
+                            final costumes = await CharacterRepository.instance
+                                .listCostumes(characterId);
+                            for (final c in costumes.items) {
+                              if (c.id == frame.costumeId &&
+                                  c.description.isNotEmpty) {
+                                appearance = c.description;
+                                break;
+                              }
+                            }
+                            if (frame.propIds.isNotEmpty) {
+                              final props = await CharacterRepository.instance
+                                  .listProps(characterId);
+                              for (final id in frame.propIds) {
+                                for (final p in props.items) {
+                                  if (p.id == id) propNames.add(p.name);
+                                }
+                              }
+                            }
+                          }
+                          if (!mounted) return;
                           frame.positivePrompt = AiPromptBuilder.buildPositive(
                             frame: frame,
                             scene: scene,
                             shootParams: shootParams,
+                            characterAppearance: appearance,
+                            characterStylePrompt: stylePrompt,
+                            propNames: propNames,
                           );
                           if (frame.negativePrompt.trim().isEmpty) {
                             frame.negativePrompt =
-                                AiPromptBuilder.defaultNegativePrompt;
+                                AiPromptBuilder.buildNegative(
+                              existing: negativeStyle,
+                            );
                           }
                           widget.onChanged();
                           setState(() {});
@@ -479,6 +543,7 @@ class _SceneInspector extends StatelessWidget {
           selection: selection,
           actions: actions,
           compact: true,
+          remoteScreenplayId: actions.remoteScreenplayId,
         ),
         const SizedBox(height: 16),
         ScreenplayScenesSection(
@@ -649,24 +714,75 @@ class _SceneFieldsSection extends StatelessWidget {
   }
 }
 
-class _CharacterSection extends StatelessWidget {
+class _CharacterSection extends StatefulWidget {
   const _CharacterSection({
     required this.characterId,
     required this.characterName,
     required this.characterNote,
+    required this.costumeId,
+    required this.propIds,
     required this.onPickCharacter,
     required this.onClearCharacter,
     required this.onNoteChanged,
+    required this.onCostumeChanged,
+    required this.onPropIdsChanged,
     this.onCreateCharacter,
   });
 
   final int? characterId;
   final String characterName;
   final String characterNote;
+  final int? costumeId;
+  final List<int> propIds;
   final VoidCallback onPickCharacter;
   final VoidCallback onClearCharacter;
   final ValueChanged<String> onNoteChanged;
+  final ValueChanged<int?> onCostumeChanged;
+  final ValueChanged<List<int>> onPropIdsChanged;
   final Future<void> Function()? onCreateCharacter;
+
+  @override
+  State<_CharacterSection> createState() => _CharacterSectionState();
+}
+
+class _CharacterSectionState extends State<_CharacterSection> {
+  List<CharacterCostumeItem> _costumes = const [];
+  List<CharacterPropItem> _props = const [];
+  bool _loadingExtras = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadExtras();
+  }
+
+  @override
+  void didUpdateWidget(covariant _CharacterSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.characterId != widget.characterId) {
+      _loadExtras();
+    }
+  }
+
+  Future<void> _loadExtras() async {
+    final id = widget.characterId;
+    if (id == null) {
+      setState(() {
+        _costumes = const [];
+        _props = const [];
+      });
+      return;
+    }
+    setState(() => _loadingExtras = true);
+    final costumes = await CharacterRepository.instance.listCostumes(id);
+    final props = await CharacterRepository.instance.listProps(id);
+    if (!mounted) return;
+    setState(() {
+      _costumes = costumes.items;
+      _props = props.items;
+      _loadingExtras = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -681,43 +797,97 @@ class _CharacterSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text('角色信息', style: AppTextStyles.label),
-          if (characterId != null && characterName.isNotEmpty) ...[
+          if (widget.characterId != null &&
+              widget.characterName.isNotEmpty) ...[
             const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
                   child: Text(
-                    characterName,
+                    widget.characterName,
                     style: AppTextStyles.body.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
                 TextButton(
-                  onPressed: () =>
-                      context.push(AppRoutes.characterDetailPath(characterId!)),
+                  onPressed: () => context.push(
+                    AppRoutes.characterDetailPath(widget.characterId!),
+                  ),
                   child: const Text('Wiki'),
                 ),
                 IconButton(
                   tooltip: '解除绑定',
-                  onPressed: onClearCharacter,
+                  onPressed: widget.onClearCharacter,
                   icon: const Icon(Icons.close, size: 18),
                 ),
               ],
             ),
           ],
+          if (widget.characterId != null) ...[
+            const SizedBox(height: 8),
+            if (_loadingExtras)
+              const LinearProgressIndicator(minHeight: 2)
+            else ...[
+              DropdownButtonFormField<int?>(
+                initialValue: widget.costumeId,
+                decoration: const InputDecoration(
+                  labelText: '服装',
+                  isDense: true,
+                ),
+                items: [
+                  const DropdownMenuItem<int?>(
+                    value: null,
+                    child: Text('默认外观'),
+                  ),
+                  for (final c in _costumes)
+                    DropdownMenuItem<int?>(
+                      value: c.id,
+                      child: Text(c.isDefault ? '${c.name}（默认）' : c.name),
+                    ),
+                ],
+                onChanged: widget.onCostumeChanged,
+              ),
+              if (_props.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text('道具', style: AppTextStyles.caption),
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (final p in _props)
+                      FilterChip(
+                        label: Text(p.name),
+                        selected: widget.propIds.contains(p.id),
+                        onSelected: (selected) {
+                          final next = List<int>.from(widget.propIds);
+                          if (selected) {
+                            if (!next.contains(p.id)) next.add(p.id);
+                          } else {
+                            next.remove(p.id);
+                          }
+                          widget.onPropIdsChanged(next);
+                        },
+                      ),
+                  ],
+                ),
+              ],
+            ],
+          ],
           const SizedBox(height: 8),
           TextFormField(
-            key: ValueKey('character-$characterNote-$characterId'),
-            initialValue: characterNote,
+            key: ValueKey(
+              'character-${widget.characterNote}-${widget.characterId}',
+            ),
+            initialValue: widget.characterNote,
             decoration: const InputDecoration(
               labelText: '角色描述',
               hintText: '分镜级外观 override，如：黑色长发、蓝色雨衣',
               isDense: true,
             ),
-            onChanged: onNoteChanged,
+            onChanged: widget.onNoteChanged,
           ),
-          const SizedBox(height: 8),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -728,12 +898,14 @@ class _CharacterSection extends StatelessWidget {
                 child: const Text('素材库'),
               ),
               OutlinedButton(
-                onPressed: onPickCharacter,
-                child: Text(characterId == null ? '选择角色' : '更换角色'),
+                onPressed: widget.onPickCharacter,
+                child: Text(
+                  widget.characterId == null ? '选择角色' : '更换角色',
+                ),
               ),
-              if (onCreateCharacter != null)
+              if (widget.onCreateCharacter != null)
                 OutlinedButton(
-                  onPressed: onCreateCharacter,
+                  onPressed: widget.onCreateCharacter,
                   child: const Text('新建角色'),
                 ),
             ],

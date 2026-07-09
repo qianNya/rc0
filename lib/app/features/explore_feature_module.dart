@@ -17,10 +17,10 @@ final class ExploreFeatureModule implements FeatureModule {
   @override
   List<NavEntry> get navEntries => const [
         NavEntry(
-          id: 'discovery',
-          label: '发现',
+          id: 'templates',
+          label: '模板',
           routePath: AppRoutes.discovery,
-          icon: Icons.explore_outlined,
+          icon: Icons.storefront_outlined,
         ),
       ];
 

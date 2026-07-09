@@ -77,6 +77,7 @@ void main() {
       expect(payload.containsKey('tree'), isFalse);
       expect(payload['screenplay'], isA<Map<String, dynamic>>());
       expect(payload['acts'], isA<List>());
+      expect((payload['screenplay'] as Map)['visibility'], 0);
 
       final act = (payload['acts'] as List).first as Map<String, dynamic>;
       expect(act.containsKey('act'), isTrue);

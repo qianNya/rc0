@@ -22,6 +22,7 @@ import '../../../screenplay/data/screenplay_image_upload_service.dart';
 import '../../../screenplay/data/screenplay_local_repository.dart';
 import '../../../screenplay/data/screenplay_publish_service.dart';
 import '../../../screenplay/data/screenplay_remote_repository.dart';
+import '../../../screenplay/data/screenplay_tree_document.dart';
 import '../../../screenplay/data/shoot_params_draft.dart';
 import '../../../screenplay/domain/shoot_params.dart';
 import '../utils/screenplay_preview_options.dart';
@@ -339,12 +340,14 @@ class _ScreenplayDetailPageState extends ConsumerState<ScreenplayDetailPage> {
     final isSync = doc.meta.remoteScreenplayId != null;
 
     int visibility;
+    int kind = doc.meta.kind;
     if (isSync) {
       visibility = doc.meta.visibility ?? 0;
     } else {
       final picked = await PublishVisibilityDialog.show(context);
       if (picked == null || !mounted) return;
-      visibility = picked;
+      visibility = picked.visibility;
+      kind = picked.kind;
     }
 
     final progress = ValueNotifier<(String, int, int)>(('准备', 0, 1));
@@ -380,6 +383,7 @@ class _ScreenplayDetailPageState extends ConsumerState<ScreenplayDetailPage> {
         : await ScreenplayPublishService.instance.publish(
             document: doc,
             visibility: visibility,
+            kind: kind,
             onProgress: (stage, done, total) {
               progress.value = (stage, done, total);
             },
@@ -407,12 +411,71 @@ class _ScreenplayDetailPageState extends ConsumerState<ScreenplayDetailPage> {
         ..showSnackBar(const SnackBar(content: Text('同步成功')));
     } else {
       final visibilityLabel = visibility == 1 ? '公开' : '非公开';
+      final kindLabel =
+          kind == Screenplay.kindTemplate ? '模板' : '作品';
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          SnackBar(content: Text('发布成功（$visibilityLabel）')),
+          SnackBar(content: Text('发布成功（$kindLabel · $visibilityLabel）')),
         );
     }
+    setState(() {});
+  }
+
+  Future<void> _onPromoteToTemplate(Screenplay script) async {
+    final remoteId = script.remoteScreenplayId;
+    if (remoteId == null || _publishing) return;
+    if (!ref.read(isLoggedInProvider)) {
+      context.go(
+        AppRoutes.loginWithRedirect(AppRoutes.script(widget.scriptId)),
+      );
+      return;
+    }
+
+    setState(() => _publishing = true);
+    final result =
+        await ScreenplayPublishService.instance.promoteToTemplate(remoteId);
+    if (!mounted) return;
+    setState(() => _publishing = false);
+
+    if (result.error != null) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(result.error!)));
+      return;
+    }
+
+    final localId = _localRepository.resolveLocalId(script) ?? script.id;
+    final doc = _localRepository.documentById(localId);
+    if (doc != null) {
+      final tree = deepCopyJson(doc.tree);
+      final screenplayMap = tree['screenplay'] as Map<String, dynamic>;
+      screenplayMap['kind'] = Screenplay.kindTemplate;
+      screenplayMap['visibility'] = 1;
+      await _localRepository.updateDocument(
+        ScreenplayTreeDocument(
+          tree: tree,
+          meta: doc.meta.copyWith(
+            kind: Screenplay.kindTemplate,
+            visibility: 1,
+            updatedAt: DateTime.now(),
+          ),
+        ),
+      );
+    }
+
+    if (!mounted) return;
+    if (_remoteScreenplay != null &&
+        (_remoteScreenplay!.remoteScreenplayId == remoteId ||
+            _remoteScreenplay!.id == script.id)) {
+      _remoteScreenplay = _remoteScreenplay!.copyWith(
+        kind: Screenplay.kindTemplate,
+        visibility: 1,
+      );
+    }
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(const SnackBar(content: Text('已设为模板')));
     setState(() {});
   }
 
@@ -473,6 +536,7 @@ class _ScreenplayDetailPageState extends ConsumerState<ScreenplayDetailPage> {
     VoidCallback? onSync,
     VoidCallback? onExport,
     VoidCallback? onDownloadCopy,
+    VoidCallback? onPromoteToTemplate,
     bool publishing = false,
     bool exporting = false,
     bool downloading = false,
@@ -501,6 +565,16 @@ class _ScreenplayDetailPageState extends ConsumerState<ScreenplayDetailPage> {
               onTap: () {
                 Navigator.pop(context);
                 onSync();
+              },
+            ),
+          if (onPromoteToTemplate != null)
+            ListTile(
+              leading: const Icon(Icons.auto_awesome_outlined),
+              title: const Text('设为模板'),
+              enabled: !publishing,
+              onTap: () {
+                Navigator.pop(context);
+                onPromoteToTemplate();
               },
             ),
           if (onDownloadCopy != null)
@@ -736,6 +810,11 @@ class _ScreenplayDetailPageState extends ConsumerState<ScreenplayDetailPage> {
           onSync: isOwner && script.isPublished
               ? () => _onPublish(script)
               : null,
+          onPromoteToTemplate: isOwner &&
+                  script.isPublished &&
+                  !script.isTemplate
+              ? () => _onPromoteToTemplate(script)
+              : null,
           onExport: isOwner && script.isPublished
               ? () => _onExport(script)
               : null,
@@ -792,6 +871,11 @@ class _ScreenplayDetailPageState extends ConsumerState<ScreenplayDetailPage> {
             : null,
         onSync: isOwner && script.isPublished
             ? () => _onPublish(script)
+            : null,
+        onPromoteToTemplate: isOwner &&
+                script.isPublished &&
+                !script.isTemplate
+            ? () => _onPromoteToTemplate(script)
             : null,
         onExport: isOwner && script.isPublished
             ? () => _onExport(script)
@@ -1030,6 +1114,7 @@ class _ScreenplayDetailDesktop extends StatelessWidget {
     this.onDownloadCopy,
     this.onPublish,
     this.onSync,
+    this.onPromoteToTemplate,
     this.onExport,
     this.onImport,
     this.onDeleteAct,
@@ -1057,6 +1142,7 @@ class _ScreenplayDetailDesktop extends StatelessWidget {
   final VoidCallback? onDownloadCopy;
   final VoidCallback? onPublish;
   final VoidCallback? onSync;
+  final VoidCallback? onPromoteToTemplate;
   final VoidCallback? onExport;
   final VoidCallback? onImport;
   final Future<void> Function(int actIndex)? onDeleteAct;
@@ -1094,6 +1180,12 @@ class _ScreenplayDetailDesktop extends StatelessWidget {
             icon: const Icon(Icons.edit_outlined),
             tooltip: '编辑剧本',
             onPressed: onEdit,
+          ),
+        if (onPromoteToTemplate != null)
+          IconButton(
+            icon: const Icon(Icons.auto_awesome_outlined),
+            tooltip: '设为模板',
+            onPressed: publishing ? null : onPromoteToTemplate,
           ),
         if (onExport != null)
           IconButton(

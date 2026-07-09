@@ -12,11 +12,13 @@ class ScreenplayVisibilityOptions extends StatelessWidget {
   const ScreenplayVisibilityOptions({
     super.key,
     required this.value,
-    required this.onChanged,
+    this.onChanged,
+    this.privateEnabled = true,
   });
 
   final int value;
-  final ValueChanged<int> onChanged;
+  final ValueChanged<int>? onChanged;
+  final bool privateEnabled;
 
   @override
   Widget build(BuildContext context) {
@@ -29,10 +31,10 @@ class ScreenplayVisibilityOptions extends StatelessWidget {
         RadioListTile<int>(
           value: 1,
           groupValue: value,
-          onChanged: (v) => onChanged(v!),
+          onChanged: onChanged == null ? null : (v) => onChanged!(v!),
           title: const Text('公开'),
           subtitle: Text(
-            '出现在社区列表',
+            '公开可见，可出现在作品列表',
             style: AppTextStyles.bodySecondary.copyWith(fontSize: 12),
           ),
           contentPadding: EdgeInsets.zero,
@@ -40,7 +42,9 @@ class ScreenplayVisibilityOptions extends StatelessWidget {
         RadioListTile<int>(
           value: 0,
           groupValue: value,
-          onChanged: (v) => onChanged(v!),
+          onChanged: (!privateEnabled || onChanged == null)
+              ? null
+              : (v) => onChanged!(v!),
           title: const Text('非公开'),
           subtitle: Text(
             '仅服务端存档，可通过 JSON 导出分享',

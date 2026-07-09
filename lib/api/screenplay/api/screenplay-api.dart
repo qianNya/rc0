@@ -234,6 +234,21 @@ Future publishScreenplay(
   );
 }
 
+Future forkScreenplay(
+  int id, {
+  Function(Screenplay)? ok,
+  Function(String)? fail,
+  Function? eventually,
+}) async {
+  await apiPost(
+    '/screenplays/$id/fork',
+    const {},
+    ok: (data) => ok?.call(Screenplay.fromJson(data)),
+    fail: fail,
+    eventually: eventually,
+  );
+}
+
 Future createAct(
   int screenplayId,
   Map<String, dynamic> body, {

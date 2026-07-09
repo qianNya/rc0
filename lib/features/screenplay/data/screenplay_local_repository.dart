@@ -5,11 +5,15 @@ import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../api/screenplay/api/screenplay-api.dart' as screenplay_api;
+import '../../../api/screenplay/data/screenplay-api.dart' as api;
+import '../../../core/auth/auth_bridge.dart';
 import '../../../core/domain/pose_item.dart';
 import '../../../core/domain/screenplay/screenplay.dart';
 import '../../../core/domain/screenplay/screenplay_adapter.dart';
 import '../../../core/domain/screenplay/screenplay_image_resolver.dart';
 import '../../../core/domain/screenplay/script_frame_display.dart';
+import '../../../core/network/api_callback.dart';
 import '../../../core/utils/image_url_utils.dart';
 import '../../upload/domain/upload_image_file.dart';
 import 'screenplay_delete_options.dart';
@@ -284,12 +288,63 @@ class ScreenplayLocalRepository extends ChangeNotifier {
       return (screenplay: null, error: result.error ?? '获取剧本失败');
     }
 
-    return _insertForkedTree(
+    final local = await _insertForkedTree(
       tree: result.tree!,
       forkedFromId: remoteId,
       forkedFromLocalId: null,
       sourceTags: const [],
     );
+    if (local.screenplay == null) return local;
+
+    // Hybrid fork (D3): local copy first; when logged in, also POST /fork.
+    if (!AuthBridge.isLoggedIn) {
+      return local;
+    }
+
+    final (forked, forkError) = await apiCallback<api.Screenplay>(
+      ({ok, fail, eventually}) => screenplay_api.forkScreenplay(
+        remoteId,
+        ok: ok,
+        fail: fail,
+        eventually: eventually,
+      ),
+    );
+    if (forkError != null || forked == null) {
+      // Keep local copy even if server fork fails.
+      return local;
+    }
+
+    final index = _documentIndex(local.screenplay!.id);
+    if (index < 0) return local;
+
+    final forkSource = forked.forkSourceId?.toInt() ?? remoteId;
+    final forkRoot = forked.forkRootId?.toInt();
+    final doc = _documents[index];
+    final tree = deepCopyJson(doc.tree);
+    final screenplayMap = tree['screenplay'] as Map<String, dynamic>;
+    screenplayMap['id'] = forked.id.toInt();
+    screenplayMap['fork_source_id'] = forkSource;
+    if (forkRoot != null) screenplayMap['fork_root_id'] = forkRoot;
+    screenplayMap['kind'] = forked.kind.toInt() > 0
+        ? forked.kind.toInt()
+        : Screenplay.kindPersonal;
+
+    final updated = ScreenplayTreeDocument(
+      tree: tree,
+      meta: doc.meta.copyWith(
+        remoteScreenplayId: forked.id.toInt(),
+        forkSourceId: forkSource,
+        forkRootId: forkRoot,
+        forkedFromId: forkSource,
+        kind: Screenplay.kindPersonal,
+        visibility: forked.visibility.toInt(),
+        updatedAt: DateTime.now(),
+      ),
+    );
+    _documents[index] = updated;
+    await _save();
+    notifyListeners();
+    return (screenplay: updated.toScreenplay(), error: null);
   }
 
   Future<({Screenplay? screenplay, String? error})> _forkFromLocal(
@@ -341,6 +396,8 @@ class ScreenplayLocalRepository extends ChangeNotifier {
       tags: sourceTags,
       author: '我',
       authorBio: 'Fork 副本',
+      kind: Screenplay.kindPersonal,
+      forkSourceId: forkedFromId,
       forkedFromId: forkedFromId,
       forkedFromLocalId: forkedFromLocalId,
       imagesLocalized: false,

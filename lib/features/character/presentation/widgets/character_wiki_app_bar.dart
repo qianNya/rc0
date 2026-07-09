@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../shared/widgets/desktop/desktop_hub_scaffold.dart';
 import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 import '../../../studio/presentation/widgets/script_studio_header_components.dart';
 
@@ -41,21 +42,28 @@ class CharacterHubAppBar extends StatelessWidget implements PreferredSizeWidget 
 /// Top spacing below floating wiki app bars on character hub pages.
 typedef CharacterHubToolbarContentInset = WikiModeTagToolbarInset;
 
-/// Character library shell — wiki floating chrome, transparent app bar.
+/// Character library shell — mobile floating chrome; desktop page header.
 class CharacterHubScaffold extends StatelessWidget {
   const CharacterHubScaffold({
     super.key,
     required this.appBar,
     required this.body,
+    this.desktopHeader,
   });
 
   final PreferredSizeWidget appBar;
   final Widget body;
+  final Widget? desktopHeader;
 
   @override
   Widget build(BuildContext context) {
-    return WikiModeTagPageScaffold(
+    return DesktopHubScaffold(
       appBar: appBar,
+      desktopHeader: desktopHeader ??
+          const DesktopHubHeader(
+            title: '角色',
+            subtitle: '角色库与可复用形象',
+          ),
       body: body,
     );
   }

@@ -3,6 +3,9 @@ import 'script_frame.dart';
 
 /// 剧本 — 完整发布单元
 class Screenplay {
+  static const int kindPersonal = 1;
+  static const int kindTemplate = 2;
+
   const Screenplay({
     required this.id,
     required this.title,
@@ -26,6 +29,10 @@ class Screenplay {
     this.apiActCount,
     this.apiSceneCount,
     this.apiFrameCount,
+    this.kind = kindPersonal,
+    this.forkSourceId,
+    this.forkRootId,
+    this.forkCount = 0,
     this.forkedFromId,
     this.forkedFromLocalId,
     this.imagesLocalized = false,
@@ -57,6 +64,10 @@ class Screenplay {
   final int? apiActCount;
   final int? apiSceneCount;
   final int? apiFrameCount;
+  final int kind;
+  final int? forkSourceId;
+  final int? forkRootId;
+  final int forkCount;
   final int? forkedFromId;
   final String? forkedFromLocalId;
   final bool imagesLocalized;
@@ -65,7 +76,13 @@ class Screenplay {
   final String? treeJsonObjectKey;
   final DateTime? publishedAt;
 
-  bool get isForkCopy => forkedFromId != null || forkedFromLocalId != null;
+  bool get isTemplate => kind == kindTemplate;
+
+  /// Prefer [forkSourceId]; [forkedFromId] is kept as a local alias.
+  int? get effectiveForkSourceId => forkSourceId ?? forkedFromId;
+
+  bool get isForkCopy =>
+      effectiveForkSourceId != null || forkedFromLocalId != null;
 
   bool get isPublished => remoteScreenplayId != null;
 
@@ -173,7 +190,11 @@ class Screenplay {
         'apiActCount': apiActCount,
         'apiSceneCount': apiSceneCount,
         'apiFrameCount': apiFrameCount,
-        'forkedFromId': forkedFromId,
+        'kind': kind,
+        'forkSourceId': forkSourceId,
+        'forkRootId': forkRootId,
+        'forkCount': forkCount,
+        'forkedFromId': forkedFromId ?? forkSourceId,
         'forkedFromLocalId': forkedFromLocalId,
         'imagesLocalized': imagesLocalized,
         'remoteScreenplayId': remoteScreenplayId,
@@ -183,6 +204,10 @@ class Screenplay {
       };
 
   factory Screenplay.fromJson(Map<String, dynamic> json) {
+    final forkSource = json['forkSourceId'] as int? ??
+        (json['fork_source_id'] as num?)?.toInt() ??
+        json['forkedFromId'] as int?;
+    final forkedFrom = json['forkedFromId'] as int? ?? forkSource;
     return Screenplay(
       id: json['id'] as String,
       title: json['title'] as String,
@@ -216,7 +241,14 @@ class Screenplay {
       apiActCount: json['apiActCount'] as int?,
       apiSceneCount: json['apiSceneCount'] as int?,
       apiFrameCount: json['apiFrameCount'] as int?,
-      forkedFromId: json['forkedFromId'] as int?,
+      kind: json['kind'] as int? ?? kindPersonal,
+      forkSourceId: forkSource,
+      forkRootId: json['forkRootId'] as int? ??
+          (json['fork_root_id'] as num?)?.toInt(),
+      forkCount: json['forkCount'] as int? ??
+          (json['fork_count'] as num?)?.toInt() ??
+          0,
+      forkedFromId: forkedFrom,
       forkedFromLocalId: json['forkedFromLocalId'] as String?,
       imagesLocalized: json['imagesLocalized'] as bool? ?? false,
       remoteScreenplayId: json['remoteScreenplayId'] as int?,
@@ -251,6 +283,10 @@ class Screenplay {
     int? apiActCount,
     int? apiSceneCount,
     int? apiFrameCount,
+    int? kind,
+    int? forkSourceId,
+    int? forkRootId,
+    int? forkCount,
     int? forkedFromId,
     String? forkedFromLocalId,
     bool? imagesLocalized,
@@ -259,6 +295,8 @@ class Screenplay {
     String? treeJsonObjectKey,
     DateTime? publishedAt,
   }) {
+    final nextForkSource = forkSourceId ?? forkedFromId ?? this.forkSourceId;
+    final nextForkedFrom = forkedFromId ?? forkSourceId ?? this.forkedFromId;
     return Screenplay(
       id: id ?? this.id,
       title: title ?? this.title,
@@ -282,7 +320,11 @@ class Screenplay {
       apiActCount: apiActCount ?? this.apiActCount,
       apiSceneCount: apiSceneCount ?? this.apiSceneCount,
       apiFrameCount: apiFrameCount ?? this.apiFrameCount,
-      forkedFromId: forkedFromId ?? this.forkedFromId,
+      kind: kind ?? this.kind,
+      forkSourceId: nextForkSource,
+      forkRootId: forkRootId ?? this.forkRootId,
+      forkCount: forkCount ?? this.forkCount,
+      forkedFromId: nextForkedFrom,
       forkedFromLocalId: forkedFromLocalId ?? this.forkedFromLocalId,
       imagesLocalized: imagesLocalized ?? this.imagesLocalized,
       remoteScreenplayId: remoteScreenplayId ?? this.remoteScreenplayId,

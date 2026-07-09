@@ -16,11 +16,13 @@ class CharacterCreatePage extends StatefulWidget {
     this.workId,
     this.initialSummary,
     this.initialCoverPath,
+    this.initialStyle,
   });
 
   final int? workId;
   final String? initialSummary;
   final String? initialCoverPath;
+  final String? initialStyle;
 
   @override
   State<CharacterCreatePage> createState() => _CharacterCreatePageState();
@@ -46,6 +48,9 @@ class _CharacterCreatePageState extends State<CharacterCreatePage> {
     }
     if (widget.initialCoverPath != null) {
       _formData.coverPath = widget.initialCoverPath!;
+    }
+    if (widget.initialStyle != null && widget.initialStyle!.isNotEmpty) {
+      _formData.styleLabel = widget.initialStyle!;
     }
   }
 
@@ -94,7 +99,10 @@ class _CharacterCreatePageState extends State<CharacterCreatePage> {
       summary: _summaryController.text.trim(),
       appearance: _appearanceController.text.trim(),
       personality: _personalityController.text.trim(),
-      aliases: buildAliasesFromForm(_formData),
+      coverUrl: _formData.coverPath,
+      aliases: List<String>.from(_formData.aliases),
+      styleJson: _formData.styleJson,
+      tagIds: List<int>.from(_formData.selectedTagIds),
     );
     if (!mounted) return;
     setState(() => _saving = false);
@@ -109,6 +117,10 @@ class _CharacterCreatePageState extends State<CharacterCreatePage> {
     final id = result.character?.id;
     if (id != null) {
       await _saveLocalExtras(id);
+      await _repo.uploadAndLinkReferenceImages(
+        characterId: id,
+        localPaths: _formData.referencePaths,
+      );
     }
     if (!mounted) return;
     context.pop(id);

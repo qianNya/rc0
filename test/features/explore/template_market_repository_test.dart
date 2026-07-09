@@ -21,12 +21,7 @@ void main() {
   test('TemplateFeedQuery maps sort tabs to feed sort', () {
     expect(TemplateFeedQuery.sortTabToFeedSort(0), 'hot');
     expect(TemplateFeedQuery.sortTabToFeedSort(1), 'latest');
-    expect(
-      TemplateFeedQuery.isTemplateDesktopTab(
-        TemplateFeedQuery.desktopTemplateTabIndex,
-      ),
-      isTrue,
-    );
+    expect(TemplateFeedQuery.discoverySectionTemplate, 'template');
   });
 
   test('filter and sort template screenplays', () {

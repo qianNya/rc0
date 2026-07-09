@@ -11,6 +11,7 @@ import '../../../app/router/routes.dart';
 import '../../../core/data/app_catalog.dart';
 import '../../../core/utils/state_listeners.dart';
 import '../../../core/domain/screenplay/screenplay.dart';
+import '../../character/data/character_repository.dart';
 import '../../lighting/data/lighting_draft_binding.dart';
 import '../../lighting/data/lighting_repository.dart';
 import '../../screenplay/data/shoot_params_draft.dart';
@@ -244,6 +245,46 @@ class _ScreenplayEditorHostState extends ConsumerState<ScreenplayEditorHost> {
     }
     _applyInitialCharacter();
     _applyInitialLightingScheme();
+    // ignore: discarded_futures
+    _hydrateRemoteCast();
+  }
+
+  Future<void> _hydrateRemoteCast() async {
+    final remoteId = _resolveRemoteScreenplayId();
+    if (remoteId == null || remoteId <= 0) return;
+    final result =
+        await CharacterRepository.instance.listScreenplayCast(remoteId);
+    if (result.error != null || result.items.isEmpty || !mounted) return;
+    var changed = false;
+    for (final cast in result.items) {
+      final id = cast.characterId.toInt();
+      if (id <= 0) continue;
+      var name = cast.billingName.trim();
+      if (name.isEmpty) {
+        final detail = await CharacterRepository.instance.fetchDetail(id);
+        name = detail.character?.name.trim() ?? '';
+      }
+      if (name.isEmpty) name = '角色$id';
+      if (_draft.linkedCharacters.any((c) => c.id == id)) {
+        // Still apply default costume to first unbound frame if needed.
+        continue;
+      }
+      ensureDraftCharacterLinked(_draft, id: id, name: name);
+      final costumeId = cast.defaultCostumeId?.toInt();
+      if (costumeId != null && costumeId > 0) {
+        for (final act in _draft.acts) {
+          for (final scene in act.scenes) {
+            for (final frame in scene.frames) {
+              if (frame.characterId == id && frame.costumeId == null) {
+                frame.costumeId = costumeId;
+              }
+            }
+          }
+        }
+      }
+      changed = true;
+    }
+    if (changed && mounted) setState(() {});
   }
 
   void _applyInitialLightingScheme() {
@@ -693,14 +734,15 @@ class _ScreenplayEditorHostState extends ConsumerState<ScreenplayEditorHost> {
       final result = isSync
           ? await ScreenplayPublishService.instance.syncToServer(
               document: doc,
-              visibility: picked,
+              visibility: picked.visibility,
               onProgress: (stage, done, total) {
                 progress.value = (stage, done, total);
               },
             )
           : await ScreenplayPublishService.instance.publish(
               document: doc,
-              visibility: picked,
+              visibility: picked.visibility,
+              kind: picked.kind,
               onProgress: (stage, done, total) {
                 progress.value = (stage, done, total);
               },
@@ -724,8 +766,14 @@ class _ScreenplayEditorHostState extends ConsumerState<ScreenplayEditorHost> {
           _showSnackBar('标签同步失败：$tagError');
         }
       }
-      final visibilityLabel = picked == 1 ? '公开' : '非公开';
-      _showSnackBar(isSync ? '已同步到云端（$visibilityLabel）' : '已发布到云端（$visibilityLabel）');
+      final visibilityLabel = picked.visibility == 1 ? '公开' : '非公开';
+      final kindLabel =
+          picked.kind == Screenplay.kindTemplate ? '模板' : '作品';
+      _showSnackBar(
+        isSync
+            ? '已同步到云端（$visibilityLabel）'
+            : '已发布到云端（$kindLabel · $visibilityLabel）',
+      );
       if (mounted) context.go(AppRoutes.script(localId));
     } catch (error) {
       if (mounted) _showSnackBar('发布失败：$error');
@@ -861,7 +909,19 @@ class _ScreenplayEditorHostState extends ConsumerState<ScreenplayEditorHost> {
       canRemoveScene: (actIndex, _) => _draft.acts[actIndex].scenes.length > 1,
       onRemoveScene: _removeScene,
       onSceneFieldChanged: _onSceneFieldChanged,
+      remoteScreenplayId: _resolveRemoteScreenplayId(),
     );
+  }
+
+  int? _resolveRemoteScreenplayId() {
+    final fromScript = _editingScript?.remoteScreenplayId;
+    if (fromScript != null && fromScript > 0) return fromScript;
+    final localId = _localScriptId ?? widget.editScriptId;
+    if (localId == null || localId.isEmpty) return null;
+    return ScreenplayLocalRepository.instance
+        .documentById(localId)
+        ?.meta
+        .remoteScreenplayId;
   }
 
   Widget _buildStructureMode() {
@@ -964,6 +1024,7 @@ class _ScreenplayEditorHostState extends ConsumerState<ScreenplayEditorHost> {
       onPickCover: _pickCover,
       onResetCover: _resetCover,
       onSyncTitle: _syncTitleToDraft,
+      remoteScreenplayId: _resolveRemoteScreenplayId(),
     );
     if (mounted) _refresh(recordHistory: false);
   }

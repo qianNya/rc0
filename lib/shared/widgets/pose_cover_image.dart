@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/theme/app_colors.dart';
@@ -55,8 +56,10 @@ class PoseCoverImage extends StatelessWidget {
     return _hasLocalImage(resolved);
   }
 
-  bool _hasLocalImage(String path) =>
-      path.isNotEmpty && File(path).existsSync();
+  bool _hasLocalImage(String path) {
+    if (kIsWeb || path.isEmpty) return false;
+    return File(path).existsSync();
+  }
 
   bool _canPreview(String? path) =>
       enablePreview && path != null && isPreviewableImagePath(path);

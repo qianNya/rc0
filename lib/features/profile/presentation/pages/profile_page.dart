@@ -12,6 +12,8 @@ import '../../../../core/services/app_update_service.dart';
 import '../../../../core/theme/theme_mode_notifier.dart';
 import '../../../../core/utils/state_listeners.dart';
 import '../../../../core/responsive/breakpoints.dart';
+import '../../../../core/responsive/responsive_builder.dart';
+import '../../../../shared/widgets/desktop/desktop_hub_scaffold.dart';
 import '../../../../shared/widgets/desktop_shell_app_bar.dart';
 import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 import '../../../../shared/widgets/feed_tab_bar.dart';
@@ -565,12 +567,24 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       ),
     );
 
-    if (Breakpoints.isDesktop(context)) {
-      final appBar = DesktopShellAppBar(
-        title: const Text('我的'),
-        automaticallyImplyLeading: false,
+    if (Breakpoints.useSidebarShell(context)) {
+      return DesktopHubScaffold(
+        appBar: const DesktopShellAppBar(
+          title: Text('我的'),
+          automaticallyImplyLeading: false,
+        ),
+        desktopHeader: const DesktopHubHeader(
+          title: '我的',
+          subtitle: '作品、身份与设置',
+        ),
+        body: AdaptiveContent(
+          maxWidth: 960,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppDimensions.spacingXl,
+          ),
+          child: body,
+        ),
       );
-      return DesktopShellTabScaffold(appBar: appBar, body: body);
     }
 
     if (widget.embeddedInHub) {

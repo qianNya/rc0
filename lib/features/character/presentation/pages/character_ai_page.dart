@@ -73,7 +73,8 @@ class _CharacterAiPageState extends State<CharacterAiPage> {
     final uri = Uri(
       path: AppRoutes.characterCreate,
       queryParameters: {
-        if (summary.isNotEmpty) 'summary': '$summary\n风格：$style',
+        if (summary.isNotEmpty) 'summary': summary,
+        'style': style,
       },
     );
     context.push(uri.toString());

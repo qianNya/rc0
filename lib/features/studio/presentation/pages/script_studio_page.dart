@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/providers/auth_providers.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
+import '../../../../core/responsive/breakpoints.dart';
 import '../../../../core/utils/state_listeners.dart';
 import '../../../screenplay/data/screenplay_local_repository.dart';
 import '../../../user/data/user_screenplays_repository.dart';
@@ -11,6 +12,7 @@ import '../widgets/script_studio_action_cards.dart';
 import '../widgets/script_studio_app_bar.dart';
 import '../widgets/script_studio_quick_start.dart';
 import '../widgets/script_studio_recent_section.dart';
+import '../../../../shared/widgets/desktop/desktop_hub_scaffold.dart';
 import '../../../../shared/widgets/shell_insets.dart';
 import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 
@@ -60,10 +62,8 @@ class _ScriptStudioPageState extends ConsumerState<ScriptStudioPage> {
         ? _screenplays.itemsFor(_userId!)
         : const <Screenplay>[];
 
-    final localRemoteIds = local
-        .map((s) => s.remoteScreenplayId)
-        .whereType<int>()
-        .toSet();
+    final localRemoteIds =
+        local.map((s) => s.remoteScreenplayId).whereType<int>().toSet();
     final merged = <Screenplay>[
       ...local,
       ...remote.where(
@@ -95,22 +95,60 @@ class _ScriptStudioPageState extends ConsumerState<ScriptStudioPage> {
       }
     });
 
+    final desktop = Breakpoints.useSidebarShell(context);
+    final recent = ScriptStudioRecentSection(
+      projects: _recentProjects,
+      onDataChanged: _onChanged,
+    );
+    const quickStart = ScriptStudioQuickStart();
+
+    final content = desktop
+        ? Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppDimensions.spacingXl,
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Expanded(
+                  flex: 5,
+                  child: SingleChildScrollView(
+                    child: ScriptStudioActionCards(),
+                  ),
+                ),
+                const SizedBox(width: AppDimensions.spacingXl),
+                Expanded(
+                  flex: 6,
+                  child: ListView(
+                    children: [
+                      recent,
+                      quickStart,
+                      const ShellBottomSpacer(extra: AppDimensions.spacingMd),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          )
+        : ListView(
+            padding: EdgeInsets.only(
+              top: wikiModeTagContentInsetHeight(context),
+            ),
+            children: [
+              const ScriptStudioActionCards(),
+              recent,
+              quickStart,
+              const ShellBottomSpacer(extra: AppDimensions.spacingMd),
+            ],
+          );
+
     return ScriptStudioHubScaffold(
       appBar: const ScriptStudioAppBar(),
-      body: ListView(
-        padding: EdgeInsets.only(
-          top: wikiModeTagContentInsetHeight(context),
-        ),
-        children: [
-          const ScriptStudioActionCards(),
-          ScriptStudioRecentSection(
-            projects: _recentProjects,
-            onDataChanged: _onChanged,
-          ),
-          const ScriptStudioQuickStart(),
-          const ShellBottomSpacer(extra: AppDimensions.spacingMd),
-        ],
+      desktopHeader: const DesktopHubHeader(
+        title: '创作',
+        subtitle: '从空白、模板或 AI 开始一部新作品',
       ),
+      body: content,
     );
   }
 }

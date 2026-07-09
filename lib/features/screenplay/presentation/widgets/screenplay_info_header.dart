@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
@@ -37,6 +39,11 @@ class ScreenplayInfoHeader extends StatelessWidget {
             screenplay.title,
             style: titleStyle ?? AppTextStyles.display.copyWith(fontSize: 22),
           ),
+          if (screenplay.isForkCopy ||
+              screenplay.effectiveForkSourceId != null) ...[
+            const SizedBox(height: 6),
+            _InfoForkSourceLink(sourceId: screenplay.effectiveForkSourceId),
+          ],
           const SizedBox(height: 8),
         ],
         if (showHierarchySummary) ...[
@@ -91,5 +98,30 @@ class ScreenplayInfoHeader extends StatelessWidget {
     final m = local.month.toString().padLeft(2, '0');
     final d = local.day.toString().padLeft(2, '0');
     return '$y-$m-$d';
+  }
+}
+
+class _InfoForkSourceLink extends StatelessWidget {
+  const _InfoForkSourceLink({this.sourceId});
+
+  final int? sourceId;
+
+  @override
+  Widget build(BuildContext context) {
+    final canOpen = sourceId != null && sourceId! > 0;
+    final label = canOpen ? '翻拍自 #$sourceId' : '翻拍自已失效模板';
+    final style = AppTextStyles.bodySecondary.copyWith(
+      fontSize: 13,
+      color: canOpen ? AppColors.accent : null,
+      decoration: canOpen ? TextDecoration.underline : null,
+      decorationColor: AppColors.accent,
+    );
+    if (!canOpen) {
+      return Text(label, style: style);
+    }
+    return GestureDetector(
+      onTap: () => context.push(AppRoutes.script('$sourceId')),
+      child: Text(label, style: style),
+    );
   }
 }

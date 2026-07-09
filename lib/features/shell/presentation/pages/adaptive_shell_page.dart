@@ -19,6 +19,7 @@ import '../../../studio/presentation/widgets/studio_editor_shell_glass_button.da
 import '../../../upload/presentation/widgets/editor/editor_hub_bottom_bar.dart';
 import '../utils/shell_nav_navigation.dart';
 import '../widgets/desktop_sidebar.dart';
+import '../widgets/desktop_title_bar.dart';
 import '../widgets/shell_create_glass_button.dart';
 import '../widgets/shell_nav_config_sheet.dart';
 
@@ -228,21 +229,24 @@ class _AdaptiveShellPageState extends State<AdaptiveShellPage> {
       return ScrollNotificationObserver(
         child: Scaffold(
           backgroundColor: AppColors.pageBackground,
-          body: Padding(
-            padding: const EdgeInsets.all(DesktopChrome.gap),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const DesktopSidebar(),
-                const SizedBox(width: DesktopChrome.gap),
-                Expanded(
-                  child: SizedBox.expand(
-                    child: ShellBranchTransition(
-                      navigationShell: navigationShell,
+          body: DesktopWindowChromeOverlay(
+            showMacTrafficLights: false,
+            child: Padding(
+              padding: const EdgeInsets.all(DesktopChrome.gap),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const DesktopSidebar(),
+                  const SizedBox(width: DesktopChrome.gap),
+                  Expanded(
+                    child: SizedBox.expand(
+                      child: ShellBranchTransition(
+                        navigationShell: navigationShell,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

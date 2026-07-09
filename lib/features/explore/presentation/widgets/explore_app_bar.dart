@@ -16,7 +16,7 @@ class ExploreAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return WikiModeTagAppBar(
-      title: '发现',
+      title: '模板',
       systemOverlayStyle: embeddedInHub
           ? AppSystemUi.lightStyle
           : AppSystemUi.styleFor(Theme.of(context).brightness),

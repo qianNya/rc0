@@ -5,17 +5,14 @@ import '../../../api/feed/data/feed-api.dart';
 import '../../../core/domain/screenplay/screenplay.dart';
 import '../../../core/network/api_callback.dart';
 import '../../screenplay/data/screenplay_api_mapper.dart';
-import '../../screenplay/data/screenplay_remote_repository.dart';
 import '../domain/template_feed_query.dart';
 import '../domain/template_screenplay_filters.dart';
 
-/// Template market data — prefers GET /feed?kind=2, falls back to /screenplays.
+/// Template market data — sole source is GET /feed?kind=2 (D5).
 class TemplateMarketRepository extends ChangeNotifier {
   TemplateMarketRepository._();
 
   static final TemplateMarketRepository instance = TemplateMarketRepository._();
-
-  final _screenplayRemote = ScreenplayRemoteRepository.instance;
 
   List<Screenplay> _rawItems = [];
   bool _loading = false;
@@ -112,25 +109,8 @@ class TemplateMarketRepository extends ChangeNotifier {
     required int pageSize,
   }) async {
     final feedResult = await _fetchFromFeed(page: page, pageSize: pageSize);
-    if (feedResult.error == null && feedResult.items.isNotEmpty) {
-      _fromFeedApi = true;
-      return feedResult;
-    }
-
-    final fallback = await _screenplayRemote.fetchScreenplays(
-      page: page,
-      pageSize: pageSize,
-      q: _query.q,
-      sort: _query.feedSort,
-      visibility: 1,
-    );
-    if (fallback.error == null) {
-      _fromFeedApi = false;
-      return fallback;
-    }
-
-    if (feedResult.error != null) return feedResult;
-    return fallback;
+    _fromFeedApi = true;
+    return feedResult;
   }
 
   Future<({List<Screenplay> items, num total, String? error})> _fetchFromFeed({

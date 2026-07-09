@@ -39,6 +39,7 @@ List<CharacterEntry> filterCharactersByCategory(
           (e) =>
               e.workTitle.contains(category) ||
               e.name.contains(category) ||
+              e.tags.any((t) => t.name.contains(category)) ||
               e.aliases.any((a) => a.contains(category)),
         )
         .toList(growable: false);
@@ -53,9 +54,11 @@ List<CharacterEntry> filterCharactersByCategory(
   return items
       .where(
         (e) =>
+            e.tags.any((t) => t.name.contains(category)) ||
             e.aliases.any((a) => a.contains(category)) ||
             e.summary.contains(category) ||
-            e.appearance.contains(category),
+            e.appearance.contains(category) ||
+            e.styleLabel.contains(category),
       )
       .toList(growable: false);
 }

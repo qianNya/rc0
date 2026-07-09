@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../app/router/routes.dart';
-
 class ShellNavItem {
   const ShellNavItem({
     required this.label,
@@ -29,13 +27,13 @@ class ShellNavItem {
   final bool useBrandLogo;
 }
 
-/// Primary mobile bottom-nav slots (Wiki / 场景 / 我的).
+/// Legacy primary mobile slots — prefer [ShellNavConfigStore.navItems].
 const List<ShellNavItem> mobilePrimaryNavItems = [
   ShellNavItem(
     branchIndex: 0,
-    label: 'Wiki',
-    icon: Icons.menu_book_outlined,
-    selectedIcon: Icons.menu_book,
+    label: '模板',
+    icon: Icons.storefront_outlined,
+    selectedIcon: Icons.storefront,
   ),
   ShellNavItem(
     branchIndex: 2,
@@ -70,33 +68,31 @@ final List<ShellNavItem> mobileNavItems = [
   mobilePrimaryNavItems[2],
 ];
 
-/// Desktop sidebar items.
+/// Legacy desktop items — prefer [desktopSidebarPrimaries].
 const List<ShellNavItem> desktopNavItems = [
   ShellNavItem(
     branchIndex: 0,
-    label: 'Wiki',
-    icon: Icons.menu_book_outlined,
-    selectedIcon: Icons.menu_book,
+    label: '模板',
+    icon: Icons.storefront_outlined,
+    selectedIcon: Icons.storefront,
     desktopOnly: true,
   ),
   ShellNavItem(
-    branchIndex: 1,
-    label: '图库',
-    icon: Icons.grid_view_outlined,
-    selectedIcon: Icons.grid_view,
+    branchIndex: 2,
+    label: '场景',
+    icon: Icons.landscape_outlined,
+    selectedIcon: Icons.landscape,
   ),
   ShellNavItem(
-    stackRoute: AppRoutes.inbox,
-    label: '收件箱',
-    icon: Icons.inbox_outlined,
-    selectedIcon: Icons.inbox,
-    desktopOnly: true,
+    branchIndex: 5,
+    label: '资产',
+    icon: Icons.inventory_2_outlined,
+    selectedIcon: Icons.inventory_2,
   ),
   ShellNavItem(
-    stackRoute: AppRoutes.favorites,
-    label: '收藏',
-    icon: Icons.bookmark_outline,
-    selectedIcon: Icons.bookmark,
-    desktopOnly: true,
+    branchIndex: 3,
+    label: '我的',
+    icon: Icons.person_outline,
+    selectedIcon: Icons.person,
   ),
 ];

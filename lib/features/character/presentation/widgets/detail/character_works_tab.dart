@@ -42,9 +42,9 @@ class _CharacterWorksTabState extends State<CharacterWorksTab> {
     final filtered = _filtered;
     if (widget.works.isEmpty) {
       return const EmptyStateView(
-        icon: Icons.photo_library_outlined,
-        title: '暂无摄影作品',
-        subtitle: '用户围绕该角色创作的作品将展示在这里',
+        icon: Icons.movie_creation_outlined,
+        title: '暂无关联作品',
+        subtitle: '使用该角色的剧本将展示在这里',
       );
     }
 
@@ -196,22 +196,26 @@ class _WorkCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      work.author,
+                      work.title.isNotEmpty
+                          ? work.title
+                          : (work.author.isNotEmpty ? work.author : '未命名剧本'),
                       style: AppTextStyles.label.copyWith(fontSize: 12),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  Icon(
-                    Icons.favorite_border,
-                    size: 14,
-                    color: AppColors.textSecondary,
-                  ),
-                  const SizedBox(width: 2),
-                  Text(
-                    formatCharacterCount(work.likes),
-                    style: AppTextStyles.bodySecondary.copyWith(fontSize: 11),
-                  ),
+                  if (work.likes > 0) ...[
+                    Icon(
+                      Icons.favorite_border,
+                      size: 14,
+                      color: AppColors.textSecondary,
+                    ),
+                    const SizedBox(width: 2),
+                    Text(
+                      formatCharacterCount(work.likes),
+                      style: AppTextStyles.bodySecondary.copyWith(fontSize: 11),
+                    ),
+                  ],
                 ],
               ),
             ),

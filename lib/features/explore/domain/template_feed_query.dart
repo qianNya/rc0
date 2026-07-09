@@ -11,15 +11,8 @@ class TemplateFeedQuery {
   /// GET /feed kind filter for published templates (forkable screenplays).
   static const int templateFeedKind = 2;
 
-  /// Desktop [ExploreFeedQuery.desktopTabs] index for embedded template market.
-  static const int desktopTemplateTabIndex = 2;
-
-  /// Mobile discovery feed tab index for template market.
-  static const int mobileTemplateTabIndex = 1;
-
+  /// Query param for `/discovery?section=template` (same page as `/discovery`).
   static const String discoverySectionTemplate = 'template';
-
-  static const mobileTabs = ['推荐', '模板'];
 
   final int categoryIndex;
   final int sortTabIndex;
@@ -50,10 +43,4 @@ class TemplateFeedQuery {
       _ => 'latest',
     };
   }
-
-  static bool isTemplateDesktopTab(int tabIndex) =>
-      tabIndex == desktopTemplateTabIndex;
-
-  static bool isTemplateMobileTab(int tabIndex) =>
-      tabIndex == mobileTemplateTabIndex;
 }

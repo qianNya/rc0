@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme/app_colors.dart';
-import '../../../core/domain/screenplay/screenplay_display.dart';
-import '../../screenplay/data/screenplay_local_repository.dart';
 import 'character_entry.dart';
-import 'character_utils.dart';
 
 class CharacterDetailTag {
   const CharacterDetailTag({required this.name, required this.color});
@@ -27,6 +24,7 @@ class CharacterDetailStats {
   final int costumeCount;
 }
 
+/// Pose is phase-2; keep type for ComingSoon empty state.
 class CharacterPoseItem {
   const CharacterPoseItem({
     required this.id,
@@ -45,30 +43,83 @@ class CharacterCostumeItem {
   const CharacterCostumeItem({
     required this.id,
     required this.name,
-    this.coverPath,
-    this.linkedScriptId,
+    this.coverUrl = '',
+    this.description = '',
+    this.isDefault = false,
+    this.slug = '',
   });
 
-  final String id;
+  final int id;
   final String name;
-  final String? coverPath;
-  final String? linkedScriptId;
+  final String coverUrl;
+  final String description;
+  final bool isDefault;
+  final String slug;
+
+  /// Backward-compatible alias used by older tab widgets.
+  String? get coverPath => coverUrl.isEmpty ? null : coverUrl;
+  String? get linkedScriptId => null;
+}
+
+class CharacterPropItem {
+  const CharacterPropItem({
+    required this.id,
+    required this.name,
+    this.description = '',
+    this.coverUrl = '',
+    this.ownerType = 1,
+    this.ownerId = 0,
+  });
+
+  final int id;
+  final String name;
+  final String description;
+  final String coverUrl;
+  final int ownerType;
+  final int ownerId;
+}
+
+class CharacterSceneAffinityItem {
+  const CharacterSceneAffinityItem({
+    required this.id,
+    required this.sceneId,
+    this.weight = 1,
+    this.note = '',
+    this.sceneTitle = '',
+    this.sceneCoverUrl = '',
+  });
+
+  final int id;
+  final int sceneId;
+  final int weight;
+  final String note;
+  final String sceneTitle;
+  final String sceneCoverUrl;
+
+  String get displayTitle =>
+      sceneTitle.isNotEmpty ? sceneTitle : '场景 #$sceneId';
 }
 
 class CharacterWorkItem {
   const CharacterWorkItem({
     required this.id,
-    required this.coverPath,
-    required this.author,
-    required this.likes,
-    required this.featured,
+    required this.title,
+    this.coverPath = '',
+    this.author = '',
+    this.likes = 0,
+    this.featured = false,
+    this.kind = 0,
+    this.publishStatus = 0,
   });
 
   final String id;
+  final String title;
   final String coverPath;
   final String author;
   final int likes;
   final bool featured;
+  final int kind;
+  final int publishStatus;
 }
 
 class CharacterDetailSnapshot {
@@ -80,6 +131,8 @@ class CharacterDetailSnapshot {
     required this.tags,
     required this.poses,
     required this.costumes,
+    required this.props,
+    required this.affinities,
     required this.works,
     required this.avatarPath,
     required this.coverPath,
@@ -92,6 +145,8 @@ class CharacterDetailSnapshot {
   final List<CharacterDetailTag> tags;
   final List<CharacterPoseItem> poses;
   final List<CharacterCostumeItem> costumes;
+  final List<CharacterPropItem> props;
+  final List<CharacterSceneAffinityItem> affinities;
   final List<CharacterWorkItem> works;
   final String avatarPath;
   final String coverPath;
@@ -113,150 +168,60 @@ const _tagPalette = [
   AppColors.badgeTemplate,
 ];
 
-const _defaultPoseTitles = [
-  ('海风回眸', '身体侧转 30°，目光越肩看向镜头'),
-  ('漫步海岸', '自然迈步，手臂轻摆，保持松弛'),
-  ('静坐远望', '坐姿稳定，视线望向海平线'),
-  ('提裙转身', '裙摆扬起瞬间抓拍，快门 1/500'),
-];
-
-const _defaultCostumeNames = ['常服', '礼服', '泳装', '海边婚纱'];
-
 CharacterDetailSnapshot buildCharacterDetailSnapshot({
   required CharacterEntry entry,
   required int referenceCount,
   String? localCover,
+  List<CharacterCostumeItem> costumes = const [],
+  List<CharacterPropItem> props = const [],
+  List<CharacterSceneAffinityItem> affinities = const [],
+  List<CharacterWorkItem> works = const [],
+  List<CharacterDetailTag>? tags,
 }) {
   final coverPath = (localCover != null && localCover.isNotEmpty)
       ? localCover
       : entry.effectiveCoverUrl;
-  final scriptIds = screenplaysForCharacter(entry.id);
-  final repo = ScreenplayLocalRepository.instance;
 
-  var sceneCount = 0;
-  var favoriteSum = 0;
-  final works = <CharacterWorkItem>[];
-  for (final id in scriptIds) {
-    final screenplay = repo.documentById(id)?.toScreenplay();
-    if (screenplay == null) continue;
-    sceneCount += screenplay.sceneCount;
-    favoriteSum += screenplay.favorites;
-    works.add(
-      CharacterWorkItem(
-        id: screenplay.detailRouteId,
-        coverPath: screenplay.effectiveCoverImagePath ?? '',
-        author: screenplay.author,
-        likes: screenplay.likes,
-        featured: screenplay.tags.any((t) => t.contains('精选')),
-      ),
-    );
-  }
-
-  final costumes = _buildCostumes(entry, coverPath, scriptIds);
-  final poses = _buildPoses(entry, coverPath);
-  final tags = _buildTags(entry);
+  final resolvedTags = tags ?? _buildTagsFromEntry(entry);
   final seed = entry.id;
-  final favoriteCount = favoriteSum > 0
-      ? favoriteSum
-      : 1800 + (seed * 137) % 4200;
-  final rating = (4.5 + (seed % 5) * 0.1).clamp(0.0, 5.0);
 
   return CharacterDetailSnapshot(
     entry: entry,
-    rating: rating,
-    favoriteCount: favoriteCount,
+    rating: (4.5 + (seed % 5) * 0.1).clamp(0.0, 5.0),
+    favoriteCount: 0,
     stats: CharacterDetailStats(
-      scriptCount: scriptIds.length,
+      scriptCount: works.length,
       referenceCount: referenceCount,
-      sceneCount: sceneCount > 0 ? sceneCount : 12 + seed % 40,
+      sceneCount: affinities.length,
       costumeCount: costumes.length,
     ),
-    tags: tags,
-    poses: poses,
+    tags: resolvedTags,
+    poses: const [],
     costumes: costumes,
+    props: props,
+    affinities: affinities,
     works: works,
     avatarPath: coverPath,
     coverPath: coverPath,
   );
 }
 
-List<CharacterDetailTag> _buildTags(CharacterEntry entry) {
+List<CharacterDetailTag> _buildTagsFromEntry(CharacterEntry entry) {
   final names = <String>{
     if (entry.workTitle.isNotEmpty) entry.workTitle,
-    if (entry.gender == 2) '少女',
-    if (entry.gender == 1) '少年',
-    ...entry.aliases,
+    if (entry.styleLabel.isNotEmpty) entry.styleLabel,
+    for (final tag in entry.tags)
+      if (tag.name.isNotEmpty) tag.name,
   };
-  if (entry.summary.contains('海') || entry.appearance.contains('海')) {
-    names.add('海边');
+  if (names.isEmpty) {
+    names.addAll(entry.aliases.take(4));
   }
-  if (entry.personality.contains('温柔') || entry.summary.contains('温柔')) {
-    names.add('温柔感');
-  }
-  if (names.isEmpty) names.add('人气角色');
+  if (names.isEmpty) names.add('角色');
 
-  return names.take(6).toList().asMap().entries.map((e) {
+  return names.take(8).toList().asMap().entries.map((e) {
     return CharacterDetailTag(
       name: e.value,
       color: _tagPalette[e.key % _tagPalette.length],
-    );
-  }).toList(growable: false);
-}
-
-List<CharacterPoseItem> _buildPoses(CharacterEntry entry, String coverPath) {
-  final fromPersonality = entry.personality
-      .split(RegExp(r'[。；\n]'))
-      .map((s) => s.trim())
-      .where((s) => s.length >= 4)
-      .take(3)
-      .toList();
-
-  if (fromPersonality.isNotEmpty) {
-    return fromPersonality.asMap().entries.map((e) {
-      return CharacterPoseItem(
-        id: 'pose-${entry.id}-${e.key}',
-        title: e.value.length > 12 ? '${e.value.substring(0, 12)}…' : e.value,
-        tips: e.value,
-        coverPath: coverPath.isNotEmpty ? coverPath : null,
-      );
-    }).toList(growable: false);
-  }
-
-  return _defaultPoseTitles.asMap().entries.map((e) {
-    return CharacterPoseItem(
-      id: 'pose-${entry.id}-${e.key}',
-      title: e.value.$1,
-      tips: e.value.$2,
-      coverPath: coverPath.isNotEmpty ? coverPath : null,
-    );
-  }).toList(growable: false);
-}
-
-List<CharacterCostumeItem> _buildCostumes(
-  CharacterEntry entry,
-  String coverPath,
-  List<String> scriptIds,
-) {
-  final names = <String>{};
-  for (final alias in entry.aliases) {
-    if (alias.contains('婚纱') ||
-        alias.contains('泳装') ||
-        alias.contains('礼服') ||
-        alias.contains('常服')) {
-      names.add(alias);
-    }
-  }
-  for (final name in _defaultCostumeNames) {
-    names.add(name);
-  }
-
-  return names.take(4).toList().asMap().entries.map((e) {
-    final scriptId = e.key < scriptIds.length ? scriptIds[e.key] : null;
-    return CharacterCostumeItem(
-      id: 'costume-${entry.id}-${e.key}',
-      name: e.value,
-      coverPath: coverPath.isNotEmpty ? coverPath : null,
-      linkedScriptId: scriptId,
     );
   }).toList(growable: false);
 }

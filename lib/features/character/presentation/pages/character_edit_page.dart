@@ -83,7 +83,8 @@ class _CharacterEditPageState extends State<CharacterEditPage> {
     _personalityController.text = entry.personality;
     _gender = entry.gender;
     _formData.aliases = List<String>.from(entry.aliases);
-    _formData.category = entry.workTitle;
+    _formData.selectedTagIds = entry.tags.map((t) => t.id).toList();
+    _formData.styleLabel = entry.styleLabel;
     _formData.coverPath = cover ?? entry.coverUrl;
     _formData.referencePaths = List<String>.from(refs);
 
@@ -125,9 +126,17 @@ class _CharacterEditPageState extends State<CharacterEditPage> {
       summary: _summaryController.text.trim(),
       appearance: _appearanceController.text.trim(),
       personality: _personalityController.text.trim(),
-      aliases: buildAliasesFromForm(_formData),
+      coverUrl: _formData.coverPath,
+      aliases: List<String>.from(_formData.aliases),
+      styleJson: _formData.styleJson,
+      visibility: entry.visibility,
+      tagIds: List<int>.from(_formData.selectedTagIds),
     );
     await _saveLocalExtras();
+    await _repo.uploadAndLinkReferenceImages(
+      characterId: entry.id,
+      localPaths: _formData.referencePaths,
+    );
     if (!mounted) return;
     setState(() => _saving = false);
 

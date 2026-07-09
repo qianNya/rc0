@@ -45,6 +45,6 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.text('发现'), findsWidgets);
+    expect(find.text('搜索模板'), findsOneWidget);
   });
 }

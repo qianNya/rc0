@@ -1,9 +1,13 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 
 import '../../../api/character/api/character-api.dart' as character_api;
 import '../../../api/character/data/character-api.dart';
-import '../../../core/network/api_callback.dart';
 import '../../../core/auth/auth_bridge.dart';
+import '../../../core/media/app_media_upload_service.dart';
+import '../../../core/network/api_callback.dart';
+import '../domain/character_detail_data.dart';
 import '../domain/character_entry.dart';
 import '../domain/character_utils.dart';
 import 'character_local_store.dart';
@@ -21,6 +25,7 @@ class CharacterRepository extends ChangeNotifier {
   int _pageSize = 20;
   num _total = 0;
   int? _filterWorkId;
+  int? _filterTagId;
   String _searchQuery = '';
 
   List<CharacterEntry> get items => List.unmodifiable(_items);
@@ -29,6 +34,7 @@ class CharacterRepository extends ChangeNotifier {
   String? get error => _error;
   num get total => _total;
   int? get filterWorkId => _filterWorkId;
+  int? get filterTagId => _filterTagId;
   String get searchQuery => _searchQuery;
   bool get hasMore => _items.length < _total.toInt();
 
@@ -53,8 +59,63 @@ class CharacterRepository extends ChangeNotifier {
       appearance: dto.appearance,
       personality: dto.personality,
       coverUrl: dto.coverUrl,
+      avatarImageId: dto.avatarImageId?.toInt(),
       aliases: List<String>.from(dto.aliases),
+      visibility: dto.visibility.toInt(),
+      style: CharacterStyle.fromJson(dto.styleJson),
+      tags: dto.tags
+          .map(
+            (t) => CharacterTagRef(
+              id: t.id.toInt(),
+              name: t.name,
+              slug: t.slug,
+              namespace: t.namespace,
+            ),
+          )
+          .toList(growable: false),
       sort: dto.sort.toInt(),
+    );
+  }
+
+  CharacterCostumeItem _costumeFromDto(CostumeItem dto) {
+    return CharacterCostumeItem(
+      id: dto.id.toInt(),
+      name: dto.name,
+      coverUrl: dto.coverUrl,
+      description: dto.description,
+      isDefault: dto.isDefault,
+      slug: dto.slug,
+    );
+  }
+
+  CharacterPropItem _propFromDto(PropItem dto) {
+    return CharacterPropItem(
+      id: dto.id.toInt(),
+      name: dto.name,
+      description: dto.description,
+      coverUrl: dto.coverUrl,
+      ownerType: dto.ownerType.toInt(),
+      ownerId: dto.ownerId.toInt(),
+    );
+  }
+
+  CharacterSceneAffinityItem _affinityFromDto(SceneAffinityItem dto) {
+    return CharacterSceneAffinityItem(
+      id: dto.id.toInt(),
+      sceneId: dto.sceneId.toInt(),
+      weight: dto.weight.toInt(),
+      note: dto.note,
+    );
+  }
+
+  CharacterWorkItem _workFromDto(CharacterScreenplayItem dto) {
+    return CharacterWorkItem(
+      id: dto.id.toString(),
+      title: dto.title,
+      coverPath: dto.coverUrl,
+      kind: dto.kind.toInt(),
+      publishStatus: dto.publishStatus.toInt(),
+      featured: dto.kind.toInt() == 2,
     );
   }
 
@@ -67,7 +128,12 @@ class CharacterRepository extends ChangeNotifier {
     String summary = '',
     String appearance = '',
     String personality = '',
+    String coverUrl = '',
+    int? avatarImageId,
     List<String> aliases = const [],
+    Map<String, dynamic> styleJson = const {},
+    int visibility = 1,
+    List<int>? tagIds,
     int sort = 0,
   }) {
     return CharacterWriteBody(
@@ -79,21 +145,97 @@ class CharacterRepository extends ChangeNotifier {
       summary: summary,
       appearance: appearance,
       personality: personality,
+      coverUrl: coverUrl,
+      avatarImageId: avatarImageId,
       aliases: aliases,
+      styleJson: styleJson,
+      visibility: visibility,
+      tagIds: tagIds,
       sort: sort,
     );
+  }
+
+  Future<({String url, int? imageId, String? error})> _resolveRemoteUrl(
+    String path,
+  ) async {
+    if (path.isEmpty) return (url: '', imageId: null, error: null);
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return (url: path, imageId: null, error: null);
+    }
+    if (kIsWeb) return (url: path, imageId: null, error: null);
+
+    final file = File(path);
+    if (!file.existsSync()) return (url: '', imageId: null, error: null);
+
+    final result =
+        await AppMediaUploadService.instance.uploadLocalFile(file.path);
+    if (result.error != null) {
+      return (url: '', imageId: null, error: result.error);
+    }
+    return (
+      url: result.result?.displayUrl ?? '',
+      imageId: result.result?.imageId,
+      error: null,
+    );
+  }
+
+  Future<void> _linkCoverIfPossible({
+    required int characterId,
+    required int? imageId,
+  }) async {
+    if (imageId == null || imageId <= 0) return;
+    await apiCallback<Map<String, dynamic>>(
+      ({ok, fail, eventually}) => character_api.linkImageCharacter(
+        imageId,
+        characterId: characterId,
+        relationType: 1,
+        ok: ok,
+        fail: fail,
+        eventually: eventually,
+      ),
+    );
+  }
+
+  /// Upload local reference paths and link as relation_type=3.
+  Future<void> uploadAndLinkReferenceImages({
+    required int characterId,
+    required List<String> localPaths,
+  }) async {
+    if (!AuthBridge.isLoggedIn || characterId <= 0) return;
+    for (final path in localPaths) {
+      final trimmed = path.trim();
+      if (trimmed.isEmpty) continue;
+      if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+        continue;
+      }
+      final resolved = await _resolveRemoteUrl(trimmed);
+      final imageId = resolved.imageId;
+      if (imageId == null || imageId <= 0) continue;
+      await apiCallback<Map<String, dynamic>>(
+        ({ok, fail, eventually}) => character_api.linkImageCharacter(
+          imageId,
+          characterId: characterId,
+          relationType: 3,
+          ok: ok,
+          fail: fail,
+          eventually: eventually,
+        ),
+      );
+    }
   }
 
   Future<void> loadFirstPage({
     int pageSize = 20,
     int? workId,
     String? q,
+    int? tagId,
   }) async {
     _loading = true;
     _error = null;
     _page = 1;
     _pageSize = pageSize;
     _filterWorkId = workId;
+    _filterTagId = tagId;
     _searchQuery = q?.trim() ?? '';
     notifyListeners();
 
@@ -102,6 +244,7 @@ class CharacterRepository extends ChangeNotifier {
       pageSize: pageSize,
       workId: workId,
       q: _searchQuery.isEmpty ? null : _searchQuery,
+      tagId: tagId,
     );
     _loading = false;
     if (result.error != null) {
@@ -128,6 +271,7 @@ class CharacterRepository extends ChangeNotifier {
       pageSize: _pageSize,
       workId: _filterWorkId,
       q: _searchQuery.isEmpty ? null : _searchQuery,
+      tagId: _filterTagId,
     );
     _loadingMore = false;
     if (result.error != null) {
@@ -190,10 +334,20 @@ class CharacterRepository extends ChangeNotifier {
     String summary = '',
     String appearance = '',
     String personality = '',
+    String coverUrl = '',
+    int? avatarImageId,
     List<String> aliases = const [],
+    Map<String, dynamic> styleJson = const {},
+    int visibility = 1,
+    List<int>? tagIds,
   }) async {
     if (!AuthBridge.isLoggedIn) {
       return (character: null, error: '请先登录');
+    }
+
+    final resolved = await _resolveRemoteUrl(coverUrl);
+    if (resolved.error != null) {
+      return (character: null, error: resolved.error);
     }
 
     final (resp, error) = await apiCallback<CharacterItem>(
@@ -207,7 +361,12 @@ class CharacterRepository extends ChangeNotifier {
           summary: summary,
           appearance: appearance,
           personality: personality,
+          coverUrl: resolved.url,
+          avatarImageId: avatarImageId ?? resolved.imageId,
           aliases: aliases,
+          styleJson: styleJson,
+          visibility: visibility,
+          tagIds: tagIds,
         ),
         ok: ok,
         fail: fail,
@@ -220,6 +379,10 @@ class CharacterRepository extends ChangeNotifier {
 
     final entry = _fromDto(resp);
     await CharacterLocalStore.instance.markOwned(entry.id);
+    await _linkCoverIfPossible(
+      characterId: entry.id,
+      imageId: resolved.imageId,
+    );
     _items.insert(0, entry);
     _total = _total + 1;
     notifyListeners();
@@ -236,10 +399,20 @@ class CharacterRepository extends ChangeNotifier {
     String summary = '',
     String appearance = '',
     String personality = '',
+    String coverUrl = '',
+    int? avatarImageId,
     List<String> aliases = const [],
+    Map<String, dynamic> styleJson = const {},
+    int visibility = 1,
+    List<int>? tagIds,
   }) async {
     if (!AuthBridge.isLoggedIn) {
       return (character: null, error: '请先登录');
+    }
+
+    final resolved = await _resolveRemoteUrl(coverUrl);
+    if (resolved.error != null) {
+      return (character: null, error: resolved.error);
     }
 
     final (resp, error) = await apiCallback<CharacterItem>(
@@ -254,7 +427,12 @@ class CharacterRepository extends ChangeNotifier {
           summary: summary,
           appearance: appearance,
           personality: personality,
+          coverUrl: resolved.url,
+          avatarImageId: avatarImageId ?? resolved.imageId,
           aliases: aliases,
+          styleJson: styleJson,
+          visibility: visibility,
+          tagIds: tagIds,
         ),
         ok: ok,
         fail: fail,
@@ -266,6 +444,10 @@ class CharacterRepository extends ChangeNotifier {
     if (resp == null) return (character: null, error: '更新失败');
 
     final entry = _fromDto(resp);
+    await _linkCoverIfPossible(
+      characterId: entry.id,
+      imageId: resolved.imageId,
+    );
     final index = _items.indexWhere((e) => e.id == id);
     if (index >= 0) {
       _items[index] = entry;
@@ -296,11 +478,323 @@ class CharacterRepository extends ChangeNotifier {
     return null;
   }
 
+  Future<({List<CharacterCostumeItem> items, String? error})> listCostumes(
+    int characterId,
+  ) async {
+    final (resp, error) = await apiCallback<List<CostumeItem>>(
+      ({ok, fail, eventually}) => character_api.listCostumes(
+        characterId,
+        ok: ok,
+        fail: fail,
+        eventually: eventually,
+      ),
+    );
+    if (error != null) return (items: <CharacterCostumeItem>[], error: error);
+    return (
+      items: (resp ?? []).map(_costumeFromDto).toList(growable: false),
+      error: null,
+    );
+  }
+
+  Future<({CharacterCostumeItem? costume, String? error})> createCostume(
+    int characterId, {
+    required String name,
+    String slug = '',
+    String description = '',
+    String coverUrl = '',
+    bool isDefault = false,
+    int sort = 0,
+  }) async {
+    if (!AuthBridge.isLoggedIn) {
+      return (costume: null, error: '请先登录');
+    }
+    final resolved = await _resolveRemoteUrl(coverUrl);
+    if (resolved.error != null) {
+      return (costume: null, error: resolved.error);
+    }
+    final (resp, error) = await apiCallback<CostumeItem>(
+      ({ok, fail, eventually}) => character_api.createCostume(
+        characterId,
+        body: CostumeWriteBody(
+          name: name,
+          slug: slug,
+          description: description,
+          coverUrl: resolved.url,
+          coverImageId: resolved.imageId,
+          isDefault: isDefault,
+          sort: sort,
+        ),
+        ok: ok,
+        fail: fail,
+        eventually: eventually,
+      ),
+    );
+    if (error != null) return (costume: null, error: error);
+    if (resp == null) return (costume: null, error: '创建服装失败');
+    return (costume: _costumeFromDto(resp), error: null);
+  }
+
+  Future<({CharacterCostumeItem? costume, String? error})> updateCostume(
+    int characterId,
+    int costumeId, {
+    required String name,
+    String slug = '',
+    String description = '',
+    String coverUrl = '',
+    bool isDefault = false,
+    int sort = 0,
+  }) async {
+    if (!AuthBridge.isLoggedIn) {
+      return (costume: null, error: '请先登录');
+    }
+    final resolved = await _resolveRemoteUrl(coverUrl);
+    if (resolved.error != null) {
+      return (costume: null, error: resolved.error);
+    }
+    final (resp, error) = await apiCallback<CostumeItem>(
+      ({ok, fail, eventually}) => character_api.updateCostume(
+        characterId,
+        costumeId,
+        body: CostumeWriteBody(
+          name: name,
+          slug: slug,
+          description: description,
+          coverUrl: resolved.url,
+          coverImageId: resolved.imageId,
+          isDefault: isDefault,
+          sort: sort,
+        ),
+        ok: ok,
+        fail: fail,
+        eventually: eventually,
+      ),
+    );
+    if (error != null) return (costume: null, error: error);
+    if (resp == null) return (costume: null, error: '更新服装失败');
+    return (costume: _costumeFromDto(resp), error: null);
+  }
+
+  Future<String?> deleteCostume(int characterId, int costumeId) async {
+    if (!AuthBridge.isLoggedIn) return '请先登录';
+    final (_, error) = await apiCallback<Map<String, dynamic>>(
+      ({ok, fail, eventually}) => character_api.deleteCostume(
+        characterId,
+        costumeId,
+        ok: ok,
+        fail: fail,
+        eventually: eventually,
+      ),
+    );
+    return error;
+  }
+
+  Future<({CharacterCostumeItem? costume, String? error})> setDefaultCostume(
+    int characterId,
+    int costumeId,
+  ) async {
+    if (!AuthBridge.isLoggedIn) {
+      return (costume: null, error: '请先登录');
+    }
+    final (resp, error) = await apiCallback<CostumeItem>(
+      ({ok, fail, eventually}) => character_api.setDefaultCostume(
+        characterId,
+        costumeId,
+        ok: ok,
+        fail: fail,
+        eventually: eventually,
+      ),
+    );
+    if (error != null) return (costume: null, error: error);
+    if (resp == null) return (costume: null, error: '设置默认服装失败');
+    return (costume: _costumeFromDto(resp), error: null);
+  }
+
+  Future<({List<CharacterPropItem> items, String? error})> listProps(
+    int characterId,
+  ) async {
+    final (resp, error) = await apiCallback<List<PropItem>>(
+      ({ok, fail, eventually}) => character_api.listCharacterProps(
+        characterId,
+        ok: ok,
+        fail: fail,
+        eventually: eventually,
+      ),
+    );
+    if (error != null) return (items: <CharacterPropItem>[], error: error);
+    return (
+      items: (resp ?? []).map(_propFromDto).toList(growable: false),
+      error: null,
+    );
+  }
+
+  Future<({CharacterPropItem? prop, String? error})> createProp(
+    int characterId, {
+    required String name,
+    String description = '',
+    String coverUrl = '',
+    int sort = 0,
+  }) async {
+    if (!AuthBridge.isLoggedIn) {
+      return (prop: null, error: '请先登录');
+    }
+    final resolved = await _resolveRemoteUrl(coverUrl);
+    if (resolved.error != null) {
+      return (prop: null, error: resolved.error);
+    }
+    final (resp, error) = await apiCallback<PropItem>(
+      ({ok, fail, eventually}) => character_api.createCharacterProp(
+        characterId,
+        body: PropWriteBody(
+          name: name,
+          description: description,
+          coverUrl: resolved.url,
+          coverImageId: resolved.imageId,
+          sort: sort,
+        ),
+        ok: ok,
+        fail: fail,
+        eventually: eventually,
+      ),
+    );
+    if (error != null) return (prop: null, error: error);
+    if (resp == null) return (prop: null, error: '创建道具失败');
+    return (prop: _propFromDto(resp), error: null);
+  }
+
+  Future<({List<CharacterSceneAffinityItem> items, String? error})>
+      listAffinities(int characterId) async {
+    final (resp, error) = await apiCallback<List<SceneAffinityItem>>(
+      ({ok, fail, eventually}) => character_api.listSceneAffinities(
+        characterId,
+        ok: ok,
+        fail: fail,
+        eventually: eventually,
+      ),
+    );
+    if (error != null) {
+      return (items: <CharacterSceneAffinityItem>[], error: error);
+    }
+    return (
+      items: (resp ?? []).map(_affinityFromDto).toList(growable: false),
+      error: null,
+    );
+  }
+
+  Future<({List<CharacterSceneAffinityItem> items, String? error})>
+      replaceAffinities(
+    int characterId, {
+    required List<SceneAffinityWriteItem> items,
+  }) async {
+    if (!AuthBridge.isLoggedIn) {
+      return (items: <CharacterSceneAffinityItem>[], error: '请先登录');
+    }
+    final (resp, error) = await apiCallback<List<SceneAffinityItem>>(
+      ({ok, fail, eventually}) => character_api.replaceSceneAffinities(
+        characterId,
+        items: items,
+        ok: ok,
+        fail: fail,
+        eventually: eventually,
+      ),
+    );
+    if (error != null) {
+      return (items: <CharacterSceneAffinityItem>[], error: error);
+    }
+    return (
+      items: (resp ?? []).map(_affinityFromDto).toList(growable: false),
+      error: null,
+    );
+  }
+
+  Future<({List<CharacterWorkItem> items, num total, String? error})>
+      listCharacterScreenplays(
+    int characterId, {
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    final (resp, error) = await apiCallback<ListCharacterScreenplaysResp>(
+      ({ok, fail, eventually}) => character_api.listCharacterScreenplays(
+        characterId,
+        page: page,
+        pageSize: pageSize,
+        ok: ok,
+        fail: fail,
+        eventually: eventually,
+      ),
+    );
+    if (error != null) {
+      return (items: <CharacterWorkItem>[], total: 0, error: error);
+    }
+    return (
+      items: (resp?.list ?? []).map(_workFromDto).toList(growable: false),
+      total: resp?.total ?? 0,
+      error: null,
+    );
+  }
+
+  Future<({List<CastItem> items, String? error})> listScreenplayCast(
+    int screenplayId,
+  ) async {
+    final (resp, error) = await apiCallback<List<CastItem>>(
+      ({ok, fail, eventually}) => character_api.listScreenplayCast(
+        screenplayId,
+        ok: ok,
+        fail: fail,
+        eventually: eventually,
+      ),
+    );
+    if (error != null) return (items: <CastItem>[], error: error);
+    return (items: resp ?? [], error: null);
+  }
+
+  Future<({List<CastItem> items, String? error})> replaceScreenplayCast(
+    int screenplayId, {
+    required List<CastWriteItem> items,
+  }) async {
+    if (!AuthBridge.isLoggedIn) {
+      return (items: <CastItem>[], error: '请先登录');
+    }
+    final (resp, error) = await apiCallback<List<CastItem>>(
+      ({ok, fail, eventually}) => character_api.replaceScreenplayCast(
+        screenplayId,
+        items: items,
+        ok: ok,
+        fail: fail,
+        eventually: eventually,
+      ),
+    );
+    if (error != null) return (items: <CastItem>[], error: error);
+    return (items: resp ?? [], error: null);
+  }
+
+  /// Best-effort cast sync when a remote screenplay id is available.
+  Future<void> syncScreenplayCastBestEffort({
+    required int remoteScreenplayId,
+    required List<ScreenplayCastLink> links,
+  }) async {
+    if (remoteScreenplayId <= 0 || !AuthBridge.isLoggedIn) return;
+    final items = <CastWriteItem>[];
+    for (var i = 0; i < links.length; i++) {
+      final link = links[i];
+      if (link.characterId <= 0) continue;
+      items.add(
+        CastWriteItem(
+          characterId: link.characterId,
+          defaultCostumeId: link.defaultCostumeId,
+          billingName: link.billingName,
+          sort: i,
+        ),
+      );
+    }
+    await replaceScreenplayCast(remoteScreenplayId, items: items);
+  }
+
   Future<({List<CharacterEntry> items, num total, String? error})> _fetchPage({
     required int page,
     required int pageSize,
     int? workId,
     String? q,
+    int? tagId,
   }) async {
     final (resp, error) = await apiCallback<ListCharactersResp>(
       ({ok, fail, eventually}) => character_api.listCharacters(
@@ -308,6 +802,7 @@ class CharacterRepository extends ChangeNotifier {
         pageSize: pageSize,
         workId: workId,
         q: q,
+        tagId: tagId,
         ok: ok,
         fail: fail,
         eventually: eventually,
@@ -321,4 +816,16 @@ class CharacterRepository extends ChangeNotifier {
     final items = (resp?.list ?? []).map(_fromDto).toList();
     return (items: items, total: resp?.total ?? 0, error: null);
   }
+}
+
+class ScreenplayCastLink {
+  const ScreenplayCastLink({
+    required this.characterId,
+    this.billingName = '',
+    this.defaultCostumeId,
+  });
+
+  final int characterId;
+  final String billingName;
+  final int? defaultCostumeId;
 }

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
@@ -94,8 +95,11 @@ class _Rc0ImageState extends State<Rc0Image> {
   }
 
   void _scheduleWebpPreload() {
+    if (kIsWeb) return;
     if (!isWebpImagePath(_resolved)) return;
-    if (!isNetworkImagePath(_resolved) && !File(_resolved).existsSync()) return;
+    if (!isNetworkImagePath(_resolved)) {
+      if (!File(_resolved).existsSync()) return;
+    }
     _scheduleMemoryLoad();
   }
 
@@ -194,6 +198,7 @@ class _Rc0ImageState extends State<Rc0Image> {
   }
 
   Widget _buildFileImage(String path) {
+    if (kIsWeb) return _buildFallbackError();
     return Image.file(
       File(path),
       fit: widget.fit,
@@ -250,6 +255,12 @@ class _Rc0ImageState extends State<Rc0Image> {
     final resolved = _resolved;
 
     if (isWebpImagePath(resolved)) {
+      if (kIsWeb) {
+        if (isNetworkImagePath(resolved) && isValidNetworkImageUrl(resolved)) {
+          return _buildNetworkImage(resolved);
+        }
+        return _error();
+      }
       final cached = _cachedLocalPath ?? _cache.cachedPathSync(resolved);
       if (cached != null) return _buildFileImage(cached);
       return _buildMemoryImage();
@@ -257,11 +268,14 @@ class _Rc0ImageState extends State<Rc0Image> {
 
     if (isNetworkImagePath(resolved)) {
       if (!isValidNetworkImageUrl(resolved)) return _error();
-      final cached = _cachedLocalPath ?? _cache.cachedPathSync(resolved);
-      if (cached != null) return _buildFileImage(cached);
+      if (!kIsWeb) {
+        final cached = _cachedLocalPath ?? _cache.cachedPathSync(resolved);
+        if (cached != null) return _buildFileImage(cached);
+      }
       return _buildNetworkImage(resolved);
     }
 
+    if (kIsWeb) return _error();
     return Image.file(
       File(resolved),
       fit: widget.fit,

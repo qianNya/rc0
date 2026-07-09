@@ -8,9 +8,7 @@ enum ExploreFeedType { script, template }
 
 extension ExploreFeedMapper on Screenplay {
   ExploreFeedType get exploreFeedType {
-    if (isPublished && !isForkCopy && !isLocal) {
-      return ExploreFeedType.template;
-    }
+    if (isTemplate) return ExploreFeedType.template;
     return ExploreFeedType.script;
   }
 }

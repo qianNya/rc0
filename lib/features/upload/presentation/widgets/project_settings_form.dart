@@ -46,6 +46,7 @@ class ProjectSettingsForm extends StatefulWidget {
     this.onPickCover,
     this.onResetCover,
     this.onCharactersChanged,
+    this.remoteScreenplayId,
     this.useGlassFields = false,
     this.tabIndex,
     this.onTabChanged,
@@ -64,6 +65,7 @@ class ProjectSettingsForm extends StatefulWidget {
   final VoidCallback? onPickCover;
   final VoidCallback? onResetCover;
   final VoidCallback? onCharactersChanged;
+  final int? remoteScreenplayId;
   final bool useGlassFields;
   final int? tabIndex;
   final ValueChanged<int>? onTabChanged;
@@ -196,6 +198,7 @@ class _ProjectSettingsFormState extends State<ProjectSettingsForm> {
         ScreenplayCharactersSection(
           draft: widget.draft,
           onChanged: widget.onCharactersChanged ?? () {},
+          remoteScreenplayId: widget.remoteScreenplayId,
         ),
         const SizedBox(height: 14),
         ScreenplayScenesSection(

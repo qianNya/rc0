@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/theme/theme_mode_notifier.dart';
+import '../features/shell/presentation/widgets/desktop_title_bar.dart';
 import 'providers/router_providers.dart';
 import 'theme/app_colors.dart';
 import 'theme/app_theme.dart';
@@ -49,9 +50,11 @@ class _Rc0AppState extends ConsumerState<Rc0App> {
 
         return AnnotatedRegion<SystemUiOverlayStyle>(
           value: AppSystemUi.styleFor(brightness),
-          child: ColoredBox(
-            color: AppColors.pageBackground,
-            child: child ?? const SizedBox.shrink(),
+          child: DesktopWindowShortcuts(
+            child: ColoredBox(
+              color: AppColors.pageBackground,
+              child: child ?? const SizedBox.shrink(),
+            ),
           ),
         );
       },

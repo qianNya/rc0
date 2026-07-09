@@ -1,16 +1,32 @@
 import 'package:flutter/material.dart';
 
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../shared/widgets/glass/glass.dart';
 import 'screenplay_visibility_sheet.dart';
 
-/// Dialog for choosing screenplay visibility before publish.
+/// Result of the publish options dialog (visibility + kind).
+class PublishOptions {
+  const PublishOptions({
+    required this.visibility,
+    required this.kind,
+  });
+
+  /// 0 private · 1 public
+  final int visibility;
+
+  /// 1 personal work · 2 template
+  final int kind;
+}
+
+/// Dialog for choosing visibility and publish kind before publish.
 class PublishVisibilityDialog extends StatefulWidget {
   const PublishVisibilityDialog({super.key});
 
-  static Future<int?> show(BuildContext context) {
-    return showDialog<int>(
+  static Future<PublishOptions?> show(BuildContext context) {
+    return showDialog<PublishOptions>(
       context: context,
       builder: (_) => const PublishVisibilityDialog(),
     );
@@ -23,15 +39,22 @@ class PublishVisibilityDialog extends StatefulWidget {
 
 class _PublishVisibilityDialogState extends State<PublishVisibilityDialog> {
   int _visibility = 1;
+  int _kind = Screenplay.kindPersonal;
+
+  void _onKindChanged(int kind) {
+    setState(() {
+      _kind = kind;
+      if (kind == Screenplay.kindTemplate) {
+        _visibility = 1;
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    final isTemplate = _kind == Screenplay.kindTemplate;
     return GlassDialog(
       title: const Text('发布剧本'),
-      child: ScreenplayVisibilityOptions(
-        value: _visibility,
-        onChanged: (v) => setState(() => _visibility = v),
-      ),
       footer: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -42,11 +65,44 @@ class _PublishVisibilityDialogState extends State<PublishVisibilityDialog> {
               child: const Text('取消'),
             ),
             FilledButton(
-              onPressed: () => Navigator.of(context).pop(_visibility),
+              onPressed: () => Navigator.of(context).pop(
+                PublishOptions(visibility: _visibility, kind: _kind),
+              ),
               child: const Text('开始发布'),
             ),
           ],
         ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('发布类型', style: AppTextStyles.bodySecondary),
+          const SizedBox(height: AppDimensions.spacingSm),
+          GlassSegmentedControl(
+            segments: const ['发布为作品', '发布为模板'],
+            selectedIndex: isTemplate ? 1 : 0,
+            onChanged: (i) => _onKindChanged(
+              i == 1 ? Screenplay.kindTemplate : Screenplay.kindPersonal,
+            ),
+            margin: EdgeInsets.zero,
+          ),
+          if (isTemplate) ...[
+            const SizedBox(height: AppDimensions.spacingSm),
+            Text(
+              '模板将公开可见，并出现在模板市场',
+              style: AppTextStyles.bodySecondary.copyWith(fontSize: 12),
+            ),
+          ],
+          const SizedBox(height: AppDimensions.spacingMd),
+          ScreenplayVisibilityOptions(
+            value: _visibility,
+            onChanged: isTemplate
+                ? null
+                : (v) => setState(() => _visibility = v),
+            privateEnabled: !isTemplate,
+          ),
+        ],
       ),
     );
   }

@@ -8,6 +8,8 @@ import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/data/app_catalog.dart';
+import '../../../../core/responsive/breakpoints.dart';
+import '../../../../shared/widgets/desktop/desktop_hub_scaffold.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/glass/glass_sheet.dart';
@@ -152,14 +154,41 @@ class _SceneListPageState extends ConsumerState<SceneListPage> {
     if (mounted) _load();
   }
 
+  List<Widget> _desktopActions(bool isLoggedIn) {
+    return [
+      StudioGlassIconButton(
+        tooltip: '场景地图',
+        icon: Icons.map_outlined,
+        onPressed: _openMapSheet,
+      ),
+      StudioGlassIconButton(
+        tooltip: 'AI 场景',
+        icon: Icons.auto_awesome,
+        onPressed: () => context.push(AppRoutes.sceneAi),
+      ),
+      StudioGlassIconButton(
+        tooltip: '我的场景',
+        icon: Icons.folder_outlined,
+        onPressed: () => context.push(AppRoutes.myScenes),
+      ),
+      if (isLoggedIn)
+        StudioGlassIconButton(
+          tooltip: '新建场景',
+          icon: Icons.add,
+          onPressed: _openCreateScene,
+        ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final isLoggedIn = ref.watch(isLoggedInProvider);
     final hot = _repo.hotScenes;
     final recommended = _recommended;
+    final desktop = Breakpoints.useSidebarShell(context);
     final chromeTop = wikiModeTagContentInsetHeight(context);
     final body = Padding(
-      padding: EdgeInsets.only(top: chromeTop),
+      padding: EdgeInsets.only(top: desktop ? 0 : chromeTop),
       child: _buildBody(
         context,
         hot: hot,
@@ -171,6 +200,11 @@ class _SceneListPageState extends ConsumerState<SceneListPage> {
     if (widget.embeddedInHub) {
       return SceneHubScaffold(
         appBar: const SceneHubAppBar(),
+        desktopHeader: DesktopHubHeader(
+          title: '场景',
+          subtitle: '场景库与拍摄空间',
+          actions: _desktopActions(isLoggedIn),
+        ),
         body: body,
       );
     }
@@ -233,7 +267,8 @@ class _SceneListPageState extends ConsumerState<SceneListPage> {
                   ),
                 ),
               ),
-              if (widget.embeddedInHub) ...[
+              if (widget.embeddedInHub &&
+                  !Breakpoints.useSidebarShell(context)) ...[
                 const SizedBox(width: 4),
                 StudioGlassIconButton(
                   size: 36,
@@ -264,7 +299,7 @@ class _SceneListPageState extends ConsumerState<SceneListPage> {
                   onPressed: () => context.push(AppRoutes.sceneAi),
                   icon: Icons.auto_awesome,
                 ),
-              ] else ...[
+              ] else if (!widget.embeddedInHub) ...[
                 const SizedBox(width: 8),
                 IconButton(
                   tooltip: '筛选',

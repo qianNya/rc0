@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../shared/widgets/desktop/desktop_hub_scaffold.dart';
 import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 import '../../../studio/presentation/widgets/script_studio_header_components.dart';
 
@@ -41,21 +42,28 @@ class SceneHubAppBar extends StatelessWidget implements PreferredSizeWidget {
 /// Top spacing below floating wiki app bars on scene hub pages.
 typedef SceneHubToolbarContentInset = WikiModeTagToolbarInset;
 
-/// Scene hub shell — wiki floating chrome, transparent app bar.
+/// Scene hub shell — mobile floating chrome; desktop sidebar content header.
 class SceneHubScaffold extends StatelessWidget {
   const SceneHubScaffold({
     super.key,
     required this.appBar,
     required this.body,
+    this.desktopHeader,
   });
 
   final PreferredSizeWidget appBar;
   final Widget body;
+  final Widget? desktopHeader;
 
   @override
   Widget build(BuildContext context) {
-    return WikiModeTagPageScaffold(
+    return DesktopHubScaffold(
       appBar: appBar,
+      desktopHeader: desktopHeader ??
+          const DesktopHubHeader(
+            title: '场景',
+            subtitle: '场景库与拍摄空间',
+          ),
       body: body,
     );
   }

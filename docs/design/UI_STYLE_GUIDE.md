@@ -190,7 +190,7 @@ Liquid Glass 的投影是**环境光影**，不是 Material elevation：
 ## 9. 平台差异
 
 - **移动**：底部浮动导航药丸 + 顶部浮动 AppBar；沉浸页 Hero 全屏延伸至状态栏后。
-- **桌面（≥840）**：侧栏壳；macOS 窗口控件使用 `macWindowClose/Minimize/Zoom` token；标题栏高 40，mac 左侧预留 72。
+- **桌面（≥840）**：侧栏壳；窗口控件**不挤压内容**：macOS 红绿灯并入左侧栏 Logo 区；Windows/Linux 右上浮层三键（`DesktopWindowChromeOverlay`）。顶区可拖拽，双击最大化；全屏快捷键 Win/Linux `F11`、mac `⌃⌘F`。
 - **暗色模式**：所有玻璃/文字/边框 token 有 `*Dark` 对应项，由 `ThemeModeNotifier` 全局切换；页面画布 `pageBackground` 保持浅色调例外需评审。
 
 ---

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme/system_ui_style.dart';
+import '../../../core/responsive/breakpoints.dart';
+import '../../../features/shell/presentation/widgets/desktop_title_bar.dart';
 import '../glass_title_chip.dart';
 import '../rc0_page_scaffold.dart';
 
@@ -49,7 +51,7 @@ class DesktopStackScaffold extends StatelessWidget {
         ? Padding(padding: bodyPadding!, child: body)
         : body;
 
-    return Rc0PageScaffold(
+    final page = Rc0PageScaffold(
       title: title,
       leading: leading,
       onBack: onBack,
@@ -67,5 +69,12 @@ class DesktopStackScaffold extends StatelessWidget {
       floatingActionButtonLocation: floatingActionButtonLocation,
       bottomNavigationBar: bottomNavigationBar,
     );
+
+    // Stack routes have no sidebar — overlay Win buttons / mac lights without
+    // pushing the page body down.
+    if (Breakpoints.useSidebarShell(context)) {
+      return DesktopWindowChromeOverlay(child: page);
+    }
+    return page;
   }
 }

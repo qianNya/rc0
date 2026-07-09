@@ -21,9 +21,14 @@ class ExploreFeedQuery {
     '热门',
   ];
 
+  static const int templateMarketTabIndex = 2;
+
   static ExploreFeedQuery forTab(int index) {
-    if (TemplateFeedQuery.isTemplateDesktopTab(index)) {
-      return ExploreFeedQuery(sort: 'latest', kind: TemplateFeedQuery.templateFeedKind);
+    if (index == templateMarketTabIndex) {
+      return ExploreFeedQuery(
+        sort: 'latest',
+        kind: TemplateFeedQuery.templateFeedKind,
+      );
     }
     switch (index) {
       case 0:
@@ -31,7 +36,10 @@ class ExploreFeedQuery {
       case 1:
         return const ExploreFeedQuery(sort: 'latest');
       case 2:
-        return ExploreFeedQuery(sort: 'latest', kind: 2);
+        return ExploreFeedQuery(
+          sort: 'latest',
+          kind: TemplateFeedQuery.templateFeedKind,
+        );
       case 3:
         return const ExploreFeedQuery(sort: 'latest');
       case 4:

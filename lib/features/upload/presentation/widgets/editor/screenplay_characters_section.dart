@@ -7,7 +7,9 @@ import '../../../../../app/router/routes.dart';
 import '../../../../../app/theme/app_colors.dart';
 import '../../../../../app/theme/app_dimensions.dart';
 import '../../../../../app/theme/app_text_styles.dart';
-import '../../../../character/domain/character_entry.dart';
+import '../../../../character/data/character_repository.dart';
+import '../../../../character/domain/character_entry.dart'
+    show CharacterEntry, CharacterStyle;
 import '../../../../screenplay/data/screenplay_draft.dart';
 import '../../../../studio/domain/script_editor_selection.dart';
 import '../script_editor/script_editor_actions.dart';
@@ -21,6 +23,7 @@ class ScreenplayCharactersSection extends StatelessWidget {
     this.selection,
     this.actions,
     this.compact = false,
+    this.remoteScreenplayId,
   });
 
   final ScreenplayDraft draft;
@@ -28,6 +31,38 @@ class ScreenplayCharactersSection extends StatelessWidget {
   final ScriptEditorSelection? selection;
   final ScriptEditorActions? actions;
   final bool compact;
+  final int? remoteScreenplayId;
+
+  Future<void> _syncCastBestEffort() async {
+    final remoteId = remoteScreenplayId;
+    if (remoteId == null || remoteId <= 0) return;
+    final costumeByCharacter = <int, int>{};
+    for (final act in draft.acts) {
+      for (final scene in act.scenes) {
+        for (final frame in scene.frames) {
+          final cid = frame.characterId;
+          final costumeId = frame.costumeId;
+          if (cid == null || cid <= 0 || costumeId == null || costumeId <= 0) {
+            continue;
+          }
+          costumeByCharacter.putIfAbsent(cid, () => costumeId);
+        }
+      }
+    }
+    final links = collectLinkedCharactersFromDraft(draft)
+        .map(
+          (c) => ScreenplayCastLink(
+            characterId: c.id,
+            billingName: c.name,
+            defaultCostumeId: costumeByCharacter[c.id],
+          ),
+        )
+        .toList(growable: false);
+    await CharacterRepository.instance.syncScreenplayCastBestEffort(
+      remoteScreenplayId: remoteId,
+      links: links,
+    );
+  }
 
   Future<void> _addCharacter(BuildContext context) async {
     final ref = await AppModuleRegistry.instance
@@ -35,15 +70,34 @@ class ScreenplayCharactersSection extends StatelessWidget {
         .pickCharacter(context);
     if (!context.mounted || ref == null) return;
     ensureDraftCharacterLinked(draft, id: ref.id, name: ref.name ?? '');
+    // Apply default costume from picker to selected frame if any.
+    final sel = selection;
+    final editorActions = actions;
+    if (sel != null &&
+        editorActions != null &&
+        sel.hasFrame &&
+        sel.actIndex != null &&
+        sel.sceneIndex != null &&
+        sel.frameIndex != null &&
+        ref.defaultCostumeId != null) {
+      final frame = editorActions.draft.acts[sel.actIndex!]
+          .scenes[sel.sceneIndex!].frames[sel.frameIndex!];
+      if (frame.characterId == ref.id || frame.characterId == null) {
+        frame.characterId = ref.id;
+        frame.characterName = ref.name ?? '';
+        frame.costumeId = ref.defaultCostumeId;
+      }
+    }
+    await _syncCastBestEffort();
     onChanged();
   }
 
-  void _removeCharacter(int id) {
-    draft.linkedCharacters.removeWhere((c) => c.id == id);
-    onChanged();
-  }
-
-  void _applyToSelectedFrame(int id, String name, {String appearance = ''}) {
+  void _applyToSelectedFrame(
+    int id,
+    String name, {
+    String appearance = '',
+    int? costumeId,
+  }) {
     final sel = selection;
     final editorActions = actions;
     if (sel == null ||
@@ -58,10 +112,31 @@ class ScreenplayCharactersSection extends StatelessWidget {
         .frames[sel.frameIndex!];
     frame.characterId = id;
     frame.characterName = name;
+    if (costumeId != null) frame.costumeId = costumeId;
     if (frame.characterNote.trim().isEmpty && appearance.isNotEmpty) {
       frame.characterNote = appearance;
     }
     ensureDraftCharacterLinked(draft, id: id, name: name);
+    onChanged();
+  }
+
+  void _removeCharacter(int id) {
+    draft.linkedCharacters.removeWhere((c) => c.id == id);
+    // Clear frame bindings for removed cast member.
+    for (final act in draft.acts) {
+      for (final scene in act.scenes) {
+        for (final frame in scene.frames) {
+          if (frame.characterId == id) {
+            frame.characterId = null;
+            frame.characterName = '';
+            frame.costumeId = null;
+            frame.propIds = [];
+          }
+        }
+      }
+    }
+    // ignore: discarded_futures
+    _syncCastBestEffort();
     onChanged();
   }
 
@@ -175,5 +250,6 @@ Future<CharacterEntry?> pickAndLinkScreenplayCharacter(
     coverUrl: '',
     aliases: const [],
     sort: 0,
+    style: CharacterStyle.fromPresetLabel(ref.styleLabel ?? ''),
   );
 }

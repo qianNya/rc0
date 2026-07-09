@@ -5,25 +5,34 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../core/data/app_catalog.dart';
 import '../../../../shared/widgets/rc0_image.dart';
-import '../../domain/character_utils.dart';
+import '../../../gallery/data/image_tags_repository.dart';
+import '../../../gallery/domain/image_tag.dart';
 import '../../../upload/data/image_pick_service.dart';
 import '../../../upload/domain/upload_image_file.dart';
+import '../../domain/character_entry.dart';
 
 class CharacterFormData {
   CharacterFormData({
-    this.category = '',
     this.coverPath = '',
     this.referencePaths = const [],
     this.linkedScreenplayLocalIds = const [],
     this.aliases = const [],
+    this.selectedTagIds = const [],
+    this.styleLabel = '',
   });
 
-  String category;
   String coverPath;
   List<String> referencePaths;
   List<String> linkedScreenplayLocalIds;
   List<String> aliases;
+  List<int> selectedTagIds;
+  String styleLabel;
+
+  CharacterStyle get style => CharacterStyle.fromPresetLabel(styleLabel);
+
+  Map<String, dynamic> get styleJson => style.toJson();
 }
 
 class CharacterFormSections extends StatefulWidget {
@@ -60,12 +69,31 @@ class CharacterFormSections extends StatefulWidget {
 
 class _CharacterFormSectionsState extends State<CharacterFormSections> {
   final _picker = ImagePickService();
-  final _tagController = TextEditingController();
+  final _aliasController = TextEditingController();
+  final _tagsRepo = ImageTagsRepository.instance;
+  List<ImageTag> _characterTags = const [];
+  bool _loadingTags = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTags();
+  }
 
   @override
   void dispose() {
-    _tagController.dispose();
+    _aliasController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadTags() async {
+    setState(() => _loadingTags = true);
+    await _tagsRepo.loadTags(namespace: 'character');
+    if (!mounted) return;
+    setState(() {
+      _characterTags = List<ImageTag>.from(_tagsRepo.tags);
+      _loadingTags = false;
+    });
   }
 
   Future<void> _pickCover() async {
@@ -88,13 +116,24 @@ class _CharacterFormSectionsState extends State<CharacterFormSections> {
     setState(() {});
   }
 
-  void _addTag() {
-    final tag = _tagController.text.trim();
-    if (tag.isEmpty) return;
-    if (!widget.data.aliases.contains(tag)) {
-      widget.data.aliases.add(tag);
+  void _addAlias() {
+    final alias = _aliasController.text.trim();
+    if (alias.isEmpty) return;
+    if (!widget.data.aliases.contains(alias)) {
+      widget.data.aliases.add(alias);
     }
-    _tagController.clear();
+    _aliasController.clear();
+    widget.onChanged();
+    setState(() {});
+  }
+
+  void _toggleTag(ImageTag tag) {
+    final ids = widget.data.selectedTagIds;
+    if (ids.contains(tag.id)) {
+      ids.remove(tag.id);
+    } else {
+      ids.add(tag.id);
+    }
     widget.onChanged();
     setState(() {});
   }
@@ -112,13 +151,13 @@ class _CharacterFormSectionsState extends State<CharacterFormSections> {
   @override
   Widget build(BuildContext context) {
     final data = widget.data;
-    final categories = characterCategoryOptions();
+    final styles = AppCatalog.characterAiStyles;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text('封面图', style: AppTextStyles.label),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppDimensions.spacingSm),
         GestureDetector(
           onTap: _pickCover,
           child: AspectRatio(
@@ -135,55 +174,87 @@ class _CharacterFormSectionsState extends State<CharacterFormSections> {
             ),
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: AppDimensions.spacingLg),
         TextField(
           controller: widget.nameController,
           decoration: const InputDecoration(labelText: '角色名称 *'),
         ),
-        const SizedBox(height: 12),
-        DropdownButtonFormField<String>(
-          value: data.category.isEmpty ? null : data.category,
-          decoration: const InputDecoration(labelText: '分类'),
-          items: [
-            for (final c in categories)
-              DropdownMenuItem(value: c, child: Text(c)),
-          ],
-          onChanged: (v) {
-            data.category = v ?? '';
-            widget.onChanged();
-            setState(() {});
-          },
+        const SizedBox(height: AppDimensions.spacingMd),
+        TextField(
+          controller: widget.nameOrigController,
+          decoration: const InputDecoration(labelText: '原名'),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppDimensions.spacingMd),
+        Text('分类标签', style: AppTextStyles.label),
+        const SizedBox(height: AppDimensions.spacingSm),
+        if (_loadingTags)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: AppDimensions.spacingSm),
+            child: LinearProgressIndicator(minHeight: 2),
+          )
+        else if (_characterTags.isEmpty)
+          Text(
+            '暂无角色标签，可稍后在图库标签中维护 namespace=character',
+            style: AppTextStyles.bodySecondary,
+          )
+        else
+          Wrap(
+            spacing: AppDimensions.spacingSm,
+            runSpacing: AppDimensions.spacingSm,
+            children: [
+              for (final tag in _characterTags)
+                FilterChip(
+                  label: Text(tag.name),
+                  selected: data.selectedTagIds.contains(tag.id),
+                  onSelected: (_) => _toggleTag(tag),
+                ),
+            ],
+          ),
+        const SizedBox(height: AppDimensions.spacingMd),
         Row(
           children: [
             Expanded(
               child: TextField(
-                controller: _tagController,
-                decoration: const InputDecoration(labelText: '标签'),
-                onSubmitted: (_) => _addTag(),
+                controller: _aliasController,
+                decoration: const InputDecoration(labelText: '别名'),
+                onSubmitted: (_) => _addAlias(),
               ),
             ),
-            IconButton(onPressed: _addTag, icon: const Icon(Icons.add)),
+            IconButton(onPressed: _addAlias, icon: const Icon(Icons.add)),
           ],
         ),
         if (data.aliases.isNotEmpty)
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: AppDimensions.spacingSm,
+            runSpacing: AppDimensions.spacingSm,
             children: [
-              for (final tag in data.aliases)
+              for (final alias in data.aliases)
                 Chip(
-                  label: Text(tag),
+                  label: Text(alias),
                   onDeleted: () {
-                    data.aliases.remove(tag);
+                    data.aliases.remove(alias);
                     widget.onChanged();
                     setState(() {});
                   },
                 ),
             ],
           ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppDimensions.spacingMd),
+        DropdownButtonFormField<String>(
+          // ignore: deprecated_member_use
+          value: data.styleLabel.isEmpty ? null : data.styleLabel,
+          decoration: const InputDecoration(labelText: '视觉风格'),
+          items: [
+            for (final style in styles)
+              DropdownMenuItem(value: style, child: Text(style)),
+          ],
+          onChanged: (v) {
+            data.styleLabel = v ?? '';
+            widget.onChanged();
+            setState(() {});
+          },
+        ),
+        const SizedBox(height: AppDimensions.spacingMd),
         TextField(
           controller: widget.summaryController,
           maxLines: 4,
@@ -192,15 +263,35 @@ class _CharacterFormSectionsState extends State<CharacterFormSections> {
             alignLabelWithHint: true,
           ),
         ),
+        const SizedBox(height: AppDimensions.spacingMd),
+        TextField(
+          controller: widget.appearanceController,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            labelText: '外观设定',
+            hintText: '发色、服装、体型等，将注入 AI Prompt',
+            alignLabelWithHint: true,
+          ),
+        ),
+        const SizedBox(height: AppDimensions.spacingMd),
+        TextField(
+          controller: widget.personalityController,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            labelText: '性格',
+            alignLabelWithHint: true,
+          ),
+        ),
         if (widget.showSlug) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: AppDimensions.spacingMd),
           TextField(
             controller: widget.slugController,
             decoration: const InputDecoration(labelText: 'Slug（URL 标识）'),
           ),
         ],
-        const SizedBox(height: 12),
+        const SizedBox(height: AppDimensions.spacingMd),
         DropdownButtonFormField<int>(
+          // ignore: deprecated_member_use
           value: widget.gender,
           decoration: const InputDecoration(labelText: '性别'),
           items: const [
@@ -211,7 +302,7 @@ class _CharacterFormSectionsState extends State<CharacterFormSections> {
           ],
           onChanged: (v) => widget.onGenderChanged(v ?? 0),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: AppDimensions.spacingLg),
         Row(
           children: [
             Text('参考图', style: AppTextStyles.label),
@@ -222,14 +313,14 @@ class _CharacterFormSectionsState extends State<CharacterFormSections> {
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppDimensions.spacingSm),
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 3,
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
+            mainAxisSpacing: AppDimensions.spacingSm,
+            crossAxisSpacing: AppDimensions.spacingSm,
           ),
           itemCount: data.referencePaths.length < 9
               ? data.referencePaths.length + 1
@@ -276,24 +367,6 @@ class _CharacterFormSectionsState extends State<CharacterFormSections> {
             );
           },
         ),
-        const SizedBox(height: 20),
-        Text('关联剧本', style: AppTextStyles.label),
-        const SizedBox(height: 8),
-        OutlinedButton.icon(
-          onPressed: () {
-            ScaffoldMessenger.of(context)
-              ..hideCurrentSnackBar()
-              ..showSnackBar(
-                const SnackBar(content: Text('剧本关联将在后续版本完善')),
-              );
-          },
-          icon: const Icon(Icons.movie_creation_outlined),
-          label: Text(
-            data.linkedScreenplayLocalIds.isEmpty
-                ? '添加剧本'
-                : '已关联 ${data.linkedScreenplayLocalIds.length} 个剧本',
-          ),
-        ),
       ],
     );
   }
@@ -303,12 +376,4 @@ class _CharacterFormSectionsState extends State<CharacterFormSections> {
       child: Icon(Icons.add_photo_alternate_outlined, size: 48),
     );
   }
-}
-
-List<String> buildAliasesFromForm(CharacterFormData data) {
-  final aliases = List<String>.from(data.aliases);
-  if (data.category.isNotEmpty && !aliases.contains(data.category)) {
-    aliases.insert(0, data.category);
-  }
-  return aliases;
 }

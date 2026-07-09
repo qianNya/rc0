@@ -23,6 +23,7 @@ Future<void> showProjectSettingsSheet(
   VoidCallback? onPickCover,
   VoidCallback? onResetCover,
   VoidCallback? onSyncTitle,
+  int? remoteScreenplayId,
 }) {
   return showGlassScrollSheet<void>(
     context,
@@ -43,6 +44,7 @@ Future<void> showProjectSettingsSheet(
         onRetryTags: onRetryTags,
         onPickCover: onPickCover,
         onResetCover: onResetCover,
+        remoteScreenplayId: remoteScreenplayId,
       );
     },
   ).whenComplete(() => onSyncTitle?.call());
@@ -63,6 +65,7 @@ class _ProjectSettingsSheetBody extends StatefulWidget {
     this.onRetryTags,
     this.onPickCover,
     this.onResetCover,
+    this.remoteScreenplayId,
   });
 
   final double maxHeight;
@@ -78,6 +81,7 @@ class _ProjectSettingsSheetBody extends StatefulWidget {
   final VoidCallback? onRetryTags;
   final VoidCallback? onPickCover;
   final VoidCallback? onResetCover;
+  final int? remoteScreenplayId;
 
   @override
   State<_ProjectSettingsSheetBody> createState() =>
@@ -121,6 +125,7 @@ class _ProjectSettingsSheetBodyState extends State<_ProjectSettingsSheetBody> {
                 onPickCover: widget.onPickCover,
                 onResetCover: widget.onResetCover,
                 onCharactersChanged: _refreshLocal,
+                remoteScreenplayId: widget.remoteScreenplayId,
                 useGlassFields: true,
               ),
             ),

@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
+
+import 'package:http/http.dart' as http;
 
 import '../../core/config/api_config.dart';
 import '../../core/network/api_auth.dart';
@@ -11,7 +12,7 @@ import '../../core/network/api_response_interceptor.dart';
 import '../../core/network/network_error.dart';
 import '../auth/vars/kv.dart';
 
-const serverHost = ApiConfig.serverHost;
+String get serverHost => ApiConfig.serverHost;
 const _requestTimeout = Duration(seconds: 8);
 
 Future apiGet(
@@ -125,45 +126,22 @@ Future apiMultipart(
 }) async {
   try {
     final tokens = await getTokens();
-    final client = HttpClient()..connectionTimeout = _requestTimeout;
-    final request = await client.postUrl(Uri.parse(serverHost + path));
-
-    final boundary = '----Rc0Upload${DateTime.now().millisecondsSinceEpoch}';
-    request.headers.set(
-      'Content-Type',
-      'multipart/form-data; boundary=$boundary',
-    );
+    final uri = Uri.parse(serverHost + path);
+    final request = http.MultipartRequest('POST', uri);
     if (tokens != null && tokens.accessToken.trim().isNotEmpty) {
-      request.headers.set(
-        'Authorization',
-        authorizationHeader(tokens.accessToken),
-      );
+      request.headers['Authorization'] =
+          authorizationHeader(tokens.accessToken);
     }
-    header?.forEach((k, v) => request.headers.set(k, v));
-
-    final body = <int>[];
-    void write(String s) => body.addAll(utf8.encode(s));
-
-    for (final entry in fields.entries) {
-      write('--$boundary\r\n');
-      write('Content-Disposition: form-data; name="${entry.key}"\r\n\r\n');
-      write('${entry.value}\r\n');
-    }
-
-    write('--$boundary\r\n');
-    write(
-      'Content-Disposition: form-data; name="$fileField"; filename="$filename"\r\n',
+    header?.forEach((k, v) => request.headers[k] = v);
+    request.fields.addAll(fields);
+    request.files.add(
+      http.MultipartFile.fromBytes(fileField, bytes, filename: filename),
     );
-    write('Content-Type: application/octet-stream\r\n\r\n');
-    body.addAll(bytes);
-    write('\r\n--$boundary--\r\n');
 
-    request.contentLength = body.length;
-    request.add(body);
-
-    final response = await request.close();
-    final responseBody = await response.transform(utf8.decoder).join();
-    await _handleResponse(response.statusCode, responseBody, ok: ok, fail: fail);
+    final streamed = await request.send().timeout(_requestTimeout);
+    final response = await http.Response.fromStream(streamed)
+        .timeout(_requestTimeout);
+    await _handleResponse(response.statusCode, response.body, ok: ok, fail: fail);
   } catch (e) {
     _handleNetworkError(e, fail: fail);
   }
@@ -181,44 +159,42 @@ Future _apiRequest(
 }) async {
   final tokens = await getTokens();
   try {
-    final client = HttpClient()..connectionTimeout = _requestTimeout;
-    late final HttpClientRequest request;
+    final headers = <String, String>{};
+    if (tokens != null && tokens.accessToken.trim().isNotEmpty) {
+      headers['Authorization'] = authorizationHeader(tokens.accessToken);
+    }
+    header?.forEach((k, v) => headers[k] = v);
+
+    String? body;
+    if (data != null) {
+      body = jsonEncode(data);
+      headers['Content-Type'] = 'application/json; charset=utf-8';
+    }
+
+    late final http.Response response;
     switch (method) {
       case 'POST':
-        request = await client.postUrl(uri);
+        response = await http
+            .post(uri, headers: headers, body: body)
+            .timeout(_requestTimeout);
       case 'PUT':
-        request = await client.putUrl(uri);
+        response = await http
+            .put(uri, headers: headers, body: body)
+            .timeout(_requestTimeout);
       case 'PATCH':
-        request = await client.openUrl('PATCH', uri);
+        response = await http
+            .patch(uri, headers: headers, body: body)
+            .timeout(_requestTimeout);
       case 'DELETE':
-        request = await client.deleteUrl(uri);
+        response = await http
+            .delete(uri, headers: headers, body: body)
+            .timeout(_requestTimeout);
       default:
-        request = await client.getUrl(uri);
+        response =
+            await http.get(uri, headers: headers).timeout(_requestTimeout);
     }
 
-    var strData = '';
-    if (data != null) {
-      strData = jsonEncode(data);
-    }
-    if (method == 'POST' || method == 'PUT' || method == 'PATCH') {
-      request.headers.set('Content-Type', 'application/json; charset=utf-8');
-      request.headers.set('Content-Length', utf8.encode(strData).length);
-    }
-    if (tokens != null && tokens.accessToken.trim().isNotEmpty) {
-      request.headers.set(
-        'Authorization',
-        authorizationHeader(tokens.accessToken),
-      );
-    }
-    header?.forEach((k, v) => request.headers.set(k, v));
-
-    if (strData.isNotEmpty) {
-      request.write(strData);
-    }
-
-    final response = await request.close();
-    final body = await response.transform(utf8.decoder).join();
-    await _handleResponse(response.statusCode, body, ok: ok, fail: fail);
+    await _handleResponse(response.statusCode, response.body, ok: ok, fail: fail);
   } catch (e) {
     _handleNetworkError(e, fail: fail);
   }

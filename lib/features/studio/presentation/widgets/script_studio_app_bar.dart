@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../shared/widgets/desktop/desktop_hub_scaffold.dart';
 import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 import 'script_studio_header_components.dart';
 
@@ -41,21 +42,28 @@ class ScriptStudioAppBar extends StatelessWidget implements PreferredSizeWidget 
 /// Top spacing below floating Wiki-style app bars (toolbar row only).
 typedef ScriptStudioToolbarContentInset = WikiModeTagToolbarInset;
 
-/// Script Studio hub shell: Wiki-style floating chrome, no title-bar fill.
+/// Script Studio hub shell: mobile floating chrome; desktop page header.
 class ScriptStudioHubScaffold extends StatelessWidget {
   const ScriptStudioHubScaffold({
     super.key,
     required this.appBar,
     required this.body,
+    this.desktopHeader,
   });
 
   final PreferredSizeWidget appBar;
   final Widget body;
+  final Widget? desktopHeader;
 
   @override
   Widget build(BuildContext context) {
-    return WikiModeTagPageScaffold(
+    return DesktopHubScaffold(
       appBar: appBar,
+      desktopHeader: desktopHeader ??
+          const DesktopHubHeader(
+            title: '创作',
+            subtitle: '从空白、模板或 AI 开始一部新作品',
+          ),
       body: body,
     );
   }

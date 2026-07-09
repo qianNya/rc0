@@ -1,17 +1,261 @@
-import 'dart:io' show Platform;
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_dimensions.dart';
+import '../../../../core/platform/platform_features.dart';
+import '../../../../shared/widgets/rc0_widgets.dart';
 
-/// 桌面自定义标题栏高度（探索页顶栏与窗口控件共用）。
-const double kDesktopTitleBarHeight = 52;
+/// Desktop window chrome height — alias of [AppDimensions.titleBarHeight].
+const double kDesktopTitleBarHeight = AppDimensions.titleBarHeight;
 
-/// 平台自适应窗口控件：macOS 居左交通灯，Windows/Linux 居右图标按钮。
+bool get _isMacOS =>
+    !kIsWeb && defaultTargetPlatform == TargetPlatform.macOS;
+
+/// Full-width desktop window chrome: drag region + platform window controls.
+///
+/// Prefer [DesktopWindowChromeOverlay] for shell (does not push content).
+/// Use this bar on stack pages without a sidebar.
+///
+/// macOS: traffic lights on the left. Windows/Linux: caption buttons on the right.
+class DesktopWindowChromeBar extends StatelessWidget {
+  const DesktopWindowChromeBar({
+    super.key,
+    this.height = AppDimensions.titleBarHeight,
+    this.child,
+  });
+
+  final double height;
+
+  /// Optional content drawn inside the drag region (e.g. page title).
+  final Widget? child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!shouldUseDesktopWindowChrome) {
+      return const SizedBox.shrink();
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: SizedBox(
+        height: height,
+        child: Row(
+          children: [
+            if (_isMacOS)
+              SizedBox(
+                width: AppDimensions.macTitleBarLeadingInset,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: DesktopWindowControls(buttonHeight: height),
+                ),
+              ),
+            Expanded(
+              child: DesktopWindowDragRegion(
+                child: child ?? const SizedBox.expand(),
+              ),
+            ),
+            if (!_isMacOS) DesktopWindowControls(buttonHeight: height),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Overlay chrome that does **not** take layout space (no Column push).
+///
+/// - Windows/Linux: floating caption buttons top-right (+ small drag strip)
+/// - macOS: optional top-left traffic lights (off in shell — lights live in sidebar logo)
+class DesktopWindowChromeOverlay extends StatelessWidget {
+  const DesktopWindowChromeOverlay({
+    super.key,
+    required this.child,
+    this.showMacTrafficLights = true,
+  });
+
+  final Widget child;
+
+  /// When false (shell), mac lights are omitted so [DesktopSidebarWindowHeader] owns them.
+  final bool showMacTrafficLights;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!shouldUseDesktopWindowChrome) return child;
+
+    if (_isMacOS) {
+      if (!showMacTrafficLights) return child;
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          child,
+          const Positioned(
+            top: 0,
+            left: 0,
+            child: DesktopWindowControls(),
+          ),
+        ],
+      );
+    }
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        child,
+        Positioned(
+          top: 0,
+          right: 0,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 72,
+                height: AppDimensions.titleBarHeight,
+                child: const DesktopWindowDragRegion(
+                  child: SizedBox.expand(),
+                ),
+              ),
+              const DesktopWindowControls(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Wraps [child] with a layout chrome bar above (stack pages).
+class DesktopWindowChromeScope extends StatelessWidget {
+  const DesktopWindowChromeScope({
+    super.key,
+    required this.child,
+  });
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!shouldUseDesktopWindowChrome) return child;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const DesktopWindowChromeBar(),
+        Expanded(child: child),
+      ],
+    );
+  }
+}
+
+/// macOS sidebar header: traffic lights + logo, both in a drag region.
+class DesktopSidebarWindowHeader extends StatelessWidget {
+  const DesktopSidebarWindowHeader({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final logo = const Padding(
+      padding: EdgeInsets.fromLTRB(8, 0, 8, 16),
+      child: Rc0Logo(),
+    );
+
+    if (!shouldUseDesktopWindowChrome || !_isMacOS) {
+      return logo;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(
+          height: AppDimensions.titleBarHeight,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: DesktopWindowControls(
+              buttonHeight: AppDimensions.titleBarHeight,
+            ),
+          ),
+        ),
+        DesktopWindowDragRegion(child: logo),
+      ],
+    );
+  }
+}
+
+/// Global shortcuts: F11 (Win/Linux) / Control+Meta+F (mac) toggle fullscreen.
+class DesktopWindowShortcuts extends StatelessWidget {
+  const DesktopWindowShortcuts({
+    super.key,
+    required this.child,
+  });
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!shouldUseDesktopWindowChrome) return child;
+
+    return Shortcuts(
+      shortcuts: <ShortcutActivator, Intent>{
+        if (_isMacOS)
+          const SingleActivator(
+            LogicalKeyboardKey.keyF,
+            control: true,
+            meta: true,
+          ): const _ToggleFullscreenIntent(),
+        if (!_isMacOS)
+          const SingleActivator(LogicalKeyboardKey.f11):
+              const _ToggleFullscreenIntent(),
+      },
+      child: Actions(
+        actions: <Type, Action<Intent>>{
+          _ToggleFullscreenIntent: CallbackAction<_ToggleFullscreenIntent>(
+            onInvoke: (_) async {
+              final full = await windowManager.isFullScreen();
+              await windowManager.setFullScreen(!full);
+              return null;
+            },
+          ),
+        },
+        child: child,
+      ),
+    );
+  }
+}
+
+class _ToggleFullscreenIntent extends Intent {
+  const _ToggleFullscreenIntent();
+}
+
+class DesktopWindowDragRegion extends StatelessWidget {
+  const DesktopWindowDragRegion({super.key, required this.child});
+
+  final Widget child;
+
+  Future<void> _toggleMaximize() async {
+    if (await windowManager.isMaximized()) {
+      await windowManager.unmaximize();
+    } else {
+      await windowManager.maximize();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onDoubleTap: _toggleMaximize,
+      child: DragToMoveArea(child: child),
+    );
+  }
+}
+
+/// Platform-adaptive window controls: mac traffic lights / Win·Linux caption buttons.
 class DesktopWindowControls extends StatefulWidget {
-  const DesktopWindowControls({super.key, this.buttonHeight = kDesktopTitleBarHeight});
+  const DesktopWindowControls({
+    super.key,
+    this.buttonHeight = AppDimensions.titleBarHeight,
+  });
 
   final double buttonHeight;
 
@@ -22,8 +266,6 @@ class DesktopWindowControls extends StatefulWidget {
 class _DesktopWindowControlsState extends State<DesktopWindowControls>
     with WindowListener {
   bool _isMaximized = false;
-
-  bool get _isMacOS => !kIsWeb && Platform.isMacOS;
 
   @override
   void initState() {
@@ -111,12 +353,12 @@ class _DesktopWindowControlsState extends State<DesktopWindowControls>
   }
 }
 
-/// 将页面内容与系统窗口控件合并为单行顶栏（Windows 控件在右侧）。
+@Deprecated('Use DesktopWindowChromeBar')
 class DesktopMergedTitleBar extends StatelessWidget {
   const DesktopMergedTitleBar({
     super.key,
     required this.child,
-    this.height = kDesktopTitleBarHeight,
+    this.height = AppDimensions.titleBarHeight,
     this.decoration,
   });
 
@@ -124,61 +366,21 @@ class DesktopMergedTitleBar extends StatelessWidget {
   final double height;
   final BoxDecoration? decoration;
 
-  bool get _isMacOS => !kIsWeb && Platform.isMacOS;
-
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: Container(
-        height: height,
-        decoration: decoration ??
-            const BoxDecoration(
-              color: AppColors.surface,
-            ),
-        child: Row(
-          children: [
-            Expanded(
-              child: DragToMoveArea(child: child),
-            ),
-            if (!_isMacOS) DesktopWindowControls(buttonHeight: height),
-          ],
-        ),
-      ),
-    );
+    return DesktopWindowChromeBar(height: height, child: child);
   }
 }
 
-/// 非探索页使用的极简顶栏：仅拖拽区 + 窗口控件。
+@Deprecated('Use DesktopWindowChromeBar')
 class DesktopMinimalTitleBar extends StatelessWidget {
   const DesktopMinimalTitleBar({super.key});
 
-  static const double height = 40;
-
-  bool get _isMacOS => !kIsWeb && Platform.isMacOS;
+  static const double height = AppDimensions.titleBarHeight;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.surface,
-      child: Container(
-        height: height,
-        decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: AppColors.border)),
-        ),
-        child: Row(
-          children: [
-            if (_isMacOS) const DesktopWindowControls(buttonHeight: height),
-            Expanded(
-              child: DragToMoveArea(
-                child: const SizedBox.expand(),
-              ),
-            ),
-            if (!_isMacOS) const DesktopWindowControls(buttonHeight: height),
-          ],
-        ),
-      ),
-    );
+    return const DesktopWindowChromeBar();
   }
 }
 
@@ -216,7 +418,9 @@ class _MacWindowButtonState extends State<_MacWindowButton> {
               width: 12,
               height: 12,
               decoration: BoxDecoration(
-                color: _hovering ? widget.color.withValues(alpha: 0.85) : widget.color,
+                color: _hovering
+                    ? widget.color.withValues(alpha: 0.85)
+                    : widget.color,
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: Colors.black.withValues(alpha: 0.12),

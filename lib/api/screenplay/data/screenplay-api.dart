@@ -384,6 +384,10 @@ class CreateScreenplayReq {
       'title': title,
       'summary': summary,
       'kind': kind,
+      'visibility': visibility,
+      'publish_status': publishStatus,
+      'cover_url': coverUrl,
+      'status': status,
     };
   }
 }
@@ -1618,6 +1622,10 @@ class Screenplay {
 
   final num forkCount;
 
+  final num? forkSourceId;
+
+  final num? forkRootId;
+
   final bool isLiked;
 
   final bool isFavorited;
@@ -1645,6 +1653,8 @@ class Screenplay {
     required this.favoriteCount,
     required this.commentCount,
     required this.forkCount,
+    this.forkSourceId,
+    this.forkRootId,
     required this.isLiked,
     required this.isFavorited,
   });
@@ -1673,6 +1683,8 @@ class Screenplay {
       favoriteCount: m['favorite_count'] ?? 0,
       commentCount: m['comment_count'] ?? 0,
       forkCount: m['fork_count'] ?? 0,
+      forkSourceId: m['fork_source_id'] as num?,
+      forkRootId: m['fork_root_id'] as num?,
       isLiked: m['is_liked'] ?? false,
       isFavorited: m['is_favorited'] ?? false,
     );
@@ -1702,6 +1714,8 @@ class Screenplay {
       'favorite_count': favoriteCount,
       'comment_count': commentCount,
       'fork_count': forkCount,
+      if (forkSourceId != null) 'fork_source_id': forkSourceId,
+      if (forkRootId != null) 'fork_root_id': forkRootId,
       'is_liked': isLiked,
       'is_favorited': isFavorited,
     };

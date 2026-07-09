@@ -17,10 +17,16 @@ SceneRef _toSceneRef(SceneEntry entry) => SceneRef(
       themes: List<String>.from(entry.themes),
     );
 
-CharacterRef _toCharacterRef(CharacterEntry entry) => CharacterRef(
+CharacterRef _toCharacterRef(
+  CharacterEntry entry, {
+  int? costumeId,
+}) =>
+    CharacterRef(
       id: entry.id,
       name: entry.name,
       appearance: entry.appearance,
+      defaultCostumeId: costumeId,
+      styleLabel: entry.styleLabel.isEmpty ? null : entry.styleLabel,
     );
 
 final class AppScenePickerPort implements ScenePickerPort {
@@ -68,11 +74,16 @@ final class AppCharacterPickerPort implements CharacterPickerPort {
     BuildContext context, {
     int? selectedCharacterId,
   }) async {
-    final picked = await CharacterPickerSheet.show(
+    final picked = await CharacterPickerSheet.showResult(
       context,
       selectedCharacterId: selectedCharacterId,
+      allowCostumePick: true,
     );
-    return picked == null ? null : _toCharacterRef(picked);
+    if (picked == null) return null;
+    return _toCharacterRef(
+      picked.character,
+      costumeId: picked.costumeId,
+    );
   }
 }
 
@@ -89,15 +100,24 @@ final class AppCharacterBindingPort implements CharacterBindingPort {
     final frameIndex = target.frameIndex;
     if (frameIndex == null) return null;
 
-    final frame = draft.acts[target.actIndex].scenes[target.sceneIndex].frames[frameIndex];
-    final picked = await CharacterPickerSheet.show(
+    final frame =
+        draft.acts[target.actIndex].scenes[target.sceneIndex].frames[frameIndex];
+    final picked = await CharacterPickerSheet.showResult(
       context,
       selectedCharacterId: selectedCharacterId ?? frame.characterId,
+      allowCostumePick: true,
     );
     if (picked == null) return null;
 
-    ensureDraftCharacterLinked(draft, id: picked.id, name: picked.name);
-    return _toCharacterRef(picked);
+    ensureDraftCharacterLinked(
+      draft,
+      id: picked.character.id,
+      name: picked.character.name,
+    );
+    return _toCharacterRef(
+      picked.character,
+      costumeId: picked.costumeId,
+    );
   }
 
   @override

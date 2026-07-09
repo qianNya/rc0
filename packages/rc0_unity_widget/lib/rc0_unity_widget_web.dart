@@ -6,7 +6,13 @@ import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 /// WebGL Unity embed via iframe + postMessage bridge.
 class Rc0UnityWidgetWeb {
   static void registerWith(Registrar registrar) {
-    const channel = MethodChannel('rc0_unity_widget', JSONMethodCodec());
+    // Pass [registrar] as BinaryMessenger — required before
+    // WidgetsFlutterBinding is ready during web plugin registration.
+    final channel = MethodChannel(
+      'rc0_unity_widget',
+      const JSONMethodCodec(),
+      registrar,
+    );
     channel.setMethodCallHandler(_handleMethod);
   }
 

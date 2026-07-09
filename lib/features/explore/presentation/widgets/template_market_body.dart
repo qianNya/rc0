@@ -6,11 +6,13 @@ import '../../../../app/theme/app_dimensions.dart';
 import '../../../../core/data/app_catalog.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/network/api_auth.dart';
+import '../../../../core/responsive/breakpoints.dart';
 import '../../../../core/responsive/feed_grid_layout.dart';
 import '../../../../core/utils/state_listeners.dart';
 import '../../../community/presentation/widgets/community_category_chips.dart';
 import '../../../community/presentation/widgets/community_featured_banner.dart';
 import '../../data/template_market_repository.dart';
+import '../../../../shared/widgets/desktop/desktop_hub_scaffold.dart';
 import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
 import '../../../../shared/widgets/feed_tab_bar.dart';
@@ -19,6 +21,7 @@ import '../../../../shared/widgets/profile_widgets.dart';
 import '../../../../shared/widgets/rc0_widgets.dart';
 import '../../../../shared/widgets/shell_insets.dart';
 import '../../../../shared/widgets/template_grid_card.dart';
+import 'explore_desktop_right_panel.dart';
 
 /// Shared template market grid — used by discovery template tab.
 class TemplateMarketBody extends StatefulWidget {
@@ -97,31 +100,34 @@ class _TemplateMarketBodyState extends State<TemplateMarketBody> {
 
   @override
   Widget build(BuildContext context) {
-    final horizontalPadding = widget.compact
-        ? AppDimensions.spacingMd
-        : AppDimensions.spacingXl;
+    final desktop = widget.showDesktopHeader ||
+        Breakpoints.useSidebarShell(context);
+    final horizontalPadding = desktop
+        ? AppDimensions.spacingXl
+        : AppDimensions.spacingMd;
+    final showRightPanel =
+        desktop && Breakpoints.isExpanded(context);
 
-    return Column(
+    final marketColumn = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (widget.showDesktopHeader)
+        if (desktop)
+          DesktopHubHeader(
+            title: '模板',
+            subtitle: '浏览可 Fork 的剧本模板',
+            bottom: widget.showSearch
+                ? AppSearchField(
+                    hint: '搜索模板、标签、作者',
+                    controller: _searchController,
+                    onSubmitted: _search,
+                  )
+                : null,
+          )
+        else if (widget.showSearch)
           Padding(
             padding: EdgeInsets.fromLTRB(
               horizontalPadding,
-              AppDimensions.spacingXl,
-              horizontalPadding,
-              0,
-            ),
-            child: Text(
-              '模板市场',
-              style: Theme.of(context).textTheme.displaySmall,
-            ),
-          ),
-        if (widget.showSearch)
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              horizontalPadding,
-              widget.showDesktopHeader ? 16 : 12,
+              12,
               horizontalPadding,
               8,
             ),
@@ -129,7 +135,7 @@ class _TemplateMarketBodyState extends State<TemplateMarketBody> {
               children: [
                 Expanded(
                   child: AppSearchField(
-                    hint: widget.compact ? '搜索模板' : '搜索模板…',
+                    hint: '搜索模板',
                     controller: _searchController,
                     onSubmitted: _search,
                   ),
@@ -174,12 +180,30 @@ class _TemplateMarketBodyState extends State<TemplateMarketBody> {
                   error: _repository.error,
                   onRefresh: _refresh,
                   onLoadMore: () => _repository.loadMore(),
-                  compact: widget.compact,
-                  showFeaturedBanner: widget.showFeaturedBanner,
+                  compact: !desktop,
+                  showFeaturedBanner: widget.showFeaturedBanner && !desktop,
                   horizontalPadding: horizontalPadding,
                 ),
             ],
           ),
+        ),
+      ],
+    );
+
+    if (!showRightPanel) return marketColumn;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(child: marketColumn),
+        ExploreDesktopRightPanel(
+          feedItems: _repository.items,
+          onTagTap: (tag) {
+            _searchController.text = tag;
+            _search(tag);
+          },
+          onCreate: () => context.go(AppRoutes.studio),
+          onBrowseTemplates: () {},
         ),
       ],
     );

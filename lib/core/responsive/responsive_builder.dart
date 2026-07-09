@@ -8,7 +8,9 @@ typedef ResponsiveWidgetBuilder = Widget Function(
 );
 
 /// Renders [mobile] or [desktop] based on screen width.
-/// Use one feature page that delegates layout — shared business logic stays unified.
+///
+/// Uses [Breakpoints.medium] (840) so layouts match [Breakpoints.useSidebarShell]
+/// instead of leaving a 840–1023 band with sidebar + phone page chrome.
 class ResponsiveBuilder extends StatelessWidget {
   const ResponsiveBuilder({
     super.key,
@@ -23,7 +25,7 @@ class ResponsiveBuilder extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isDesktop = constraints.maxWidth >= Breakpoints.expanded;
+        final isDesktop = constraints.maxWidth >= Breakpoints.medium;
         return isDesktop ? desktop(context) : mobile(context);
       },
     );

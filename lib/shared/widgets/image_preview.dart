@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
@@ -24,6 +25,8 @@ bool isPreviewableImagePath(String path) {
   if (isNetworkImagePath(resolved)) {
     return isValidNetworkImageUrl(resolved);
   }
+  // Web has no dart:io filesystem for local paths.
+  if (kIsWeb) return false;
   return File(resolved).existsSync();
 }
 

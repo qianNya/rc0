@@ -26,6 +26,7 @@ class ScriptEditorActions {
     required this.canRemoveScene,
     required this.onRemoveScene,
     this.onSceneFieldChanged,
+    this.remoteScreenplayId,
   });
 
   final ScreenplayDraft draft;
@@ -80,4 +81,7 @@ class ScriptEditorActions {
     String? timeOfDay,
     String? weather,
   })? onSceneFieldChanged;
+
+  /// Remote screenplay id for cast sync (null = local-only draft).
+  final int? remoteScreenplayId;
 }

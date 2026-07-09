@@ -11,6 +11,10 @@ class ScreenplayLocalMeta {
     this.tags = const [],
     this.author = '我',
     this.authorBio = '摄影创作者',
+    this.kind = Screenplay.kindPersonal,
+    this.forkSourceId,
+    this.forkRootId,
+    this.forkCount = 0,
     this.forkedFromId,
     this.forkedFromLocalId,
     this.imagesLocalized = false,
@@ -28,6 +32,10 @@ class ScreenplayLocalMeta {
   final List<String> tags;
   final String author;
   final String authorBio;
+  final int kind;
+  final int? forkSourceId;
+  final int? forkRootId;
+  final int forkCount;
   final int? forkedFromId;
   final String? forkedFromLocalId;
   final bool imagesLocalized;
@@ -39,13 +47,19 @@ class ScreenplayLocalMeta {
   final String? treeJsonObjectKey;
   final DateTime? publishedAt;
 
+  int? get effectiveForkSourceId => forkSourceId ?? forkedFromId;
+
   Map<String, dynamic> toJson() => {
         'local_id': localId,
         'is_local': isLocal,
         'tags': tags,
         'author': author,
         'author_bio': authorBio,
-        'forked_from_id': forkedFromId,
+        'kind': kind,
+        'fork_source_id': forkSourceId ?? forkedFromId,
+        'fork_root_id': forkRootId,
+        'fork_count': forkCount,
+        'forked_from_id': forkedFromId ?? forkSourceId,
         'forked_from_local_id': forkedFromLocalId,
         'images_localized': imagesLocalized,
         'browse_cache': browseCache,
@@ -58,6 +72,9 @@ class ScreenplayLocalMeta {
       };
 
   factory ScreenplayLocalMeta.fromJson(Map<String, dynamic> json) {
+    final forkSource = (json['fork_source_id'] as num?)?.toInt() ??
+        (json['forked_from_id'] as num?)?.toInt();
+    final forkedFrom = (json['forked_from_id'] as num?)?.toInt() ?? forkSource;
     return ScreenplayLocalMeta(
       localId: json['local_id'] as String,
       isLocal: json['is_local'] as bool? ?? true,
@@ -67,7 +84,11 @@ class ScreenplayLocalMeta {
           const [],
       author: json['author'] as String? ?? '我',
       authorBio: json['author_bio'] as String? ?? '摄影创作者',
-      forkedFromId: (json['forked_from_id'] as num?)?.toInt(),
+      kind: (json['kind'] as num?)?.toInt() ?? Screenplay.kindPersonal,
+      forkSourceId: forkSource,
+      forkRootId: (json['fork_root_id'] as num?)?.toInt(),
+      forkCount: (json['fork_count'] as num?)?.toInt() ?? 0,
+      forkedFromId: forkedFrom,
       forkedFromLocalId: json['forked_from_local_id'] as String?,
       imagesLocalized: json['images_localized'] as bool? ?? false,
       browseCache: json['browse_cache'] as bool? ?? false,
@@ -92,6 +113,10 @@ class ScreenplayLocalMeta {
     List<String>? tags,
     String? author,
     String? authorBio,
+    int? kind,
+    int? forkSourceId,
+    int? forkRootId,
+    int? forkCount,
     int? forkedFromId,
     String? forkedFromLocalId,
     bool? imagesLocalized,
@@ -103,13 +128,19 @@ class ScreenplayLocalMeta {
     String? treeJsonObjectKey,
     DateTime? publishedAt,
   }) {
+    final nextForkSource = forkSourceId ?? forkedFromId ?? this.forkSourceId;
+    final nextForkedFrom = forkedFromId ?? forkSourceId ?? this.forkedFromId;
     return ScreenplayLocalMeta(
       localId: localId ?? this.localId,
       isLocal: isLocal ?? this.isLocal,
       tags: tags ?? this.tags,
       author: author ?? this.author,
       authorBio: authorBio ?? this.authorBio,
-      forkedFromId: forkedFromId ?? this.forkedFromId,
+      kind: kind ?? this.kind,
+      forkSourceId: nextForkSource,
+      forkRootId: forkRootId ?? this.forkRootId,
+      forkCount: forkCount ?? this.forkCount,
+      forkedFromId: nextForkedFrom,
       forkedFromLocalId: forkedFromLocalId ?? this.forkedFromLocalId,
       imagesLocalized: imagesLocalized ?? this.imagesLocalized,
       browseCache: browseCache ?? this.browseCache,
@@ -154,6 +185,8 @@ class ScreenplayTreeDocument {
     final numericId = existingMeta?.remoteScreenplayId ??
         _numericIdFor(screenplay.id);
     final baseMeta = existingMeta;
+    final forkSource =
+        screenplay.effectiveForkSourceId ?? baseMeta?.effectiveForkSourceId;
     return ScreenplayTreeDocument(
       tree: ScreenplayApiMapper.toTreeJson(
         screenplay,
@@ -165,7 +198,11 @@ class ScreenplayTreeDocument {
         tags: screenplay.tags,
         author: screenplay.author,
         authorBio: screenplay.authorBio,
-        forkedFromId: screenplay.forkedFromId ?? baseMeta?.forkedFromId,
+        kind: screenplay.kind,
+        forkSourceId: forkSource,
+        forkRootId: screenplay.forkRootId ?? baseMeta?.forkRootId,
+        forkCount: screenplay.forkCount,
+        forkedFromId: forkSource,
         forkedFromLocalId:
             screenplay.forkedFromLocalId ?? baseMeta?.forkedFromLocalId,
         imagesLocalized: screenplay.imagesLocalized,

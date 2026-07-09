@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path_provider/path_provider.dart';
 
 import '../utils/image_url_utils.dart';
@@ -34,6 +35,9 @@ class NetworkImageCacheService {
   }
 
   Future<String> _cacheRootPath() async {
+    if (kIsWeb) {
+      throw UnsupportedError('Network image disk cache is unavailable on web');
+    }
     if (_cacheRoot != null) return _cacheRoot!;
     final tempDir = await getTemporaryDirectory();
     final dir = Directory('${tempDir.path}/rc0_image_cache');
@@ -55,10 +59,14 @@ class NetworkImageCacheService {
   }
 
   /// Warms the cache directory so [cachedPathSync] can resolve paths.
-  Future<void> ensureReady() => _cacheRootPath();
+  Future<void> ensureReady() async {
+    if (kIsWeb) return;
+    await _cacheRootPath();
+  }
 
   /// Returns a cached local path when the file already exists.
   String? cachedPathSync(String url) {
+    if (kIsWeb) return null;
     final resolved = resolveNetworkImageUrl(url) ?? url;
     if (!isNetworkImagePath(resolved)) return null;
     final root = _cacheRoot;
@@ -70,6 +78,7 @@ class NetworkImageCacheService {
 
   /// Returns a cached local path when the file already exists.
   Future<String?> cachedPath(String url) async {
+    if (kIsWeb) return null;
     final resolved = resolveNetworkImageUrl(url) ?? url;
     if (!isNetworkImagePath(resolved)) return null;
     final file = await _cacheFile(resolved);
@@ -79,6 +88,7 @@ class NetworkImageCacheService {
 
   /// Downloads [url] once and returns the local file path.
   Future<String?> downloadIfNeeded(String url) {
+    if (kIsWeb) return Future.value(null);
     final resolved = resolveNetworkImageUrl(url) ?? url;
     if (!isNetworkImagePath(resolved) || !isValidNetworkImageUrl(resolved)) {
       return Future.value(null);
@@ -115,6 +125,7 @@ class NetworkImageCacheService {
 
   /// Writes decoded bytes (e.g. WebP) into the URL cache entry.
   Future<String?> writeFromBytes(String url, Uint8List bytes) async {
+    if (kIsWeb) return null;
     final resolved = resolveNetworkImageUrl(url) ?? url;
     if (!isNetworkImagePath(resolved)) return null;
     try {

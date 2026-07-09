@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../shared/widgets/desktop/desktop_hub_scaffold.dart';
 import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 import '../../../studio/presentation/widgets/script_studio_header_components.dart';
 
@@ -44,21 +45,28 @@ typedef AssetsWikiAppBar = AssetsHubAppBar;
 /// Top spacing below floating wiki app bars on assets hub pages.
 typedef AssetsHubToolbarContentInset = WikiModeTagToolbarInset;
 
-/// Assets hub shell — wiki floating chrome, transparent app bar.
+/// Assets hub shell — mobile floating chrome; desktop sidebar content header.
 class AssetsHubScaffold extends StatelessWidget {
   const AssetsHubScaffold({
     super.key,
     required this.appBar,
     required this.body,
+    this.desktopHeader,
   });
 
   final PreferredSizeWidget appBar;
   final Widget body;
+  final Widget? desktopHeader;
 
   @override
   Widget build(BuildContext context) {
-    return WikiModeTagPageScaffold(
+    return DesktopHubScaffold(
       appBar: appBar,
+      desktopHeader: desktopHeader ??
+          const DesktopHubHeader(
+            title: '资产',
+            subtitle: '角色 · 设备 · 可复用素材',
+          ),
       body: body,
     );
   }

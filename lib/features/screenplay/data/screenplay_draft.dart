@@ -21,6 +21,8 @@ class FrameDraft {
     this.characterNote = '',
     this.characterId,
     this.characterName = '',
+    this.costumeId,
+    List<int>? propIds,
     this.poseId,
     Set<String>? tags,
     List<UploadImageFile>? referenceImages,
@@ -29,6 +31,7 @@ class FrameDraft {
     this.cineSetupId,
     this.cineSetup,
   })  : cineParams = cineParams ?? const CineParams(),
+        propIds = propIds != null ? List<int>.from(propIds) : <int>[],
         tags = tags != null ? Set<String>.from(tags) : <String>{},
         referenceImages = referenceImages ?? [];
 
@@ -42,6 +45,8 @@ class FrameDraft {
   String characterNote;
   int? characterId;
   String characterName;
+  int? costumeId;
+  List<int> propIds;
   /// Optional link to a character-library pose (Roadmap: Pose Nodes).
   int? poseId;
   Set<String> tags;
@@ -67,6 +72,8 @@ class FrameDraft {
       characterNote: characterNote,
       characterId: characterId,
       characterName: characterName,
+      costumeId: costumeId,
+      propIds: List<int>.from(propIds),
       poseId: poseId,
       tags: Set<String>.from(tags),
       referenceImages: [

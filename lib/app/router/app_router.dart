@@ -322,10 +322,12 @@ abstract final class AppRouter {
           final workId = int.tryParse(state.uri.queryParameters['work_id'] ?? '');
           final summary = state.uri.queryParameters['summary'];
           final cover = state.uri.queryParameters['cover'];
+          final style = state.uri.queryParameters['style'];
           return CharacterCreatePage(
             workId: workId != null && workId > 0 ? workId : null,
             initialSummary: summary,
             initialCoverPath: cover,
+            initialStyle: style,
           );
         },
       ),

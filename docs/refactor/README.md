@@ -13,6 +13,10 @@
 | [BACKEND_KICKOFF.md](BACKEND_KICKOFF.md) | 后端 media/screenplay/worker 启动审阅与落地顺序 |
 | [GEAR_MEDIA_BACKEND_PRD.md](GEAR_MEDIA_BACKEND_PRD.md) | Gear Cabinet / Media Vault 后端接入 PRD：目标、用户故事、范围、验收与风险 |
 | [GEAR_MEDIA_CRUD_PLAN.md](GEAR_MEDIA_CRUD_PLAN.md) | Gear Cabinet / Media Vault CRUD 实施计划：模型、端点、分阶段任务 |
+| [SHELL_NAV_PRD.md](SHELL_NAV_PRD.md) | Shell 导航优化 PRD：PC 侧栏 + App 底栏统一 L1、标签治理与验收 |
+| [DESKTOP_WINDOW_CHROME_PRD.md](DESKTOP_WINDOW_CHROME_PRD.md) | 桌面窗口栏 PRD：拖拽区、缩放/全屏、macOS 红绿灯 |
+| [SCREENPLAY_TEMPLATE_PRD.md](SCREENPLAY_TEMPLATE_PRD.md) | 剧本↔模板关系与全链路 PRD（待改后定稿重构） |
+| [CHARACTER_SYSTEM_PRD.md](CHARACTER_SYSTEM_PRD.md) | 角色体系 PRD：演员本体、服装、道具、风格、Tag、适合场景、卡司与 AI |
 
 ## 核心结论速览
 - **P1 图片资产**：端到端统一 `ImageRef`，前端单一 resolver/显示/上传，后端 media crate + 队列 + 分片 key。

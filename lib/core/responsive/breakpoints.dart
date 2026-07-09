@@ -16,9 +16,13 @@ abstract final class Breakpoints {
       widthOf(context) < compact;
 
   static bool isMobile(BuildContext context) =>
-      widthOf(context) < expanded;
+      widthOf(context) < medium;
 
   static bool isDesktop(BuildContext context) =>
+      widthOf(context) >= medium;
+
+  /// Alias kept for call sites that mean “wide / sidebar shell”.
+  static bool isExpanded(BuildContext context) =>
       widthOf(context) >= expanded;
 
   /// Tablet / wide layout: permanent sidebar instead of bottom tab bar.

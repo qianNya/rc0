@@ -176,7 +176,7 @@ abstract final class AppCatalog {
     '原创',
   ];
 
-  static const characterDetailTabs = ['剧本', '姿势', '作品', '服装', '资料'];
+  static const characterDetailTabs = ['资料', '服装', '道具', '场景', '作品'];
 
   static const myCharacterTabs = ['官方角色', '我的角色', '下载角色'];
 

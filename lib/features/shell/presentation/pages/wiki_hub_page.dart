@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../shared/widgets/desktop/desktop_hub_scaffold.dart';
 import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
 import '../../../character/presentation/pages/character_list_page.dart';
 import '../../../character/presentation/widgets/character_wiki_app_bar.dart';
@@ -15,6 +16,9 @@ class WikiHubPage extends StatefulWidget {
   });
 
   final int initialTabIndex;
+
+  /// Kept for `/discovery?section=template` deep links; discovery is now a
+  /// single template market page and no longer switches tabs.
   final String? initialDiscoverySection;
 
   @override
@@ -58,12 +62,7 @@ class _WikiHubPageState extends State<WikiHubPage> {
   Widget _buildSectionContent(_WikiSection section) {
     switch (section) {
       case _WikiSection.discovery:
-        return ExplorePage(
-          embeddedInHub: true,
-          showInlineSearchAction: false,
-          showInlineFeedTabs: true,
-          initialDiscoverySection: widget.initialDiscoverySection,
-        );
+        return const ExplorePage(embeddedInHub: true);
       case _WikiSection.ip:
         return const WikiIpTab();
       case _WikiSection.character:
@@ -78,36 +77,54 @@ class _WikiHubPageState extends State<WikiHubPage> {
     return _KeepAliveSection(child: _buildSectionContent(section));
   }
 
+  Widget _buildBody() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: FadeSlideIndexedStack(
+            index: _activeSection.index,
+            children: _WikiSection.values
+                .map(_buildLazySection)
+                .toList(growable: false),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     _loadedSections.add(_activeSection);
 
-    final title = switch (_activeSection) {
-      _WikiSection.discovery => '发现',
-      _WikiSection.ip => 'IP',
-      _WikiSection.character => '角色',
-    };
+    final body = _buildBody();
+
+    if (_activeSection == _WikiSection.discovery) {
+      return body;
+    }
 
     final PreferredSizeWidget appBar = switch (_activeSection) {
       _WikiSection.character => const CharacterHubAppBar(),
-      _ => WikiModeTagAppBar(title: title),
+      _WikiSection.ip => const WikiModeTagAppBar(title: 'IP'),
+      _WikiSection.discovery => const WikiModeTagAppBar(title: '模板'),
     };
 
-    return WikiModeTagPageScaffold(
-      appBar: appBar,
-      body: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: FadeSlideIndexedStack(
-                index: _activeSection.index,
-                children: _WikiSection.values
-                    .map(_buildLazySection)
-                    .toList(growable: false),
-              ),
-            ),
-          ],
+    final desktopHeader = switch (_activeSection) {
+      _WikiSection.character => const DesktopHubHeader(
+          title: '角色',
+          subtitle: '角色库与可复用形象',
         ),
+      _WikiSection.ip => const DesktopHubHeader(
+          title: 'IP',
+          subtitle: '作品宇宙与世界观',
+        ),
+      _WikiSection.discovery => null,
+    };
+
+    return DesktopHubScaffold(
+      appBar: appBar,
+      desktopHeader: desktopHeader,
+      body: body,
     );
   }
 }

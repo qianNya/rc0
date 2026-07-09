@@ -6,18 +6,23 @@ import '../../shared/widgets/shell_nav_items.dart';
 
 /// Stable id for a swappable bottom-nav entry.
 abstract final class ShellNavOptionId {
-  static const wiki = 'wiki';
+  static const templates = 'templates';
   static const scene = 'scene';
   static const profile = 'profile';
   static const gallery = 'gallery';
-  static const screenplay = 'screenplay';
   static const preset = 'preset';
   static const equipment = 'equipment';
   static const character = 'character';
   static const action = 'action';
   static const assets = 'assets';
   static const favorites = 'favorites';
+
+  /// Legacy ids migrated to [templates].
+  static const wiki = 'wiki';
   static const community = 'community';
+
+  /// Legacy broken pin (pointed at assets branch); dropped on migrate.
+  static const screenplay = 'screenplay';
 }
 
 /// Describes one bottom-nav destination (shell branch or stack route).
@@ -70,10 +75,10 @@ class ShellNavOption {
 abstract final class ShellNavCatalog {
   static final options = <ShellNavOption>[
     ShellNavOption(
-      id: ShellNavOptionId.wiki,
-      label: 'Wiki',
-      icon: Icons.menu_book_outlined,
-      selectedIcon: Icons.menu_book,
+      id: ShellNavOptionId.templates,
+      label: '模板',
+      icon: Icons.storefront_outlined,
+      selectedIcon: Icons.storefront,
       branchIndex: 0,
       group: '主页',
     ),
@@ -108,15 +113,7 @@ abstract final class ShellNavCatalog {
       selectedIcon: Icons.photo_library,
       route: AppRoutes.gallery,
       usePush: true,
-      group: '发现',
-    ),
-    ShellNavOption(
-      id: ShellNavOptionId.screenplay,
-      label: '剧本',
-      icon: Icons.movie_creation_outlined,
-      selectedIcon: Icons.movie_creation,
-      branchIndex: 5,
-      group: '发现',
+      group: '扩展',
     ),
     ShellNavOption(
       id: ShellNavOptionId.preset,
@@ -125,7 +122,7 @@ abstract final class ShellNavCatalog {
       selectedIcon: Icons.tune,
       route: AppRoutes.shootPresetPicker(mode: 'manage'),
       usePush: true,
-      group: '发现',
+      group: '扩展',
     ),
     ShellNavOption(
       id: ShellNavOptionId.equipment,
@@ -134,16 +131,16 @@ abstract final class ShellNavCatalog {
       selectedIcon: Icons.videocam,
       route: AppRoutes.library,
       usePush: true,
-      group: '发现',
+      group: '扩展',
     ),
     ShellNavOption(
       id: ShellNavOptionId.character,
       label: '角色',
       icon: Icons.person_outline,
       selectedIcon: Icons.person,
-      route: '${AppRoutes.discovery}?hubTab=2',
+      route: AppRoutes.discoveryCharacterWiki,
       usePush: false,
-      group: '发现',
+      group: '扩展',
     ),
     ShellNavOption(
       id: ShellNavOptionId.action,
@@ -151,7 +148,7 @@ abstract final class ShellNavCatalog {
       icon: Icons.accessibility_new_outlined,
       selectedIcon: Icons.accessibility_new,
       branchIndex: 4,
-      group: '技法',
+      group: '扩展',
     ),
     ShellNavOption(
       id: ShellNavOptionId.favorites,
@@ -160,31 +157,36 @@ abstract final class ShellNavCatalog {
       selectedIcon: Icons.bookmark,
       route: AppRoutes.favorites,
       usePush: true,
-      group: '其他',
-    ),
-    ShellNavOption(
-      id: ShellNavOptionId.community,
-      label: '模板',
-      icon: Icons.storefront_outlined,
-      selectedIcon: Icons.storefront,
-      route: AppRoutes.discoveryTemplate,
-      usePush: false,
-      group: '其他',
+      group: '扩展',
     ),
   ];
 
   static const defaultActiveIds = [
-    ShellNavOptionId.wiki,
+    ShellNavOptionId.templates,
     ShellNavOptionId.scene,
     ShellNavOptionId.assets,
     ShellNavOptionId.profile,
   ];
 
-  static const groupOrder = ['主页', '发现', '技法', '其他'];
+  static const groupOrder = ['主页', '扩展'];
+
+  /// Maps legacy persisted ids onto the current catalog.
+  static String migrateOptionId(String id) {
+    switch (id) {
+      case ShellNavOptionId.wiki:
+      case ShellNavOptionId.community:
+        return ShellNavOptionId.templates;
+      case ShellNavOptionId.screenplay:
+        return ShellNavOptionId.assets;
+      default:
+        return id;
+    }
+  }
 
   static ShellNavOption optionById(String id) {
+    final migrated = migrateOptionId(id);
     return options.firstWhere(
-      (o) => o.id == id,
+      (o) => o.id == migrated,
       orElse: () => options.first,
     );
   }
@@ -243,9 +245,14 @@ class ShellNavConfigStore extends ChangeNotifier {
     _ensureValidActiveList();
     _initialized = true;
     notifyListeners();
+    // Persist migrated ids so legacy wiki/community do not linger.
+    await _persist();
   }
 
-  bool isActive(String optionId) => _activeIds.contains(optionId);
+  bool isActive(String optionId) {
+    final migrated = ShellNavCatalog.migrateOptionId(optionId);
+    return _activeIds.contains(migrated);
+  }
 
   ShellNavOption optionForSlot(int index) {
     if (index < 0 || index >= _activeIds.length) {
@@ -256,14 +263,15 @@ class ShellNavConfigStore extends ChangeNotifier {
 
   /// Toggle an option in the active tab list. Returns false when blocked by limits.
   bool toggleOption(String optionId) {
-    if (!_isValidOptionId(optionId)) return false;
+    final migrated = ShellNavCatalog.migrateOptionId(optionId);
+    if (!_isValidOptionId(migrated)) return false;
 
-    if (_activeIds.contains(optionId)) {
+    if (_activeIds.contains(migrated)) {
       if (!canRemove) return false;
-      _activeIds.remove(optionId);
+      _activeIds.remove(migrated);
     } else {
       if (!canAddMore) return false;
-      _activeIds.add(optionId);
+      _activeIds.add(migrated);
     }
     notifyListeners();
     return true;
@@ -273,8 +281,9 @@ class ShellNavConfigStore extends ChangeNotifier {
   Future<void> setActiveOptions(List<String> optionIds) async {
     final next = <String>[];
     for (final id in optionIds) {
-      if (_isValidOptionId(id) && !next.contains(id)) {
-        next.add(id);
+      final migrated = ShellNavCatalog.migrateOptionId(id);
+      if (_isValidOptionId(migrated) && !next.contains(migrated)) {
+        next.add(migrated);
       }
     }
     if (next.length < minTabs) return;
@@ -315,8 +324,10 @@ class ShellNavConfigStore extends ChangeNotifier {
     final migrated = <String>[];
     for (var i = 0; i < 3; i++) {
       final id = prefs.getString('$_legacyPrefPrefix$i');
-      if (id != null && _isValidOptionId(id) && !migrated.contains(id)) {
-        migrated.add(id);
+      if (id == null) continue;
+      final mapped = ShellNavCatalog.migrateOptionId(id);
+      if (_isValidOptionId(mapped) && !migrated.contains(mapped)) {
+        migrated.add(mapped);
       }
     }
     return migrated.isNotEmpty
@@ -328,7 +339,9 @@ class ShellNavConfigStore extends ChangeNotifier {
     return raw
         .split(',')
         .map((s) => s.trim())
-        .where((s) => s.isNotEmpty && _isValidOptionId(s))
+        .where((s) => s.isNotEmpty)
+        .map(ShellNavCatalog.migrateOptionId)
+        .where(_isValidOptionId)
         .fold<List<String>>([], (list, id) {
       if (!list.contains(id)) list.add(id);
       return list;
@@ -336,9 +349,20 @@ class ShellNavConfigStore extends ChangeNotifier {
   }
 
   void _ensureValidActiveList() {
-    if (_activeIds.isEmpty) {
-      _activeIds.addAll(ShellNavCatalog.defaultActiveIds);
+    final cleaned = <String>[];
+    for (final id in _activeIds) {
+      final mapped = ShellNavCatalog.migrateOptionId(id);
+      if (_isValidOptionId(mapped) && !cleaned.contains(mapped)) {
+        cleaned.add(mapped);
+      }
     }
+    _activeIds
+      ..clear()
+      ..addAll(
+        cleaned.isEmpty
+            ? ShellNavCatalog.defaultActiveIds
+            : cleaned,
+      );
     if (_activeIds.length > maxTabs) {
       _activeIds.removeRange(maxTabs, _activeIds.length);
     }

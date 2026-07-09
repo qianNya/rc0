@@ -21,14 +21,16 @@ class CharacterInfoTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasContent = entry.summary.isNotEmpty ||
         entry.appearance.isNotEmpty ||
-        entry.personality.isNotEmpty;
+        entry.personality.isNotEmpty ||
+        entry.styleLabel.isNotEmpty ||
+        snapshot.tags.isNotEmpty;
 
     return ListView(
       padding: const EdgeInsets.all(AppDimensions.spacingMd),
       children: [
         if (snapshot.coverPath.isNotEmpty) ...[
           Text('官方立绘', style: AppTextStyles.label),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppDimensions.spacingSm),
           ClipRRect(
             borderRadius: BorderRadius.circular(AppDimensions.radiusXl),
             child: AspectRatio(
@@ -39,26 +41,58 @@ class CharacterInfoTab extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppDimensions.spacingLg),
+        ],
+        if (entry.styleLabel.isNotEmpty) ...[
+          Text('视觉风格', style: AppTextStyles.label),
+          const SizedBox(height: AppDimensions.spacingSm),
+          Text(entry.styleLabel, style: AppTextStyles.body),
+          if (entry.style.promptFragment.isNotEmpty &&
+              entry.style.promptFragment != entry.styleLabel) ...[
+            const SizedBox(height: 4),
+            Text(
+              entry.style.promptFragment,
+              style: AppTextStyles.bodySecondary,
+            ),
+          ],
+          const SizedBox(height: AppDimensions.spacingLg),
         ],
         if (entry.summary.isNotEmpty) ...[
           Text('角色背景', style: AppTextStyles.label),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppDimensions.spacingSm),
           Text(entry.summary, style: AppTextStyles.body),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppDimensions.spacingLg),
         ],
         if (entry.appearance.isNotEmpty) ...[
-          Text('剧情介绍', style: AppTextStyles.label),
-          const SizedBox(height: 8),
+          Text('外观设定', style: AppTextStyles.label),
+          const SizedBox(height: AppDimensions.spacingSm),
           Text(entry.appearance, style: AppTextStyles.body),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppDimensions.spacingLg),
+        ],
+        if (entry.personality.isNotEmpty) ...[
+          Text('性格', style: AppTextStyles.label),
+          const SizedBox(height: AppDimensions.spacingSm),
+          Text(entry.personality, style: AppTextStyles.body),
+          const SizedBox(height: AppDimensions.spacingLg),
+        ],
+        if (entry.aliases.isNotEmpty) ...[
+          Text('别名', style: AppTextStyles.label),
+          const SizedBox(height: AppDimensions.spacingSm),
+          Wrap(
+            spacing: AppDimensions.spacingSm,
+            runSpacing: AppDimensions.spacingSm,
+            children: [
+              for (final alias in entry.aliases) Chip(label: Text(alias)),
+            ],
+          ),
+          const SizedBox(height: AppDimensions.spacingLg),
         ],
         if (snapshot.tags.isNotEmpty) ...[
-          Text('关键词', style: AppTextStyles.label),
-          const SizedBox(height: 8),
+          Text('标签', style: AppTextStyles.label),
+          const SizedBox(height: AppDimensions.spacingSm),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: AppDimensions.spacingSm,
+            runSpacing: AppDimensions.spacingSm,
             children: [
               for (final tag in snapshot.tags)
                 Chip(
@@ -67,23 +101,8 @@ class CharacterInfoTab extends StatelessWidget {
                 ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppDimensions.spacingLg),
         ],
-        Text('摄影建议', style: AppTextStyles.label),
-        const SizedBox(height: 8),
-        Text(
-          entry.personality.isNotEmpty
-              ? entry.personality
-              : '柔和侧光可突出角色轮廓；海边场景建议利用自然反光与浅景深。',
-          style: AppTextStyles.body,
-        ),
-        const SizedBox(height: 20),
-        Text('镜头建议', style: AppTextStyles.label),
-        const SizedBox(height: 8),
-        Text(
-          '85mm 人像镜头适合特写；全景可使用 35mm 保留环境氛围。',
-          style: AppTextStyles.bodySecondary,
-        ),
         if (!hasContent)
           const EmptyStateView(
             icon: Icons.info_outline,

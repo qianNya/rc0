@@ -7,6 +7,7 @@ import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_dimensions.dart';
 import '../../app/theme/system_ui_style.dart';
 import '../../app/theme/app_theme.dart';
+import '../../core/responsive/breakpoints.dart';
 import 'glass_title_chip.dart';
 import 'status_bar_spacer.dart';
 
@@ -317,10 +318,16 @@ double wikiModeTagChromeHeight(
 }
 
 /// Scroll / hero bleed: extends content under floating chrome.
+///
+/// On desktop sidebar shell there is no floating phone app bar, so inset is
+/// only a light top padding for the content canvas.
 double wikiModeTagContentInsetHeight(
   BuildContext context, {
   double? toolbarHeight,
 }) {
+  if (Breakpoints.useSidebarShell(context)) {
+    return AppDimensions.spacingLg;
+  }
   return wikiModeTagChromeHeight(context, toolbarHeight: toolbarHeight);
 }
 
@@ -439,6 +446,29 @@ class WikiModeTagPageScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (Breakpoints.useSidebarShell(context)) {
+      return Theme(
+        data: AppTheme.light.copyWith(
+          scaffoldBackgroundColor: Colors.transparent,
+          canvasColor: AppColors.pageBackground,
+        ),
+        child: AnnotatedRegion<SystemUiOverlayStyle>(
+          value: systemOverlayStyle ?? AppSystemUi.lightStyle,
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            extendBody: true,
+            body: ColoredBox(
+              color: AppColors.pageBackground,
+              child: SizedBox.expand(child: body),
+            ),
+            bottomNavigationBar: bottomNavigationBar,
+            floatingActionButton: floatingActionButton,
+            floatingActionButtonLocation: floatingActionButtonLocation,
+          ),
+        ),
+      );
+    }
+
     final resolvedAppBar = wrapWikiModeTagAppBar(context, appBar);
 
     return Theme(

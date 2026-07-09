@@ -41,11 +41,15 @@ class CharacterRef {
     required this.id,
     this.name,
     this.appearance,
+    this.defaultCostumeId,
+    this.styleLabel,
   });
 
   final int id;
   final String? name;
   final String? appearance;
+  final int? defaultCostumeId;
+  final String? styleLabel;
 }
 
 enum PresetScope { action, lighting, camera, shoot }

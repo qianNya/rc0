@@ -4,8 +4,10 @@ import 'dart:io';
 import '../../../api/screenplay/api/screenplay-api.dart' as screenplay_api;
 import '../../../api/screenplay/data/screenplay-api.dart' as api;
 import '../../../core/auth/auth_bridge.dart';
+import '../../../core/domain/screenplay/screenplay.dart';
 import '../../../core/media/app_media_upload_service.dart';
 import '../../../core/media/upload_legacy_adapter.dart';
+import '../../../core/network/api_callback.dart';
 import 'data_upload_repository.dart';
 import 'screenplay_api_mapper.dart';
 import 'screenplay_remote_repository.dart';
@@ -37,6 +39,7 @@ class ScreenplayPublishService {
   Future<({PublishResult? result, String? error})> publish({
     required ScreenplayTreeDocument document,
     required int visibility,
+    required int kind,
     PublishProgressCallback? onProgress,
   }) async {
     if (!AuthBridge.isLoggedIn) {
@@ -55,14 +58,26 @@ class ScreenplayPublishService {
       return (result: null, error: '剧本没有可发布的画格');
     }
 
+    final effectiveKind =
+        kind == Screenplay.kindTemplate ? Screenplay.kindTemplate : Screenplay.kindPersonal;
+    final effectiveVisibility =
+        effectiveKind == Screenplay.kindTemplate ? 1 : visibility;
+
     try {
       final tree = deepCopyJson(document.tree);
       final screenplayMap = tree['screenplay'] as Map<String, dynamic>;
       final title = screenplayMap['title'] as String? ?? screenplay.title;
       final summary = screenplayMap['summary'] as String? ?? screenplay.synopsis;
+      screenplayMap['kind'] = effectiveKind;
+      screenplayMap['visibility'] = effectiveVisibility;
 
       onProgress?.call('创建剧本', 0, 1);
-      final created = await _createScreenplay(title: title, summary: summary);
+      final created = await _createScreenplay(
+        title: title,
+        summary: summary,
+        kind: effectiveKind,
+        visibility: effectiveVisibility,
+      );
       if (created.error != null || created.screenplay == null) {
         return (result: null, error: created.error ?? '创建剧本失败');
       }
@@ -93,7 +108,7 @@ class ScreenplayPublishService {
         remoteId: remoteId,
         tree: tree,
         refToUploaded: uploads.refToUploaded!,
-        visibility: visibility,
+        visibility: effectiveVisibility,
         isRepublish: false,
         coverUrl: coverUrl.url,
       );
@@ -120,15 +135,20 @@ class ScreenplayPublishService {
 
       final rawTree =
           ScreenplayRemoteRepository.instance.rawTreeAfterRefresh(remoteId);
+      final resultMeta = document.meta.copyWith(
+        author: authorName,
+        kind: effectiveKind,
+        visibility: effectiveVisibility,
+      );
       final resultDoc = rawTree != null
           ? ScreenplayApiMapper.applyRawTreeResponse(
               rawTree: rawTree,
-              meta: document.meta.copyWith(author: authorName),
+              meta: resultMeta,
               previousTree: tree,
             )
           : ScreenplayApiMapper.applySaveTreeResponse(
               response: saved.tree!,
-              meta: document.meta.copyWith(author: authorName),
+              meta: resultMeta,
               previousTree: tree,
             );
 
@@ -161,6 +181,14 @@ class ScreenplayPublishService {
 
     try {
       final tree = deepCopyJson(document.tree);
+      final screenplayMap = tree['screenplay'] as Map<String, dynamic>;
+      // Keep existing kind from document meta/tree unless already set.
+      final existingKind = document.meta.kind > 0
+          ? document.meta.kind
+          : ((screenplayMap['kind'] as num?)?.toInt() ??
+              Screenplay.kindPersonal);
+      screenplayMap['kind'] = existingKind;
+      screenplayMap['visibility'] = effectiveVisibility;
       final uploads = await _uploadLocalAssets(
         tree,
         onProgress: onProgress,
@@ -393,18 +421,20 @@ class ScreenplayPublishService {
   Future<({api.Screenplay? screenplay, String? error})> _createScreenplay({
     required String title,
     required String summary,
+    required int kind,
+    required int visibility,
   }) async {
     final completer = Completer<({api.Screenplay? screenplay, String? error})>();
 
     await screenplay_api.createScreenplay(
       api.CreateScreenplayReq(
-        kind: 1,
+        kind: kind,
         title: title,
         subtitle: '',
         summary: summary,
         coverUrl: '',
         publishStatus: 0,
-        visibility: 0,
+        visibility: visibility,
         status: 0,
       ),
       ok: (sp) => completer.complete((screenplay: sp, error: null)),
@@ -422,5 +452,27 @@ class ScreenplayPublishService {
       fail: (msg) => completer.complete((error: msg)),
     );
     return completer.future;
+  }
+
+  /// Upgrade a published personal work to a template (`kind=2`).
+  Future<({api.Screenplay? screenplay, String? error})> promoteToTemplate(
+    int remoteId,
+  ) async {
+    if (!AuthBridge.isLoggedIn) {
+      return (screenplay: null, error: '请先登录');
+    }
+    final (sp, error) = await apiCallback<api.Screenplay>(
+      ({ok, fail, eventually}) => screenplay_api.updateScreenplay(
+        remoteId,
+        {'kind': Screenplay.kindTemplate, 'visibility': 1},
+        ok: ok,
+        fail: fail,
+        eventually: eventually,
+      ),
+    );
+    if (error != null) {
+      return (screenplay: null, error: error);
+    }
+    return (screenplay: sp, error: null);
   }
 }

@@ -14,6 +14,9 @@ abstract final class AiPromptBuilder {
     required FrameDraft frame,
     required SceneDraft scene,
     required ShootParams shootParams,
+    String? characterAppearance,
+    String? characterStylePrompt,
+    List<String> propNames = const [],
   }) {
     final parts = <String>[];
 
@@ -22,6 +25,25 @@ abstract final class AiPromptBuilder {
 
     final action = frame.actionNote.trim();
     if (action.isNotEmpty) parts.add(action);
+
+    final characterName = frame.characterName.trim();
+    if (characterName.isNotEmpty) parts.add(characterName);
+
+    final characterNote = frame.characterNote.trim();
+    if (characterNote.isNotEmpty) {
+      parts.add(characterNote);
+    } else {
+      final appearance = characterAppearance?.trim() ?? '';
+      if (appearance.isNotEmpty) parts.add(appearance);
+    }
+
+    final stylePrompt = characterStylePrompt?.trim() ?? '';
+    if (stylePrompt.isNotEmpty) parts.add(stylePrompt);
+
+    for (final prop in propNames) {
+      final name = prop.trim();
+      if (name.isNotEmpty) parts.add(name);
+    }
 
     final cine = frame.cineParams;
     final cineSetup = cineSetupFromDraftFrame(frame);
@@ -91,9 +113,19 @@ abstract final class AiPromptBuilder {
     }
   }
 
-  static String buildNegative({String? existing}) {
+  static String buildNegative({
+    String? existing,
+    String? characterNegativeStyle,
+  }) {
     final trimmed = existing?.trim() ?? '';
+    final styleNeg = characterNegativeStyle?.trim() ?? '';
+    if (trimmed.isNotEmpty && styleNeg.isNotEmpty) {
+      return '$trimmed, $styleNeg';
+    }
     if (trimmed.isNotEmpty) return trimmed;
+    if (styleNeg.isNotEmpty) {
+      return '$defaultNegativePrompt, $styleNeg';
+    }
     return defaultNegativePrompt;
   }
 }

@@ -94,6 +94,9 @@ abstract final class ScreenplayApiMapper {
     String? authorAvatar,
   }) {
     final creatorId = sp.creator.toInt();
+    final kind = sp.kind.toInt();
+    final forkSource = sp.forkSourceId?.toInt();
+    final forkRoot = sp.forkRootId?.toInt();
     return base.copyWith(
       author: authorName ??
           (creatorId > 0 ? '用户 $creatorId' : '创作者'),
@@ -105,6 +108,11 @@ abstract final class ScreenplayApiMapper {
       isLiked: sp.isLiked,
       isFavorited: sp.isFavorited,
       visibility: sp.visibility.toInt(),
+      kind: kind > 0 ? kind : Screenplay.kindPersonal,
+      forkCount: sp.forkCount.toInt(),
+      forkSourceId: forkSource,
+      forkRootId: forkRoot,
+      forkedFromId: forkSource,
     );
   }
 
@@ -168,6 +176,8 @@ abstract final class ScreenplayApiMapper {
       );
     }
 
+    final kind = (screenplayMap['kind'] as num?)?.toInt() ?? Screenplay.kindPersonal;
+    final forkSource = (screenplayMap['fork_source_id'] as num?)?.toInt();
     return Screenplay(
       id: screenplayMap['id'].toString(),
       title: screenplayMap['title'] as String? ?? '',
@@ -179,18 +189,29 @@ abstract final class ScreenplayApiMapper {
       apiActCount: (screenplayMap['act_count'] as num?)?.toInt(),
       apiSceneCount: (screenplayMap['scene_count'] as num?)?.toInt(),
       apiFrameCount: (screenplayMap['frame_count'] as num?)?.toInt(),
+      kind: kind > 0 ? kind : Screenplay.kindPersonal,
+      forkSourceId: forkSource,
+      forkRootId: (screenplayMap['fork_root_id'] as num?)?.toInt(),
+      forkCount: (screenplayMap['fork_count'] as num?)?.toInt() ?? 0,
+      forkedFromId: forkSource,
+      visibility: (screenplayMap['visibility'] as num?)?.toInt(),
     );
   }
 
   static Screenplay screenplayFromDocument(ScreenplayTreeDocument doc) {
     final base = _screenplayFromRawTree(doc.tree);
+    final forkSource = doc.meta.effectiveForkSourceId;
     return base.copyWith(
       id: doc.meta.localId,
       tags: doc.meta.tags,
       author: doc.meta.author,
       authorBio: doc.meta.authorBio,
       isLocal: doc.meta.isLocal,
-      forkedFromId: doc.meta.forkedFromId,
+      kind: doc.meta.kind,
+      forkSourceId: forkSource,
+      forkRootId: doc.meta.forkRootId,
+      forkCount: doc.meta.forkCount,
+      forkedFromId: forkSource,
       forkedFromLocalId: doc.meta.forkedFromLocalId,
       imagesLocalized: doc.meta.imagesLocalized,
       createdAt: doc.meta.createdAt,
@@ -282,14 +303,14 @@ abstract final class ScreenplayApiMapper {
 
     final screenplayMap = <String, dynamic>{
       'id': screenplayNumericId,
-      'kind': 1,
+      'kind': sp.kind,
       'title': sp.title,
       'subtitle': '',
       'summary': sp.synopsis,
       'cover_url': coverRemoteUrl ?? '',
       'cover_object_id': 0,
       'publish_status': 0,
-      'visibility': 0,
+      'visibility': sp.visibility ?? 0,
       'published_at': '',
       'act_count': sp.acts.isNotEmpty ? sp.acts.length : (sp.apiActCount ?? 0),
       'scene_count': sp.acts.isNotEmpty ? sceneTotal : (sp.apiSceneCount ?? 0),
@@ -297,6 +318,10 @@ abstract final class ScreenplayApiMapper {
       'status': 0,
       'create_at': '',
       'update_at': '',
+      if (sp.effectiveForkSourceId != null)
+        'fork_source_id': sp.effectiveForkSourceId,
+      if (sp.forkRootId != null) 'fork_root_id': sp.forkRootId,
+      'fork_count': sp.forkCount,
     };
     if (coverLocalPath != null && coverLocalPath.isNotEmpty) {
       screenplayMap['local_cover_path'] = coverLocalPath;
@@ -639,12 +664,14 @@ abstract final class ScreenplayApiMapper {
       'subtitle': screenplayMap['subtitle'] as String? ?? '',
       'cover_url': '',
       'cover_ref': null,
+      'visibility': visibility,
     };
     if (summary.isNotEmpty) {
       screenplayPayload['summary'] = summary;
     }
-    if (isRepublish) {
-      screenplayPayload['visibility'] = visibility;
+    final kind = (screenplayMap['kind'] as num?)?.toInt();
+    if (kind != null && kind > 0) {
+      screenplayPayload['kind'] = kind;
     }
 
     final resolvedCoverUrl = coverUrl ??
@@ -898,12 +925,20 @@ abstract final class ScreenplayApiMapper {
     final publishedAt = sp.publishedAt.isNotEmpty
         ? DateTime.tryParse(sp.publishedAt)
         : meta.publishedAt;
+    final kind = sp.kind.toInt();
+    final forkSource = sp.forkSourceId?.toInt() ?? meta.effectiveForkSourceId;
+    final forkRoot = sp.forkRootId?.toInt() ?? meta.forkRootId;
 
     return ScreenplayTreeDocument(
       tree: tree,
       meta: meta.copyWith(
         remoteScreenplayId: sp.id.toInt(),
         visibility: sp.visibility.toInt(),
+        kind: kind > 0 ? kind : meta.kind,
+        forkSourceId: forkSource,
+        forkRootId: forkRoot,
+        forkCount: sp.forkCount.toInt(),
+        forkedFromId: forkSource,
         updatedAt: DateTime.now(),
         publishedAt: publishedAt ?? DateTime.now(),
       ),
@@ -926,12 +961,22 @@ abstract final class ScreenplayApiMapper {
     final publishedAt = publishedAtRaw.isNotEmpty
         ? DateTime.tryParse(publishedAtRaw)
         : meta.publishedAt;
+    final kind = (sp['kind'] as num?)?.toInt() ?? meta.kind;
+    final forkSource = (sp['fork_source_id'] as num?)?.toInt() ??
+        meta.effectiveForkSourceId;
+    final forkRoot =
+        (sp['fork_root_id'] as num?)?.toInt() ?? meta.forkRootId;
 
     return ScreenplayTreeDocument(
       tree: tree,
       meta: meta.copyWith(
         remoteScreenplayId: (sp['id'] as num?)?.toInt(),
         visibility: (sp['visibility'] as num?)?.toInt() ?? meta.visibility,
+        kind: kind > 0 ? kind : meta.kind,
+        forkSourceId: forkSource,
+        forkRootId: forkRoot,
+        forkCount: (sp['fork_count'] as num?)?.toInt() ?? meta.forkCount,
+        forkedFromId: forkSource,
         updatedAt: DateTime.now(),
         publishedAt: publishedAt ?? DateTime.now(),
       ),

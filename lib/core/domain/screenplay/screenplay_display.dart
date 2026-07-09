@@ -1,9 +1,16 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
+
 import 'screenplay.dart';
 import 'screenplay_image_resolver.dart';
 import 'script_frame_display.dart';
 import '../../utils/media_path_utils.dart';
+
+bool _localFileExists(String path) {
+  if (kIsWeb || path.isEmpty) return false;
+  return File(path).existsSync();
+}
 
 extension ScreenplayDisplay on Screenplay {
   bool get coverIsRemoteUploaded =>
@@ -14,7 +21,7 @@ extension ScreenplayDisplay on Screenplay {
     if (local != null &&
         local.isNotEmpty &&
         !ScreenplayImageResolver.isNetworkUrl(local)) {
-      if (File(local).existsSync()) return local;
+      if (_localFileExists(local)) return local;
     }
     if (coverUrl != null && coverUrl!.isNotEmpty) return coverUrl;
     for (final act in acts) {
@@ -25,7 +32,9 @@ extension ScreenplayDisplay on Screenplay {
           final local = frame.localImagePath;
           if (local != null && local.isNotEmpty && isVideoPath(local)) {
             final thumb = frame.localThumbnailPath;
-            if (thumb != null && thumb.isNotEmpty && File(thumb).existsSync()) {
+            if (thumb != null &&
+                thumb.isNotEmpty &&
+                _localFileExists(thumb)) {
               return thumb;
             }
           }

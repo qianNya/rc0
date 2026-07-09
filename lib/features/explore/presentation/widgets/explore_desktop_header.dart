@@ -1,5 +1,3 @@
-import 'dart:io' show Platform;
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -36,7 +34,8 @@ class _ExploreDesktopHeaderState extends ConsumerState<ExploreDesktopHeader> {
   late final TextEditingController _searchController;
   final _focusNode = FocusNode();
 
-  bool get _isMacOS => !kIsWeb && Platform.isMacOS;
+  bool get _isMacOS =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.macOS;
 
   @override
   void initState() {
@@ -74,7 +73,7 @@ class _ExploreDesktopHeaderState extends ConsumerState<ExploreDesktopHeader> {
               children: [
                 const Expanded(
                   child: Center(
-                    child: WikiModeTagTitleChip(text: '发现'),
+                    child: WikiModeTagTitleChip(text: '模板'),
                   ),
                 ),
                 WikiModeTagIconButton(

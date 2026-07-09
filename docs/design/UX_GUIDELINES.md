@@ -31,13 +31,14 @@
 
 | 入口 | 路由 | 用户心智 |
 |---|---|---|
-| 发现 Wiki | `/discovery` | "找灵感、看别人怎么拍"（含内嵌 **模板市场** Tab） |
-| 创作 Studio | `/studio` | "继续我的剧本" |
-| 场景/资产 | `/scenes` `/assets` | "我的可复用素材库" |
-| 社区（deprecated） | `/community` → `/discovery?section=template` | 旧链接重定向；未来预留发布/互动 Feed |
-| 我的 | `/profile` | "我的作品与身份" |
+| 模板 | `/discovery` | "浏览可 Fork 的剧本模板"（单页模板市场） |
+| 场景 | `/scenes` | "场景库与拍摄空间" |
+| 资产 | `/assets` | "角色 / 设备 / 可复用素材枢纽" |
+| 我的 | `/profile` | "作品、身份与设置" |
+| 创作（独立） | `/studio` | "继续我的剧本 / 新建创作"（不计入消费 Tab） |
+| 社区（deprecated） | `/community` → `/discovery?section=template` | 旧链接重定向 |
 
-主导航保持 3–5 个（`ShellNavConfigStore` 支持用户自定义 1–5 tab）；创作入口是独立胶囊按钮，不与消费型 tab 混排——创作与消费是两种心智模式。
+双端 L1 标签与顺序一致（模板 / 场景 / 资产 / 我的）。App：浮动底栏 1–5 槽（`ShellNavConfigStore`）+ 独立创作胶囊。PC（≥840）：侧栏 L1 + 可展开 L2 + 底部创作 CTA。详见 [SHELL_NAV_PRD.md](../refactor/SHELL_NAV_PRD.md)。
 
 ### 2.2 页面层级（L1–L5）
 

@@ -59,6 +59,20 @@ void applyCineParamsFromFrameMap(
   if (cachedName is String) {
     frameDraft.characterName = cachedName;
   }
+  final costumeId = extraMap['costume_id'];
+  if (costumeId is num && costumeId.toInt() > 0) {
+    frameDraft.costumeId = costumeId.toInt();
+  } else {
+    frameDraft.costumeId = null;
+  }
+  final rawPropIds = extraMap['prop_ids'];
+  final propIds = <int>[];
+  if (rawPropIds is List) {
+    for (final item in rawPropIds) {
+      if (item is num && item.toInt() > 0) propIds.add(item.toInt());
+    }
+  }
+  frameDraft.propIds = propIds;
   final poseId = extraMap['pose_id'];
   if (poseId is num && poseId.toInt() > 0) {
     frameDraft.poseId = poseId.toInt();
@@ -94,6 +108,8 @@ void writeCineParamsToFrameMap(
   extraMap.remove('negative_prompt');
   extraMap.remove('character_note');
   extraMap.remove('character_name');
+  extraMap.remove('costume_id');
+  extraMap.remove('prop_ids');
   extraMap.remove('pose_id');
 
   extraMap.addAll(
@@ -109,6 +125,12 @@ void writeCineParamsToFrameMap(
       frameDraft.characterId! > 0 &&
       frameDraft.characterName.trim().isNotEmpty) {
     extraMap['character_name'] = frameDraft.characterName.trim();
+  }
+  if (frameDraft.costumeId != null && frameDraft.costumeId! > 0) {
+    extraMap['costume_id'] = frameDraft.costumeId;
+  }
+  if (frameDraft.propIds.isNotEmpty) {
+    extraMap['prop_ids'] = frameDraft.propIds;
   }
   if (frameDraft.poseId != null && frameDraft.poseId! > 0) {
     extraMap['pose_id'] = frameDraft.poseId;
