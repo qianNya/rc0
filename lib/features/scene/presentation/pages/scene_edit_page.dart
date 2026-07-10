@@ -4,11 +4,11 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
-import '../../../../shared/widgets/primary_button.dart';
 import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 import '../../data/scene_local_store.dart';
 import '../../data/scene_repository.dart';
 import '../widgets/scene_form_sections.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 
 class SceneEditPage extends StatefulWidget {
   const SceneEditPage({super.key, required this.sceneId});
@@ -131,7 +131,9 @@ class _SceneEditPageState extends State<SceneEditPage> {
                   onChanged: () {},
                 ),
                 const SizedBox(height: AppDimensions.spacingLg),
-                PrimaryButton(
+                GlassButton(
+                filled: true,
+                expand: true,
                   label: _saving ? '保存中…' : '保存修改',
                   onPressed: _saving ? null : _save,
                 ),

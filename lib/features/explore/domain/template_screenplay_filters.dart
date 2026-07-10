@@ -1,5 +1,6 @@
 import '../../../core/data/app_catalog.dart';
 import '../../../core/domain/screenplay/screenplay.dart';
+import 'template_feed_query.dart';
 
 List<Screenplay> filterTemplateScreenplays(
   List<Screenplay> source,
@@ -25,24 +26,31 @@ List<Screenplay> filterTemplateScreenplays(
   }).toList(growable: false);
 }
 
+/// Client-side polish after server sort. Featured prefers `isFeatured`.
 List<Screenplay> sortTemplateScreenplays(
   List<Screenplay> source,
   int sortIndex,
 ) {
   final list = List<Screenplay>.from(source);
   switch (sortIndex) {
-    case 1:
+    case TemplateFeedQuery.tabLatest:
       list.sort((a, b) => _sortDate(b).compareTo(_sortDate(a)));
       break;
-    case 2:
-      list.sort((a, b) => b.views.compareTo(a.views));
+    case TemplateFeedQuery.tabFeatured:
+      list.sort((a, b) {
+        final featured = (b.isFeatured ? 1 : 0).compareTo(a.isFeatured ? 1 : 0);
+        if (featured != 0) return featured;
+        return b.hotScore.compareTo(a.hotScore);
+      });
       break;
-    case 3:
-      list.sort((a, b) => b.favorites.compareTo(a.favorites));
-      break;
-    case 0:
+    case TemplateFeedQuery.tabFollowing:
+    case TemplateFeedQuery.tabHot:
     default:
-      list.sort((a, b) => b.likes.compareTo(a.likes));
+      list.sort((a, b) {
+        final score = b.hotScore.compareTo(a.hotScore);
+        if (score != 0) return score;
+        return b.likes.compareTo(a.likes);
+      });
       break;
   }
   return list;

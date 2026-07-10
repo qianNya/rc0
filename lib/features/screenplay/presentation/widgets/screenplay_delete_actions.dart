@@ -4,6 +4,7 @@ import '../../../../app/router/navigation_utils.dart';
 import '../../../../shared/widgets/glass/glass.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
+import '../../../user/data/user_screenplays_repository.dart';
 import '../../data/screenplay_delete_options.dart';
 import '../../data/screenplay_local_repository.dart';
 import '../../data/screenplay_remote_delete_service.dart';
@@ -208,6 +209,109 @@ void showDeleteResultSnackBar(
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
     ..showSnackBar(SnackBar(content: Text(message)));
+}
+
+Future<bool> confirmDeleteRemoteScreenplays(
+  BuildContext context, {
+  required List<Screenplay> scripts,
+}) async {
+  final deletable = scripts
+      .where(
+        (script) =>
+            script.remoteScreenplayId != null && screenplayCanDeleteRemote(script),
+      )
+      .toList(growable: false);
+  if (deletable.isEmpty) return false;
+
+  final title = deletable.length == 1 ? '删除云端作品' : '删除云端作品';
+  final message = deletable.length == 1
+      ? '确定从云端删除「${deletable.first.title}」？删除后无法恢复。'
+      : '确定从云端删除选中的 ${deletable.length} 个作品？删除后无法恢复。';
+
+  final result = await showGlassDialog<bool>(
+    context,
+    child: GlassDialog(
+      title: Text(title),
+      onClose: () => Navigator.pop(context, false),
+      child: Text(message),
+      footer: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('取消'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('删除', style: TextStyle(color: AppColors.error)),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+  return result ?? false;
+}
+
+Future<bool> confirmAndDeleteRemoteScreenplays(
+  BuildContext context,
+  List<Screenplay> scripts, {
+  required int userId,
+  UserScreenplaysRepository? screenplaysRepo,
+}) async {
+  final deletable = scripts
+      .where(
+        (script) =>
+            script.remoteScreenplayId != null && screenplayCanDeleteRemote(script),
+      )
+      .toList(growable: false);
+  if (deletable.isEmpty) return false;
+
+  final confirmed = await confirmDeleteRemoteScreenplays(
+    context,
+    scripts: deletable,
+  );
+  if (!confirmed || !context.mounted) return false;
+
+  final localRepo = ScreenplayLocalRepository.instance;
+  final userRepo = screenplaysRepo ?? UserScreenplaysRepository.instance;
+  final errors = <String>[];
+  final warnings = <String>[];
+  var deleted = 0;
+
+  for (final script in deletable) {
+    final remoteId = script.remoteScreenplayId!;
+    final remoteResult =
+        await ScreenplayRemoteDeleteService.instance.deleteScreenplay(remoteId);
+    if (!remoteResult.success) {
+      errors.add(remoteResult.error ?? '云端删除失败');
+      continue;
+    }
+    if (remoteResult.warning != null) {
+      warnings.add(remoteResult.warning!);
+    }
+
+    userRepo.removeItem(userId, remoteId);
+
+    final localId = localRepo.resolveLocalId(script);
+    if (localId != null) {
+      await localRepo.deleteScreenplay(localId);
+    }
+
+    deleted++;
+  }
+
+  if (!context.mounted) return deleted > 0;
+
+  showDeleteResultSnackBar(
+    context,
+    deleted: deleted,
+    errors: errors,
+    warnings: warnings,
+  );
+  return deleted > 0 && errors.isEmpty;
 }
 
 Future<bool> confirmAndDeleteScreenplays(

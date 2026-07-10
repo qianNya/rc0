@@ -5,10 +5,10 @@ import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
-import '../../../../shared/widgets/primary_button.dart';
 import '../../data/character_local_store.dart';
 import '../../data/character_repository.dart';
 import '../widgets/character_form_sections.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 
 class CharacterCreatePage extends StatefulWidget {
   const CharacterCreatePage({
@@ -156,7 +156,9 @@ class _CharacterCreatePageState extends State<CharacterCreatePage> {
             onChanged: () => setState(() {}),
           ),
           const SizedBox(height: 24),
-          PrimaryButton(
+          GlassButton(
+                filled: true,
+                expand: true,
             label: _saving ? '保存中…' : '创建',
             onPressed: _saving ? null : _save,
           ),

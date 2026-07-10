@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import '../../../../../app/theme/app_colors.dart';
 import '../../../../../app/theme/app_dimensions.dart';
 import '../../../../../app/theme/app_text_styles.dart';
-import '../../../../../shared/widgets/empty_state_view.dart';
 import '../../../../../shared/widgets/pose_cover_image.dart';
 import '../../../domain/character_detail_data.dart';
+import '../../../../../shared/widgets/glass/glass.dart';
 
 class CharacterPropsTab extends StatelessWidget {
   const CharacterPropsTab({
@@ -22,7 +22,7 @@ class CharacterPropsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (props.isEmpty) {
-      return EmptyStateView(
+      return GlassEmptyState(
         icon: Icons.inventory_2_outlined,
         title: '暂无道具',
         subtitle: '添加随身道具，分镜生成时会注入 Prompt',

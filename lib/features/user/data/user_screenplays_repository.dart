@@ -104,6 +104,19 @@ class UserScreenplaysRepository extends ChangeNotifier {
     notifyListeners();
   }
 
+  void removeItem(int userId, int remoteId) {
+    final items = _itemsByUser[userId];
+    if (items == null) return;
+    final next = items
+        .where((s) => s.remoteScreenplayId != remoteId)
+        .toList(growable: false);
+    if (next.length == items.length) return;
+    _itemsByUser[userId] = next;
+    final total = _totalByUser[userId] ?? next.length;
+    _totalByUser[userId] = total > 0 ? total - 1 : 0;
+    notifyListeners();
+  }
+
   @visibleForTesting
   void debugSetItems(int userId, List<Screenplay> items) {
     _itemsByUser[userId] = items;

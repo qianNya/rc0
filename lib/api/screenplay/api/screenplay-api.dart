@@ -415,3 +415,30 @@ Future deleteScreenplay(
     eventually: eventually,
   );
 }
+
+Future listFeaturedCollections({
+  Function(ListFeaturedCollectionsResp)? ok,
+  Function(String)? fail,
+  Function? eventually,
+}) async {
+  await apiGet(
+    '/templates/featured',
+    ok: (data) => ok?.call(ListFeaturedCollectionsResp.fromJson(data)),
+    fail: fail,
+    eventually: eventually,
+  );
+}
+
+Future getFeaturedCollection(
+  int id, {
+  Function(FeaturedCollectionDetailDto)? ok,
+  Function(String)? fail,
+  Function? eventually,
+}) async {
+  await apiGet(
+    '/templates/featured/$id',
+    ok: (data) => ok?.call(FeaturedCollectionDetailDto.fromJson(data)),
+    fail: fail,
+    eventually: eventually,
+  );
+}

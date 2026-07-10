@@ -1629,6 +1629,14 @@ class Screenplay {
   final bool isLiked;
 
   final bool isFavorited;
+
+  final num durationSec;
+
+  final bool isFeatured;
+
+  final String featuredAt;
+
+  final num hotScore;
   Screenplay({
     required this.id,
     required this.kind,
@@ -1657,8 +1665,16 @@ class Screenplay {
     this.forkRootId,
     required this.isLiked,
     required this.isFavorited,
+    this.durationSec = 0,
+    this.isFeatured = false,
+    this.featuredAt = '',
+    this.hotScore = 0,
   });
   factory Screenplay.fromJson(Map<String, dynamic> m) {
+    final featuredRaw = m['is_featured'];
+    final isFeatured = featuredRaw is bool
+        ? featuredRaw
+        : (featuredRaw is num ? featuredRaw != 0 : false);
     return Screenplay(
       id: m['id'] ?? 0,
       kind: m['kind'] ?? 0,
@@ -1687,6 +1703,10 @@ class Screenplay {
       forkRootId: m['fork_root_id'] as num?,
       isLiked: m['is_liked'] ?? false,
       isFavorited: m['is_favorited'] ?? false,
+      durationSec: m['duration_sec'] ?? 0,
+      isFeatured: isFeatured,
+      featuredAt: m['featured_at']?.toString() ?? '',
+      hotScore: m['hot_score'] ?? 0,
     );
   }
   Map<String, dynamic> toJson() {
@@ -1718,7 +1738,76 @@ class Screenplay {
       if (forkRootId != null) 'fork_root_id': forkRootId,
       'is_liked': isLiked,
       'is_favorited': isFavorited,
+      'duration_sec': durationSec,
+      'is_featured': isFeatured,
+      'featured_at': featuredAt,
+      'hot_score': hotScore,
     };
+  }
+}
+
+class SpFeaturedCollection {
+  final num id;
+  final String title;
+  final String subtitle;
+  final String bannerUrl;
+  final num sort;
+
+  SpFeaturedCollection({
+    required this.id,
+    required this.title,
+    required this.subtitle,
+    required this.bannerUrl,
+    required this.sort,
+  });
+
+  factory SpFeaturedCollection.fromJson(Map<String, dynamic> m) {
+    return SpFeaturedCollection(
+      id: m['id'] ?? 0,
+      title: m['title'] ?? '',
+      subtitle: m['subtitle'] ?? '',
+      bannerUrl: m['banner_url'] ?? '',
+      sort: m['sort'] ?? 0,
+    );
+  }
+}
+
+class FeaturedCollectionDetailDto {
+  final SpFeaturedCollection collection;
+  final List<Screenplay> templates;
+
+  FeaturedCollectionDetailDto({
+    required this.collection,
+    required this.templates,
+  });
+
+  factory FeaturedCollectionDetailDto.fromJson(Map<String, dynamic> m) {
+    final raw = (m['templates'] ?? []) as List<dynamic>;
+    return FeaturedCollectionDetailDto(
+      collection: SpFeaturedCollection.fromJson(
+        (m['collection'] as Map<String, dynamic>?) ?? const {},
+      ),
+      templates: raw
+          .whereType<Map<String, dynamic>>()
+          .map(Screenplay.fromJson)
+          .toList(),
+    );
+  }
+}
+
+class ListFeaturedCollectionsResp {
+  final List<SpFeaturedCollection> items;
+
+  ListFeaturedCollectionsResp({required this.items});
+
+  factory ListFeaturedCollectionsResp.fromJson(Map<String, dynamic> m) {
+    final raw = (m['items'] ?? m['list'] ?? []) as List<dynamic>;
+    return ListFeaturedCollectionsResp(
+      items: raw
+          .whereType<Map<String, dynamic>>()
+          .map(SpFeaturedCollection.fromJson)
+          .toList(),
+    );
   }
 }
 

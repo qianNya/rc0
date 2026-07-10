@@ -5,9 +5,9 @@ import '../../../../../app/router/routes.dart';
 import '../../../../../app/theme/app_colors.dart';
 import '../../../../../app/theme/app_dimensions.dart';
 import '../../../../../app/theme/app_text_styles.dart';
-import '../../../../../shared/widgets/empty_state_view.dart';
 import '../../../../../shared/widgets/pose_cover_image.dart';
 import '../../../domain/character_detail_data.dart';
+import '../../../../../shared/widgets/glass/glass.dart';
 
 class CharacterScenesTab extends StatelessWidget {
   const CharacterScenesTab({super.key, required this.affinities});
@@ -17,7 +17,7 @@ class CharacterScenesTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (affinities.isEmpty) {
-      return const EmptyStateView(
+      return const GlassEmptyState(
         icon: Icons.landscape_outlined,
         title: '暂无适合场景',
         subtitle: '软关联场景 Wiki，便于调度时推荐',

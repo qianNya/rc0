@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../shared/widgets/glass/glass_sheet.dart';
-import '../../../../shared/widgets/primary_button.dart';
 import '../../data/scene_local_store.dart';
 import '../../data/scene_repository.dart';
 import 'scene_form_sections.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 
 /// Opens scene creation in a liquid-glass bottom sheet (same pattern as script project settings).
 Future<String?> showSceneCreateSheet(
@@ -161,7 +161,9 @@ class _SceneCreateFormPanelState extends State<SceneCreateFormPanel> {
           onChanged: () {},
         ),
         const SizedBox(height: AppDimensions.spacingLg),
-        PrimaryButton(
+        GlassButton(
+                filled: true,
+                expand: true,
           label: _saving ? '保存中…' : '保存场景',
           onPressed: _saving ? null : () => _save(),
         ),

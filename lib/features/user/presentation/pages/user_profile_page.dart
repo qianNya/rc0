@@ -8,10 +8,10 @@ import '../../../social/data/social_repository.dart';
 import '../../../user/data/user_profile_repository.dart';
 import '../../../user/data/user_screenplays_repository.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
-import '../../../../shared/widgets/empty_state_view.dart';
-import '../../../../shared/widgets/inline_error_banner.dart';
+import '../../../../shared/widgets/feed_grid_skeleton.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 import '../../../../shared/widgets/explore_feed_tile.dart';
-import '../../../../shared/widgets/primary_button.dart';
+import '../../../../shared/widgets/inline_error_banner.dart';
 import '../../../../shared/widgets/profile_widgets.dart';
 
 class UserProfilePage extends ConsumerStatefulWidget {
@@ -101,19 +101,24 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
       return DesktopStackScaffold(
         title: const Text('用户主页'),
         onBack: () => popOrGoDiscovery(context),
-        body: const Center(child: CircularProgressIndicator()),
+        body: const Padding(
+          padding: EdgeInsets.all(AppDimensions.spacingMd),
+          child: FeedGridSkeleton(tileCount: 4),
+        ),
       );
     }
     if (_profile == null) {
       return DesktopStackScaffold(
         title: const Text('用户主页'),
         onBack: () => popOrGoDiscovery(context),
-        body: EmptyStateView(
-          icon: Icons.person_off_outlined,
-          title: _profileError ?? '加载失败',
-          subtitle: '请稍后重试',
-          actionLabel: '重试',
-          onAction: _load,
+        body: Center(
+          child: GlassEmptyState(
+            icon: Icons.person_off_outlined,
+            title: _profileError ?? '加载失败',
+            subtitle: '请稍后重试',
+            actionLabel: '重试',
+            onAction: _load,
+          ),
         ),
       );
     }
@@ -139,10 +144,13 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
               level: p.level,
               footer: _isSelf
                   ? null
-                  : PrimaryButton(
+                  : GlassButton(
                       label: _followBusy
                           ? '处理中…'
                           : (p.isFollowing ? '已关注' : '关注'),
+                      filled: !p.isFollowing,
+                      loading: _followBusy,
+                      expand: true,
                       onPressed: _followBusy ? null : _toggleFollow,
                     ),
             ),
@@ -159,7 +167,7 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
             if (_worksError != null)
               InlineErrorBanner(message: _worksError!, onRetry: _load),
             if (screenplays.isEmpty && _worksError == null)
-              const EmptyStateView(
+              const GlassEmptyState(
                 icon: Icons.movie_outlined,
                 title: '暂无公开作品',
               )

@@ -7,13 +7,13 @@ import '../../../../app/providers/auth_providers.dart';
 import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
-import '../../../../shared/widgets/primary_button.dart';
 import '../../data/auth_credentials_store.dart';
 import '../widgets/auth_footer_link.dart';
 import '../widgets/auth_header.dart';
 import '../widgets/auth_page_scaffold.dart';
 import '../widgets/auth_social_row.dart';
 import '../widgets/auth_text_field.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key, this.redirectFrom});
@@ -174,9 +174,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             ],
           ),
           const SizedBox(height: 8),
-          PrimaryButton(
+          GlassButton(
+                filled: true,
+                expand: true,
             label: '登录',
-            isLoading: _loading,
+            loading: _loading,
             onPressed: _submit,
           ),
           const SizedBox(height: 24),

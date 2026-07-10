@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../../../../app/theme/app_dimensions.dart';
 import '../../../../../app/theme/app_text_styles.dart';
-import '../../../../../shared/widgets/empty_state_view.dart';
 import '../../../../../shared/widgets/pose_cover_image.dart';
 import '../../../domain/character_detail_data.dart';
 import '../../../domain/character_entry.dart';
+import '../../../../../shared/widgets/glass/glass.dart';
 
 class CharacterInfoTab extends StatelessWidget {
   const CharacterInfoTab({
@@ -104,7 +104,7 @@ class CharacterInfoTab extends StatelessWidget {
           const SizedBox(height: AppDimensions.spacingLg),
         ],
         if (!hasContent)
-          const EmptyStateView(
+          const GlassEmptyState(
             icon: Icons.info_outline,
             title: '暂无资料',
             subtitle: '编辑角色后可补充介绍与设定',

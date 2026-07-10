@@ -9,8 +9,9 @@ import '../../../../core/data/app_catalog.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/domain/screenplay/screenplay_display.dart';
 import '../../../../shared/widgets/content_card_shared.dart';
+import '../../../../shared/widgets/glass/glass.dart';
+import '../../../../shared/widgets/liquid_glass_surface.dart';
 import '../../../../shared/widgets/pose_cover_image.dart';
-import 'explore_desktop_card.dart';
 
 class ExploreDesktopRightPanel extends StatelessWidget {
   const ExploreDesktopRightPanel({
@@ -33,55 +34,89 @@ class ExploreDesktopRightPanel extends StatelessWidget {
   }
 
   List<String> get _hotTags {
-    final tags = buildTagFilters(feedItems).where((t) => t != '全部').take(12).toList();
+    final tags =
+        buildTagFilters(feedItems).where((t) => t != '全部').take(12).toList();
     if (tags.isNotEmpty) return tags;
     return AppCatalog.suggestedUploadTags.take(12).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    return ExploreDesktopCard(
+    return SizedBox(
       width: 320,
-      padding: const EdgeInsets.all(ExploreDesktopChrome.gap * 2),
-      child: ListView(
-        children: [
-          Text('热门标签', style: AppTextStyles.label),
-          const SizedBox(height: ExploreDesktopChrome.gap),
-          Wrap(
-            spacing: ExploreDesktopChrome.gap,
-            runSpacing: ExploreDesktopChrome.gap,
-            children: [
-              for (final tag in _hotTags)
-                ActionChip(
-                  label: Text(tag),
-                  onPressed: () => onTagTap(tag),
-                  backgroundColor: AppColors.surfaceSecondary,
-                  side: BorderSide.none,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-            ],
+      child: GlassCard(
+        borderRadius: BorderRadius.circular(AppDimensions.radiusXl),
+        padding: const EdgeInsets.all(AppDimensions.spacingLg),
+        child: ListView(
+          children: [
+            Text('热门标签', style: AppTextStyles.label),
+            const SizedBox(height: AppDimensions.spacingSm),
+            Wrap(
+              spacing: AppDimensions.spacingSm,
+              runSpacing: AppDimensions.spacingSm,
+              children: [
+                for (final tag in _hotTags)
+                  _GlassTagChip(label: tag, onTap: () => onTagTap(tag)),
+              ],
+            ),
+            const SizedBox(height: AppDimensions.spacingLg),
+            Text('今日热门', style: AppTextStyles.label),
+            const SizedBox(height: AppDimensions.spacingSm),
+            if (_trending.isEmpty)
+              Text('暂无数据', style: AppTextStyles.bodySecondary)
+            else
+              for (var i = 0; i < _trending.length; i++)
+                _TrendingRow(rank: i + 1, screenplay: _trending[i]),
+            const SizedBox(height: AppDimensions.spacingLg),
+            _CreateBanner(
+              onCreate: onCreate,
+              onBrowseTemplates: onBrowseTemplates,
+            ),
+            const SizedBox(height: AppDimensions.spacingLg),
+            Text('最新动态', style: AppTextStyles.label),
+            const SizedBox(height: AppDimensions.spacingSm),
+            for (final activity in _staticActivities)
+              _ActivityRow(activity: activity),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GlassTagChip extends StatelessWidget {
+  const _GlassTagChip({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final secondary =
+        isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
+    final border =
+        isDark ? AppColors.glassNavBorderDark : AppColors.glassNavBorderLight;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDimensions.spacingMd,
+          vertical: AppDimensions.spacingSm,
+        ),
+        decoration: BoxDecoration(
+          borderRadius:
+              BorderRadius.circular(AppDimensions.tabFloatingRadius),
+          border: Border.all(color: border),
+        ),
+        child: Text(
+          label,
+          style: AppTextStyles.caption.copyWith(
+            fontSize: 12,
+            color: secondary,
           ),
-          const SizedBox(height: ExploreDesktopChrome.gap * 2),
-          Text('今日热门', style: AppTextStyles.label),
-          const SizedBox(height: ExploreDesktopChrome.gap),
-          if (_trending.isEmpty)
-            Text('暂无数据', style: AppTextStyles.bodySecondary)
-          else
-            for (var i = 0; i < _trending.length; i++)
-              _TrendingRow(rank: i + 1, screenplay: _trending[i]),
-          const SizedBox(height: ExploreDesktopChrome.gap * 2),
-          _CreateBanner(
-            onCreate: onCreate,
-            onBrowseTemplates: onBrowseTemplates,
-          ),
-          const SizedBox(height: ExploreDesktopChrome.gap * 2),
-          Text('最新动态', style: AppTextStyles.label),
-          const SizedBox(height: ExploreDesktopChrome.gap),
-          for (final activity in _staticActivities)
-            _ActivityRow(activity: activity),
-        ],
+        ),
       ),
     );
   }
@@ -96,59 +131,63 @@ class _TrendingRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: ExploreDesktopChrome.gap),
-      child: InkWell(
-        onTap: () => context.push(AppRoutes.script(screenplay.detailRouteId)),
-        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 20,
-              child: Text(
-                '$rank',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: rank <= 3 ? AppColors.accent : AppColors.textSecondary,
+      padding: const EdgeInsets.only(bottom: AppDimensions.spacingSm),
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: () => context.push(AppRoutes.script(screenplay.detailRouteId)),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 20,
+                child: Text(
+                  '$rank',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color:
+                        rank <= 3 ? AppColors.accent : AppColors.textSecondary,
+                  ),
                 ),
               ),
-            ),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: SizedBox(
-                width: 44,
-                height: 44,
-                child: PoseCoverImage(
-                  imagePath: screenplay.effectiveCoverImagePath,
-                  expand: true,
+              ClipRRect(
+                borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                child: SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: PoseCoverImage(
+                    imagePath: screenplay.effectiveCoverImagePath,
+                    expand: true,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: ExploreDesktopChrome.gap),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    screenplay.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.body.copyWith(fontSize: 13),
-                  ),
-                  Text(
-                    '${formatFeedCount(screenplay.likes)} 赞',
-                    style: AppTextStyles.bodySecondary.copyWith(fontSize: 11),
-                  ),
-                ],
+              const SizedBox(width: AppDimensions.spacingSm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      screenplay.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.body.copyWith(fontSize: 13),
+                    ),
+                    Text(
+                      '${formatFeedCount(screenplay.likes)} 赞',
+                      style: AppTextStyles.bodySecondary.copyWith(fontSize: 11),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _CreateBanner extends StatefulWidget {
+class _CreateBanner extends StatelessWidget {
   const _CreateBanner({
     required this.onCreate,
     this.onBrowseTemplates,
@@ -158,88 +197,38 @@ class _CreateBanner extends StatefulWidget {
   final VoidCallback? onBrowseTemplates;
 
   @override
-  State<_CreateBanner> createState() => _CreateBannerState();
-}
-
-class _CreateBannerState extends State<_CreateBanner> {
-  bool _hovered = false;
-
-  @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        transform: Matrix4.translationValues(0, _hovered ? -2 : 0, 0),
-        padding: const EdgeInsets.all(ExploreDesktopChrome.gap * 2),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [AppColors.profileGradientStart, AppColors.profileGradientEnd],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+    return LiquidGlassSurface(
+      borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+      padding: const EdgeInsets.all(AppDimensions.spacingLg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '创建你的第一个剧本',
+            style: AppTextStyles.title.copyWith(fontSize: 16),
           ),
-          borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
-          boxShadow: _hovered
-              ? [
-                  BoxShadow(
-                    color: AppColors.accent.withValues(alpha: 0.25),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ]
-              : null,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '创建你的第一个剧本',
-              style: AppTextStyles.title.copyWith(
-                color: Colors.white,
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(height: ExploreDesktopChrome.gap),
-            Text(
-              '从空白开始，或使用模板快速创作',
-              style: AppTextStyles.bodySecondary.copyWith(
-                color: Colors.white70,
-                fontSize: 12,
-              ),
-            ),
-            const SizedBox(height: ExploreDesktopChrome.gap * 1.5),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: widget.onCreate,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      side: BorderSide.none,
-                      backgroundColor: Colors.white.withValues(alpha: 0.16),
-                    ),
-                    child: const Text('开始创作'),
-                  ),
-                ),
-                if (widget.onBrowseTemplates != null) ...[
-                  const SizedBox(width: ExploreDesktopChrome.gap),
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: widget.onBrowseTemplates,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        side: const BorderSide(color: Colors.white38),
-                        backgroundColor: Colors.transparent,
-                      ),
-                      child: const Text('浏览模板'),
-                    ),
-                  ),
-                ],
-              ],
+          const SizedBox(height: AppDimensions.spacingSm),
+          Text(
+            '从空白开始，或使用模板快速创作',
+            style: AppTextStyles.bodySecondary.copyWith(fontSize: 12),
+          ),
+          const SizedBox(height: AppDimensions.spacingMd),
+          GlassButton(
+            label: '开始创作',
+            filled: true,
+            expand: true,
+            onPressed: onCreate,
+          ),
+          if (onBrowseTemplates != null) ...[
+            const SizedBox(height: AppDimensions.spacingSm),
+            GlassButton(
+              label: '浏览模板',
+              expand: true,
+              onPressed: onBrowseTemplates,
             ),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -283,42 +272,22 @@ class _ActivityRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: ExploreDesktopChrome.gap * 1.5),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CircleAvatar(
-            radius: 16,
-            backgroundColor: AppColors.accentLight,
-            child: Text(
-              activity.username.characters.first,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.accent,
-                fontWeight: FontWeight.w600,
-              ),
+      padding: const EdgeInsets.only(bottom: AppDimensions.spacingSm),
+      child: RichText(
+        text: TextSpan(
+          style: AppTextStyles.bodySecondary.copyWith(fontSize: 12),
+          children: [
+            TextSpan(
+              text: activity.username,
+              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
-          ),
-          const SizedBox(width: ExploreDesktopChrome.gap),
-          Expanded(
-            child: RichText(
-              text: TextSpan(
-                style: AppTextStyles.body.copyWith(fontSize: 12, height: 1.4),
-                children: [
-                  TextSpan(
-                    text: activity.username,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  TextSpan(text: ' ${activity.action} '),
-                  TextSpan(
-                    text: activity.target,
-                    style: const TextStyle(color: AppColors.accent),
-                  ),
-                ],
-              ),
+            TextSpan(text: ' ${activity.action} '),
+            TextSpan(
+              text: activity.target,
+              style: const TextStyle(color: AppColors.accent),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

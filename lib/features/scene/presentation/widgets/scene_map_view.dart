@@ -15,7 +15,6 @@ import '../../../../core/location/map_city_catalog.dart';
 import '../../../../core/location/map_place_service.dart';
 import '../../../../core/location/map_tile_config.dart';
 import '../../../../core/location/map_nearby_place.dart';
-import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/glass/glass_button.dart';
 import '../../../../shared/widgets/glass/glass_card.dart';
 import '../../../studio/presentation/widgets/script_studio_glass_widgets.dart';
@@ -25,6 +24,7 @@ import 'scene_map_city_picker.dart';
 import 'scene_map_place_list.dart';
 import 'scene_map_pick.dart';
 import 'scene_map_zoom_controls.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 
 class SceneMapView extends StatefulWidget {
   const SceneMapView({
@@ -269,7 +269,7 @@ class _SceneMapViewState extends State<SceneMapView> {
     final selectionPoint = _selectedPlace?.point ?? _selectedPoint;
 
     if (repo.mapError != null && items.isEmpty && !repo.mapLoading) {
-      return EmptyStateView(
+      return GlassEmptyState(
         icon: Icons.map_outlined,
         title: '地图加载失败',
         subtitle: repo.mapError,

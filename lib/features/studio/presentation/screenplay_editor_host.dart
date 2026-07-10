@@ -76,6 +76,7 @@ class ScreenplayEditorController implements EditorControllerView {
   final TextEditingController synopsisController;
   final String? editScriptId;
   final Screenplay? editingScript;
+  @override
   final bool isPicking;
   @override
   final bool isPublishing;
@@ -336,6 +337,11 @@ class _ScreenplayEditorHostState extends ConsumerState<ScreenplayEditorHost> {
 
   void _onTagsRepoChanged() => scheduleSetState(this);
 
+  void _safeSetState(VoidCallback update) {
+    if (!mounted) return;
+    setState(update);
+  }
+
   void _pushUndoSnapshot() {
     if (_isRestoringHistory) return;
     _undoStack.add(_draft.copyDeep());
@@ -346,10 +352,11 @@ class _ScreenplayEditorHostState extends ConsumerState<ScreenplayEditorHost> {
   }
 
   void _refresh({bool recordHistory = true}) {
+    if (!mounted) return;
     if (recordHistory && !_isRestoringHistory) {
       _pushUndoSnapshot();
     }
-    setState(() {});
+    _safeSetState(() {});
     if (widget.enableAutoSave) {
       _scheduleAutoSave();
     }
@@ -370,7 +377,7 @@ class _ScreenplayEditorHostState extends ConsumerState<ScreenplayEditorHost> {
     final previous = _undoStack.last.copyDeep();
     _applyDraft(previous);
     _isRestoringHistory = false;
-    setState(() {});
+    _safeSetState(() {});
   }
 
   void _redo() {
@@ -380,7 +387,7 @@ class _ScreenplayEditorHostState extends ConsumerState<ScreenplayEditorHost> {
     _pushUndoSnapshot();
     _applyDraft(next);
     _isRestoringHistory = false;
-    setState(() {});
+    _safeSetState(() {});
   }
 
   void _applyDraft(ScreenplayDraft source) {
@@ -442,6 +449,7 @@ class _ScreenplayEditorHostState extends ConsumerState<ScreenplayEditorHost> {
   }
 
   void _syncTitleToDraft() {
+    if (!mounted) return;
     _draft.title = _titleController.text.trim();
     _draft.synopsis = _synopsisController.text.trim();
   }
@@ -479,8 +487,9 @@ class _ScreenplayEditorHostState extends ConsumerState<ScreenplayEditorHost> {
   }
 
   Future<void> _pickCover() async {
+    if (!mounted) return;
     if (_isPicking) return;
-    setState(() => _isPicking = true);
+    _safeSetState(() => _isPicking = true);
     try {
       final result = await _imagePickService.pickCover();
       if (!mounted) return;
@@ -494,7 +503,7 @@ class _ScreenplayEditorHostState extends ConsumerState<ScreenplayEditorHost> {
     } catch (error) {
       if (mounted) _showSnackBar('选择封面失败：$error');
     } finally {
-      if (mounted) setState(() => _isPicking = false);
+      _safeSetState(() => _isPicking = false);
     }
   }
 
@@ -512,8 +521,9 @@ class _ScreenplayEditorHostState extends ConsumerState<ScreenplayEditorHost> {
   }
 
   Future<void> _pickImages(FramePickTarget target) async {
+    if (!mounted) return;
     if (_isPicking) return;
-    setState(() => _isPicking = true);
+    _safeSetState(() => _isPicking = true);
     try {
       final result = await _imagePickService.pickImages();
       if (!mounted) return;
@@ -527,11 +537,12 @@ class _ScreenplayEditorHostState extends ConsumerState<ScreenplayEditorHost> {
     } catch (error) {
       if (mounted) _showSnackBar('选择文件失败：$error');
     } finally {
-      if (mounted) setState(() => _isPicking = false);
+      _safeSetState(() => _isPicking = false);
     }
   }
 
   void _showSnackBar(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
@@ -651,10 +662,11 @@ class _ScreenplayEditorHostState extends ConsumerState<ScreenplayEditorHost> {
     bool silent = false,
     bool? requireFrames,
   }) async {
+    if (!mounted) return;
     if (_isPublishing && silent) return;
     final wasCreate = _effectiveLocalId == null;
     final framesRequired = requireFrames ?? !silent;
-    setState(() {
+    _safeSetState(() {
       _isPublishing = true;
       _saveStatus = EditorSaveStatus.saving;
       _saveError = null;
@@ -666,11 +678,11 @@ class _ScreenplayEditorHostState extends ConsumerState<ScreenplayEditorHost> {
       );
       if (!mounted) return;
       if (localId == null) {
-        setState(() => _saveStatus = EditorSaveStatus.error);
+        _safeSetState(() => _saveStatus = EditorSaveStatus.error);
         return;
       }
       _lastSavedAt = DateTime.now();
-      setState(() => _saveStatus = EditorSaveStatus.saved);
+      _safeSetState(() => _saveStatus = EditorSaveStatus.saved);
       if (!silent) _showSnackBar('已保存到本地');
       if (wasCreate && widget.editScriptId == null) {
         context.go(AppRoutes.studioEdit(localId));
@@ -686,11 +698,12 @@ class _ScreenplayEditorHostState extends ConsumerState<ScreenplayEditorHost> {
         if (!silent) _showSnackBar('保存失败：$error');
       }
     } finally {
-      if (mounted) setState(() => _isPublishing = false);
+      _safeSetState(() => _isPublishing = false);
     }
   }
 
   Future<void> _publishToCloud() async {
+    if (!mounted) return;
     if (_isPublishing) return;
     if (!ref.read(isLoggedInProvider)) {
       final redirect = _effectiveLocalId != null
@@ -699,7 +712,7 @@ class _ScreenplayEditorHostState extends ConsumerState<ScreenplayEditorHost> {
       context.go(AppRoutes.loginWithRedirect(redirect));
       return;
     }
-    setState(() => _isPublishing = true);
+    _safeSetState(() => _isPublishing = true);
     String? localId;
     try {
       localId = await _saveLocalDraft();
@@ -714,23 +727,7 @@ class _ScreenplayEditorHostState extends ConsumerState<ScreenplayEditorHost> {
       final picked = await PublishVisibilityDialog.show(context);
       if (picked == null || !mounted) return;
       final progress = ValueNotifier<(String, int, int)>(('准备', 0, 1));
-      showModalBottomSheet<void>(
-        context: context,
-        isDismissible: false,
-        enableDrag: false,
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-        ),
-        builder: (_) => ValueListenableBuilder(
-          valueListenable: progress,
-          builder: (_, value, _) => PublishProgressSheet(
-            stage: value.$1,
-            done: value.$2,
-            total: value.$3,
-          ),
-        ),
-      );
+      showPublishProgressSheet(context, progress: progress);
       final result = isSync
           ? await ScreenplayPublishService.instance.syncToServer(
               document: doc,
@@ -778,7 +775,7 @@ class _ScreenplayEditorHostState extends ConsumerState<ScreenplayEditorHost> {
     } catch (error) {
       if (mounted) _showSnackBar('发布失败：$error');
     } finally {
-      if (mounted) setState(() => _isPublishing = false);
+      _safeSetState(() => _isPublishing = false);
     }
   }
 
@@ -1007,26 +1004,40 @@ class _ScreenplayEditorHostState extends ConsumerState<ScreenplayEditorHost> {
   }
 
   Future<void> _openProjectSettings() async {
-    await showProjectSettingsSheet(
-      context,
-      draft: _draft,
-      titleController: _titleController,
-      synopsisController: _synopsisController,
-      onShootParamsChanged: (params) {
-        setState(() => _draft.defaultParams = params);
-      },
-      poolTags: _poolTags,
-      onToggleScreenplayTag: _toggleScreenplayTag,
-      onAddScreenplayTag: _addScreenplayTag,
-      tagsLoading: _tagsRepo.loading,
-      tagsError: _tagsRepo.error,
-      onRetryTags: () => _tagsRepo.loadTags(),
-      onPickCover: _pickCover,
-      onResetCover: _resetCover,
-      onSyncTitle: _syncTitleToDraft,
-      remoteScreenplayId: _resolveRemoteScreenplayId(),
-    );
-    if (mounted) _refresh(recordHistory: false);
+    if (!mounted) return;
+    final titleController = TextEditingController(text: _titleController.text);
+    final synopsisController =
+        TextEditingController(text: _synopsisController.text);
+    try {
+      await showProjectSettingsSheet(
+        context,
+        draft: _draft,
+        titleController: titleController,
+        synopsisController: synopsisController,
+        onShootParamsChanged: (params) {
+          _safeSetState(() => _draft.defaultParams = params);
+        },
+        poolTags: _poolTags,
+        onToggleScreenplayTag: _toggleScreenplayTag,
+        onAddScreenplayTag: _addScreenplayTag,
+        tagsLoading: _tagsRepo.loading,
+        tagsError: _tagsRepo.error,
+        onRetryTags: () => _tagsRepo.loadTags(),
+        onPickCover: _pickCover,
+        onResetCover: _resetCover,
+        onSyncTitle: () {
+          if (!mounted) return;
+          _titleController.text = titleController.text;
+          _synopsisController.text = synopsisController.text;
+          _syncTitleToDraft();
+        },
+        remoteScreenplayId: _resolveRemoteScreenplayId(),
+      );
+      if (mounted) _refresh(recordHistory: false);
+    } finally {
+      titleController.dispose();
+      synopsisController.dispose();
+    }
   }
 
   ScreenplayEditorController _buildController() {
@@ -1062,7 +1073,7 @@ class _ScreenplayEditorHostState extends ConsumerState<ScreenplayEditorHost> {
       addScreenplayTag: _addScreenplayTag,
       retryTags: () => _tagsRepo.loadTags(),
       onShootParamsChanged: (params) {
-        setState(() => _draft.defaultParams = params);
+        _safeSetState(() => _draft.defaultParams = params);
       },
       lastSavedAt: _lastSavedAt,
     );

@@ -7,9 +7,8 @@ import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/data/app_catalog.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
-import '../../../../shared/widgets/empty_state_view.dart';
-import '../../../../shared/widgets/primary_button.dart';
 import '../../data/ip_repository.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 class IpEditPage extends StatefulWidget {
   const IpEditPage({super.key, this.ipId});
 
@@ -137,7 +136,7 @@ class _IpEditPageState extends State<IpEditPage> {
                   physics: const AlwaysScrollableScrollPhysics(),
                   children: [
                     SizedBox(height: MediaQuery.sizeOf(context).height * 0.2),
-                    EmptyStateView(
+                    GlassEmptyState(
                       icon: Icons.cloud_off_outlined,
                       title: '加载失败',
                       subtitle: _loadError,
@@ -196,10 +195,12 @@ class _IpEditPageState extends State<IpEditPage> {
                     decoration: const InputDecoration(hintText: 'IP 简介…'),
                   ),
                   const SizedBox(height: AppDimensions.spacingLg),
-                  PrimaryButton(
+                  GlassButton(
+                filled: true,
+                expand: true,
                     label: widget.isEditing ? '保存' : '创建',
                     onPressed: _save,
-                    isLoading: _saving,
+                    loading: _saving,
                   ),
                 ],
               ),

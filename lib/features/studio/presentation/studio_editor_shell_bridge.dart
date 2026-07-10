@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../../upload/presentation/widgets/editor/editor_quick_action_row.dart';
@@ -19,6 +21,7 @@ class StudioEditorShellBridge extends ChangeNotifier {
 
   bool _editorSessionActive = false;
   Object? _hubCallbackOwner;
+  bool _notifyScheduled = false;
 
   bool get hasActions => onAddAct != null && onAddScene != null;
 
@@ -35,22 +38,22 @@ class StudioEditorShellBridge extends ChangeNotifier {
     Future<void> Function({bool goHome, bool? requireFrames})? onSaveLocal,
     bool saveBusy = false,
   }) {
-    final changed = this.onAddAct != onAddAct ||
-        this.onAddScene != onAddScene ||
-        this.onSaveLocal != onSaveLocal ||
-        this.saveBusy != saveBusy;
+    final hadActions = hasActions;
+    final wasSaveBusy = this.saveBusy;
     this.onAddAct = onAddAct;
     this.onAddScene = onAddScene;
     this.onSaveLocal = onSaveLocal;
     this.saveBusy = saveBusy;
-    if (changed) notifyListeners();
+    if (hadActions != hasActions || wasSaveBusy != saveBusy) {
+      _notifyListenersSoon();
+    }
   }
 
   void ensureEditorSession() {
     if (_editorSessionActive) return;
     _editorSessionActive = true;
     hubMode = EditorHubMode.outline;
-    notifyListeners();
+    _notifyListenersSoon();
   }
 
   void beginEditorSession() => ensureEditorSession();
@@ -60,10 +63,14 @@ class StudioEditorShellBridge extends ChangeNotifier {
     required VoidCallback onAiDecompose,
     required VoidCallback onMore,
   }) {
+    final hadCallbacks = hasHubCallbacks;
+    final ownerChanged = _hubCallbackOwner != owner;
     _hubCallbackOwner = owner;
     this.onAiDecompose = onAiDecompose;
     this.onMore = onMore;
-    notifyListeners();
+    if (ownerChanged || hadCallbacks != hasHubCallbacks) {
+      _notifyListenersSoon();
+    }
   }
 
   void detachHubCallbacks(Object owner) {
@@ -71,13 +78,13 @@ class StudioEditorShellBridge extends ChangeNotifier {
     _hubCallbackOwner = null;
     onAiDecompose = null;
     onMore = null;
-    notifyListeners();
+    _notifyListenersSoon();
   }
 
   void setHubMode(EditorHubMode mode) {
     if (hubMode == mode) return;
     hubMode = mode;
-    notifyListeners();
+    _notifyListenersSoon();
   }
 
   /// Persists the current draft locally without cloud sync or navigation.
@@ -96,7 +103,7 @@ class StudioEditorShellBridge extends ChangeNotifier {
     onAiDecompose = null;
     onMore = null;
     hubMode = EditorHubMode.outline;
-    notifyListeners();
+    _notifyListenersSoon();
   }
 
   void clear() {
@@ -107,5 +114,14 @@ class StudioEditorShellBridge extends ChangeNotifier {
       saveBusy: false,
     );
     endEditorSession();
+  }
+
+  void _notifyListenersSoon() {
+    if (_notifyScheduled) return;
+    _notifyScheduled = true;
+    Future<void>.microtask(() {
+      _notifyScheduled = false;
+      notifyListeners();
+    });
   }
 }

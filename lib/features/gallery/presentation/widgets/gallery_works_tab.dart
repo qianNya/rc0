@@ -8,10 +8,12 @@ import '../../../../app/theme/app_dimensions.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/responsive/feed_grid_layout.dart';
 import '../../../../core/utils/state_listeners.dart';
-import '../../../../shared/widgets/empty_state_view.dart';
+import '../../../../shared/widgets/feed_grid_skeleton.dart';
+import '../../../../shared/widgets/glass/glass.dart';
+import '../../../../shared/widgets/glass_feed_card.dart';
 import '../../../../shared/widgets/inline_error_banner.dart';
-import '../../../../shared/widgets/template_grid_card.dart';
 import '../../../screenplay/data/screenplay_local_repository.dart';
+import '../../../screenplay/data/screenplay_delete_options.dart';
 import '../../../screenplay/presentation/widgets/screenplay_delete_actions.dart';
 import '../../../screenplay/presentation/widgets/screenplay_selection_bar.dart';
 import '../../../screenplay/presentation/widgets/screenplay_selection_controller.dart';
@@ -81,6 +83,16 @@ class GalleryWorksTabState extends ConsumerState<GalleryWorksTab>
     await confirmAndDeleteScreenplays(context, [script]);
   }
 
+  Future<void> _deleteRemote(Screenplay script) async {
+    final userId = _userId;
+    if (userId == null) return;
+    await confirmAndDeleteRemoteScreenplays(
+      context,
+      [script],
+      userId: userId,
+    );
+  }
+
   Future<void> _deleteSelected() async {
     final selected = _selectionController.selectedLocalIds.toList();
     if (selected.isEmpty) return;
@@ -123,20 +135,21 @@ class GalleryWorksTabState extends ConsumerState<GalleryWorksTab>
 
     if (loading && works.isEmpty) {
       return const Padding(
-        padding: EdgeInsets.all(48),
-        child: Center(child: CircularProgressIndicator()),
+        padding: EdgeInsets.all(AppDimensions.spacingMd),
+        child: FeedGridSkeleton(tileCount: 6),
       );
     }
 
     if (isEmpty) {
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 48),
-        child: EmptyStateView(
+        padding: const EdgeInsets.symmetric(vertical: AppDimensions.spacingXl),
+        child: GlassEmptyState(
           icon: Icons.folder_open_outlined,
           title: '暂无作品',
           subtitle: error ?? '创作后会显示在这里',
           actionLabel: error != null ? '重试' : '开始创作',
-          onAction: error != null ? load : () => context.go(AppRoutes.studioCreate),
+          onAction:
+              error != null ? load : () => context.go(AppRoutes.studioCreate),
         ),
       );
     }
@@ -188,12 +201,16 @@ class GalleryWorksTabState extends ConsumerState<GalleryWorksTab>
                       itemBuilder: (_, index) {
                         final script = works[index];
                         final isLocal = script.isLocal;
-                        return TemplateGridCard(
+                        final canDeleteRemote =
+                            !isLocal && screenplayCanDeleteRemote(script);
+                        return GlassFeedCard(
+                          layout: GlassFeedCardLayout.library,
                           screenplay: script,
-                          compact: true,
-                          showVisibilityBadge: _canEditVisibility(script),
-                          onDelete:
-                              isLocal ? () => _deleteLocal(script) : null,
+                          onDelete: isLocal
+                              ? () => _deleteLocal(script)
+                              : canDeleteRemote
+                                  ? () => _deleteRemote(script)
+                                  : null,
                           onMore: _canEditVisibility(script)
                               ? () => _openVisibilitySettings(script)
                               : null,
@@ -203,7 +220,7 @@ class GalleryWorksTabState extends ConsumerState<GalleryWorksTab>
                           onSelectedToggle: isLocal
                               ? () => _selectionController.toggle(script.id)
                               : null,
-                          onLongPressEnterSelection: isLocal
+                          onLongPress: isLocal
                               ? () => _selectionController.enterSelection(
                                     initialLocalId: script.id,
                                   )
@@ -216,13 +233,7 @@ class GalleryWorksTabState extends ConsumerState<GalleryWorksTab>
                 if (loadingMore)
                   const Padding(
                     padding: EdgeInsets.all(AppDimensions.spacingMd),
-                    child: Center(
-                      child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    ),
+                    child: FeedGridSkeleton(tileCount: 4),
                   ),
                 if (hasMore && !loadingMore)
                   Center(

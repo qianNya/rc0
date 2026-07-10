@@ -40,6 +40,10 @@ class Screenplay {
     this.visibility,
     this.treeJsonObjectKey,
     this.publishedAt,
+    this.durationSec = 0,
+    this.isFeatured = false,
+    this.featuredAt,
+    this.hotScore = 0,
   });
 
   final String id;
@@ -75,6 +79,10 @@ class Screenplay {
   final int? visibility;
   final String? treeJsonObjectKey;
   final DateTime? publishedAt;
+  final int durationSec;
+  final bool isFeatured;
+  final DateTime? featuredAt;
+  final double hotScore;
 
   bool get isTemplate => kind == kindTemplate;
 
@@ -149,6 +157,14 @@ class Screenplay {
 
   String get hierarchySummary => '$actCount幕 · $sceneCount场 · $frameCount画';
 
+  /// Feed card duration badge (`mm:ss`); empty when unknown.
+  String get durationLabel {
+    if (durationSec <= 0) return '';
+    final m = durationSec ~/ 60;
+    final s = durationSec % 60;
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
+
   List<ScriptFrame> get allFrames {
     final frames = <ScriptFrame>[];
     for (final act in acts) {
@@ -201,6 +217,10 @@ class Screenplay {
         'visibility': visibility,
         'treeJsonObjectKey': treeJsonObjectKey,
         'publishedAt': publishedAt?.toIso8601String(),
+        'durationSec': durationSec,
+        'isFeatured': isFeatured,
+        'featuredAt': featuredAt?.toIso8601String(),
+        'hotScore': hotScore,
       };
 
   factory Screenplay.fromJson(Map<String, dynamic> json) {
@@ -257,6 +277,12 @@ class Screenplay {
       publishedAt: json['publishedAt'] != null
           ? DateTime.tryParse(json['publishedAt'] as String)
           : null,
+      durationSec: (json['durationSec'] as num?)?.toInt() ?? 0,
+      isFeatured: json['isFeatured'] as bool? ?? false,
+      featuredAt: json['featuredAt'] != null
+          ? DateTime.tryParse(json['featuredAt'] as String)
+          : null,
+      hotScore: (json['hotScore'] as num?)?.toDouble() ?? 0,
     );
   }
 
@@ -294,6 +320,10 @@ class Screenplay {
     int? visibility,
     String? treeJsonObjectKey,
     DateTime? publishedAt,
+    int? durationSec,
+    bool? isFeatured,
+    DateTime? featuredAt,
+    double? hotScore,
   }) {
     final nextForkSource = forkSourceId ?? forkedFromId ?? this.forkSourceId;
     final nextForkedFrom = forkedFromId ?? forkSourceId ?? this.forkedFromId;
@@ -331,6 +361,10 @@ class Screenplay {
       visibility: visibility ?? this.visibility,
       treeJsonObjectKey: treeJsonObjectKey ?? this.treeJsonObjectKey,
       publishedAt: publishedAt ?? this.publishedAt,
+      durationSec: durationSec ?? this.durationSec,
+      isFeatured: isFeatured ?? this.isFeatured,
+      featuredAt: featuredAt ?? this.featuredAt,
+      hotScore: hotScore ?? this.hotScore,
     );
   }
 }

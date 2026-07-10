@@ -10,7 +10,6 @@ import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/data/app_catalog.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
-import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/glass/glass.dart';
 import '../../../character/data/character_repository.dart';
 import '../../../character/domain/character_entry.dart';
@@ -159,7 +158,7 @@ class _IpDetailPageState extends ConsumerState<IpDetailPage> {
                   physics: const AlwaysScrollableScrollPhysics(),
                   children: [
                     SizedBox(height: MediaQuery.sizeOf(context).height * 0.2),
-                    EmptyStateView(
+                    GlassEmptyState(
                       icon: Icons.hub_outlined,
                       title: _error != null ? '加载失败' : 'IP 不存在',
                       subtitle: _error,

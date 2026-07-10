@@ -29,4 +29,29 @@ void main() {
     expect(repo.itemsFor(userId).single.visibility, 1);
     repo.debugSetItems(userId, []);
   });
+
+  test('removeItem drops remote screenplay and decrements total', () {
+    final repo = UserScreenplaysRepository.instance;
+    const userId = 777002;
+    repo.debugSetItems(
+      userId,
+      [
+        const Screenplay(
+          id: '14',
+          title: 'A',
+          isLocal: false,
+          remoteScreenplayId: 14,
+        ),
+        const Screenplay(
+          id: '15',
+          title: 'B',
+          isLocal: false,
+          remoteScreenplayId: 15,
+        ),
+      ],
+    );
+    repo.removeItem(userId, 14);
+    expect(repo.itemsFor(userId).map((s) => s.remoteScreenplayId), [15]);
+    repo.debugSetItems(userId, []);
+  });
 }

@@ -5,10 +5,10 @@ import '../../../../../app/router/routes.dart';
 import '../../../../../app/theme/app_colors.dart';
 import '../../../../../app/theme/app_dimensions.dart';
 import '../../../../../app/theme/app_text_styles.dart';
-import '../../../../../shared/widgets/empty_state_view.dart';
 import '../../../../../shared/widgets/pose_cover_image.dart';
 import '../../../domain/character_detail_data.dart';
 import '../../../domain/character_utils.dart';
+import '../../../../../shared/widgets/glass/glass.dart';
 
 enum CharacterWorksFilter { hot, latest, featured }
 
@@ -41,7 +41,7 @@ class _CharacterWorksTabState extends State<CharacterWorksTab> {
   Widget build(BuildContext context) {
     final filtered = _filtered;
     if (widget.works.isEmpty) {
-      return const EmptyStateView(
+      return const GlassEmptyState(
         icon: Icons.movie_creation_outlined,
         title: '暂无关联作品',
         subtitle: '使用该角色的剧本将展示在这里',

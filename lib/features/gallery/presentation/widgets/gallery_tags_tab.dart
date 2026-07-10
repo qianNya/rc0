@@ -4,10 +4,11 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/utils/state_listeners.dart';
-import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/inline_error_banner.dart';
 import '../../data/image_tags_repository.dart';
 import '../../domain/image_tag.dart';
+import '../../../../shared/widgets/feed_grid_skeleton.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 
 class GalleryTagsTab extends StatefulWidget {
   const GalleryTagsTab({
@@ -52,15 +53,15 @@ class _GalleryTagsTabState extends State<GalleryTagsTab>
 
     if (_repo.loading && tags.isEmpty) {
       return const Padding(
-        padding: EdgeInsets.all(48),
-        child: Center(child: CircularProgressIndicator()),
+        padding: EdgeInsets.all(AppDimensions.spacingMd),
+        child: FeedGridSkeleton(tileCount: 4),
       );
     }
 
     if (tags.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 48),
-        child: EmptyStateView(
+        child: GlassEmptyState(
           icon: Icons.label_outline,
           title: _repo.error != null ? '加载失败' : '暂无标签',
           subtitle: _repo.error ?? '上传图片后可在此查看分类标签',

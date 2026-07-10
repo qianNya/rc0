@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
@@ -26,9 +25,10 @@ class PublishVisibilityDialog extends StatefulWidget {
   const PublishVisibilityDialog({super.key});
 
   static Future<PublishOptions?> show(BuildContext context) {
-    return showDialog<PublishOptions>(
-      context: context,
-      builder: (_) => const PublishVisibilityDialog(),
+    return showGlassDialog<PublishOptions>(
+      context,
+      barrierDismissible: true,
+      child: const PublishVisibilityDialog(),
     );
   }
 
@@ -56,19 +56,24 @@ class _PublishVisibilityDialogState extends State<PublishVisibilityDialog> {
     return GlassDialog(
       title: const Text('发布剧本'),
       footer: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppDimensions.spacingMd),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('取消'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(
-                PublishOptions(visibility: _visibility, kind: _kind),
+            Expanded(
+              child: GlassButton(
+                label: '取消',
+                onPressed: () => Navigator.of(context).pop(),
               ),
-              child: const Text('开始发布'),
+            ),
+            const SizedBox(width: AppDimensions.spacingSm),
+            Expanded(
+              child: GlassButton(
+                label: '开始发布',
+                filled: true,
+                onPressed: () => Navigator.of(context).pop(
+                  PublishOptions(visibility: _visibility, kind: _kind),
+                ),
+              ),
             ),
           ],
         ),
@@ -108,6 +113,64 @@ class _PublishVisibilityDialogState extends State<PublishVisibilityDialog> {
   }
 }
 
+/// Progress body shown inside [showGlassProgressSheet].
+class PublishProgressContent extends StatelessWidget {
+  const PublishProgressContent({
+    super.key,
+    required this.stage,
+    required this.done,
+    required this.total,
+  });
+
+  final String stage;
+  final int done;
+  final int total;
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = total > 0 ? done / total : 0.0;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          total > 0 ? '$stage $done/$total' : stage,
+          style: AppTextStyles.bodySecondary,
+        ),
+        const SizedBox(height: AppDimensions.spacingMd),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(AppDimensions.tabFloatingRadius),
+          child: LinearProgressIndicator(
+            minHeight: 6,
+            value: total > 0 ? progress : null,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Shows a glass progress sheet for publish / sync operations.
+Future<void> showPublishProgressSheet(
+  BuildContext context, {
+  required ValueNotifier<(String stage, int done, int total)> progress,
+}) {
+  return showGlassProgressSheet<void>(
+    context,
+    title: '正在发布',
+    isDismissible: false,
+    child: ValueListenableBuilder(
+      valueListenable: progress,
+      builder: (context, value, _) => PublishProgressContent(
+        stage: value.$1,
+        done: value.$2,
+        total: value.$3,
+      ),
+    ),
+  );
+}
+
+/// @deprecated Use [showPublishProgressSheet] instead.
 class PublishProgressSheet extends StatelessWidget {
   const PublishProgressSheet({
     super.key,
@@ -120,55 +183,8 @@ class PublishProgressSheet extends StatelessWidget {
   final int done;
   final int total;
 
-  static Future<void> show(
-    BuildContext context, {
-    required String stage,
-    required int done,
-    required int total,
-  }) {
-    return showModalBottomSheet<void>(
-      context: context,
-      isDismissible: false,
-      enableDrag: false,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (_) => PublishProgressSheet(
-        stage: stage,
-        done: done,
-        total: total,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final progress = total > 0 ? done / total : 0.0;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('正在发布', style: AppTextStyles.label),
-          const SizedBox(height: 8),
-          Text(
-            total > 0 ? '$stage $done/$total' : stage,
-            style: AppTextStyles.bodySecondary,
-          ),
-          const SizedBox(height: 16),
-          LinearProgressIndicator(value: total > 0 ? progress : null),
-          const SizedBox(height: 8),
-          const Center(
-            child: SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          ),
-        ],
-      ),
-    );
+    return PublishProgressContent(stage: stage, done: done, total: total);
   }
 }

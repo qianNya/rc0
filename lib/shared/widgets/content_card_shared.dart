@@ -6,7 +6,7 @@ import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_dimensions.dart';
 import '../../core/data/app_catalog.dart';
 import '../../core/domain/screenplay/screenplay.dart';
-import 'glass/glass_sheet.dart';
+import 'glass/glass.dart';
 import 'profile_widgets.dart';
 
 enum FeedTypeBadgeKind { script, template }
@@ -207,6 +207,7 @@ class _FeedStat extends StatelessWidget {
   }
 }
 
+/// @deprecated Use [GlassButton] filled instead.
 class FeedForkButton extends StatelessWidget {
   const FeedForkButton({super.key, this.onPressed, this.loading = false});
 
@@ -215,41 +216,12 @@ class FeedForkButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.accent,
-      borderRadius: BorderRadius.circular(20),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: loading ? null : onPressed,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (loading)
-                const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
-              else
-                const Icon(Icons.call_split, color: Colors.white, size: 16),
-              const SizedBox(width: 6),
-              Text(
-                loading ? 'Fork 中…' : 'Fork',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    return GlassButton(
+      label: loading ? 'Fork 中…' : 'Fork',
+      icon: Icons.call_split,
+      filled: true,
+      loading: loading,
+      onPressed: onPressed,
     );
   }
 }

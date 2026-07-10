@@ -9,7 +9,6 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../core/data/app_catalog.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
-import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
 import '../../../../shared/widgets/feed_tab_bar.dart';
 import '../../data/character_local_store.dart';
@@ -18,6 +17,8 @@ import '../../domain/character_entry.dart';
 import '../../domain/character_utils.dart';
 import '../widgets/character_action_sheet.dart';
 import '../widgets/character_masonry_grid.dart';
+import '../../../../shared/widgets/feed_grid_skeleton.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 
 class MyCharactersPage extends ConsumerStatefulWidget {
   const MyCharactersPage({super.key});
@@ -89,7 +90,7 @@ class _MyCharactersPageState extends ConsumerState<MyCharactersPage> {
   Widget _buildCharacterTabBody(int tabIndex) {
     final isLoggedIn = ref.watch(isLoggedInProvider);
     if (tabIndex == 2) {
-      return const EmptyStateView(
+      return const GlassEmptyState(
         icon: Icons.download_outlined,
         title: '暂无下载角色',
         subtitle: '从社区下载的角色将展示在这里',
@@ -98,10 +99,13 @@ class _MyCharactersPageState extends ConsumerState<MyCharactersPage> {
 
     final filtered = _filteredForTab(tabIndex);
     if (_repo.loading && filtered.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const Padding(
+        padding: EdgeInsets.all(AppDimensions.spacingMd),
+        child: FeedGridSkeleton(tileCount: 6),
+      );
     }
     if (filtered.isEmpty) {
-      return EmptyStateView(
+      return GlassEmptyState(
         icon: Icons.person_outline,
         title: '暂无角色',
         actionLabel: isLoggedIn ? '新建角色' : null,

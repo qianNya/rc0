@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_motion.dart';
-import '../../../../shared/widgets/empty_state_view.dart';
 import '../../data/gear_cabinet_repository.dart';
 import '../../domain/gear_cabinet.dart';
 import '../../domain/gear_device.dart';
@@ -12,6 +11,7 @@ import '../../domain/gear_shelf.dart';
 import '../theme/gear_cabinet_colors.dart';
 import '../widgets/gear_cabinet_app_bar.dart';
 import '../widgets/gear_cabinet_background.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 
 /// Full-screen device detail — zoom level "Detail".
 class GearDeviceDetailPage extends StatefulWidget {
@@ -64,7 +64,7 @@ class _GearDeviceDetailPageState extends State<GearDeviceDetailPage> {
                   ),
                 )
               : device == null || location == null
-                  ? EmptyStateView(
+                  ? GlassEmptyState(
                       icon: Icons.devices_outlined,
                       title: '设备未找到',
                       subtitle: '请返回设备库',

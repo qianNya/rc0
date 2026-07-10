@@ -17,6 +17,90 @@ import '../../../../shared/widgets/profile_widgets.dart';
 import '../../domain/shoot_params.dart';
 import 'screenplay_shoot_params_chips.dart';
 
+/// Cover carousel for detail pages — image only, no chrome.
+class ScreenplayDetailCover extends StatefulWidget {
+  const ScreenplayDetailCover({
+    super.key,
+    required this.screenplay,
+    required this.previewOptions,
+    this.carouselIndicatorBottom = 52,
+  });
+
+  final Screenplay screenplay;
+  final ImagePreviewOptions previewOptions;
+
+  /// Distance from bottom for frame counter pill when using carousel.
+  final double carouselIndicatorBottom;
+
+  @override
+  State<ScreenplayDetailCover> createState() => _ScreenplayDetailCoverState();
+}
+
+class _ScreenplayDetailCoverState extends State<ScreenplayDetailCover> {
+  int _carouselIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final screenplay = widget.screenplay;
+    final frames = screenplay.allFrames;
+    final framePaths = frames.map((f) => f.effectiveDisplayPath).toList();
+    final frameCaptions = frames.map((f) => f.caption).toList();
+    final hasExplicitCover = (screenplay.localCoverPath != null &&
+            screenplay.localCoverPath!.isNotEmpty) ||
+        (screenplay.coverUrl != null && screenplay.coverUrl!.isNotEmpty);
+    final coverPath = screenplay.effectiveCoverImagePath;
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        if (hasExplicitCover && coverPath != null && coverPath.isNotEmpty)
+          PoseCoverImage(
+            imagePath: coverPath,
+            expand: true,
+            borderRadius: 0,
+            enablePreview: true,
+            previewOptions: widget.previewOptions,
+            isUploaded: screenplay.coverIsRemoteUploaded,
+          )
+        else if (frames.isNotEmpty)
+          PageView.builder(
+            itemCount: frames.length,
+            onPageChanged: (i) => setState(() => _carouselIndex = i),
+            itemBuilder: (_, index) => PoseCoverImage(
+              imagePath: frames[index].effectiveDisplayPath,
+              expand: true,
+              borderRadius: 0,
+              enablePreview: true,
+              previewGallery: framePaths,
+              previewIndex: index,
+              previewCaptions: frameCaptions,
+              previewOptions: widget.previewOptions,
+              isUploaded: frames[index].isRemoteUploaded,
+            ),
+          )
+        else
+          const PoseCoverImage(expand: true, borderRadius: 0),
+        if (!hasExplicitCover && frames.isNotEmpty)
+          Positioned(
+            right: AppDimensions.spacingMd,
+            bottom: widget.carouselIndicatorBottom,
+            child: LiquidGlassSurface(
+              borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppDimensions.spacingSm,
+                vertical: AppDimensions.spacingXs,
+              ),
+              child: Text(
+                '${_carouselIndex + 1}/${frames.length}',
+                style: const TextStyle(color: Colors.white, fontSize: 12),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 class ScreenplayDetailHero extends StatefulWidget {
   const ScreenplayDetailHero({
     super.key,
@@ -54,55 +138,23 @@ class ScreenplayDetailHero extends StatefulWidget {
 }
 
 class _ScreenplayDetailHeroState extends State<ScreenplayDetailHero> {
-  int _carouselIndex = 0;
+  static const _heroHeight = 300.0;
+  static const _cardOverlap = 40.0;
 
   @override
   Widget build(BuildContext context) {
-    final screenplay = widget.screenplay;
-    final frames = screenplay.allFrames;
-    final framePaths = frames.map((f) => f.effectiveDisplayPath).toList();
-    final frameCaptions = frames.map((f) => f.caption).toList();
-    final hasExplicitCover = (screenplay.localCoverPath != null &&
-            screenplay.localCoverPath!.isNotEmpty) ||
-        (screenplay.coverUrl != null && screenplay.coverUrl!.isNotEmpty);
-    final coverPath = screenplay.effectiveCoverImagePath;
-    const heroHeight = 300.0;
-    const cardOverlap = 40.0;
-
     return Column(
       children: [
         SizedBox(
-          height: heroHeight,
+          height: _heroHeight,
           child: Stack(
             fit: StackFit.expand,
             children: [
-              if (hasExplicitCover && coverPath != null && coverPath.isNotEmpty)
-                PoseCoverImage(
-                  imagePath: coverPath,
-                  expand: true,
-                  borderRadius: 0,
-                  enablePreview: true,
-                  previewOptions: widget.previewOptions,
-                  isUploaded: screenplay.coverIsRemoteUploaded,
-                )
-              else if (frames.isNotEmpty)
-                PageView.builder(
-                  itemCount: frames.length,
-                  onPageChanged: (i) => setState(() => _carouselIndex = i),
-                  itemBuilder: (_, index) => PoseCoverImage(
-                    imagePath: frames[index].effectiveDisplayPath,
-                    expand: true,
-                    borderRadius: 0,
-                    enablePreview: true,
-                    previewGallery: framePaths,
-                    previewIndex: index,
-                    previewCaptions: frameCaptions,
-                    previewOptions: widget.previewOptions,
-                    isUploaded: frames[index].isRemoteUploaded,
-                  ),
-                )
-              else
-                const PoseCoverImage(expand: true, borderRadius: 0),
+              ScreenplayDetailCover(
+                screenplay: widget.screenplay,
+                previewOptions: widget.previewOptions,
+                carouselIndicatorBottom: _cardOverlap + 12,
+              ),
               const DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -142,33 +194,17 @@ class _ScreenplayDetailHeroState extends State<ScreenplayDetailHero> {
                   ),
                 ),
               ),
-              if (!hasExplicitCover && frames.isNotEmpty)
-                Positioned(
-                  right: 12,
-                  bottom: cardOverlap + 12,
-                  child: LiquidGlassSurface(
-                    borderRadius: BorderRadius.circular(12),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    child: Text(
-                      '${_carouselIndex + 1}/${frames.length}',
-                      style: const TextStyle(color: Colors.white, fontSize: 12),
-                    ),
-                  ),
-                ),
             ],
           ),
         ),
         Transform.translate(
-          offset: const Offset(0, -cardOverlap),
+          offset: const Offset(0, -_cardOverlap),
           child: Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: AppDimensions.spacingMd,
             ),
             child: ScreenplayDetailInfoCard(
-              screenplay: screenplay,
+              screenplay: widget.screenplay,
               shootDefaults: widget.shootDefaults,
               isOwner: widget.isOwner,
               onFork: widget.onFork,
@@ -219,6 +255,8 @@ class ScreenplayDetailInfoCard extends StatelessWidget {
     this.forking = false,
     this.followBusy = false,
     this.likeBusy = false,
+    this.bare = false,
+    this.showInlineActions = true,
   });
 
   final Screenplay screenplay;
@@ -231,6 +269,8 @@ class ScreenplayDetailInfoCard extends StatelessWidget {
   final bool forking;
   final bool followBusy;
   final bool likeBusy;
+  final bool bare;
+  final bool showInlineActions;
 
   @override
   Widget build(BuildContext context) {
@@ -239,84 +279,88 @@ class ScreenplayDetailInfoCard extends StatelessWidget {
     final primary =
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimary;
 
-    return GlassCard(
-      borderRadius: BorderRadius.circular(24),
-      padding: const EdgeInsets.all(AppDimensions.spacingMd),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            screenplay.title,
-            style: AppTextStyles.display.copyWith(
-              fontSize: 22,
-              color: primary,
-            ),
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          screenplay.title,
+          style: AppTextStyles.display.copyWith(
+            fontSize: 22,
+            color: primary,
           ),
-          if (screenplay.isForkCopy ||
-              screenplay.effectiveForkSourceId != null) ...[
-            const SizedBox(height: 6),
-            _ForkSourceLink(sourceId: screenplay.effectiveForkSourceId),
-          ],
+        ),
+        if (screenplay.isForkCopy ||
+            screenplay.effectiveForkSourceId != null) ...[
           const SizedBox(height: 6),
-          Text(
-            screenplay.hierarchySummary,
-            style: const TextStyle(
-              color: AppColors.accent,
-              fontWeight: FontWeight.w600,
-              fontSize: 13,
-            ),
+          _ForkSourceLink(sourceId: screenplay.effectiveForkSourceId),
+        ],
+        const SizedBox(height: 6),
+        Text(
+          screenplay.hierarchySummary,
+          style: const TextStyle(
+            color: AppColors.accent,
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
           ),
-          if (shootDefaults != null && shootDefaults!.hasAnyValue) ...[
-            const SizedBox(height: 10),
-            ScreenplayShootParamsChips(
-              params: shootDefaults!,
-              compact: true,
-            ),
-          ],
-          if (screenplay.isPublished && screenplay.isPrivate) ...[
-            const SizedBox(height: 10),
-            LiquidGlassSurface(
-              borderRadius: BorderRadius.circular(12),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              child: Text(
-                '非公开 · 可通过 JSON 分享',
-                style: AppTextStyles.bodySecondary.copyWith(fontSize: 12),
-              ),
-            ),
-          ],
-          const SizedBox(height: 14),
-          AuthorRow(
-            authorName: screenplay.author,
-            showFollow: !isOwner && screenplay.ownerUserId != null,
-            onFollow: followBusy ? null : onFollow,
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _DetailEngagementRow(
-                  likes: screenplay.likes,
-                  favorites: screenplay.favorites,
-                  views: screenplay.views,
-                  isLiked: screenplay.isLiked,
-                  onLike: likeBusy ? null : onLike,
-                ),
-              ),
-              if (isOwner && onEdit != null)
-                GlassButton(
-                  label: '编辑剧本',
-                  onPressed: onEdit,
-                )
-              else if (showInlineFork && onFork != null)
-                GlassButton(
-                  label: forking ? 'Fork 中…' : 'Fork 模板',
-                  loading: forking,
-                  onPressed: forking ? null : onFork,
-                ),
-            ],
+        ),
+        if (shootDefaults != null && shootDefaults!.hasAnyValue) ...[
+          const SizedBox(height: 10),
+          ScreenplayShootParamsChips(
+            params: shootDefaults!,
+            compact: true,
           ),
         ],
-      ),
+        if (screenplay.isPublished && screenplay.isPrivate) ...[
+          const SizedBox(height: 10),
+          LiquidGlassSurface(
+            borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            child: Text(
+              '非公开 · 可通过 JSON 分享',
+              style: AppTextStyles.bodySecondary.copyWith(fontSize: 12),
+            ),
+          ),
+        ],
+        const SizedBox(height: 14),
+        AuthorRow(
+          authorName: screenplay.author,
+          showFollow: !isOwner && screenplay.ownerUserId != null,
+          onFollow: followBusy ? null : onFollow,
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _DetailEngagementRow(
+                likes: screenplay.likes,
+                favorites: screenplay.favorites,
+                views: screenplay.views,
+                isLiked: screenplay.isLiked,
+                onLike: likeBusy ? null : onLike,
+              ),
+            ),
+            if (showInlineActions && isOwner && onEdit != null)
+              GlassButton(
+                label: '编辑剧本',
+                onPressed: onEdit,
+              )
+            else if (showInlineActions && showInlineFork && onFork != null)
+              GlassButton(
+                label: forking ? 'Fork 中…' : 'Fork 模板',
+                loading: forking,
+                onPressed: forking ? null : onFork,
+              ),
+          ],
+        ),
+      ],
+    );
+
+    if (bare) return content;
+
+    return GlassCard(
+      borderRadius: BorderRadius.circular(AppDimensions.radiusXl),
+      padding: const EdgeInsets.all(AppDimensions.spacingMd),
+      child: content,
     );
   }
 }

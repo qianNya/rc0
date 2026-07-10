@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../../app/theme/app_colors.dart';
-import '../../../../../shared/widgets/primary_button.dart';
+import '../../../../../shared/widgets/glass/glass.dart';
 
 class EditorFooterActions extends StatelessWidget {
   const EditorFooterActions({
@@ -30,10 +30,12 @@ class EditorFooterActions extends StatelessWidget {
         child: Row(
           children: [
             Expanded(
-              child: PrimaryButton(
+              child: GlassButton(
+                filled: true,
+                expand: true,
                 label: saveLabel,
                 onPressed: isSaving ? null : onSave,
-                isLoading: isSaving,
+                loading: isSaving,
               ),
             ),
             if (onDelete != null) ...[

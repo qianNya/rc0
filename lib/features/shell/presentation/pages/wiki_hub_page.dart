@@ -5,6 +5,7 @@ import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
 import '../../../character/presentation/pages/character_list_page.dart';
 import '../../../character/presentation/widgets/character_wiki_app_bar.dart';
 import '../../../explore/presentation/pages/explore_page.dart';
+import '../../../explore/presentation/widgets/discovery_hub_app_bar.dart';
 import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 import '../widgets/wiki_ip_tab.dart';
 
@@ -99,16 +100,13 @@ class _WikiHubPageState extends State<WikiHubPage> {
 
     final body = _buildBody();
 
-    if (_activeSection == _WikiSection.discovery) {
-      return body;
-    }
-
     final PreferredSizeWidget appBar = switch (_activeSection) {
       _WikiSection.character => const CharacterHubAppBar(),
       _WikiSection.ip => const WikiModeTagAppBar(title: 'IP'),
-      _WikiSection.discovery => const WikiModeTagAppBar(title: '模板'),
+      _WikiSection.discovery => const DiscoveryHubAppBar(),
     };
 
+    // Discovery supplies its own [DesktopHubHeader] inside TemplateMarketBody.
     final desktopHeader = switch (_activeSection) {
       _WikiSection.character => const DesktopHubHeader(
           title: '角色',

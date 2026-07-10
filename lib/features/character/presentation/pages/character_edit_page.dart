@@ -5,12 +5,11 @@ import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
-import '../../../../shared/widgets/empty_state_view.dart';
-import '../../../../shared/widgets/primary_button.dart';
 import '../../data/character_local_store.dart';
 import '../../data/character_repository.dart';
 import '../../domain/character_entry.dart';
 import '../widgets/character_form_sections.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 
 class CharacterEditPage extends StatefulWidget {
   const CharacterEditPage({super.key, required this.characterId});
@@ -168,7 +167,7 @@ class _CharacterEditPageState extends State<CharacterEditPage> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _entry == null
-              ? EmptyStateView(
+              ? GlassEmptyState(
                   icon: Icons.person_outline,
                   title: _error ?? '角色不存在',
                   actionLabel: '重试',
@@ -190,7 +189,9 @@ class _CharacterEditPageState extends State<CharacterEditPage> {
                       onChanged: () => setState(() {}),
                     ),
                     const SizedBox(height: 24),
-                    PrimaryButton(
+                    GlassButton(
+                filled: true,
+                expand: true,
                       label: _saving ? '保存中…' : '保存修改',
                       onPressed: _saving ? null : _save,
                     ),

@@ -6,12 +6,13 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../core/responsive/feed_grid_layout.dart';
 import '../../../../core/utils/state_listeners.dart';
-import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/inline_error_banner.dart';
 import '../../../../shared/widgets/shell_insets.dart';
 import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
 import '../../../ip/data/ip_repository.dart';
 import '../../../ip/presentation/widgets/ip_grid_card.dart';
+import '../../../../shared/widgets/feed_grid_skeleton.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 
 /// IP Wiki tab embedded in [WikiHubPage].
 class WikiIpTab extends StatefulWidget {
@@ -118,12 +119,15 @@ class _WikiIpTabState extends State<WikiIpTab> with AutomaticKeepAliveClientMixi
           if (loading && items.isEmpty)
             const SliverFillRemaining(
               hasScrollBody: false,
-              child: Center(child: CircularProgressIndicator()),
+              child: Padding(
+                padding: EdgeInsets.all(AppDimensions.spacingMd),
+                child: FeedGridSkeleton(tileCount: 4),
+              ),
             )
           else if (items.isEmpty)
             SliverFillRemaining(
               hasScrollBody: false,
-              child: EmptyStateView(
+              child: GlassEmptyState(
                 icon: Icons.hub_outlined,
                 title: error != null ? '加载失败' : '暂无 IP',
                 subtitle: error ?? '添加动漫、游戏等 IP 作为拍摄参考',

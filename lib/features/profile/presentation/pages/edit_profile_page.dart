@@ -17,9 +17,9 @@ import '../../domain/profile_display.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/glass/glass_button.dart';
 import '../../../../shared/widgets/liquid_glass_surface.dart';
-import '../../../../shared/widgets/primary_button.dart';
 import '../../../../shared/widgets/rc0_image.dart';
 import '../../../../shared/widgets/shell_insets.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 
 class EditProfilePage extends ConsumerStatefulWidget {
   const EditProfilePage({super.key});
@@ -265,9 +265,11 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                       keyboardType: TextInputType.phone,
                     ),
                     const SizedBox(height: 24),
-                    PrimaryButton(
+                    GlassButton(
+                filled: true,
+                expand: true,
                       label: '保存',
-                      isLoading: _saving,
+                      loading: _saving,
                       onPressed: busy ? null : _save,
                     ),
                     const SizedBox(height: AppDimensions.spacingLg),

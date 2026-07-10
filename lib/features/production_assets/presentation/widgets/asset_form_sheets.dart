@@ -4,10 +4,10 @@ import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../shared/widgets/glass/glass_sheet.dart';
 import '../../../../shared/widgets/glass/glass_text_field.dart';
-import '../../../../shared/widgets/primary_button.dart';
 import '../../data/asset_repository.dart';
 import '../../domain/user_asset_category.dart';
 import '../../domain/user_asset_item.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 
 Future<void> showAssetCategorySheet(
   BuildContext context, {
@@ -109,7 +109,9 @@ class _AssetCategorySheetBodyState extends State<_AssetCategorySheetBody> {
               onSubmitted: (_) => _save(),
             ),
             const Spacer(),
-            PrimaryButton(
+            GlassButton(
+                filled: true,
+                expand: true,
               label: _saving ? '保存中…' : '保存',
               onPressed: _saving ? null : _save,
             ),
@@ -258,7 +260,9 @@ class _AssetItemSheetBodyState extends State<_AssetItemSheetBody> {
               maxLines: 3,
             ),
             const SizedBox(height: AppDimensions.spacingLg),
-            PrimaryButton(
+            GlassButton(
+                filled: true,
+                expand: true,
               label: _saving ? '保存中…' : '保存',
               onPressed: _saving ? null : _save,
             ),

@@ -69,6 +69,10 @@ abstract final class AppCatalog {
 
   static const communitySortTabs = ['热门', '最新', '最多使用', '精选'];
 
+  /// Discovery Feed v2 tabs — maps to feed sort / featured API.
+  /// 0 编辑精选 · 1 关注 · 2 热门推荐 · 3 最新发布
+  static const discoveryFeedTabs = ['编辑精选', '关注', '热门推荐', '最新发布'];
+
   static const feedTabs = ['发现', '关注', '推荐'];
 
   static const wikiHubTabs = ['发现', 'IP', '角色'];

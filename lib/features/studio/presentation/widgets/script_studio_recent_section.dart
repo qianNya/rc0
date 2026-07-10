@@ -9,6 +9,7 @@ import '../../../../core/domain/screenplay/screenplay_display.dart';
 import '../../../../core/utils/relative_time.dart';
 import '../../../screenplay/presentation/widgets/screenplay_delete_actions.dart';
 import '../../../../shared/widgets/pose_cover_image.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 import 'script_studio_glass_widgets.dart';
 import 'script_studio_theme.dart';
 
@@ -100,30 +101,12 @@ class _EmptyRecentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StudioGlassCard(
-      minHeight: 220,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppDimensions.spacingLg,
-        vertical: AppDimensions.spacingXl,
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.movie_creation_outlined,
-            size: 56,
-            color: ScriptStudioColors.textTertiary,
-          ),
-          const SizedBox(height: AppDimensions.spacingMd),
-          const Text('暂无项目', style: ScriptStudioColors.cardTitle),
-          const SizedBox(height: 6),
-          const Text(
-            '新建剧本后会显示在这里',
-            style: ScriptStudioColors.cardSubtitle,
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+    return GlassEmptyState(
+      icon: Icons.movie_creation_outlined,
+      title: '暂无项目',
+      subtitle: '新建剧本后会显示在这里',
+      actionLabel: '开始创作',
+      onAction: () => context.go(AppRoutes.studioCreate),
     );
   }
 }
@@ -168,6 +151,27 @@ class _RecentProjectTile extends StatelessWidget {
     if (!screenplay.isLocal) return;
     final deleted = await confirmAndDeleteScreenplays(context, [screenplay]);
     if (deleted) onDataChanged();
+  }
+
+  Future<void> _showProjectMenu(BuildContext context) async {
+    final action = await showGlassSheet<String>(
+      context,
+      padding: kGlassSheetMenuPadding,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          GlassListRow(
+            leading: const Icon(Icons.delete_outline),
+            iconColor: AppColors.error,
+            title: '删除',
+            onTap: () => Navigator.pop(context, 'delete'),
+          ),
+        ],
+      ),
+    );
+    if (!context.mounted) return;
+    if (action == 'delete') await _delete(context);
   }
 
   @override
@@ -235,24 +239,12 @@ class _RecentProjectTile extends StatelessWidget {
             ),
           ),
           if (screenplay.isLocal)
-            PopupMenuButton<String>(
+            IconButton(
               icon: const Icon(
                 Icons.more_horiz,
                 color: ScriptStudioColors.textSecondary,
               ),
-              color: AppColors.surface,
-              onSelected: (value) {
-                if (value == 'delete') _delete(context);
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'delete',
-                  child: Text(
-                    '删除',
-                    style: TextStyle(color: AppColors.error),
-                  ),
-                ),
-              ],
+              onPressed: () => _showProjectMenu(context),
             ),
         ],
       ),

@@ -1,10 +1,10 @@
 import '../../../core/data/app_catalog.dart';
 
-/// Unified query for template market — feed API + client category/sort.
+/// Unified query for Discovery Feed — feed API + client category filter.
 class TemplateFeedQuery {
   const TemplateFeedQuery({
     this.categoryIndex = 0,
-    this.sortTabIndex = 0,
+    this.sortTabIndex = 2,
     this.q,
   });
 
@@ -14,10 +14,20 @@ class TemplateFeedQuery {
   /// Query param for `/discovery?section=template` (same page as `/discovery`).
   static const String discoverySectionTemplate = 'template';
 
+  /// Tab indices for [AppCatalog.discoveryFeedTabs].
+  static const int tabFeatured = 0;
+  static const int tabFollowing = 1;
+  static const int tabHot = 2;
+  static const int tabLatest = 3;
+
   final int categoryIndex;
   final int sortTabIndex;
   final String? q;
 
+  bool get isFeaturedTab => sortTabIndex == tabFeatured;
+  bool get isFollowingTab => sortTabIndex == tabFollowing;
+
+  /// Server `sort` for non-featured tabs. Featured uses collections API.
   String get feedSort => sortTabToFeedSort(sortTabIndex);
 
   TemplateFeedQuery copyWith({
@@ -34,13 +44,15 @@ class TemplateFeedQuery {
 
   static String sortTabToFeedSort(int sortTabIndex) {
     if (sortTabIndex < 0 ||
-        sortTabIndex >= AppCatalog.communitySortTabs.length) {
+        sortTabIndex >= AppCatalog.discoveryFeedTabs.length) {
       return 'hot';
     }
     return switch (sortTabIndex) {
-      0 => 'hot',
-      1 => 'latest',
-      _ => 'latest',
+      tabFeatured => 'hot',
+      tabFollowing => 'recommend',
+      tabHot => 'hot',
+      tabLatest => 'latest',
+      _ => 'hot',
     };
   }
 }

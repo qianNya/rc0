@@ -6,12 +6,12 @@ import '../../../../app/providers/auth_providers.dart';
 
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
-import '../../../../shared/widgets/primary_button.dart';
 import '../widgets/auth_footer_link.dart';
 import '../widgets/auth_header.dart';
 import '../widgets/auth_page_scaffold.dart';
 import '../widgets/auth_social_row.dart';
 import '../widgets/auth_text_field.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 
 class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key, this.redirectFrom});
@@ -222,9 +222,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
             ],
           ),
           const SizedBox(height: 8),
-          PrimaryButton(
+          GlassButton(
+                filled: true,
+                expand: true,
             label: '注册',
-            isLoading: _loading,
+            loading: _loading,
             onPressed: _submit,
           ),
           const SizedBox(height: 24),

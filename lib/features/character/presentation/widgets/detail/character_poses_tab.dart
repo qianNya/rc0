@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import '../../../../../app/theme/app_colors.dart';
 import '../../../../../app/theme/app_dimensions.dart';
 import '../../../../../app/theme/app_text_styles.dart';
-import '../../../../../shared/widgets/empty_state_view.dart';
 import '../../../../../shared/widgets/rc0_image.dart';
 import '../../../../../shared/widgets/rc0_widgets.dart';
 import '../../../domain/character_detail_data.dart';
+import '../../../../../shared/widgets/glass/glass.dart';
 
 class CharacterPosesTab extends StatelessWidget {
   const CharacterPosesTab({super.key, required this.poses});
@@ -16,7 +16,7 @@ class CharacterPosesTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (poses.isEmpty) {
-      return const EmptyStateView(
+      return const GlassEmptyState(
         icon: Icons.accessibility_new_outlined,
         title: '暂无姿势参考',
         subtitle: '补充角色拍摄建议后可生成姿势库',

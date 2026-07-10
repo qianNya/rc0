@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../../../app/theme/app_dimensions.dart';
+import '../../../../core/responsive/breakpoints.dart';
 import '../../../../core/responsive/responsive_builder.dart';
+import '../widgets/discovery_feed_top_tab_bar.dart';
 import '../widgets/template_market_body.dart';
 
 /// Discovery shell entry — single-page template market.
@@ -34,14 +37,23 @@ class ExplorePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final chromeTop = embeddedInHub
+        ? (Breakpoints.useSidebarShell(context)
+            ? AppDimensions.spacingLg
+            : DiscoveryFeedChrome.contentInset(context))
+        : 0.0;
+
     return ResponsiveBuilder(
-      mobile: (_) => const TemplateMarketBody(
+      mobile: (_) => TemplateMarketBody(
         compact: true,
-        showFeaturedBanner: true,
+        embeddedInHub: embeddedInHub,
+        topPadding: chromeTop,
       ),
-      desktop: (_) => const TemplateMarketBody(
+      desktop: (_) => TemplateMarketBody(
         compact: false,
         showDesktopHeader: true,
+        embeddedInHub: embeddedInHub,
+        topPadding: chromeTop,
       ),
     );
   }

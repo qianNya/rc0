@@ -32,15 +32,13 @@ import '../widgets/screenplay_delete_actions.dart';
 import '../widgets/screenplay_detail_hero.dart';
 import '../widgets/screenplay_info_header.dart';
 import '../widgets/screenplay_structure_tree.dart';
-import '../../../../shared/widgets/empty_state_view.dart';
+import '../../../../shared/widgets/feed_grid_skeleton.dart';
 import '../../../../shared/widgets/feed_tab_bar.dart';
 import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
-import '../../../../shared/widgets/glass/glass_button.dart';
-import '../../../../shared/widgets/glass/glass_card.dart';
-import '../../../../shared/widgets/glass/glass_sheet.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 import '../../../../shared/widgets/image_preview.dart';
 import '../../../../shared/widgets/pose_cover_image.dart';
-import '../../../../shared/widgets/primary_button.dart';
+import '../../../../shared/widgets/rc0_widgets.dart';
 
 class ScreenplayDetailPage extends ConsumerStatefulWidget {
   const ScreenplayDetailPage({super.key, required this.scriptId});
@@ -220,10 +218,17 @@ class _ScreenplayDetailPageState extends ConsumerState<ScreenplayDetailPage> {
       return;
     }
 
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
+    showGlassProgressSheet<void>(
+      context,
+      title: '正在打开',
+      isDismissible: false,
+      child: const Center(
+        child: SizedBox(
+          width: 28,
+          height: 28,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ),
     );
 
     final result = await _localRepository.openRemoteForEdit(remoteId);
@@ -352,23 +357,7 @@ class _ScreenplayDetailPageState extends ConsumerState<ScreenplayDetailPage> {
 
     final progress = ValueNotifier<(String, int, int)>(('准备', 0, 1));
     if (!mounted) return;
-    showModalBottomSheet<void>(
-      context: context,
-      isDismissible: false,
-      enableDrag: false,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (_) => ValueListenableBuilder(
-        valueListenable: progress,
-        builder: (_, value, __) => PublishProgressSheet(
-          stage: value.$1,
-          done: value.$2,
-          total: value.$3,
-        ),
-      ),
-    );
+    showPublishProgressSheet(context, progress: progress);
 
     setState(() => _publishing = true);
 
@@ -548,68 +537,75 @@ class _ScreenplayDetailPageState extends ConsumerState<ScreenplayDetailPage> {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (onPublish != null)
-            ListTile(
+            GlassListRow(
               leading: const Icon(Icons.publish_outlined),
-              title: const Text('发布'),
-              enabled: !publishing,
-              onTap: () {
-                Navigator.pop(context);
-                onPublish();
-              },
+              title: '发布',
+              onTap: publishing
+                  ? null
+                  : () {
+                      Navigator.pop(context);
+                      onPublish();
+                    },
             ),
           if (onSync != null)
-            ListTile(
+            GlassListRow(
               leading: const Icon(Icons.cloud_upload_outlined),
-              title: const Text('同步到服务器'),
-              enabled: !publishing,
-              onTap: () {
-                Navigator.pop(context);
-                onSync();
-              },
+              title: '同步到服务器',
+              onTap: publishing
+                  ? null
+                  : () {
+                      Navigator.pop(context);
+                      onSync();
+                    },
             ),
           if (onPromoteToTemplate != null)
-            ListTile(
+            GlassListRow(
               leading: const Icon(Icons.auto_awesome_outlined),
-              title: const Text('设为模板'),
-              enabled: !publishing,
-              onTap: () {
-                Navigator.pop(context);
-                onPromoteToTemplate();
-              },
+              title: '设为模板',
+              onTap: publishing
+                  ? null
+                  : () {
+                      Navigator.pop(context);
+                      onPromoteToTemplate();
+                    },
             ),
           if (onDownloadCopy != null)
-            ListTile(
+            GlassListRow(
               leading: const Icon(Icons.download_outlined),
-              title: const Text('下载副本'),
-              enabled: !downloading,
-              onTap: () {
-                Navigator.pop(context);
-                onDownloadCopy();
-              },
+              title: '下载副本',
+              onTap: downloading
+                  ? null
+                  : () {
+                      Navigator.pop(context);
+                      onDownloadCopy();
+                    },
             ),
           if (onExport != null)
-            ListTile(
+            GlassListRow(
               leading: const Icon(Icons.upload_outlined),
-              title: const Text('导出 JSON'),
-              enabled: !exporting,
-              onTap: () {
-                Navigator.pop(context);
-                onExport();
-              },
+              title: '导出 JSON',
+              onTap: exporting
+                  ? null
+                  : () {
+                      Navigator.pop(context);
+                      onExport();
+                    },
             ),
-          ListTile(
+          GlassListRow(
             leading: const Icon(Icons.download_outlined),
-            title: const Text('导入剧本 JSON'),
-            enabled: !_importing,
-            onTap: () {
-              Navigator.pop(context);
-              _onImport();
-            },
+            title: '导入剧本 JSON',
+            onTap: _importing
+                ? null
+                : () {
+                    Navigator.pop(context);
+                    _onImport();
+                  },
           ),
           if (isOwner)
-            ListTile(
-              leading: const Icon(Icons.delete_outline, color: AppColors.error),
-              title: const Text('删除剧本', style: TextStyle(color: AppColors.error)),
+            GlassListRow(
+              leading: const Icon(Icons.delete_outline),
+              iconColor: AppColors.error,
+              title: '删除剧本',
               onTap: () {
                 Navigator.pop(context);
                 deleteScreenplayAndPop(
@@ -747,7 +743,24 @@ class _ScreenplayDetailPageState extends ConsumerState<ScreenplayDetailPage> {
       return DesktopStackScaffold(
         title: const Text('剧本详情'),
         onBack: () => popOrGoDiscovery(context),
-        body: const Center(child: CircularProgressIndicator()),
+        body: CustomScrollView(
+          slivers: [
+            const SliverToBoxAdapter(
+              child: AspectRatio(
+                aspectRatio: 2.35,
+                child: PlaceholderImage(
+                  aspectRatio: 2.35,
+                  borderRadius: 0,
+                  iconSize: 48,
+                ),
+              ),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.all(AppDimensions.spacingMd),
+              sliver: FeedGridSkeleton(sliver: true, tileCount: 4),
+            ),
+          ],
+        ),
       );
     }
 
@@ -756,20 +769,22 @@ class _ScreenplayDetailPageState extends ConsumerState<ScreenplayDetailPage> {
       return DesktopStackScaffold(
         title: const Text('剧本详情'),
         onBack: () => popOrGoDiscovery(context),
-        body: EmptyStateView(
-          icon: Icons.search_off_outlined,
-          title: needsLogin ? '请先登录' : '剧本不存在',
-          subtitle: needsLogin
-              ? '登录后查看远程剧本详情'
-              : (_remoteError ?? '可能已被删除，或链接无效'),
-          actionLabel: needsLogin ? '去登录' : '重试',
-          onAction: needsLogin
-              ? () => context.go(
-                    AppRoutes.loginWithRedirect(
-                      AppRoutes.script(widget.scriptId),
-                    ),
-                  )
-              : _loadScreenplay,
+        body: Center(
+          child: GlassEmptyState(
+            icon: Icons.search_off_outlined,
+            title: needsLogin ? '请先登录' : '剧本不存在',
+            subtitle: needsLogin
+                ? '登录后查看远程剧本详情'
+                : (_remoteError ?? '可能已被删除，或链接无效'),
+            actionLabel: needsLogin ? '去登录' : '重试',
+            onAction: needsLogin
+                ? () => context.go(
+                      AppRoutes.loginWithRedirect(
+                        AppRoutes.script(widget.scriptId),
+                      ),
+                    )
+                : _loadScreenplay,
+          ),
         ),
       );
     }
@@ -1006,83 +1021,89 @@ class _ScreenplayDetailMobileState extends State<_ScreenplayDetailMobile> {
       primaryAction = widget.onEdit;
     }
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: RefreshIndicator(
-        onRefresh: widget.onRefresh ?? () async {},
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ScreenplayDetailHero(
-              screenplay: screenplay,
-              previewOptions: widget.previewOptions,
-              shootDefaults: widget.shootDefaults,
-              isOwner: widget.isOwner,
-              onBack: () => popOrGoExplore(context),
-              onMore: widget.onMore,
-              onFork: widget.onFork,
-              onEdit: widget.onEdit,
-              onLike: widget.onLike,
-              onFollow: widget.onFollow,
-              forking: widget.forking,
-              likeBusy: widget.likeBusy,
-              followBusy: widget.followBusy,
-            ),
-            FeedTabBar(
-              tabs: _detailTabs,
-              selectedIndex: _tabIndex,
-              onChanged: (i) => setState(() => _tabIndex = i),
-              underlineStyle: true,
-              embedded: true,
-              margin: const EdgeInsets.symmetric(
-                horizontal: AppDimensions.spacingMd,
+    return GlassHeroPage(
+      onBack: () => popOrGoExplore(context),
+      onRefresh: widget.onRefresh,
+      actions: widget.onMore != null
+          ? [
+              IconButton(
+                icon: const Icon(Icons.more_horiz),
+                onPressed: widget.onMore,
               ),
+            ]
+          : null,
+      hero: ScreenplayDetailCover(
+        screenplay: screenplay,
+        previewOptions: widget.previewOptions,
+      ),
+      heroHeight: 300,
+      infoCard: ScreenplayDetailInfoCard(
+        screenplay: screenplay,
+        shootDefaults: widget.shootDefaults,
+        isOwner: widget.isOwner,
+        onFollow: widget.onFollow,
+        onLike: widget.onLike,
+        followBusy: widget.followBusy,
+        likeBusy: widget.likeBusy,
+        bare: true,
+        showInlineActions: false,
+      ),
+      tabBar: PreferredSize(
+        preferredSize: const Size.fromHeight(AppDimensions.feedTabBarHeight),
+        child: ColoredBox(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          child: FeedTabBar(
+            tabs: _detailTabs,
+            selectedIndex: _tabIndex,
+            onChanged: (i) => setState(() => _tabIndex = i),
+            underlineStyle: true,
+            embedded: true,
+            margin: const EdgeInsets.symmetric(
+              horizontal: AppDimensions.spacingMd,
             ),
-            const SizedBox(height: AppDimensions.spacingMd),
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppDimensions.spacingMd,
-              ),
-              child: GlassCard(
-                borderRadius: BorderRadius.circular(24),
-                padding: const EdgeInsets.all(AppDimensions.spacingMd),
-                child: FadeSlideIndexedStack(
-                  index: _tabIndex,
-                  children: [
-                    ScreenplayStructureTree(
-                      screenplay: screenplay,
-                      galleryPaths: framePaths,
-                      galleryCaptions: frameCaptions,
-                      previewOptions: widget.previewOptions,
-                      onDeleteAct: widget.onDeleteAct,
-                      onDeleteScene: widget.onDeleteScene,
-                      onDeleteFrame: widget.onDeleteFrame,
-                      onUploadFrame: widget.onUploadFrame,
-                    ),
-                    ScreenplayInfoHeader(
-                      screenplay: screenplay,
-                      shootDefaults: widget.shootDefaults,
-                      showTitle: false,
-                      showHierarchySummary: false,
-                      showShootParams: false,
-                    ),
-                    const EmptyStateView(
-                      icon: Icons.construction_outlined,
-                      title: '即将上线',
-                      subtitle: '相关模板推荐正在建设中',
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: AppDimensions.spacingLg),
-          ],
-        ),
+          ),
         ),
       ),
-      bottomNavigationBar: SafeArea(
+      body: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppDimensions.spacingMd,
+          AppDimensions.spacingMd,
+          AppDimensions.spacingMd,
+          AppDimensions.spacingLg,
+        ),
+        child: GlassCard(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusXl),
+          padding: const EdgeInsets.all(AppDimensions.spacingMd),
+          child: FadeSlideIndexedStack(
+            index: _tabIndex,
+            children: [
+              ScreenplayStructureTree(
+                screenplay: screenplay,
+                galleryPaths: framePaths,
+                galleryCaptions: frameCaptions,
+                previewOptions: widget.previewOptions,
+                onDeleteAct: widget.onDeleteAct,
+                onDeleteScene: widget.onDeleteScene,
+                onDeleteFrame: widget.onDeleteFrame,
+                onUploadFrame: widget.onUploadFrame,
+              ),
+              ScreenplayInfoHeader(
+                screenplay: screenplay,
+                shootDefaults: widget.shootDefaults,
+                showTitle: false,
+                showHierarchySummary: false,
+                showShootParams: false,
+              ),
+              const GlassEmptyState(
+                icon: Icons.construction_outlined,
+                title: '即将上线',
+                subtitle: '相关模板推荐正在建设中',
+              ),
+            ],
+          ),
+        ),
+      ),
+      bottomBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(
             AppDimensions.spacingMd,
@@ -1264,47 +1285,63 @@ class _ScreenplayDetailDesktop extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   if (onDownloadCopy != null)
-                    PrimaryButton(
+                    GlassButton(
                       label: downloading ? '下载中…' : '下载副本',
-                      isLoading: downloading,
+                      loading: downloading,
+                      expand: true,
                       onPressed: downloading ? null : onDownloadCopy,
                     ),
-                  if (onDownloadCopy != null) const SizedBox(height: 8),
+                  if (onDownloadCopy != null)
+                    const SizedBox(height: AppDimensions.spacingSm),
                   if (onPublish != null) ...[
-                    PrimaryButton(
+                    GlassButton(
                       label: publishing ? '发布中…' : '发布',
-                      isLoading: publishing,
+                      filled: true,
+                      loading: publishing,
+                      expand: true,
                       onPressed: publishing ? null : onPublish,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppDimensions.spacingSm),
                   ],
                   if (onSync != null) ...[
-                    PrimaryButton(
+                    GlassButton(
                       label: publishing ? '同步中…' : '同步到服务器',
-                      isLoading: publishing,
+                      filled: true,
+                      loading: publishing,
+                      expand: true,
                       onPressed: publishing ? null : onSync,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppDimensions.spacingSm),
                   ],
                   if (isOwner && onEdit != null)
-                    PrimaryButton(label: ctaLabel, onPressed: onEdit)
+                    GlassButton(
+                      label: ctaLabel,
+                      filled: true,
+                      expand: true,
+                      onPressed: onEdit,
+                    )
                   else if (showFork)
-                    PrimaryButton(
+                    GlassButton(
                       label: forking ? 'Fork 中…' : 'Fork 此剧本',
-                      isLoading: forking,
+                      filled: true,
+                      loading: forking,
+                      expand: true,
                       onPressed: forking ? null : onFork,
                     ),
                   if (screenplay.isPublished && onExport != null) ...[
-                    const SizedBox(height: 8),
-                    SecondaryButton(
+                    const SizedBox(height: AppDimensions.spacingSm),
+                    GlassButton(
                       label: exporting ? '导出中…' : '导出 JSON',
+                      expand: true,
                       onPressed: exporting ? null : onExport,
                     ),
                   ],
                   if (isOwner && showFork && onFork != null) ...[
-                    const SizedBox(height: 8),
-                    SecondaryButton(
+                    const SizedBox(height: AppDimensions.spacingSm),
+                    GlassButton(
                       label: forking ? 'Fork 中…' : 'Fork 此剧本',
+                      loading: forking,
+                      expand: true,
                       onPressed: forking ? null : onFork,
                     ),
                   ],

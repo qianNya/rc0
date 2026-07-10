@@ -97,6 +97,14 @@ abstract final class ScreenplayApiMapper {
     final kind = sp.kind.toInt();
     final forkSource = sp.forkSourceId?.toInt();
     final forkRoot = sp.forkRootId?.toInt();
+    final publishedAt = sp.publishedAt.isNotEmpty
+        ? DateTime.tryParse(sp.publishedAt)
+        : null;
+    final createdAt =
+        sp.createAt.isNotEmpty ? DateTime.tryParse(sp.createAt) : null;
+    final featuredAt = sp.featuredAt.isNotEmpty
+        ? DateTime.tryParse(sp.featuredAt)
+        : null;
     return base.copyWith(
       author: authorName ??
           (creatorId > 0 ? '用户 $creatorId' : '创作者'),
@@ -113,6 +121,12 @@ abstract final class ScreenplayApiMapper {
       forkSourceId: forkSource,
       forkRootId: forkRoot,
       forkedFromId: forkSource,
+      publishedAt: publishedAt,
+      createdAt: createdAt,
+      durationSec: sp.durationSec.toInt(),
+      isFeatured: sp.isFeatured,
+      featuredAt: featuredAt,
+      hotScore: sp.hotScore.toDouble(),
     );
   }
 

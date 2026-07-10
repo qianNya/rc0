@@ -8,7 +8,6 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../core/data/app_catalog.dart';
 import '../../../../core/responsive/feed_grid_layout.dart';
-import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/rc0_widgets.dart';
 import '../../../../shared/widgets/shell_insets.dart';
 import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
@@ -21,6 +20,8 @@ import '../widgets/character_action_sheet.dart';
 import '../widgets/character_category_chips.dart';
 import '../widgets/character_masonry_grid.dart';
 import 'wiki/wiki_character_grid_card.dart';
+import '../../../../shared/widgets/feed_grid_skeleton.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 
 enum CharacterLibraryMode { wiki, discovery }
 
@@ -282,7 +283,7 @@ class _CharacterLibraryBodyState extends ConsumerState<CharacterLibraryBody>
         padding: EdgeInsets.only(bottom: _scrollBottomPadding(context)),
         children: [
           SizedBox(height: MediaQuery.sizeOf(context).height * 0.12),
-          EmptyStateView(
+          GlassEmptyState(
             icon: Icons.person_outline,
             title: _repo.error ?? '暂无角色',
             subtitle: _repo.error != null ? null : '创建或收藏第一个角色',
@@ -302,7 +303,7 @@ class _CharacterLibraryBodyState extends ConsumerState<CharacterLibraryBody>
       physics: const AlwaysScrollableScrollPhysics(),
       children: [
         SizedBox(height: MediaQuery.sizeOf(context).height * 0.15),
-        EmptyStateView(
+        GlassEmptyState(
           icon: Icons.person_outline,
           title: _repo.error ?? '暂无角色',
           subtitle: _repo.error != null ? null : '创建第一个角色',
@@ -475,7 +476,7 @@ class _CharacterLibraryBodyState extends ConsumerState<CharacterLibraryBody>
           if (_repo.loadingMore)
             const Padding(
               padding: EdgeInsets.all(AppDimensions.spacingMd),
-              child: Center(child: CircularProgressIndicator()),
+              child: FeedGridSkeleton(tileCount: 2),
             ),
         ],
       ),
@@ -484,7 +485,10 @@ class _CharacterLibraryBodyState extends ConsumerState<CharacterLibraryBody>
 
   Widget _buildContent(List<CharacterEntry> filtered) {
     if (_repo.loading && _repo.items.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const Padding(
+        padding: EdgeInsets.all(AppDimensions.spacingMd),
+        child: FeedGridSkeleton(tileCount: 6),
+      );
     }
     if (filtered.isEmpty) {
       return _buildEmptyState();

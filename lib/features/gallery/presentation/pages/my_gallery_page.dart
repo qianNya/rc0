@@ -11,7 +11,6 @@ import '../../../../app/theme/app_dimensions.dart';
 import '../../../../core/data/app_catalog.dart';
 import '../../../../core/utils/image_url_utils.dart';
 import '../../../../core/utils/state_listeners.dart';
-import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
 import '../../../../shared/widgets/inline_error_banner.dart';
 import '../../../../shared/widgets/image_preview.dart';
@@ -27,6 +26,8 @@ import '../widgets/gallery_page_header.dart';
 import '../widgets/gallery_tags_tab.dart';
 import '../widgets/gallery_works_tab.dart';
 import '../../../ip/presentation/widgets/ip_tab.dart';
+import '../../../../shared/widgets/feed_grid_skeleton.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 
 class MyGalleryPage extends ConsumerStatefulWidget {
   const MyGalleryPage({super.key});
@@ -341,7 +342,7 @@ class _MyGalleryPageState extends ConsumerState<MyGalleryPage> {
             left: AppDimensions.spacingMd,
             right: AppDimensions.spacingMd,
           ),
-          child: EmptyStateView(
+          child: GlassEmptyState(
             icon: Icons.photo_library_outlined,
             title: '登录后查看图库',
             subtitle: '上传与管理你的参考图片',
@@ -381,7 +382,10 @@ class _MyGalleryPageState extends ConsumerState<MyGalleryPage> {
       return const [
         SliverFillRemaining(
           hasScrollBody: false,
-          child: Center(child: CircularProgressIndicator()),
+          child: Padding(
+            padding: EdgeInsets.all(AppDimensions.spacingMd),
+            child: FeedGridSkeleton(tileCount: 6),
+          ),
         ),
       ];
     }
@@ -391,7 +395,7 @@ class _MyGalleryPageState extends ConsumerState<MyGalleryPage> {
         return [
           SliverFillRemaining(
             hasScrollBody: false,
-            child: EmptyStateView(
+            child: GlassEmptyState(
               icon: Icons.cloud_off_outlined,
               title: '加载失败',
               subtitle: error,
@@ -404,7 +408,7 @@ class _MyGalleryPageState extends ConsumerState<MyGalleryPage> {
       return [
         SliverFillRemaining(
           hasScrollBody: false,
-          child: EmptyStateView(
+          child: GlassEmptyState(
             icon: Icons.photo_library_outlined,
             title: '图库还是空的',
             subtitle: '点击右上角上传你的第一张图片',
@@ -442,7 +446,7 @@ class _MyGalleryPageState extends ConsumerState<MyGalleryPage> {
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 48),
-            child: EmptyStateView(
+            child: GlassEmptyState(
               icon: Icons.filter_alt_off_outlined,
               title: '该分类暂无图片',
               subtitle: '试试选择其他标签',

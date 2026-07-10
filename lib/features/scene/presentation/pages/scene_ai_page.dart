@@ -7,9 +7,9 @@ import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/data/app_catalog.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
-import '../../../../shared/widgets/primary_button.dart';
 import '../../../../shared/widgets/rc0_widgets.dart';
 import '../widgets/scene_create_sheet.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 
 class SceneAiPage extends StatefulWidget {
   const SceneAiPage({super.key});
@@ -136,7 +136,9 @@ class _SceneAiPageState extends State<SceneAiPage> {
               },
             ),
             const SizedBox(height: AppDimensions.spacingLg),
-            PrimaryButton(
+            GlassButton(
+                filled: true,
+                expand: true,
               label: _generating ? '生成中…' : '生成场景',
               onPressed: _generating ? null : _generate,
             ),
@@ -177,7 +179,9 @@ class _SceneAiPageState extends State<SceneAiPage> {
                 },
               ),
               const SizedBox(height: AppDimensions.spacingLg),
-              PrimaryButton(
+              GlassButton(
+                filled: true,
+                expand: true,
                 label: '保存到我的场景',
                 onPressed: _saveScene,
               ),

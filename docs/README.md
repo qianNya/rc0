@@ -18,6 +18,7 @@
 | `design/UI_STYLE_GUIDE.md` | UI 风格规范（Apple Liquid Glass 视觉/材质/token/组件） |
 | `design/UX_GUIDELINES.md` | 用户体验规范（信息架构、核心旅程、状态反馈、可访问性） |
 | `design/PRODUCT_CONCEPT.md` | 产品创意设计规范（定位、创作飞轮、关键机制、品牌表达） |
+| `design/TEMPLATE_MARKET_UI_PRD.md` | 模板市场页面视觉设计 PRD（设计稿还原规格） |
 | `07-design-system.md` | Liquid Glass 设计系统速查（token/组件对照，细节以 `design/UI_STYLE_GUIDE.md` 为准） |
 | `01-module-map.md` … `10-migration-plan.md` | 编号化架构文档（见 `00-overview.md`） |
 

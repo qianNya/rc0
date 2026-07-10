@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_motion.dart';
-import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
 import '../../data/gear_cabinet_repository.dart';
 import '../../domain/gear_cabinet.dart';
@@ -19,6 +18,7 @@ import '../widgets/gear_cabinet_overview.dart';
 import '../widgets/gear_cabinet_zoom_fab.dart';
 import '../widgets/gear_room_tabs.dart';
 import '../widgets/gear_search_sheet.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 
 /// Main gear cabinet page — Room → Cabinet → Shelf → Device hierarchy.
 class GearCabinetPage extends StatefulWidget {
@@ -168,7 +168,7 @@ class _GearCabinetPageState extends State<GearCabinetPage>
                   ),
                 )
               : _repo.error != null
-                  ? EmptyStateView(
+                  ? GlassEmptyState(
                       icon: Icons.inventory_2_outlined,
                       title: '加载失败',
                       subtitle: _repo.error,
@@ -219,7 +219,7 @@ class _GearCabinetPageState extends State<GearCabinetPage>
 
   Widget _buildRoomContent(GearRoom? room) {
     if (room == null || room.cabinets.isEmpty) {
-      return const EmptyStateView(
+      return const GlassEmptyState(
         icon: Icons.inventory_2_outlined,
         title: '暂无柜子',
         subtitle: '添加第一个设备柜开始管理',
@@ -232,7 +232,7 @@ class _GearCabinetPageState extends State<GearCabinetPage>
           .map((type) {
             final r = _repo.roomByType(type);
             if (r == null || r.cabinets.isEmpty) {
-              return const EmptyStateView(
+              return const GlassEmptyState(
                 icon: Icons.inventory_2_outlined,
                 title: '暂无设备',
                 subtitle: '此房间还没有柜子',

@@ -7,10 +7,11 @@ import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/network/api_auth.dart';
 import '../../../../core/responsive/feed_grid_layout.dart';
 import '../../../../shared/widgets/content_card_shared.dart';
-import '../../../../shared/widgets/empty_state_view.dart';
+import '../../../../shared/widgets/feed_grid_skeleton.dart';
+import '../../../../shared/widgets/glass/glass.dart';
+import '../../../../shared/widgets/glass_feed_card.dart';
 import '../../../../shared/widgets/inline_error_banner.dart';
 import '../../../screenplay/presentation/widgets/screenplay_selection_controller.dart';
-import '../widgets/explore_feed_grid_card.dart';
 
 List<Widget> buildDiscoverySlivers({
   required BuildContext context,
@@ -44,13 +45,7 @@ List<Widget> buildDiscoverySlivers({
       const SliverToBoxAdapter(
         child: Padding(
           padding: EdgeInsets.all(AppDimensions.spacingMd),
-          child: Center(
-            child: SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          ),
+          child: FeedGridSkeleton(tileCount: 4),
         ),
       ),
   ];
@@ -63,7 +58,7 @@ Widget buildRemoteEmptyState({
   required VoidCallback onUpload,
 }) {
   if (remoteError == null) {
-    return EmptyStateView(
+    return GlassEmptyState(
       icon: Icons.movie_creation_outlined,
       title: '还没有内容',
       subtitle: '上传参考图，按「剧本 → 幕 → 场 → 画」组织你的分镜',
@@ -73,7 +68,7 @@ Widget buildRemoteEmptyState({
   }
 
   if (isUnauthorizedError(remoteError)) {
-    return EmptyStateView(
+    return GlassEmptyState(
       icon: Icons.lock_outline,
       title: '登录已过期',
       subtitle: '请重新登录后查看云端内容',
@@ -85,7 +80,7 @@ Widget buildRemoteEmptyState({
   }
 
   if (isMaintenanceError(remoteError)) {
-    return EmptyStateView(
+    return GlassEmptyState(
       icon: Icons.build_circle_outlined,
       title: '系统维护中',
       subtitle: remoteError,
@@ -95,7 +90,7 @@ Widget buildRemoteEmptyState({
   }
 
   if (isNetworkError(remoteError)) {
-    return EmptyStateView(
+    return GlassEmptyState(
       icon: Icons.wifi_off_outlined,
       title: '网络不可用',
       subtitle: remoteError,
@@ -105,7 +100,7 @@ Widget buildRemoteEmptyState({
   }
 
   if (isServerError(remoteError)) {
-    return EmptyStateView(
+    return GlassEmptyState(
       icon: Icons.cloud_off_outlined,
       title: '服务暂时不可用',
       subtitle: remoteError,
@@ -114,7 +109,7 @@ Widget buildRemoteEmptyState({
     );
   }
 
-  return EmptyStateView(
+  return GlassEmptyState(
     icon: Icons.cloud_off_outlined,
     title: '加载失败',
     subtitle: remoteError,
@@ -140,8 +135,8 @@ Widget buildDiscoveryFeedBody({
 }) {
   if (remoteLoading && feedItems.isEmpty) {
     return const Padding(
-      padding: EdgeInsets.all(48),
-      child: Center(child: CircularProgressIndicator()),
+      padding: EdgeInsets.symmetric(vertical: AppDimensions.spacingSm),
+      child: FeedGridSkeleton(),
     );
   }
 
@@ -188,18 +183,20 @@ Widget buildDiscoveryFeedBody({
         itemBuilder: (_, index) {
           final item = feedItems[index];
           final isLocal = item.isLocal;
-          return ExploreFeedGridCard(
+          return GlassFeedCard(
             screenplay: item,
+            layout: overlayMetrics
+                ? GlassFeedCardLayout.overlay
+                : GlassFeedCardLayout.library,
             onDelete: isLocal ? () => onDelete(item) : null,
             selectionMode: selectionController.selectionMode && isLocal,
             selected: selectionController.isSelected(item.id),
             onSelectedToggle:
                 isLocal ? () => selectionController.toggle(item.id) : null,
-            onLongPressEnterSelection: isLocal
+            onLongPress: isLocal
                 ? () =>
                     selectionController.enterSelection(initialLocalId: item.id)
                 : null,
-            overlayMetrics: overlayMetrics,
           );
         },
       ),

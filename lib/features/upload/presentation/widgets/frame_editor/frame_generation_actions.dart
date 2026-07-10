@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../../../shared/widgets/glass/glass.dart';
 
-import '../../../../../shared/widgets/primary_button.dart';
 
 class FrameGenerationActions extends StatelessWidget {
   const FrameGenerationActions({
@@ -19,15 +19,19 @@ class FrameGenerationActions extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: PrimaryButton(
+          child: GlassButton(
+                filled: true,
+                expand: true,
             label: '生成图片',
-            isLoading: isLoading,
+            loading: isLoading,
             onPressed: onGenerateImage,
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: PrimaryButton(
+          child: GlassButton(
+                filled: true,
+                expand: true,
             label: '生成视频',
             onPressed: onGenerateVideo,
           ),

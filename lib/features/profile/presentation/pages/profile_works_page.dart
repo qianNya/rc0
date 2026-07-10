@@ -8,9 +8,7 @@ import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_motion.dart';
-import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
-import '../../../../core/domain/screenplay/screenplay_display.dart';
 import '../../../../core/responsive/breakpoints.dart';
 import '../../../../core/responsive/feed_grid_layout.dart';
 import '../../../../core/utils/state_listeners.dart';
@@ -18,10 +16,12 @@ import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
 import '../../../../shared/widgets/feed_tab_bar.dart';
 import '../../../../shared/widgets/glass/glass.dart';
 import '../../../../shared/widgets/inline_error_banner.dart';
-import '../../../../shared/widgets/pose_cover_image.dart';
+import '../../../../shared/widgets/feed_grid_skeleton.dart';
+import '../../../../shared/widgets/glass_feed_card.dart';
 import '../../../../shared/widgets/rc0_app_bar.dart';
 import '../../../../shared/widgets/shell_insets.dart';
 import '../../../screenplay/data/screenplay_local_repository.dart';
+import '../../../screenplay/data/screenplay_delete_options.dart';
 import '../../../screenplay/presentation/widgets/screenplay_delete_actions.dart';
 import '../../../screenplay/presentation/widgets/screenplay_selection_bar.dart';
 import '../../../screenplay/presentation/widgets/screenplay_selection_controller.dart';
@@ -84,6 +84,16 @@ class _ProfileWorksPageState extends ConsumerState<ProfileWorksPage> {
 
   Future<void> _deleteLocal(Screenplay script) async {
     await confirmAndDeleteScreenplays(context, [script]);
+  }
+
+  Future<void> _deleteRemote(Screenplay script) async {
+    final userId = _userId;
+    if (userId == null) return;
+    await confirmAndDeleteRemoteScreenplays(
+      context,
+      [script],
+      userId: userId,
+    );
   }
 
   Future<void> _deleteSelected() async {
@@ -185,6 +195,7 @@ class _ProfileWorksPageState extends ConsumerState<ProfileWorksPage> {
       onCreate: _createNew,
       onOpen: _openWork,
       onDeleteLocal: _deleteLocal,
+      onDeleteRemote: _deleteRemote,
       onVisibility: _openVisibilitySettings,
     );
 
@@ -237,7 +248,7 @@ class _ProfileWorksPageState extends ConsumerState<ProfileWorksPage> {
         : Scaffold(
             backgroundColor: AppColors.background,
             appBar: Rc0AppBar(
-              frosted: false,
+              frosted: true,
               title: const Text('作品库'),
               centerTitle: true,
               leading: IconButton(
@@ -323,6 +334,7 @@ class _WorksGrid extends StatelessWidget {
     required this.onCreate,
     required this.onOpen,
     required this.onDeleteLocal,
+    required this.onDeleteRemote,
     required this.onVisibility,
   });
 
@@ -340,12 +352,16 @@ class _WorksGrid extends StatelessWidget {
   final VoidCallback onCreate;
   final ValueChanged<Screenplay> onOpen;
   final ValueChanged<Screenplay> onDeleteLocal;
+  final ValueChanged<Screenplay> onDeleteRemote;
   final ValueChanged<Screenplay> onVisibility;
 
   @override
   Widget build(BuildContext context) {
     if (loading && works.isEmpty && error == null) {
-      return const Center(child: CircularProgressIndicator());
+      return const Padding(
+        padding: EdgeInsets.all(AppDimensions.spacingMd),
+        child: FeedGridSkeleton(tileCount: 6),
+      );
     }
 
     return RefreshIndicator(
@@ -431,18 +447,25 @@ class _WorksGrid extends StatelessWidget {
                 final script = works[index];
                 final canEditVisibility =
                     !script.isLocal && script.remoteScreenplayId != null;
-                return _WorkLibraryCard(
+                final canDeleteRemote =
+                    !script.isLocal && screenplayCanDeleteRemote(script);
+                return GlassFeedCard(
+                  layout: GlassFeedCardLayout.library,
                   screenplay: script,
                   selectionMode:
                       selectionController.selectionMode && script.isLocal,
                   selected: selectionController.isSelected(script.id),
                   onTap: () => onOpen(script),
-                  onDelete: script.isLocal ? () => onDeleteLocal(script) : null,
+                  onDelete: script.isLocal
+                      ? () => onDeleteLocal(script)
+                      : canDeleteRemote
+                          ? () => onDeleteRemote(script)
+                          : null,
                   onMore: canEditVisibility ? () => onVisibility(script) : null,
                   onSelectedToggle: script.isLocal
                       ? () => selectionController.toggle(script.id)
                       : null,
-                  onLongPressEnterSelection: script.isLocal
+                  onLongPress: script.isLocal
                       ? () => selectionController.enterSelection(
                           initialLocalId: script.id,
                         )
@@ -454,17 +477,9 @@ class _WorksGrid extends StatelessWidget {
         ),
       ),
       if (loadingMore)
-        const SliverToBoxAdapter(
-          child: Padding(
-            padding: EdgeInsets.only(bottom: AppDimensions.spacingMd),
-            child: Center(
-              child: SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
-          ),
+        SliverPadding(
+          padding: const EdgeInsets.only(bottom: AppDimensions.spacingMd),
+          sliver: FeedGridSkeleton(sliver: true, tileCount: 4),
         ),
       const SliverToBoxAdapter(child: ShellBottomSpacer(extra: 24)),
     ];
@@ -490,249 +505,6 @@ class _FilteredEmptyState extends StatelessWidget {
       subtitle: subtitle,
       actionLabel: '新建剧本',
       onAction: onCreate,
-    );
-  }
-}
-
-/// 单个作品卡：封面占满（内容层），底部玻璃信息区（控制层弱化）。
-class _WorkLibraryCard extends StatelessWidget {
-  const _WorkLibraryCard({
-    required this.screenplay,
-    required this.onTap,
-    this.onDelete,
-    this.onMore,
-    this.selectionMode = false,
-    this.selected = false,
-    this.onSelectedToggle,
-    this.onLongPressEnterSelection,
-  });
-
-  final Screenplay screenplay;
-  final VoidCallback onTap;
-  final VoidCallback? onDelete;
-  final VoidCallback? onMore;
-  final bool selectionMode;
-  final bool selected;
-  final VoidCallback? onSelectedToggle;
-  final VoidCallback? onLongPressEnterSelection;
-
-  String get _title =>
-      screenplay.title.trim().isEmpty ? '未命名剧本' : screenplay.title.trim();
-
-  @override
-  Widget build(BuildContext context) {
-    final badgeLabel = screenplay.isLocal
-        ? '草稿'
-        : screenplay.visibility == 0
-        ? '非公开'
-        : '公开';
-
-    return GlassCard(
-      padding: EdgeInsets.zero,
-      selected: selected,
-      onTap: selectionMode ? onSelectedToggle : onTap,
-      onLongPress: selectionMode
-          ? onSelectedToggle
-          : onLongPressEnterSelection ?? onDelete,
-      borderRadius: BorderRadius.circular(AppDimensions.radiusXl),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                PoseCoverImage(
-                  imagePath: screenplay.effectiveCoverImagePath,
-                  expand: true,
-                  borderRadius: AppDimensions.radiusXl,
-                ),
-                const Positioned.fill(child: _CoverScrim()),
-                Positioned(
-                  top: AppDimensions.spacingSm,
-                  right: AppDimensions.spacingSm,
-                  child: _VisibilityBadge(label: badgeLabel),
-                ),
-                if (selectionMode)
-                  Positioned(
-                    top: AppDimensions.spacingSm,
-                    left: AppDimensions.spacingSm,
-                    child: AnimatedScale(
-                      duration: AppMotion.fast,
-                      scale: selected ? 1 : 0.9,
-                      child: Checkbox(
-                        value: selected,
-                        onChanged: (_) => onSelectedToggle?.call(),
-                        visualDensity: VisualDensity.compact,
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                    ),
-                  ),
-                Positioned(
-                  left: AppDimensions.spacingSm,
-                  right: AppDimensions.spacingSm,
-                  bottom: AppDimensions.spacingSm,
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.movie_creation_outlined,
-                        size: 13,
-                        color: Colors.white,
-                      ),
-                      const SizedBox(width: AppDimensions.spacingXs),
-                      Expanded(
-                        child: Text(
-                          screenplay.hierarchySummary,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppDimensions.spacingSm + 2,
-              AppDimensions.spacingSm + 2,
-              AppDimensions.spacingSm,
-              AppDimensions.spacingSm,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _title,
-                  style: AppTextStyles.label.copyWith(fontSize: 13),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: AppDimensions.spacingSm),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.favorite_border,
-                      size: 16,
-                      color: AppColors.textTertiary,
-                    ),
-                    const SizedBox(width: AppDimensions.spacingXs),
-                    Text(
-                      screenplay.likes.toString(),
-                      style: AppTextStyles.bodySecondary.copyWith(fontSize: 12),
-                    ),
-                    const SizedBox(width: AppDimensions.spacingSm),
-                    const Icon(
-                      Icons.remove_red_eye_outlined,
-                      size: 15,
-                      color: AppColors.textTertiary,
-                    ),
-                    const SizedBox(width: AppDimensions.spacingXs),
-                    Text(
-                      screenplay.views.toString(),
-                      style: AppTextStyles.bodySecondary.copyWith(fontSize: 12),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      onPressed:
-                          onMore ??
-                          (onDelete == null
-                              ? null
-                              : () => _showDraftMenu(context)),
-                      visualDensity: VisualDensity.compact,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints.tightFor(
-                        width: 32,
-                        height: 28,
-                      ),
-                      icon: const Icon(Icons.more_horiz, size: 18),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _showDraftMenu(BuildContext context) async {
-    final action = await showGlassSheet<String>(
-      context,
-      padding: kGlassSheetMenuPadding,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          GlassListRow(
-            leading: const Icon(Icons.edit_outlined),
-            title: '继续编辑',
-            onTap: () => Navigator.pop(context, 'edit'),
-          ),
-          GlassListRow(
-            leading: const Icon(Icons.delete_outline),
-            iconColor: AppColors.error,
-            title: '删除',
-            onTap: () => Navigator.pop(context, 'delete'),
-          ),
-        ],
-      ),
-    );
-    if (!context.mounted) return;
-    if (action == 'edit') {
-      onTap();
-    } else if (action == 'delete') {
-      onDelete?.call();
-    }
-  }
-}
-
-class _CoverScrim extends StatelessWidget {
-  const _CoverScrim();
-
-  @override
-  Widget build(BuildContext context) {
-    return const DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0x00000000), Color(0x00000000), Color(0x8A000000)],
-          stops: [0, 0.56, 1],
-        ),
-      ),
-    );
-  }
-}
-
-class _VisibilityBadge extends StatelessWidget {
-  const _VisibilityBadge({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.62),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
     );
   }
 }

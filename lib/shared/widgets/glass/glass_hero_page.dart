@@ -25,6 +25,7 @@ class GlassHeroPage extends StatelessWidget {
     required this.body,
     this.bottomBar,
     this.extendBodyBehindAppBar = true,
+    this.onRefresh,
   });
 
   final Widget hero;
@@ -39,6 +40,7 @@ class GlassHeroPage extends StatelessWidget {
   final Widget body;
   final Widget? bottomBar;
   final bool extendBodyBehindAppBar;
+  final Future<void> Function()? onRefresh;
 
   @override
   Widget build(BuildContext context) {
@@ -46,6 +48,7 @@ class GlassHeroPage extends StatelessWidget {
         (Breakpoints.isDesktop(context) ? 360.0 : 280.0);
 
     final content = CustomScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
         SliverToBoxAdapter(
           child: Stack(
@@ -94,6 +97,10 @@ class GlassHeroPage extends StatelessWidget {
       ],
     );
 
+    final scrollable = onRefresh != null
+        ? RefreshIndicator(onRefresh: onRefresh!, child: content)
+        : content;
+
     if (Breakpoints.isDesktop(context)) {
       return DesktopStackScaffold(
         title: title ?? const SizedBox.shrink(),
@@ -103,7 +110,7 @@ class GlassHeroPage extends StatelessWidget {
         overlayAppBar: extendBodyBehindAppBar,
         appBarForegroundColor:
             extendBodyBehindAppBar ? Colors.white : null,
-        body: content,
+        body: scrollable,
         bottomNavigationBar: bottomBar,
       );
     }
@@ -122,7 +129,7 @@ class GlassHeroPage extends StatelessWidget {
         systemOverlayStyle:
             extendBodyBehindAppBar ? AppSystemUi.darkStyle : null,
       ),
-      body: content,
+      body: scrollable,
       bottomNavigationBar: bottomBar,
     );
   }

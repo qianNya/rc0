@@ -8,7 +8,6 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/data/app_catalog.dart';
-import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
 import '../../../../shared/widgets/profile_widgets.dart';
 import '../../../character/data/character_repository.dart';
@@ -26,6 +25,7 @@ import '../../../upload/presentation/widgets/frame_editor/frame_prompt_section.d
 import '../../../upload/presentation/widgets/script_editor/script_editor_actions.dart';
 import '../../domain/script_editor_selection.dart';
 import '../../../../shared/widgets/pose_cover_image.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 
 class FrameInspectorPanel extends StatefulWidget {
   const FrameInspectorPanel({
@@ -73,7 +73,7 @@ class _FrameInspectorPanelState extends State<FrameInspectorPanel> {
             remoteScreenplayId: widget.actions.remoteScreenplayId,
           ),
           const SizedBox(height: 16),
-          const EmptyStateView(
+          const GlassEmptyState(
             icon: Icons.tune_outlined,
             title: '选择分镜以编辑',
             subtitle: '在左侧结构树或中间分镜列表中选择一个画面',

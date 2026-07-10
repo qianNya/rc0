@@ -8,8 +8,8 @@ import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/data/app_catalog.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
-import '../../../../shared/widgets/primary_button.dart';
 import '../../../../shared/widgets/rc0_widgets.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 
 class CharacterAiPage extends StatefulWidget {
   const CharacterAiPage({super.key});
@@ -171,7 +171,9 @@ class _CharacterAiPageState extends State<CharacterAiPage> {
               },
             ),
             const SizedBox(height: 24),
-            PrimaryButton(
+            GlassButton(
+                filled: true,
+                expand: true,
               label: _generating ? '生成中…' : '生成角色',
               onPressed: _generating ? null : _generate,
             ),
@@ -231,7 +233,9 @@ class _CharacterAiPageState extends State<CharacterAiPage> {
                   const SizedBox(width: 12),
                   Expanded(
                     flex: 2,
-                    child: PrimaryButton(
+                    child: GlassButton(
+                filled: true,
+                expand: true,
                       label: '保存角色',
                       onPressed:
                           _selectedResultIndexes.isEmpty ? null : _saveCharacter,

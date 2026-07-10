@@ -9,7 +9,6 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../core/data/app_catalog.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
-import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
 import '../../../../shared/widgets/feed_tab_bar.dart';
 import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
@@ -20,6 +19,7 @@ import '../../domain/scene_utils.dart';
 import '../widgets/scene_action_sheet.dart';
 import '../widgets/scene_create_sheet.dart';
 import '../widgets/scene_masonry_grid.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 
 class MyScenesPage extends ConsumerStatefulWidget {
   const MyScenesPage({super.key});
@@ -97,7 +97,7 @@ class _MyScenesPageState extends ConsumerState<MyScenesPage> {
     final isLoggedIn = ref.watch(isLoggedInProvider);
     final filtered = _filteredForTab(tabIndex);
     if (filtered.isEmpty) {
-      return EmptyStateView(
+      return GlassEmptyState(
         icon: Icons.landscape_outlined,
         title: '暂无场景',
         actionLabel: isLoggedIn ? '新建场景' : null,

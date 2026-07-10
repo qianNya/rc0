@@ -6,6 +6,7 @@ import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../data/screenplay_visibility_service.dart';
 import '../../../user/data/user_screenplays_repository.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 
 /// Shared radio list for screenplay visibility (公开 / 非公开).
 class ScreenplayVisibilityOptions extends StatelessWidget {
@@ -24,33 +25,33 @@ class ScreenplayVisibilityOptions extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text('选择可见性', style: AppTextStyles.bodySecondary),
-        const SizedBox(height: 12),
-        RadioListTile<int>(
-          value: 1,
-          groupValue: value,
-          onChanged: onChanged == null ? null : (v) => onChanged!(v!),
-          title: const Text('公开'),
-          subtitle: Text(
-            '公开可见，可出现在作品列表',
-            style: AppTextStyles.bodySecondary.copyWith(fontSize: 12),
+        const SizedBox(height: AppDimensions.spacingSm),
+        GlassListRow(
+          leading: Icon(
+            value == 1 ? Icons.radio_button_checked : Icons.radio_button_off,
+            color: value == 1 ? AppColors.accent : null,
           ),
-          contentPadding: EdgeInsets.zero,
+          title: '公开',
+          subtitle: '公开可见，可出现在作品列表',
+          dense: true,
+          onTap: onChanged == null ? null : () => onChanged!(1),
         ),
-        RadioListTile<int>(
-          value: 0,
-          groupValue: value,
-          onChanged: (!privateEnabled || onChanged == null)
-              ? null
-              : (v) => onChanged!(v!),
-          title: const Text('非公开'),
-          subtitle: Text(
-            '仅服务端存档，可通过 JSON 导出分享',
-            style: AppTextStyles.bodySecondary.copyWith(fontSize: 12),
+        GlassListRow(
+          leading: Icon(
+            value == 0 ? Icons.radio_button_checked : Icons.radio_button_off,
+            color: value == 0 && privateEnabled
+                ? AppColors.accent
+                : AppColors.textTertiary,
           ),
-          contentPadding: EdgeInsets.zero,
+          title: '非公开',
+          subtitle: '仅服务端存档，可通过 JSON 导出分享',
+          dense: true,
+          onTap: (!privateEnabled || onChanged == null)
+              ? null
+              : () => onChanged!(0),
         ),
       ],
     );
@@ -73,16 +74,15 @@ class ScreenplayVisibilitySheet extends StatefulWidget {
     required Screenplay screenplay,
     required int userId,
   }) {
-    return showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppDimensions.radiusLg),
-        ),
+    return showGlassSheet<void>(
+      context,
+      padding: const EdgeInsets.fromLTRB(
+        AppDimensions.spacingLg,
+        AppDimensions.spacingMd,
+        AppDimensions.spacingLg,
+        AppDimensions.spacingLg,
       ),
-      builder: (_) => ScreenplayVisibilitySheet(
+      child: ScreenplayVisibilitySheet(
         screenplay: screenplay,
         userId: userId,
       ),
@@ -142,43 +142,32 @@ class _ScreenplayVisibilitySheetState extends State<ScreenplayVisibilitySheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        24,
-        16,
-        24,
-        16 + MediaQuery.paddingOf(context).bottom,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text('公开设置', style: AppTextStyles.label),
-          const SizedBox(height: 4),
-          Text(
-            widget.screenplay.title,
-            style: AppTextStyles.bodySecondary,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 16),
-          ScreenplayVisibilityOptions(
-            value: _visibility,
-            onChanged: (v) => setState(() => _visibility = v),
-          ),
-          const SizedBox(height: 16),
-          FilledButton(
-            onPressed: _saving ? null : _save,
-            child: _saving
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('保存'),
-          ),
-        ],
-      ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text('公开设置', style: AppTextStyles.label),
+        const SizedBox(height: AppDimensions.spacingXs),
+        Text(
+          widget.screenplay.title,
+          style: AppTextStyles.bodySecondary,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: AppDimensions.spacingMd),
+        ScreenplayVisibilityOptions(
+          value: _visibility,
+          onChanged: (v) => setState(() => _visibility = v),
+        ),
+        const SizedBox(height: AppDimensions.spacingMd),
+        GlassButton(
+          label: '保存',
+          filled: true,
+          expand: true,
+          loading: _saving,
+          onPressed: _saving ? null : _save,
+        ),
+      ],
     );
   }
 }

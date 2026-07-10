@@ -5,7 +5,6 @@ import '../../../../app/theme/app_dimensions.dart';
 import '../../../../core/domain/screenplay/script_frame_display.dart';
 import '../../../../core/responsive/breakpoints.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
-import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
 import '../../../../shared/widgets/profile_widgets.dart';
 import '../../../screenplay/data/screenplay_draft.dart';
@@ -19,6 +18,7 @@ import '../widgets/script_editor/script_editor_actions.dart';
 import '../widgets/script_editor/script_editor_batch_edit_sheet.dart';
 import '../widgets/script_editor/script_editor_navigation.dart';
 import '../widgets/script_editor/script_editor_timeline_tab.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 class SceneEditorDetailPage extends StatefulWidget {
   const SceneEditorDetailPage({
     super.key,
@@ -363,7 +363,7 @@ class _SceneEditorDetailPageState extends State<SceneEditorDetailPage> {
     }
 
     if (frames.isEmpty) {
-      return EmptyStateView(
+      return GlassEmptyState(
         icon: Icons.photo_library_outlined,
         title: '暂无画面',
         subtitle: '点击下方添加画面',
@@ -393,7 +393,7 @@ class _SceneEditorDetailPageState extends State<SceneEditorDetailPage> {
       widget.sceneIndex,
     );
     if (previewFrames.isEmpty) {
-      return const EmptyStateView(
+      return const GlassEmptyState(
         icon: Icons.grid_view_outlined,
         title: '暂无画面',
         subtitle: '在画面列表中添加分镜图',

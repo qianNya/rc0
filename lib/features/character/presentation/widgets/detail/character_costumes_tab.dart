@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import '../../../../../app/theme/app_colors.dart';
 import '../../../../../app/theme/app_dimensions.dart';
 import '../../../../../app/theme/app_text_styles.dart';
-import '../../../../../shared/widgets/empty_state_view.dart';
 import '../../../../../shared/widgets/pose_cover_image.dart';
 import '../../../domain/character_detail_data.dart';
+import '../../../../../shared/widgets/glass/glass.dart';
 
 class CharacterCostumesTab extends StatelessWidget {
   const CharacterCostumesTab({
@@ -24,7 +24,7 @@ class CharacterCostumesTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (costumes.isEmpty) {
-      return EmptyStateView(
+      return GlassEmptyState(
         icon: Icons.checkroom_outlined,
         title: '暂无服装',
         subtitle: '添加常服、礼服等变体，便于分镜换装与 AI 一致性',

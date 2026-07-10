@@ -8,8 +8,8 @@ import '../../../../core/location/device_location_service.dart';
 import '../../../../core/location/location_snackbar.dart';
 import '../../../../core/location/map_city_catalog.dart';
 import '../../../../core/location/map_tile_config.dart';
-import '../../../../shared/widgets/primary_button.dart';
 import '../../../studio/presentation/widgets/script_studio_glass_widgets.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 
 class SceneLocationPicker extends StatefulWidget {
   const SceneLocationPicker({
@@ -170,9 +170,10 @@ class _SceneLocationPickerState extends State<SceneLocationPicker> {
               child: const Text('清除坐标'),
             ),
             const Spacer(),
-            PrimaryButton(
+            GlassButton(
+                filled: true,
               label: '确认位置',
-              isExpanded: false,
+              expand: false,
               onPressed: _selected == null
                   ? null
                   : () => Navigator.pop(context, _selected),

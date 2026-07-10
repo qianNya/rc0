@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_dimensions.dart';
-import 'primary_button.dart';
+import 'glass/glass_button.dart';
 
 class EmptyStateView extends StatelessWidget {
   const EmptyStateView({
@@ -50,10 +50,11 @@ class EmptyStateView extends StatelessWidget {
             ],
             if (actionLabel != null && onAction != null) ...[
               const SizedBox(height: 20),
-              PrimaryButton(
+              GlassButton(
                 label: actionLabel!,
                 onPressed: onAction,
-                isExpanded: false,
+                filled: true,
+                expand: false,
               ),
             ],
           ],

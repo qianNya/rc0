@@ -5,7 +5,6 @@ import '../../../../../app/theme/app_dimensions.dart';
 import '../../../../../app/theme/app_text_styles.dart';
 import '../../../../screenplay/data/cine_params_draft.dart';
 import '../../../../screenplay/data/screenplay_draft.dart';
-import '../../../../../shared/widgets/empty_state_view.dart';
 import '../../../../../shared/widgets/rc0_image.dart';
 import '../../../../../shared/widgets/shell_insets.dart';
 import '../../../../../core/responsive/breakpoints.dart';
@@ -13,6 +12,7 @@ import '../upload_structure_drag.dart';
 import 'script_editor_actions.dart';
 import 'script_editor_navigation.dart';
 import 'storyboard_playback_bar.dart';
+import '../../../../../shared/widgets/glass/glass.dart';
 
 const _secPerPixel = 24.0;
 const _minBlockWidth = 72.0;
@@ -116,7 +116,7 @@ class _ScriptEditorTimelineTabState extends State<ScriptEditorTimelineTab> {
   @override
   Widget build(BuildContext context) {
     if (widget.draft.acts.isEmpty) {
-      return const EmptyStateView(
+      return const GlassEmptyState(
         icon: Icons.timeline_outlined,
         title: '暂无时间线',
         subtitle: '添加幕与场次后，可在此按轨道预览顺序',
@@ -125,7 +125,7 @@ class _ScriptEditorTimelineTabState extends State<ScriptEditorTimelineTab> {
 
     final sceneRows = _sceneRows;
     if (sceneRows.isEmpty) {
-      return const EmptyStateView(
+      return const GlassEmptyState(
         icon: Icons.timeline_outlined,
         title: '暂无时间线',
         subtitle: '添加场次后可在此编排分镜',

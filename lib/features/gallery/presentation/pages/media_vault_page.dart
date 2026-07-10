@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/routes.dart';
+import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_motion.dart';
 import '../../../../core/responsive/breakpoints.dart';
 import '../../../../core/responsive/feed_grid_layout.dart';
-import '../../../../shared/widgets/empty_state_view.dart';
 import '../../data/media_vault_repository.dart';
 import '../../domain/media_vault_image.dart';
 import '../../domain/media_vault_types.dart';
@@ -21,6 +21,8 @@ import '../media_vault/media_vault_search_sheet.dart';
 import '../media_vault/media_vault_sidebar.dart';
 import '../media_vault/media_vault_tags_panel.dart';
 import '../media_vault/media_vault_top_bar.dart';
+import '../../../../shared/widgets/feed_grid_skeleton.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 
 /// Light-tone image library — masonry browsing.
 class MediaVaultPage extends StatefulWidget {
@@ -304,13 +306,14 @@ class _MediaVaultPageState extends State<MediaVaultPage> {
 
   Widget _buildBody(int columnCount) {
     if (_loading) {
-      return const Center(
-        child: CircularProgressIndicator(color: MediaVaultColors.accent),
+      return const Padding(
+        padding: EdgeInsets.all(AppDimensions.spacingMd),
+        child: FeedGridSkeleton(tileCount: 6),
       );
     }
 
     if (!_repo.isLoggedIn) {
-      return EmptyStateView(
+      return GlassEmptyState(
         icon: Icons.photo_library_outlined,
         title: '登录后查看图库',
         subtitle: '上传与管理你的参考图片',
@@ -321,7 +324,7 @@ class _MediaVaultPageState extends State<MediaVaultPage> {
     }
 
     if (_repo.error != null && _filtered.isEmpty) {
-      return EmptyStateView(
+      return GlassEmptyState(
         icon: Icons.photo_library_outlined,
         title: '加载失败',
         subtitle: _repo.error,
@@ -353,7 +356,7 @@ class _MediaVaultPageState extends State<MediaVaultPage> {
           }),
         ),
       MediaVaultSection.trash => _filtered.isEmpty
-          ? const EmptyStateView(
+          ? const GlassEmptyState(
               icon: Icons.delete_outline_rounded,
               title: '回收站为空',
               subtitle: '删除的图片会在这里保留 30 天',
@@ -368,7 +371,7 @@ class _MediaVaultPageState extends State<MediaVaultPage> {
       MediaVaultSection.favorites ||
       MediaVaultSection.library =>
         _filtered.isEmpty
-            ? EmptyStateView(
+            ? GlassEmptyState(
                 icon: Icons.photo_library_outlined,
                 title: _section == MediaVaultSection.favorites
                     ? '暂无收藏'

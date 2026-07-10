@@ -10,10 +10,8 @@ import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/data/app_catalog.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
-import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/fade_slide_tab_switcher.dart';
 import '../../../../shared/widgets/feed_tab_bar.dart';
-import '../../../../shared/widgets/primary_button.dart';
 import '../../../../shared/widgets/rc0_image.dart';
 import '../../../../shared/widgets/rc0_widgets.dart';
 import '../../data/scene_local_store.dart';
@@ -22,6 +20,7 @@ import '../../domain/scene_entry.dart';
 import '../../domain/scene_utils.dart';
 import '../widgets/scene_detail_tabs.dart';
 import '../widgets/scene_action_sheet.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 
 class SceneDetailPage extends ConsumerStatefulWidget {
   const SceneDetailPage({super.key, required this.sceneId});
@@ -166,7 +165,9 @@ class _SceneDetailPageState extends ConsumerState<SceneDetailPage> {
           ? null
           : Padding(
               padding: const EdgeInsets.only(bottom: 72),
-              child: PrimaryButton(
+              child: GlassButton(
+                filled: true,
+                expand: true,
                 label: '开始创作',
                 onPressed: () => context.push(AppRoutes.studioCreate),
               ),
@@ -177,7 +178,7 @@ class _SceneDetailPageState extends ConsumerState<SceneDetailPage> {
               ? ListView(
                   children: [
                     SizedBox(height: MediaQuery.sizeOf(context).height * 0.2),
-                    const EmptyStateView(
+                    const GlassEmptyState(
                       icon: Icons.landscape_outlined,
                       title: '场景不存在',
                     ),

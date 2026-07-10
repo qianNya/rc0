@@ -7,7 +7,7 @@ import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
 import '../../../../core/responsive/feed_grid_layout.dart';
-import '../../../../shared/widgets/template_grid_card.dart';
+import '../../../../shared/widgets/glass_feed_card.dart';
 
 /// Inline works grid for the profile「作品」tab (Douyin-style content area).
 class ProfileWorksPreview extends StatelessWidget {
@@ -22,7 +22,7 @@ class ProfileWorksPreview extends StatelessWidget {
   final int maxItems;
   final VoidCallback? onViewAll;
 
-  static const _aspectRatio = 0.72;
+  static const _aspectRatio = 0.78;
 
   @override
   Widget build(BuildContext context) {
@@ -41,37 +41,36 @@ class ProfileWorksPreview extends StatelessWidget {
           final itemHeight = itemWidth / _aspectRatio;
 
           return Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Wrap(
-              spacing: gap,
-              runSpacing: gap,
-              children: [
-                for (final script in preview)
-                  SizedBox(
-                    width: itemWidth,
-                    height: itemHeight,
-                    child: TemplateGridCard(
-                      screenplay: script,
-                      compact: true,
-                      onDelete: null,
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Wrap(
+                spacing: gap,
+                runSpacing: gap,
+                children: [
+                  for (final script in preview)
+                    SizedBox(
+                      width: itemWidth,
+                      height: itemHeight,
+                      child: GlassFeedCard(
+                        screenplay: script,
+                        layout: GlassFeedCardLayout.overlay,
+                      ),
                     ),
-                  ),
-              ],
-            ),
-            if (screenplays.length > maxItems || onViewAll != null) ...[
-              const SizedBox(height: AppDimensions.spacingSm),
-              Center(
-                child: TextButton(
-                  onPressed:
-                      onViewAll ?? () => context.push(AppRoutes.profileWorks),
-                  child: const Text('查看全部作品'),
-                ),
+                ],
               ),
+              if (screenplays.length > maxItems || onViewAll != null) ...[
+                const SizedBox(height: AppDimensions.spacingSm),
+                Center(
+                  child: TextButton(
+                    onPressed:
+                        onViewAll ?? () => context.push(AppRoutes.profileWorks),
+                    child: const Text('查看全部作品'),
+                  ),
+                ),
+              ],
             ],
-          ],
-        );
+          );
         },
       ),
     );

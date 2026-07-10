@@ -11,7 +11,6 @@ import '../../../../core/data/app_catalog.dart';
 import '../../../../core/responsive/breakpoints.dart';
 import '../../../../shared/widgets/desktop/desktop_hub_scaffold.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
-import '../../../../shared/widgets/empty_state_view.dart';
 import '../../../../shared/widgets/glass/glass_sheet.dart';
 import '../../../../shared/widgets/rc0_widgets.dart';
 import '../../../../shared/widgets/wiki_mode_tag_app_bar.dart';
@@ -27,6 +26,8 @@ import '../widgets/scene_map_pick.dart';
 import '../widgets/scene_map_sheet.dart';
 import '../widgets/scene_masonry_grid.dart';
 import '../widgets/scene_wiki_app_bar.dart';
+import '../../../../shared/widgets/feed_grid_skeleton.dart';
+import '../../../../shared/widgets/glass/glass.dart';
 
 class SceneListPage extends ConsumerStatefulWidget {
   const SceneListPage({super.key, this.embeddedInHub = false});
@@ -321,7 +322,10 @@ class _SceneListPageState extends ConsumerState<SceneListPage> {
         const SizedBox(height: AppDimensions.spacingSm),
         Expanded(
           child: _repo.loading && _repo.items.isEmpty
-              ? const Center(child: CircularProgressIndicator())
+              ? const Padding(
+                  padding: EdgeInsets.all(AppDimensions.spacingMd),
+                  child: FeedGridSkeleton(tileCount: 4),
+                )
               : recommended.isEmpty
                   ? ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
@@ -329,7 +333,7 @@ class _SceneListPageState extends ConsumerState<SceneListPage> {
                         SizedBox(
                           height: MediaQuery.sizeOf(context).height * 0.15,
                         ),
-                        EmptyStateView(
+                        GlassEmptyState(
                           icon: Icons.landscape_outlined,
                           title: _repo.error ?? '暂无场景',
                           subtitle: _repo.error != null

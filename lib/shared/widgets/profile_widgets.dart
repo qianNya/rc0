@@ -4,9 +4,10 @@ import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_dimensions.dart';
 import '../../app/theme/app_shadows.dart';
 import '../../app/theme/app_text_styles.dart';
+import 'template_market_hero.dart';
 import '../../core/data/app_catalog.dart';
 import 'feed_tab_bar.dart';
-import 'primary_button.dart';
+import 'glass/glass.dart';
 
 class AuthorRow extends StatelessWidget {
   const AuthorRow({
@@ -51,9 +52,9 @@ class AuthorRow extends StatelessWidget {
           ),
         ),
         if (showFollow)
-          SecondaryButton(
+          GlassButton(
             label: '关注',
-            isExpanded: false,
+            expand: false,
             onPressed: onFollow ?? () {},
           ),
       ],
@@ -384,6 +385,7 @@ class QuickActionCircle extends StatelessWidget {
   }
 }
 
+/// @deprecated Use [TemplateMarketHero] or [GlassFeedCard] contexts directly.
 class FeaturedBanner extends StatelessWidget {
   const FeaturedBanner({
     super.key,
@@ -400,56 +402,14 @@ class FeaturedBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: AppDimensions.spacingMd),
-      padding: const EdgeInsets.all(AppDimensions.pagePadding),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.accent, AppColors.profileGradientEnd],
-        ),
-        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.title.copyWith(color: Colors.white),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.white70, fontSize: 13),
-                ),
-                const SizedBox(height: 12),
-                TextButton(
-                  onPressed: onTap,
-                  style: TextButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: AppColors.accent,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                  ),
-                  child: Text(buttonLabel),
-                ),
-              ],
-            ),
-          ),
-          const Icon(
-            Icons.movie_filter_outlined,
-            size: 48,
-            color: Colors.white38,
-          ),
-        ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spacingMd),
+      child: TemplateMarketHero(
+        bleedUnderHeader: false,
+        title: title,
+        eyebrow: subtitle,
+        viewLabel: buttonLabel,
+        onViewTap: onTap,
       ),
     );
   }

@@ -3,12 +3,15 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/navigation_utils.dart';
 import '../../../../app/router/routes.dart';
-import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
+import '../../../../core/domain/screenplay/screenplay_display.dart';
 import '../../../../shared/widgets/desktop/desktop_stack_scaffold.dart';
-import '../../../../shared/widgets/empty_state_view.dart';
+import '../../../../shared/widgets/feed_grid_skeleton.dart';
+import '../../../../shared/widgets/glass/glass.dart';
+import '../../../../shared/widgets/glass_screenplay_row.dart';
 import '../../../../shared/widgets/inline_error_banner.dart';
 import '../../data/screenplay_like_repository.dart';
+
 class ProfileLikesPage extends StatefulWidget {
   const ProfileLikesPage({super.key});
 
@@ -50,18 +53,20 @@ class _ProfileLikesPageState extends State<ProfileLikesPage> {
       body: RefreshIndicator(
         onRefresh: _load,
         child: _loading
-            ? const Center(child: CircularProgressIndicator())
+            ? const Padding(
+                padding: EdgeInsets.all(AppDimensions.spacingMd),
+                child: FeedGridSkeleton(tileCount: 5),
+              )
             : items.isEmpty
                 ? ListView(
                     physics: const AlwaysScrollableScrollPhysics(),
                     children: [
                       SizedBox(height: MediaQuery.sizeOf(context).height * 0.2),
-                      EmptyStateView(
+                      GlassEmptyState(
                         icon: Icons.thumb_up_off_alt_outlined,
                         title: _error != null ? '加载失败' : '暂无点赞',
                         subtitle: _error ?? '你点赞的剧本会显示在这里',
-                        actionLabel:
-                            _error != null ? '重试' : '去社区看看',
+                        actionLabel: _error != null ? '重试' : '去社区看看',
                         onAction: _error != null
                             ? _load
                             : () => context.go(AppRoutes.discoveryTemplate),
@@ -72,7 +77,8 @@ class _ProfileLikesPageState extends State<ProfileLikesPage> {
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(AppDimensions.spacingMd),
                     itemCount: items.length + (_error != null ? 1 : 0),
-                    separatorBuilder: (_, _) => const SizedBox(height: 8),
+                    separatorBuilder: (_, _) =>
+                        const SizedBox(height: AppDimensions.spacingSm),
                     itemBuilder: (_, i) {
                       if (_error != null && i == 0) {
                         return InlineErrorBanner(
@@ -87,22 +93,10 @@ class _ProfileLikesPageState extends State<ProfileLikesPage> {
                       final title = screenplay?.title.isNotEmpty == true
                           ? screenplay!.title
                           : '剧本 #$spId';
-                      return ListTile(
-                        tileColor: AppColors.surface,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        leading: CircleAvatar(
-                          backgroundImage: screenplay?.coverUrl != null
-                              ? NetworkImage(screenplay!.coverUrl!)
-                              : null,
-                          child: screenplay?.coverUrl == null
-                              ? const Icon(Icons.movie_outlined, size: 20)
-                              : null,
-                        ),
-                        title: Text(title),
-                        subtitle: Text(like.createAt),
-                        trailing: const Icon(Icons.chevron_right),
+                      return GlassScreenplayRow(
+                        title: title,
+                        subtitle: like.createAt,
+                        imagePath: screenplay?.effectiveCoverImagePath,
                         onTap: () => context.push(AppRoutes.script('$spId')),
                       );
                     },
