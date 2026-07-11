@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
-import '../../../../core/data/app_catalog.dart';
 
+/// @deprecated Discovery no longer uses category chips.
 class CommunityCategoryChips extends StatelessWidget {
   const CommunityCategoryChips({
     super.key,
@@ -14,10 +14,14 @@ class CommunityCategoryChips extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onChanged;
 
+  static const _chips = <String>[];
+
   @override
   Widget build(BuildContext context) {
+    if (_chips.isEmpty) return const SizedBox.shrink();
+
     final theme = Theme.of(context);
-    final chips = AppCatalog.communityCategoryChips;
+    final chips = _chips;
     final secondary = theme.textTheme.bodyMedium?.color ?? AppColors.textSecondary;
     final surfaceSecondary = theme.brightness == Brightness.dark
         ? AppColors.surfaceSecondaryDark

@@ -59,14 +59,6 @@ abstract final class AppCatalog {
 
   static const communityTabs = ['热门', '最新', '关注'];
 
-  static const communityCategoryChips = [
-    '全部',
-    '人像摄影',
-    '构图模板',
-    '光影人像',
-    '场景',
-  ];
-
   static const communitySortTabs = ['热门', '最新', '最多使用', '精选'];
 
   /// Discovery Feed v2 tabs — maps to feed sort / featured API.

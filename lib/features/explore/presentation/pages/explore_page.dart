@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../../app/theme/app_dimensions.dart';
 import '../../../../core/responsive/breakpoints.dart';
 import '../../../../core/responsive/responsive_builder.dart';
 import '../widgets/discovery_feed_top_tab_bar.dart';
@@ -39,8 +38,8 @@ class ExplorePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final chromeTop = embeddedInHub
         ? (Breakpoints.useSidebarShell(context)
-            ? AppDimensions.spacingLg
-            : DiscoveryFeedChrome.contentInset(context))
+            ? 0.0
+            : DiscoveryFeedChrome.bleedInset(context))
         : 0.0;
 
     return ResponsiveBuilder(

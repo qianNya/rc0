@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
-import '../../../../app/theme/app_motion.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/data/app_catalog.dart';
 import '../../../../core/domain/screenplay/screenplay.dart';
@@ -62,7 +61,6 @@ class _TemplateMarketBodyState extends State<TemplateMarketBody> {
   final _repository = TemplateMarketRepository.instance;
   final _searchController = TextEditingController();
   final _gridSectionKey = GlobalKey();
-  int _categoryIndex = 0;
 
   int get _feedTabIndex => _repository.query.sortTabIndex;
 
@@ -92,24 +90,13 @@ class _TemplateMarketBodyState extends State<TemplateMarketBody> {
 
   Future<void> _refresh() => _repository.loadFirstPage(
         q: _searchController.text.trim(),
-        query: _repository.query.copyWith(
-          categoryIndex: _categoryIndex,
-          sortTabIndex: _feedTabIndex,
-        ),
+        query: _repository.query.copyWith(sortTabIndex: _feedTabIndex),
       );
 
   Future<void> _search(String query) => _repository.loadFirstPage(
         q: query.trim(),
-        query: _repository.query.copyWith(
-          categoryIndex: _categoryIndex,
-          sortTabIndex: _feedTabIndex,
-        ),
+        query: _repository.query.copyWith(sortTabIndex: _feedTabIndex),
       );
-
-  void _onCategoryChanged(int index) {
-    setState(() => _categoryIndex = index);
-    _repository.updateFilters(categoryIndex: index);
-  }
 
   void _onPublish() {
     if (!_isLoggedIn) {
@@ -120,11 +107,10 @@ class _TemplateMarketBodyState extends State<TemplateMarketBody> {
   }
 
   List<Screenplay> _scriptsForTab(int tabIndex) {
-    if (tabIndex != _feedTabIndex) return const [];
     if (tabIndex == TemplateFeedQuery.tabFollowing && !_isLoggedIn) {
       return const [];
     }
-    return _repository.items;
+    return _repository.scriptsForTab(tabIndex);
   }
 
   @override
@@ -161,34 +147,24 @@ class _TemplateMarketBodyState extends State<TemplateMarketBody> {
   }
 
   Widget _buildDesktopMarket(double horizontalPadding) {
+    final showFeedTabs =
+        !widget.embeddedInHub || Breakpoints.useSidebarShell(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         DesktopHubHeader(
           title: '发现',
           subtitle: '精选模板与社区作品',
-          bottom: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (!widget.embeddedInHub || Breakpoints.useSidebarShell(context))
-                const DiscoveryFeedTopTabBar(),
-              if (widget.showSearch) ...[
-                if (!widget.embeddedInHub ||
-                    Breakpoints.useSidebarShell(context))
-                  const SizedBox(height: AppDimensions.spacingSm),
-                _SearchPublishRow(
-                  controller: _searchController,
-                  onSubmitted: _search,
-                  onPublish: _onPublish,
-                ),
-              ],
-            ],
+          bottomGap: 0,
+          bottom: _DiscoveryMarketChrome(
+            showFeedTabs: showFeedTabs,
+            horizontalPadding: 0,
+            searchController: _searchController,
+            onSearch: _search,
+            onPublish: _onPublish,
+            showSearch: widget.showSearch,
           ),
-        ),
-        _CategoryChipRow(
-          selectedIndex: _categoryIndex,
-          onChanged: _onCategoryChanged,
-          horizontalPadding: horizontalPadding,
         ),
         Expanded(child: _buildFeedTabStack(horizontalPadding, compact: false)),
       ],
@@ -196,50 +172,24 @@ class _TemplateMarketBodyState extends State<TemplateMarketBody> {
   }
 
   Widget _buildMobileMarket(double horizontalPadding) {
-    final contentTop = widget.embeddedInHub
-        ? widget.topPadding
-        : AppDimensions.spacingSm;
+    final chromeClearance =
+        widget.embeddedInHub ? widget.topPadding : 0.0;
 
     return NestedScrollView(
       headerSliverBuilder: (context, innerBoxIsScrolled) => [
-        if (!widget.embeddedInHub)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(
-                horizontalPadding,
-                AppDimensions.spacingSm,
-                horizontalPadding,
-                0,
-              ),
-              child: const DiscoveryFeedTopTabBar(),
-            ),
-          ),
         SliverToBoxAdapter(
           child: Padding(
-            padding: EdgeInsets.only(top: contentTop),
-            child: _CategoryChipRow(
-              selectedIndex: _categoryIndex,
-              onChanged: _onCategoryChanged,
+            padding: EdgeInsets.only(top: chromeClearance),
+            child: _DiscoveryMarketChrome(
+              showFeedTabs: !widget.embeddedInHub,
               horizontalPadding: horizontalPadding,
+              searchController: _searchController,
+              onSearch: _search,
+              onPublish: _onPublish,
+              showSearch: widget.showSearch,
             ),
           ),
         ),
-        if (widget.showSearch)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(
-                horizontalPadding,
-                AppDimensions.spacingSm,
-                horizontalPadding,
-                AppDimensions.spacingSm,
-              ),
-              child: _SearchPublishRow(
-                controller: _searchController,
-                onSubmitted: _search,
-                onPublish: _onPublish,
-              ),
-            ),
-          ),
       ],
       body: _buildFeedTabStack(horizontalPadding, compact: true, nested: true),
     );
@@ -259,11 +209,11 @@ class _TemplateMarketBodyState extends State<TemplateMarketBody> {
             gridSectionKey: i == _feedTabIndex ? _gridSectionKey : null,
             scripts: _scriptsForTab(i),
             feedTabIndex: i,
-            loading: _repository.loading &&
+            loading: _repository.isTabLoading(i) &&
                 !(i == TemplateFeedQuery.tabFollowing && !_isLoggedIn),
-            loadingMore: _repository.loadingMore,
-            hasMore: _repository.hasMore,
-            error: _repository.error,
+            loadingMore: _repository.isTabLoadingMore(i),
+            hasMore: _repository.hasMoreForTab(i),
+            error: _repository.errorForTab(i),
             requireLogin: i == TemplateFeedQuery.tabFollowing && !_isLoggedIn,
             onRefresh: _refresh,
             onLoadMore: () => _repository.loadMore(),
@@ -273,6 +223,54 @@ class _TemplateMarketBodyState extends State<TemplateMarketBody> {
             compact: compact,
             nested: nested,
             horizontalPadding: horizontalPadding,
+          ),
+      ],
+    );
+  }
+}
+
+/// Shared discovery chrome: feed tabs → search (zero vertical gap).
+class _DiscoveryMarketChrome extends StatelessWidget {
+  const _DiscoveryMarketChrome({
+    required this.showFeedTabs,
+    required this.horizontalPadding,
+    required this.searchController,
+    required this.onSearch,
+    required this.onPublish,
+    this.showSearch = true,
+  });
+
+  final bool showFeedTabs;
+  final double horizontalPadding;
+  final TextEditingController searchController;
+  final ValueChanged<String> onSearch;
+  final VoidCallback onPublish;
+  final bool showSearch;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (showFeedTabs)
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+            child: const DiscoveryFeedTopTabBar(),
+          ),
+        if (showSearch)
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              horizontalPadding,
+              0,
+              horizontalPadding,
+              AppDimensions.spacingSm,
+            ),
+            child: _SearchPublishRow(
+              controller: searchController,
+              onSubmitted: onSearch,
+              onPublish: onPublish,
+            ),
           ),
       ],
     );
@@ -292,22 +290,71 @@ class _SearchPublishRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _DiscoveryGlassSearch(
-            controller: controller,
-            onSubmitted: onSubmitted,
+    const controlHeight = AppDimensions.feedTabBarHeight;
+    final radius = BorderRadius.circular(AppDimensions.tabFloatingRadius);
+
+    return SizedBox(
+      height: controlHeight,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: _DiscoveryGlassSearch(
+              controller: controller,
+              onSubmitted: onSubmitted,
+              borderRadius: radius,
+            ),
+          ),
+          const SizedBox(width: AppDimensions.spacingSm),
+          _DiscoveryPublishButton(
+            onPressed: onPublish,
+            borderRadius: radius,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DiscoveryPublishButton extends StatelessWidget {
+  const _DiscoveryPublishButton({
+    required this.onPressed,
+    required this.borderRadius,
+  });
+
+  final VoidCallback onPressed;
+  final BorderRadius borderRadius;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.accent,
+      borderRadius: borderRadius,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: borderRadius,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppDimensions.spacingMd,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.add, size: 18, color: Colors.white),
+              const SizedBox(width: 6),
+              Text(
+                '发布作品',
+                style: AppTextStyles.label.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(width: AppDimensions.spacingSm),
-        GlassButton(
-          label: '发布作品',
-          icon: Icons.add,
-          filled: true,
-          onPressed: onPublish,
-        ),
-      ],
+      ),
     );
   }
 }
@@ -316,10 +363,12 @@ class _DiscoveryGlassSearch extends StatelessWidget {
   const _DiscoveryGlassSearch({
     required this.controller,
     required this.onSubmitted,
+    required this.borderRadius,
   });
 
   final TextEditingController controller;
   final ValueChanged<String> onSubmitted;
+  final BorderRadius borderRadius;
 
   @override
   Widget build(BuildContext context) {
@@ -328,111 +377,32 @@ class _DiscoveryGlassSearch extends StatelessWidget {
         isDark ? AppColors.textTertiaryDark : AppColors.textTertiary;
     final iconColor =
         isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
-    final radius =
-        BorderRadius.circular(AppDimensions.tabFloatingRadius);
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: radius,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.accent.withValues(alpha: 0.12),
-            blurRadius: 20,
-            spreadRadius: -4,
+    return LiquidGlassSurface(
+      borderRadius: borderRadius,
+      child: TextField(
+        controller: controller,
+        onSubmitted: onSubmitted,
+        textInputAction: TextInputAction.search,
+        style: AppTextStyles.body,
+        decoration: InputDecoration(
+          isDense: true,
+          hintText: '搜索模板…',
+          hintStyle: TextStyle(color: hintColor, fontSize: 14),
+          prefixIcon: Icon(Icons.search, color: iconColor, size: 20),
+          prefixIconConstraints: const BoxConstraints(
+            minWidth: 40,
+            minHeight: AppDimensions.feedTabBarHeight,
           ),
-        ],
-      ),
-      child: LiquidGlassSurface(
-        borderRadius: radius,
-        child: TextField(
-          controller: controller,
-          onSubmitted: onSubmitted,
-          textInputAction: TextInputAction.search,
-          decoration: InputDecoration(
-            hintText: '搜索模板…',
-            hintStyle: TextStyle(color: hintColor),
-            prefixIcon: Icon(Icons.search, color: iconColor),
-            filled: false,
-            border: InputBorder.none,
-            enabledBorder: InputBorder.none,
-            focusedBorder: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: AppDimensions.spacingMd,
-              vertical: AppDimensions.spacingMd,
-            ),
+          filled: false,
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: AppDimensions.spacingSm,
+            vertical: 0,
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _CategoryChipRow extends StatelessWidget {
-  const _CategoryChipRow({
-    required this.selectedIndex,
-    required this.onChanged,
-    required this.horizontalPadding,
-  });
-
-  final int selectedIndex;
-  final ValueChanged<int> onChanged;
-  final double horizontalPadding;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final chips = AppCatalog.communityCategoryChips;
-    final secondary =
-        isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
-    final border =
-        isDark ? AppColors.glassNavBorderDark : AppColors.glassNavBorderLight;
-
-    return SizedBox(
-      height: AppDimensions.feedTabBarHeight,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        clipBehavior: Clip.hardEdge,
-        padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-        itemCount: chips.length,
-        separatorBuilder: (_, _) =>
-            const SizedBox(width: AppDimensions.spacingSm),
-        itemBuilder: (context, index) {
-          final selected = selectedIndex == index;
-          return GestureDetector(
-            onTap: () => onChanged(index),
-            child: AnimatedContainer(
-              duration: AppMotion.normal,
-              curve: AppMotion.standard,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppDimensions.spacingMd,
-                vertical: AppDimensions.spacingSm,
-              ),
-              decoration: BoxDecoration(
-                color: selected
-                    ? Colors.white.withValues(alpha: isDark ? 0.16 : 0.85)
-                    : Colors.transparent,
-                borderRadius:
-                    BorderRadius.circular(AppDimensions.tabFloatingRadius),
-                border: Border.all(
-                  color: selected
-                      ? Colors.white.withValues(alpha: 0.28)
-                      : border,
-                ),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                chips[index],
-                style: AppTextStyles.caption.copyWith(
-                  color: selected
-                      ? (isDark ? Colors.white : AppColors.textPrimary)
-                      : secondary,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                ),
-              ),
-            ),
-          );
-        },
       ),
     );
   }

@@ -19,12 +19,16 @@ class DesktopHubHeader extends StatelessWidget {
     this.subtitle,
     this.actions = const [],
     this.bottom,
+    this.bottomGap = AppDimensions.spacingMd,
   });
 
   final String title;
   final String? subtitle;
   final List<Widget> actions;
   final Widget? bottom;
+
+  /// Gap between title row and [bottom]; discovery chrome uses `0`.
+  final double bottomGap;
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +88,7 @@ class DesktopHubHeader extends StatelessWidget {
             ],
           ),
           if (bottom != null) ...[
-            const SizedBox(height: AppDimensions.spacingMd),
+            SizedBox(height: bottomGap),
             bottom!,
           ],
         ],

@@ -47,8 +47,8 @@ void main() {
       _script(id: 'a', tags: ['构图'], likes: 10, hotScore: 1),
       _script(id: 'b', tags: ['场景'], likes: 30, hotScore: 5),
     ];
-    final filtered = filterTemplateScreenplays(items, 4);
-    expect(filtered.map((s) => s.id), ['b']);
+    final filtered = filterTemplateScreenplays(items, 0);
+    expect(filtered.map((s) => s.id), ['a', 'b']);
 
     final sortedHot = sortTemplateScreenplays(items, TemplateFeedQuery.tabHot);
     expect(sortedHot.first.id, 'b');

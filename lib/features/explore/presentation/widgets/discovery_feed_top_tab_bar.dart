@@ -37,14 +37,18 @@ class _DiscoveryFeedTopTabBarState extends State<DiscoveryFeedTopTabBar> {
 
   void _onTabChanged(int index) {
     if (index == _repository.query.sortTabIndex) return;
-    _repository.updateFilters(sortTabIndex: index);
+
+    final query = _repository.query.copyWith(sortTabIndex: index);
     if (index == TemplateFeedQuery.tabFollowing &&
         !AuthRepository.instance.isLoggedIn) {
+      _repository.selectTab(query);
       return;
     }
-    _repository.loadFirstPage(
-      query: _repository.query.copyWith(sortTabIndex: index),
-    );
+    if (_repository.tabHasCache(index)) {
+      _repository.activateTab(query);
+      return;
+    }
+    _repository.loadFirstPage(query: query);
   }
 
   @override
@@ -59,7 +63,13 @@ class _DiscoveryFeedTopTabBarState extends State<DiscoveryFeedTopTabBar> {
 
 /// Chrome height for discovery feed tabs in the floating app bar.
 abstract final class DiscoveryFeedChrome {
+  /// Full inset below status bar + toolbar.
   static double contentInset(BuildContext context) {
     return wikiModeTagContentInsetHeight(context);
+  }
+
+  /// Tighter inset — category chips sit closer under floating tabs.
+  static double bleedInset(BuildContext context) {
+    return wikiModeTagBleedInsetHeight(context);
   }
 }

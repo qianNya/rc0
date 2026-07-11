@@ -3,7 +3,6 @@ import '../../../core/data/app_catalog.dart';
 /// Unified query for Discovery Feed — feed API + client category filter.
 class TemplateFeedQuery {
   const TemplateFeedQuery({
-    this.categoryIndex = 0,
     this.sortTabIndex = 2,
     this.q,
   });
@@ -20,7 +19,6 @@ class TemplateFeedQuery {
   static const int tabHot = 2;
   static const int tabLatest = 3;
 
-  final int categoryIndex;
   final int sortTabIndex;
   final String? q;
 
@@ -31,12 +29,10 @@ class TemplateFeedQuery {
   String get feedSort => sortTabToFeedSort(sortTabIndex);
 
   TemplateFeedQuery copyWith({
-    int? categoryIndex,
     int? sortTabIndex,
     String? q,
   }) {
     return TemplateFeedQuery(
-      categoryIndex: categoryIndex ?? this.categoryIndex,
       sortTabIndex: sortTabIndex ?? this.sortTabIndex,
       q: q ?? this.q,
     );
